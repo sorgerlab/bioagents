@@ -3,13 +3,39 @@
 # certain disease and to look for drugs that are known 
 # to affect that target directly or indirectly.
 
+import re
+import rdflib
 from bioagents import cbio_client
 import warnings
+import indra.bel.processor
 
 class DDA:
     def __init__(self):
-       pass
+        # Build an initial set of substitution statements
+        bel_corpus = '../data/large_corpus_direct_subs.rdf'
+        g = rdflib.Graph()
+        g.parse(bel_corpus, format='nt')
+        bp = indra.bel.processor.BelProcessor(g)
+        bp.get_activating_subs()
+        self.sub_statements = bp.statements
 
+    def get_mutation_effect(self, protein_name, amino_acid_change):
+        match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)
+        matches = match.groups()
+        wt_residue = matches[0]
+        pos = matches[1]
+        sub_residue = matches[2]
+
+        for stmt in self.sub_statements:
+            if stmt.monomer.name == protein_name and\
+                stmt.wt_residue == wt_residue and\
+                stmt.pos == pos and\
+                stmt.sub_residue == sub_residue:
+                print 'Match found, activity: %s' % stmt.activity
+                return stmt.activity
+        return None
+
+    
     def get_mutation_statistics(self, disease_name_filter, mutation_type):
         study_ids = cbio_client. get_cancer_studies(disease_name_filter)
         if not study_ids:

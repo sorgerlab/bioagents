@@ -12,7 +12,7 @@ import indra.bel.processor
 class DDA:
     def __init__(self):
         # Build an initial set of substitution statements
-        bel_corpus = '../data/large_corpus_direct_subs.rdf'
+        bel_corpus = 'data/large_corpus_direct_subs.rdf'
         g = rdflib.Graph()
         g.parse(bel_corpus, format='nt')
         bp = indra.bel.processor.BelProcessor(g)

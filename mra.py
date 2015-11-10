@@ -4,7 +4,7 @@
 # and databases.
 
 from indra.pysb_assembler import PysbAssembler
-from indra.statements import Agent
+from indra.statements import Agent, Complex
 from indra.biopax import biopax_api
 from indra.trips import trips_api
 import copy
@@ -46,13 +46,19 @@ class MRA:
         other agents. This is used, for instance, to expand a protein family
         to multiple specific proteins.
         '''
-        for stmt in self.statements:
-            agent = [k for k, v in stmt.__dict__.iteritems() if isinstance(v, Agent) and v.name == agent_name]
-            if agent:
+        for stmt in self.statements: 
+            if isinstance(stmt, Complex):
+                agent_key = [i for i, m in enumerate(stmt.members) if m.name == agent_name]
+            else:
+                agent_key = [k for k, v in stmt.__dict__.iteritems() if isinstance(v, Agent) and v.name == agent_name]
+            if agent_key:
                 self.statements.remove(stmt)
                 for p in agent_replacement_names:
                     s = copy.deepcopy(stmt)
-                    s.__dict__[agent[0]].name = p
+                    if isinstance(stmt, Complex):
+                        s.members[agent_key[0]].name = p
+                    else:
+                        s.__dict__[agent_key[0]].name = p
                     self.add_statements([s])
         pa = PysbAssembler()
         pa.add_statements(self.statements)

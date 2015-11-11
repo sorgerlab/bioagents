@@ -29,8 +29,10 @@ def get_mutations(study_id, gene_list_str, mutation_type=None):
             'genetic_profile_id': genetic_profile,
             'gene_list': gene_list_str}
     df = send_request(data, skiprows=1)
-    mutations = _filter_data_frame(df, 'gene_symbol', 'mutation_type', mutation_type)
-
+    res = _filter_data_frame(df, ['gene_symbol', 'amino_acid_change'], 
+                                   'mutation_type', mutation_type)
+    mutations = {'gene_symbol': res['gene_symbol'].values(),
+                 'amino_acid_change': res['amino_acid_change'].values()}
     return mutations
 
 def get_num_sequenced(study_id):
@@ -53,8 +55,9 @@ def get_genetic_profiles(study_id, filter_str=None):
     data = {'cmd': 'getGeneticProfiles', 
             'cancer_study_id': study_id}
     df = send_request(data)
-    genetic_profiles = _filter_data_frame(df, 'genetic_profile_id', 
-                                          'genetic_alteration_type', filter_str)
+    res = _filter_data_frame(df, ['genetic_profile_id'], 
+                                  'genetic_alteration_type', filter_str)
+    genetic_profiles = res['genetic_profile_id'].values()
     return genetic_profiles
 
 def get_cancer_studies(filter_str=None):
@@ -65,7 +68,8 @@ def get_cancer_studies(filter_str=None):
     '''
     data = {'cmd': 'getCancerStudies'}
     df = send_request(data)
-    study_ids = _filter_data_frame(df, 'cancer_study_id', 'name', filter_str)
+    res = _filter_data_frame(df, ['cancer_study_id'], 'name', filter_str)
+    study_ids = res['cancer_study_id'].values()
     return study_ids
 
 def get_cancer_types(filter_str=None):
@@ -75,17 +79,18 @@ def get_cancer_types(filter_str=None):
     '''
     data = {'cmd': 'getTypesOfCancer'}
     df = send_request(data)
-    type_ids = _filter_data_frame(df, 'type_of_cancer_id', 'name', filter_str)
+    res = _filter_data_frame(df, ['type_of_cancer_id'], 'name', filter_str)
+    type_ids = res['type_of_cancer_id'].values()
     return type_ids
 
 def _filter_data_frame(df, data_col, filter_col, filter_str=None): 
     '''
     Filter a column of a data frame for a given string
-    and return the corresponding rows of the data column as a list.
+    and return the corresponding rows of the data column as a dictionary.
     '''
     if filter_str is not None:
         row_filter = df[filter_col].str.contains(filter_str, case=False)
-        data_list = df[row_filter][data_col].tolist()
+        data_list = df[row_filter][data_col].to_dict()
     else:
-        data_list = df[data_col].tolist()
+        data_list = df[data_col].to_dict()
     return data_list

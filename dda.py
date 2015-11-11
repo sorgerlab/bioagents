@@ -6,6 +6,7 @@
 import re
 import os
 import rdflib
+import sqlite3
 import numpy
 from bioagents import cbio_client
 import warnings
@@ -21,7 +22,21 @@ class DDA:
         bp = indra.bel.processor.BelProcessor(g)
         bp.get_activating_subs()
         self.sub_statements = bp.statements
+        # Load a database of drug targets
+        self.drug_db = sqlite3.connect(data_dir + 'drug_targets.db')
    
+    def __del__(self):
+        self.drug_db.close()
+
+    def is_nominal_drug_target(self, drug_name, target_name):
+        res = self.drug_db.execute('SELECT nominal_target FROM agent '
+                           'WHERE synonyms LIKE "%%%s%%" '
+                           'OR name LIKE "%%%s%%"' % (drug_name, drug_name)).fetchall()
+        for r in res:
+            if r[0] == target_name:
+                return True
+        return False
+
     def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)
         if match is None:

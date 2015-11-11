@@ -4,23 +4,28 @@
 # to affect that target directly or indirectly.
 
 import re
+import os
 import rdflib
+import numpy
 from bioagents import cbio_client
 import warnings
 import indra.bel.processor
 
 class DDA:
     def __init__(self):
+        data_dir = os.path.dirname(os.path.realpath(__file__)) + '/data/'
         # Build an initial set of substitution statements
-        bel_corpus = 'data/large_corpus_direct_subs.rdf'
+        bel_corpus = data_dir + 'large_corpus_direct_subs.rdf'
         g = rdflib.Graph()
         g.parse(bel_corpus, format='nt')
         bp = indra.bel.processor.BelProcessor(g)
         bp.get_activating_subs()
         self.sub_statements = bp.statements
-
-    def get_mutation_effect(self, protein_name, amino_acid_change):
+   
+    def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)
+        if match is None:
+            return None
         matches = match.groups()
         wt_residue = matches[0]
         pos = matches[1]
@@ -31,13 +36,14 @@ class DDA:
                 stmt.wt_residue == wt_residue and\
                 stmt.pos == pos and\
                 stmt.sub_residue == sub_residue:
-                print 'Match found, activity: %s' % stmt.activity
-                return stmt.activity
+                if stmt.rel == 'increases':
+                    return 'activate'
+                else:
+                    return 'deactivate'
         return None
-
     
     def get_mutation_statistics(self, disease_name_filter, mutation_type):
-        study_ids = cbio_client. get_cancer_studies(disease_name_filter)
+        study_ids = cbio_client.get_cancer_studies(disease_name_filter)
         if not study_ids:
             warnings.warn('No study found for "%s"' % disease_name_filter)
             return None
@@ -48,14 +54,26 @@ class DDA:
             num_case += cbio_client.get_num_sequenced(study_id)
             mutations = cbio_client.get_mutations(study_id, gene_list_str, 
                                                   mutation_type)
-            for m in mutations:
+            for g,a in zip(mutations['gene_symbol'], mutations['amino_acid_change']):
+                mutation_effect = self.find_mutation_effect(g, a)
+                if mutation_effect is None:
+                    mutation_effect_key = 'other'
+                else:
+                    mutation_effect_key = mutation_effect
                 try:
-                    mutation_dict[m] += 1.0
+                    mutation_dict[g][0] += 1.0
+                    mutation_dict[g][1][mutation_effect_key] += 1
                 except KeyError:
-                    mutation_dict[m] = 1.0
+                    effect_dict = {'activate': 0.0, 'deactivate': 0.0, 'other': 0.0}
+                    effect_dict[mutation_effect_key] += 1.0
+                    mutation_dict[g] = [1.0, effect_dict]
         # Normalize entries
         for k, v in mutation_dict.iteritems():
-            mutation_dict[k] /= num_case
+            mutation_dict[k][0] /= num_case
+            effect_sum = numpy.sum(mutation_dict[k][1].values())
+            mutation_dict[k][1]['activate'] /= effect_sum
+            mutation_dict[k][1]['deactivate'] /= effect_sum
+            mutation_dict[k][1]['other'] /= effect_sum
 
         return mutation_dict
 

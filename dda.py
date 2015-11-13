@@ -29,6 +29,9 @@ class DDA:
         self.drug_db.close()
 
     def is_nominal_drug_target(self, drug_name, target_name):
+        '''
+        Return True if the drug targets the target, and False if not
+        '''
         res = self.drug_db.execute('SELECT nominal_target FROM agent '
                            'WHERE synonyms LIKE "%%%s%%" '
                            'OR name LIKE "%%%s%%"' % (drug_name, drug_name)).fetchall()
@@ -36,6 +39,15 @@ class DDA:
             if r[0] == target_name:
                 return True
         return False
+
+    def find_target_drug(self, target_name):
+        '''
+        Find all the drugs that nmoinally target the target.
+        '''
+        res = self.drug_db.execute('SELECT name, synonyms FROM agent '
+                'WHERE nominal_target LIKE "%%%s%%" ' % target_name).fetchall()
+        drug_names = [r[0] for r in res]
+        return drug_names
 
     def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)

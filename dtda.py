@@ -1,4 +1,4 @@
-# DDA stands for disease-drug agent whose task is to
+# DTDA stands for disease-target-drug agent whose task is to
 # search for targets known to be implicated in a 
 # certain disease and to look for drugs that are known 
 # to affect that target directly or indirectly.
@@ -12,7 +12,7 @@ from bioagents import cbio_client
 import warnings
 import indra.bel.processor
 
-class DDA:
+class DTDA:
     def __init__(self):
         data_dir = os.path.dirname(os.path.realpath(__file__)) + '/data/'
         # Build an initial set of substitution statements

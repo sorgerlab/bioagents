@@ -7,6 +7,8 @@ from indra.pysb_assembler import PysbAssembler
 from indra.statements import Agent, Complex
 from indra.biopax import biopax_api
 from indra.trips import trips_api
+from indra.databases import uniprot_client
+from bioagents import nextprot_client
 import copy
 
 class MRA:
@@ -39,6 +41,22 @@ class MRA:
         self.add_statements(tp.statements)
         self.model = pa.make_model()
         return self.model
+
+    def find_family_members(self, family_name, family_id=None):
+        '''
+        Find specific members of a protein family. If only family_name is
+        given then a Uniprot query is performed, if family_id is given then
+        the information is taken from the corresponding database.
+        '''
+        if family_id is None:
+            family_members = uniprot_client.get_family_members(family_name)
+        elif family_id.startswith('FA'):
+            nextprot_id = family_id[3:]
+            family_members = nextprot_client.get_family_members(nextprot_id)
+        else:
+            return None
+        return family_members
+            
 
     def replace_agent(self, agent_name, agent_replacement_names):
         '''

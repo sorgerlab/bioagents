@@ -43,8 +43,8 @@ class MEA:
 
     def compare_auc(self, ts, y_ref, y_new):
         '''
-        Return the ratio on the are under two simulation trajectories,
-        y_new and y_rer
+        Return the ratio of the area under two simulation trajectories,
+        y_new and y_ref.
         '''
         dt = numpy.diff(ts)
         a_ref = numpy.dot(dt, 0.5*(y_ref[1:] + y_ref[:-1]))

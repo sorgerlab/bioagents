@@ -5,6 +5,7 @@ from KQML.kqml_dispatcher import KQMLDispatcher
 
 # Declare java classes for convenience
 java_osw = autoclass('java.io.OutputStreamWriter')
+java_pw = autoclass('java.io.PrintWriter')
 java_sys = autoclass('java.lang.System')
 java_socket = autoclass('java.net.Socket')
 KQMLReader = autoclass('TRIPS.KQML.KQMLReader')
@@ -128,7 +129,7 @@ class TripsModule(Thread):
     def connect1(self, host, port, verbose=True):
         try:
             self.socket = java_socket(host, port)
-            self.out = java_osw(self.socket.getOutputStream())
+            self.out = java_pw(self.socket.getOutputStream(), True)
             self.inp = KQMLReader(self.socket.getInputStream())
             return True
         # FIXME: cannot test for more specific exception with jnius
@@ -299,6 +300,7 @@ class TripsModule(Thread):
         except IOError:
             print 'IOError'
             pass
+        self.out.println()
         print msg.toString()
     
     def send_with_continuation(self, msg, cont):

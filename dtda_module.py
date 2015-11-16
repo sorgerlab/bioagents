@@ -15,15 +15,18 @@ class DTDA_Module(trips_module.TripsModule):
         super(DTDA_Module, self).__init__(argv)
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
+        self.tasks = ['is-drug-target', 'find-target-drug', 
+                    'find-disease-targets', 'find-treatment']
 
     def init(self):
         '''
         Initialize TRIPS module
         '''
         super(DTDA_Module, self).init()
-        # Send initial message
-        self.send(KQMLPerformative.fromString(
-            '(subscribe :content (request &key :content (hello . *)))'))
+        # Send subscribe messages
+        for task in self.tasks:
+            msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
+            self.send(KQMLPerformative.fromString(msg_txt))
         self.ready()
 
     def receive_request(self, msg, content):
@@ -92,5 +95,6 @@ class DTDA_Module(trips_module.TripsModule):
         return reply_content
 
 if __name__ == "__main__":
-    DTDA_Module(['-name', 'DTDA'] + sys.argv[1:]).run()
+    dm = DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])
+    dm.run()
 

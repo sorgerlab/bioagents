@@ -1,12 +1,12 @@
 import sys
-import socket
-from jnius import autoclass, cast
+from jnius import autoclass, cast, JavaException
 from threading import Thread
 from KQML.kqml_dispatcher import KQMLDispatcher
 
 # Declare java classes for convenience
 java_osw = autoclass('java.io.OutputStreamWriter')
 java_sys = autoclass('java.lang.System')
+java_socket = autoclass('java.net.Socket')
 KQMLReader = autoclass('TRIPS.KQML.KQMLReader')
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
@@ -63,7 +63,7 @@ class TripsModule(Thread):
     def is_connected(self):
         if self.socket is not None:
             # FIXME: proper method call here
-            return self.socket.is_connected()
+            return self.socket.isConnected()
         else:
             return False
 
@@ -109,10 +109,11 @@ class TripsModule(Thread):
         else:
             self.set_debugging_enabled(False)
     
-    def connect(self):
-        return self.connect(self.host, self.port)
-    
-    def connect(self, host, startport):
+    def connect(self, host=None, startport=None):
+        if host is None:
+            host = self.host
+        if startport is None:
+            startport = self.port
         if not self.scan_for_port:
             return self.connect1(host, startport, True)
         else:
@@ -126,14 +127,12 @@ class TripsModule(Thread):
 
     def connect1(self, host, port, verbose=True):
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((host, port))
-            fh = self.socket.makefile('w')
-            #FIXME: these might not be correct
-            self.out = fh # ***
-            self.inp = KQMLReader(socket) # ***
+            self.socket = java_socket(host, port)
+            self.out = java_osw(self.socket.getOutputStream())
+            self.inp = KQMLReader(self.socket.getInputStream())
             return True
-        except socket.error as msg:
+        # FIXME: cannot test for more specific exception with jnius
+        except JavaException as msg:
             if verbose:
                 print msg
     

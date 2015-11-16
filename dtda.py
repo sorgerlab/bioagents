@@ -23,7 +23,8 @@ class DTDA:
         bp.get_activating_subs()
         self.sub_statements = bp.statements
         # Load a database of drug targets
-        self.drug_db = sqlite3.connect(data_dir + 'drug_targets.db')
+        self.drug_db = sqlite3.connect(data_dir + 'drug_targets.db', 
+            check_same_thread=False)
    
     def __del__(self):
         self.drug_db.close()
@@ -42,7 +43,7 @@ class DTDA:
 
     def find_target_drug(self, target_name):
         '''
-        Find all the drugs that nmoinally target the target.
+        Find all the drugs that nominally target the target.
         '''
         res = self.drug_db.execute('SELECT name, synonyms FROM agent '
                 'WHERE nominal_target LIKE "%%%s%%" ' % target_name).fetchall()

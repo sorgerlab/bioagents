@@ -44,10 +44,13 @@ class TripsModule(Thread):
     def init(self):
         self.handle_common_parameters()
         if self.auto_connect:
+            print 'TripsModule: using socket connection'
             conn = self.connect(self.host, self.port)
             if not conn:
+                print 'TripsModule: connection failed'
                 self.exit(-1)
         else:
+            print 'TripsModule: using stdio connection'
             self.out = java_osw(java_sys.out)
             java_in = getattr(java_sys, 'in')
             self.inp = KQMLReader(java_in)
@@ -163,6 +166,7 @@ class TripsModule(Thread):
         else:
             if self.dispatcher is not None:
                 self.dispatcher.shutdown()
+            sys.exit(n)
    
     def receive_eof(self):
         self.exit(0)

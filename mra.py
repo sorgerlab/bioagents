@@ -42,6 +42,17 @@ class MRA:
         self.model = pa.make_model()
         return self.model
 
+    def expand_model_from_text(self, model_txt):
+        '''
+        Expand a model using INDRA from natural language.
+        '''
+        pa = PysbAssembler()
+        tp = trips_api.process_text(model_txt)
+        self.add_statements(tp.statements)
+        pa.add_statements(self.statements)
+        self.model = pa.make_model()
+        return self.model
+    
     def find_family_members(self, family_name, family_id=None):
         '''
         Find specific members of a protein family. If only family_name is

@@ -59,8 +59,12 @@ class DTDA_Module(trips_module.TripsModule):
             elif subtask_str == 'ONT::FIND-TREATMENT':
                 reply_content = self.respond_find_treatment(subtask)
             else:
-                self.error_reply(msg, 'unknown request task ' + task)
+                self.error_reply(msg, 'unknown request subtask ' + subtask_str)
                 return
+        else:
+            self.error_reply(msg, 'unknown request task ' + task_str)
+            return
+        
 
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, reply_content))

@@ -4,7 +4,7 @@ from threading import Thread
 from KQML.kqml_dispatcher import KQMLDispatcher
 
 # Declare java classes for convenience
-java_osw = autoclass('java.io.OutputStreamWriter')
+java_ostream = autoclass('java.io.OutputStream')
 java_pw = autoclass('java.io.PrintWriter')
 java_sys = autoclass('java.lang.System')
 java_socket = autoclass('java.net.Socket')
@@ -52,7 +52,7 @@ class TripsModule(Thread):
                 self.exit(-1)
         else:
             print 'TripsModule: using stdio connection'
-            self.out = java_osw(java_sys.out)
+            self.out = java_pw(cast(java_ostream, java_sys.out))
             java_in = getattr(java_sys, 'in')
             self.inp = KQMLReader(java_in)
 
@@ -63,7 +63,6 @@ class TripsModule(Thread):
     
     def is_connected(self):
         if self.socket is not None:
-            # FIXME: proper method call here
             return self.socket.isConnected()
         else:
             return False

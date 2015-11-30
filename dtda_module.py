@@ -58,6 +58,9 @@ class DTDA_Module(trips_module.TripsModule):
                 reply_content = self.respond_find_disease_targets(content_list)
             elif subtask_str == 'ONT::FIND-TREATMENT':
                 reply_content = self.respond_find_treatment(subtask)
+                if reply_content is None:
+                    self.respond_dont_know(msg, '(ONT::A X1 :instance-of ONT::DRUG)')
+                    return
             else:
                 self.error_reply(msg, 'unknown request subtask ' + subtask_str)
                 return
@@ -65,11 +68,17 @@ class DTDA_Module(trips_module.TripsModule):
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
         
-
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
         self.reply(msg, reply_msg)
-    
+   
+    def respond_dont_know(self, msg, content_string):
+        resp = '(ONT::TELL :content (ONT::DONT-KNOW :content %s))' % content_string
+        resp_list = KQMLList.fromString(resp)
+        reply_msg = KQMLPerformative('reply')
+        reply_msg.setParameter(':content', cast(KQMLObject, resp_list))
+        self.reply(msg, reply_msg)
+
     def respond_is_drug_target(self, content_list):
         '''
         Response content to is-drug-target request
@@ -113,24 +122,33 @@ class DTDA_Module(trips_module.TripsModule):
         disease_str = content_list.getKeywordArg(':disease')
         if disease_str is None:
             print 'no disease set'
-            reply_content.add('')
-            return reply_content
+            return None
         disease_str = disease_str.toString()
         disease_terms = disease_str[1:-1].split(' ')
         disease = disease_terms[0]
         disease_type = disease_terms[1]
-        if disease.upper() != 'W::CANCER':
+        disease_str = disease[3:].lower()
+
+        if disease_str not in ['cancer', 'tumor'] and\
+            disease_str.find('carcinoma') == -1 and\
+            disease_str.find('cancer') == -1:
             print 'problem with disease name'
-            reply_content.add('')
-            return reply_content
-        disease_type_filter = disease_type[3:].lower()
-        
+            return None
+        if disease_type == '-':
+            disease_type_filter = disease_str
+            disease_type_filter = disease_type_filter.replace('cancer', '')
+            disease_type_filter = disease_type_filter.replace('-', '')
+        else:
+            disease_type_filter = disease_type[3:].lower()
+       
+        print disease_type_filter
+
         # First, look for possible disease targets
         mutation_stats = self.dtda.get_mutation_statistics(disease_type_filter, 'missense')
         if mutation_stats is None:
             print 'no mutation stats'
-            reply_content.add('')
-            return reply_content
+            return None
+
         # Return the top mutation as a possible target
         mutations_sorted = sorted(mutation_stats.items(), 
             key=operator.itemgetter(1), reverse=True)
@@ -147,8 +165,7 @@ class DTDA_Module(trips_module.TripsModule):
         drugs = self.dtda.find_target_drug(mut_protein)
         #import ipdb; ipdb.set_trace()
         if not drugs:
-            drug_response = KQMLList.fromString('(ONT::TELL :content (ONT::DONT-KNOW ' +\
-                ':content (ONT::A X1 :instance-of ONT::DRUG)))')
+            drug_response = KQMLList.fromString('(ONT::TELL :content (ONT::DONT-KNOW :content (ONT::A X1 :instance-of ONT::DRUG)))')
         else:
             drug_response = KQMLList.fromString('(ONT::TELL :content ())')
         reply_content.add(KQMLList(mut_response))

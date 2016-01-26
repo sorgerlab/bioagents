@@ -8,7 +8,7 @@ import os
 import rdflib
 import sqlite3
 import numpy
-from bioagents import cbio_client
+import cbio_client
 import warnings
 import indra.bel.processor
 

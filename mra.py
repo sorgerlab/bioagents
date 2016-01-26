@@ -8,7 +8,7 @@ from indra.statements import Agent, Complex
 from indra.biopax import biopax_api
 from indra.trips import trips_api
 from indra.databases import uniprot_client
-from bioagents import nextprot_client
+import nextprot_client
 import copy
 
 class MRA:

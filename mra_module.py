@@ -6,7 +6,7 @@ KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
-from bioagents.mra import MRA
+from mra import MRA
 
 class MRA_Module(trips_module.TripsModule):
     def __init__(self, argv):

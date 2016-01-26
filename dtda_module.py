@@ -8,7 +8,7 @@ KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
-from bioagents.dtda import DTDA
+from dtda import DTDA
 
 class DTDA_Module(trips_module.TripsModule):
     '''
@@ -131,7 +131,8 @@ class DTDA_Module(trips_module.TripsModule):
 
         if disease_str not in ['cancer', 'tumor'] and\
             disease_str.find('carcinoma') == -1 and\
-            disease_str.find('cancer') == -1:
+            disease_str.find('cancer') == -1 and\
+            disease_str.find('melanoma') == -1:
             print 'problem with disease name'
             return None
         if disease_type == '-':
@@ -167,7 +168,8 @@ class DTDA_Module(trips_module.TripsModule):
         if not drugs:
             drug_response = KQMLList.fromString('(ONT::TELL :content (ONT::DONT-KNOW :content (ONT::A X1 :instance-of ONT::DRUG)))')
         else:
-            drug_response = KQMLList.fromString('(ONT::TELL :content ())')
+            drugs_str = ', '.join(drugs)
+            drug_response = KQMLList.fromString('(ONT::TELL :content (%s))' % drugs_str)
         reply_content.add(KQMLList(mut_response))
         reply_content.add(KQMLList(drug_response))
 

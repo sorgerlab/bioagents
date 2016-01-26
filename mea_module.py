@@ -6,7 +6,7 @@ KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
-from bioagents.mea import MEA
+from mea import MEA
 
 class MEA_Module(trips_module.TripsModule):
     def __init__(self, argv):

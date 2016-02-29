@@ -1,7 +1,8 @@
 import sys
 import argparse
 import operator
-import sched, time
+import threading
+import time
 
 from jnius import autoclass, cast
 from TripsModule import trips_module
@@ -16,25 +17,49 @@ class Test_State():
         self.request = request
         self.expected = expected
         self.actual = None
-    def get_expected():
-        return expected
 
-    def get_actual():
-        return actual
+    def get_request(self):
+        return self.request
 
-    def set_actual(self,actual):
-        self.actual = actual
+    def get_expected(self):
+        return self.expected
+
+    def set_actual(self,a):
+        setattr(self, 'actual', a)
+        print 'post:set_actual {0}'.format(self.get_actual())
+
 
     def get_actual(self):
         return self.actual
+
+    def get_content(self):
+        reply_content = KQMLList()        
+        if self.get_actual():
+            actual_string = self.get_actual().toString()
+            expected_string = self.get_expected().toString()
+            print 'get_content:actual_string {0}'.format(actual_string)
+            print 'get_content:expected_string {0}'.format(expected_string)
+            if expected_string in actual_string:
+                return None
+            else:
+                reply_content.add(":request")
+                reply_content.add(self.get_request())
+                reply_content.add(":expected")
+                reply_content.add(self.get_expected())                
+                reply_content.add(":actual")
+                reply_content.add(self.get_actual())
+        else:
+            reply_content.add(":request")
+            reply_content.add(self.get_request())
+            reply_content.add(":noresponse")
+        return reply_content
 
 class Unit_Test():
     '''
     This state of a collection of unit tests being
     rurn.
     '''
-    def __init__(self,msg):
-        self.msg = msg
+    def __init__(self):
         self.tests = []
         self.state = []
     '''
@@ -54,12 +79,29 @@ class Unit_Test():
     def next(self):
         return self.state.pop(0)
 
+
+    def reply(self,):
+        reply_msg = KQMLPerformative('reply')
+        reply_content = KQMLList()
+        for t in self.tests:
+            print 'replay {0}'.format(t)
+            t_content = t.get_content()
+            if t_content:
+                reply_content.add(t_content.toString())
+        reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
+        return reply_msg
+
 class Handler():
     def __init__(self,test_state):
         self.test_state = test_state
         
     def receive(self,actual):
+        print 'receive {0}'.format(self.test_state) 
         self.test_state.set_actual(actual)
+
+def send_reply(self,msg,unit_test,):
+    time.sleep(10)
+    self.reply(msg, unit_test.reply())
 
 class Test_Module(trips_module.TripsModule):
     '''
@@ -97,15 +139,15 @@ class Test_Module(trips_module.TripsModule):
         content_list = cast(KQMLList, content)
         task_str = content_list.get(0).toString().upper()
 
-        self.unit_test = Unit_Test(msg)
+        unit_test = Unit_Test()
         if task_str == 'ONT::PERFORM':
             for i in range(1,content_list.size()):
                 test_wrapper = cast(KQMLList, content_list.get(i))
                 if test_wrapper.get(0).toString().upper() == 'ONT::TEST':
                     request = cast(KQMLList, test_wrapper.get(1))
                     expected = test_wrapper.get(2)
-                    self.unit_test.save_test(request,expected)
-            self.runtest_time()
+                    unit_test.save_test(request,expected)
+            self.runtest_time(msg,unit_test)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return None
@@ -114,24 +156,23 @@ class Test_Module(trips_module.TripsModule):
         '''
         Handle a "reply" message is received.
         '''
-        print msg
-        print content
+        print 'reply:msg:{0}'.format(msg)
+        print 'reply:content:{0}'.format(content)
         return None
 
-    def runtest_time(self):
-        while self.unit_test.current():
-            test_state =  self.unit_test.current()
+    def runtest_time(self, msg, unit_test):
+        while unit_test.current():
+            test_state =  unit_test.current()
+            request = test_state.get_request()
             request.add(':sender')
             request.add('Test')
-            self.send_with_continuation(request, Handler(self.unit_test))
-            self.expected = expected
-            print request.toString()
-            time.sleep(5)
-            self.unit_test.next()
-        print "done runtest_time"
-        
-        reply_msg = KQMLPerformative('reply')
-        self.reply(self.unit_test.get_msg(), reply_msg)
+            print 'runtest_time:test_state:{0}'.format(test_state)
+            self.send_with_continuation(request, Handler(test_state))
+            print 'runtest_time:request:{0}'.format(request.toString())
+            time.sleep(10)
+            unit_test.next()
+        t = threading.Thread(target=send_reply, args=(self,msg,unit_test,))
+        t.start()
 
     def respond_test(self):
         '''

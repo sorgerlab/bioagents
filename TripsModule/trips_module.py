@@ -291,7 +291,7 @@ class TripsModule(Thread):
         self.error_reply(msg, 'unexpected performative: ' + msg)
 
     def handle_exception(self, ex):
-        sys.stderr.write(self.name + ': ' + ex)
+        sys.stderr.write(self.name + ': ' + str(ex))
 
     def send(self, msg):
         try:

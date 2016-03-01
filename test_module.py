@@ -84,7 +84,7 @@ class Unit_Test():
         reply_msg = KQMLPerformative('reply')
         reply_content = KQMLList()
         for t in self.tests:
-            print 'replay {0}'.format(t)
+            print 'reply {0}'.format(t)
             t_content = t.get_content()
             if t_content:
                 reply_content.add(t_content.toString())
@@ -92,12 +92,25 @@ class Unit_Test():
         return reply_msg
 
 class Handler():
-    def __init__(self,test_state):
-        self.test_state = test_state
-        
+    def __init__(self,reciever,unit_test):
+        self.reciever = reciever
+        self.unit_test = unit_test
+
+    def start(self):
+        if self.unit_test.current():
+            self.test_state =  self.unit_test.current()
+            request = self.test_state.get_request()
+            request.add(':sender')
+            request.add('Test')
+            print 'runtest_time:test_state:{0}'.format(self.test_state)
+            self.reciever.send_with_continuation(request,self)
+            print 'runtest_time:request:{0}'.format(request.toString())
+            self.unit_test.next()
+
     def receive(self,actual):
         print 'receive {0}'.format(self.test_state) 
         self.test_state.set_actual(actual)
+        self.start()
 
 def send_reply(self,msg,unit_test,):
     time.sleep(10)
@@ -161,16 +174,8 @@ class Test_Module(trips_module.TripsModule):
         return None
 
     def runtest_time(self, msg, unit_test):
-        while unit_test.current():
-            test_state =  unit_test.current()
-            request = test_state.get_request()
-            request.add(':sender')
-            request.add('Test')
-            print 'runtest_time:test_state:{0}'.format(test_state)
-            self.send_with_continuation(request, Handler(test_state))
-            print 'runtest_time:request:{0}'.format(request.toString())
-            time.sleep(10)
-            unit_test.next()
+        handler = Handler(self,unit_test)
+        handler.start()
         t = threading.Thread(target=send_reply, args=(self,msg,unit_test,))
         t.start()
 

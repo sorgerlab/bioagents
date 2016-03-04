@@ -19,9 +19,8 @@ class DTDA_Module(trips_module.TripsModule):
     def __init__(self, argv):
         # Call the constructor of TripsModule
         super(DTDA_Module, self).__init__(argv)
-        self.tasks = {'ONT::PERFORM': ['ONT::IS-DRUG-TARGET', 
-                    'ONT::FIND-TARGET-DRUG', 'ONT::FIND-DISEASE-TARGETS', 
-                    'ONT::FIND-TREATMENT']}
+        self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG', 
+                      'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
 
     def init(self):
         '''
@@ -29,11 +28,9 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         super(DTDA_Module, self).init()
         # Send subscribe messages
-        for task, subtasks in self.tasks.iteritems():
-            for subtask in subtasks:
-                msg_txt = '(subscribe :content (request &key :content ' +\
-                    '(%s &key :content (%s . *))))' % (task, subtask)
-                self.send(KQMLPerformative.fromString(msg_txt))
+        for task in self.tasks:
+            msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
+            self.send(KQMLPerformative.fromString(msg_txt))
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
         # Send ready message
@@ -47,22 +44,16 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         content_list = cast(KQMLList, content)
         task_str = content_list.get(0).toString().upper()
-        if task_str == 'ONT::PERFORM':
-            subtask = cast(KQMLList,content_list.getKeywordArg(':content'))
-            subtask_str = subtask.get(0).toString().upper()
-            if subtask_str == 'ONT::IS-DRUG-TARGET':
-                reply_content = self.respond_is_drug_target(content_list)
-            elif subtask_str == 'ONT::FIND-TARGET-DRUG':
-                reply_content = self.respond_find_target_drug(content_list)
-            elif subtask_str == 'ONT::FIND-DISEASE-TARGETS':
-                reply_content = self.respond_find_disease_targets(content_list)
-            elif subtask_str == 'ONT::FIND-TREATMENT':
-                reply_content = self.respond_find_treatment(subtask)
-                if reply_content is None:
-                    self.respond_dont_know(msg, '(ONT::A X1 :instance-of ONT::DRUG)')
-                    return
-            else:
-                self.error_reply(msg, 'unknown request subtask ' + subtask_str)
+        if task_str == 'IS-DRUG-TARGET':
+            reply_content = self.respond_is_drug_target(content_list)
+        elif task_str == 'FIND-TARGET-DRUG':
+            reply_content = self.respond_find_target_drug(content_list)
+        elif task_str == 'FIND-DISEASE-TARGETS':
+            reply_content = self.respond_find_disease_targets(content_list)
+        elif task_str == 'FIND-TREATMENT':
+            reply_content = self.respond_find_treatment(content_list)
+            if reply_content is None:
+                self.respond_dont_know(msg, '(ONT::A X1 :instance-of ONT::DRUG)')
                 return
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
@@ -84,12 +75,18 @@ class DTDA_Module(trips_module.TripsModule):
         Response content to is-drug-target request
         '''
         # TODO: get parameters from content
-        is_target = self.dtda.is_nominal_drug_target('Vemurafenib', 'BRAF')
+        drug_arg = cast(KQMLList, content_list.getKeywordArg(':drug'))
+        drug = drug_arg.get(0).toString()
+        target_arg = cast(KQMLList, content_list.getKeywordArg(':target'))
+        target = target_arg.get(0).toString()
+        is_target = self.dtda.is_nominal_drug_target(drug, target)
         reply_content = KQMLList()
+        status = 'SUCCESS'
         if is_target:
-            msg_str = 'TRUE'
+            is_target_str = 'TRUE'
         else:
-            msg_str = 'FALSE'
+            is_target_str = 'FALSE'
+        msg_str = 'ONT::TELL :status %s :is-target %s' % (status, is_target_str)
         reply_content.add(msg_str)
         return reply_content
     

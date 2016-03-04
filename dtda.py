@@ -37,7 +37,7 @@ class DTDA:
                            'WHERE synonyms LIKE "%%%s%%" '
                            'OR name LIKE "%%%s%%"' % (drug_name, drug_name)).fetchall()
         for r in res:
-            if r[0] == target_name:
+            if r[0].upper() == target_name.upper():
                 return True
         return False
 

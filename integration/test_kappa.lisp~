@@ -1,0 +1,33 @@
+(register :name maasha)
+(request
+ :content (ONT::PERFORM
+	   (ONT::TEST
+	    (request :content (ONT::PERFORM :content (ONT::VERSION)) :receiver Kappa)
+	    (ONT::VERSION "v1")
+	   )
+
+	   (ONT::TEST
+	    (request :content (ONT::PERFORM :content (ONT::PARSE (ONT::CODE ""))) :receiver Kappa)
+	    (ONT::KAPPA (ONT::OK))
+	   )
+
+	   (ONT::TEST
+	    (request :content (ONT::PERFORM :content (ONT::PARSE "%var: 'one' 1")) :receiver Kappa)
+	    (ONT::KAPPA (ONT::OK))
+	   )
+
+	   (ONT::TEST
+	    (request :content (ONT::PERFORM :content (ONT::PARSE "A(x!1),B(x!1) -> A(x),B(x) @ 0.01")) :receiver Kappa)
+	    (ONT::ERRORS ("Error at line 1, characters 0-1: : \"A\" is not a declared agent."))
+	   )
+
+	   (ONT::TEST
+	    (request :content (ONT::PERFORM :content (ONT::PARSE "A(x)")) :receiver Kappa)
+	    (ONT::ERRORS ("Error at line 1, characters 4-4: : Syntax error"))
+	   )
+
+	   )
+ :receiver Test
+ :sender maasha
+)
+

@@ -5,7 +5,7 @@ import threading
 import time
 
 from jnius import autoclass, cast
-from TripsModule import trips_module
+from TripsModule.trips_module import TripsModule
 
 # Declare KQML java classes
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
@@ -116,7 +116,7 @@ def send_reply(self,msg,unit_test,):
     time.sleep(10)
     self.reply(msg, unit_test.reply())
 
-class Test_Module(trips_module.TripsModule):
+class Test_Module(TripsModule):
     '''
     The Test module is a TRIPS module built to run unit test. It will
     ts role is to receive and decode messages and send responses from

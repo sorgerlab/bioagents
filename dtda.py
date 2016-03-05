@@ -17,14 +17,23 @@ class DTDA:
         data_dir = os.path.dirname(os.path.realpath(__file__)) + '/data/'
         # Build an initial set of substitution statements
         bel_corpus = data_dir + 'large_corpus_direct_subs.rdf'
-        g = rdflib.Graph()
-        g.parse(bel_corpus, format='nt')
-        bp = indra.bel.processor.BelProcessor(g)
-        bp.get_activating_subs()
-        self.sub_statements = bp.statements
+        if os.path.isfile(bel_corpus):
+            g = rdflib.Graph()
+            g.parse(bel_corpus, format='nt')
+            bp = indra.bel.processor.BelProcessor(g)
+            bp.get_activating_subs()
+            self.sub_statements = bp.statements
+        else:
+            self.sub_statements = []
+            print 'DTDA could not load mutation effect data.'
         # Load a database of drug targets
-        self.drug_db = sqlite3.connect(data_dir + 'drug_targets.db', 
-            check_same_thread=False)
+        drug_db_file = data_dir + 'drug_targets.db'
+        if os.path.isfile(drug_db_file):
+            self.drug_db = sqlite3.connect(drug_db_file, 
+                                           check_same_thread=False)
+        else:
+            print 'DTDA could not load drug-target database.'
+            self.drug_db = None
    
     def __del__(self):
         self.drug_db.close()
@@ -33,21 +42,27 @@ class DTDA:
         '''
         Return True if the drug targets the target, and False if not
         '''
-        res = self.drug_db.execute('SELECT nominal_target FROM agent '
-                           'WHERE synonyms LIKE "%%%s%%" '
-                           'OR name LIKE "%%%s%%"' % (drug_name, drug_name)).fetchall()
-        for r in res:
-            if r[0].upper() == target_name.upper():
-                return True
+        if self.drug_db is not None:
+            res = self.drug_db.execute('SELECT nominal_target FROM agent '
+                                       'WHERE synonyms LIKE "%%%s%%" '
+                                       'OR name LIKE "%%%s%%"' %\
+                                       (drug_name, drug_name)).fetchall()
+            for r in res:
+                if r[0].upper() == target_name.upper():
+                    return True
         return False
 
     def find_target_drug(self, target_name):
         '''
         Find all the drugs that nominally target the target.
         '''
-        res = self.drug_db.execute('SELECT name, synonyms FROM agent '
-                'WHERE nominal_target LIKE "%%%s%%" ' % target_name).fetchall()
-        drug_names = [r[0] for r in res]
+        if self.drug_db is not None:
+            res = self.drug_db.execute('SELECT name, synonyms FROM agent '
+                                       'WHERE nominal_target LIKE "%%%s%%" ' %\
+                                       target_name).fetchall()
+            drug_names = [r[0] for r in res]
+        else:
+            drug_names = []
         return drug_names
 
     def find_mutation_effect(self, protein_name, amino_acid_change):

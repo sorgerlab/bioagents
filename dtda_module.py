@@ -74,7 +74,6 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         Response content to is-drug-target request
         '''
-        # TODO: get parameters from content
         drug_arg = cast(KQMLList, content_list.getKeywordArg(':drug'))
         drug = drug_arg.get(0).toString()
         target_arg = cast(KQMLList, content_list.getKeywordArg(':target'))
@@ -86,7 +85,8 @@ class DTDA_Module(trips_module.TripsModule):
             is_target_str = 'TRUE'
         else:
             is_target_str = 'FALSE'
-        msg_str = 'ONT::TELL :status %s :is-target %s' % (status, is_target_str)
+        msg_str = 'ONT::TELL :status %s :is-target %s' %\
+                  (status, is_target_str)
         reply_content.add(msg_str)
         return reply_content
     

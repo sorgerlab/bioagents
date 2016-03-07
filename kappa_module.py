@@ -79,12 +79,12 @@ def render_status(status):
         event.add(render_value(status['event']))
         plot.add(event)
     # trips is not happy with this not sure why
-    if 'log_messages':
-        log_messages = KQMLList()
-        log_messages.add(':log_messages')
-        for message in status['log_messages']:
-            log_messages.add("'"+render_value(message)+"'")
-        plot.add(log_messages)        
+    # if 'log_messages':
+    #     log_messages = KQMLList()
+    #     log_messages.add(':log_messages')
+    #     for message in status['log_messages']:
+    #         log_messages.add("'"+render_value(message)+"'")
+    #     plot.add(log_messages)        
     return reply_content
 
 

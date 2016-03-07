@@ -291,7 +291,7 @@ class TripsModule(Thread):
         self.error_reply(msg, 'unexpected performative: ' + msg)
 
     def handle_exception(self, ex):
-        sys.stderr.write(self.name + ': ' + ex)
+        sys.stderr.write(self.name + ': ' + str(ex))
 
     def send(self, msg):
         try:
@@ -306,10 +306,11 @@ class TripsModule(Thread):
         reply_id_base = 'IO-'
         if self.name is not None:
             reply_id_base = self.name + '-'
-        reply_id = KQMLToken(reply_id_base + self.reply_id_counter)
+        reply_id = reply_id_base + str(self.reply_id_counter)
         self.reply_id_counter += 1
-        msg.set_parameter(':reply-with', reply_id)
-        self.dispatcher.add_reply_continuation('%d' % reply_id, cont)
+        msg.add(':reply-with')
+        msg.add(reply_id)
+        self.dispatcher.add_reply_continuation('%s' % reply_id, cont)
         self.send(msg)
 
     def reply(self, msg, reply_msg):

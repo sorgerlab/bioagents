@@ -17,7 +17,7 @@
 	    (request :content (ONT::PERFORM :content (ONT::PARSE (ONT::CODE "A(x)"))) :receiver Kappa)
 	    (ONT::ERRORS ("Error at line 1, characters 4-4: : Syntax error")))
 	   (ONT::TEST
-	    (request :content (ONT::PERFORM :content (ONT::START (ONT::CODE ""))) :receiver Kappa :send maasha)
+	    (request :content (ONT::PERFORM :content (ONT::START (ONT::CODE ""))) :receiver Kappa)
 	    (ONT::ERRORS ("Missing number of plot points")))
 	   (ONT::TEST
 	    (request :content (ONT::PERFORM :content (ONT::START (ONT::CODE "

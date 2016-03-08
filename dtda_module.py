@@ -1,5 +1,4 @@
 import sys
-import operator
 from jnius import autoclass, cast
 from TripsModule import trips_module
 
@@ -8,7 +7,9 @@ KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
-from dtda import DTDA
+from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
+
+# TODO: standardize dash/underscore
 
 class DTDA_Module(trips_module.TripsModule):
     '''
@@ -78,14 +79,18 @@ class DTDA_Module(trips_module.TripsModule):
         drug = drug_arg.get(0).toString()
         target_arg = cast(KQMLList, content_list.getKeywordArg(':target'))
         target = target_arg.get(0).toString()
-        is_target = self.dtda.is_nominal_drug_target(drug, target)
         reply_content = KQMLList()
+        try:
+            is_target = self.dtda.is_nominal_drug_target(drug, target)
+        except DrugNotFoundException:
+            reply_content.add('FAILURE :reason DRUG_NOT_FOUND')
+            return reply_content
         status = 'SUCCESS'
         if is_target:
             is_target_str = 'TRUE'
         else:
             is_target_str = 'FALSE'
-        msg_str = 'ONT::TELL :status %s :is-target %s' %\
+        msg_str = '%s :is-target %s' %\
                   (status, is_target_str)
         reply_content.add(msg_str)
         return reply_content
@@ -103,61 +108,36 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         Response content to find-disease-targets request
         '''
-        # TODO: implement
-        self.dtda.get_mutation_statistics('pancreatic', 'missense')
+        disease_str = content_list.getKeywordArg(':disease')
         reply_content = KQMLList()
-        reply_content.add('')
+        try:
+            disease_type_filter = self.get_disease_filter(disease_str)
+        except DiseaseNotFoundException:
+            reply_content.add('FAILURE :reason DISEASE_NOT_FOUND')
+            return reply_content  
+        print disease_type_filter
+
+        mut_protein, mut_percent = self.dtda.get_top_mutation(disease_type_filter)
+
+        # TODO: get functional effect from actual mutations
+        # TODO: add list of actual mutations to response
+        # TODO: get fraction not percentage from DTDA
+        reply_content =\
+            KQMLList.fromString(
+                '(SUCCESS ' +\
+                ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +\
+                ':prevalence %.2f ' % (mut_percent/100.0) +\
+                ':functional-effect ACTIVE)')
+
         return reply_content
 
     def respond_find_treatment(self, content_list):
         '''
         Response content to find-treatment request
         '''
-        reply_content = KQMLList()
         
         # Parse content
-        disease_str = content_list.getKeywordArg(':disease')
-        if disease_str is None:
-            print 'no disease set'
-            return None
-        disease_str = disease_str.toString()
-        disease_terms = disease_str[1:-1].split(' ')
-        disease = disease_terms[0]
-        disease_type = disease_terms[1]
-        disease_str = disease[3:].lower()
-
-        if disease_str not in ['cancer', 'tumor'] and\
-            disease_str.find('carcinoma') == -1 and\
-            disease_str.find('cancer') == -1 and\
-            disease_str.find('melanoma') == -1:
-            print 'problem with disease name'
-            return None
-        if disease_type == '-':
-            disease_type_filter = disease_str
-            disease_type_filter = disease_type_filter.replace('cancer', '')
-            disease_type_filter = disease_type_filter.replace('-', '')
-        else:
-            disease_type_filter = disease_type[3:].lower()
-       
-        print disease_type_filter
-
-        # First, look for possible disease targets
-        mutation_stats = self.dtda.get_mutation_statistics(disease_type_filter, 'missense')
-        if mutation_stats is None:
-            print 'no mutation stats'
-            return None
-
-        # Return the top mutation as a possible target
-        mutations_sorted = sorted(mutation_stats.items(), 
-            key=operator.itemgetter(1), reverse=True)
-        top_mutation = mutations_sorted[0]
-        mut_protein = top_mutation[0]
-        mut_percent = int(top_mutation[1][0]*100.0)
-        
-        mut_response = KQMLList.fromString('(ONT::TELL :content ' +\
-            '(ONT::PROPORTION :refset (ONT::CANCER-PATIENT) ' +\
-            ':quan (ONT::PERCENT %d) ' % mut_percent +\
-            ':content (ONT::MUTATION :affected ONT::%s)))' % mut_protein)
+        treat_resp = self.respond_find_disease_targets(content_list)
 
         # Try to find a drug targeting KRAS
         drugs = self.dtda.find_target_drug(mut_protein)
@@ -171,6 +151,24 @@ class DTDA_Module(trips_module.TripsModule):
         reply_content.add(KQMLList(drug_response))
 
         return reply_content
+
+    @staticmethod
+    def get_disease_filter(disease_str):
+        if disease_str is None:
+            print 'no disease set'
+            raise DiseaseNotFoundException
+        disease_str = disease_str.toString()
+        disease_terms = disease_str[1:-1].split('-')
+        disease_str = disease_terms[1].lower()
+
+        if disease_str not in ['cancer', 'tumor'] and\
+            disease_str.find('carcinoma') == -1 and\
+            disease_str.find('cancer') == -1 and\
+            disease_str.find('melanoma') == -1:
+            print 'problem with disease name'
+            raise DiseaseNotFoundException
+        disease_type_filter = disease_terms[0].lower()
+        return disease_type_filter
 
 if __name__ == "__main__":
     dm = DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])

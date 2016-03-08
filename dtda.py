@@ -10,7 +10,16 @@ import sqlite3
 import numpy
 import cbio_client
 import warnings
+import operator
 import indra.bel.processor
+
+class DrugNotFoundException(Exception):
+    def __init__(self,*args,**kwargs):
+            Exception.__init__(self,*args,**kwargs)
+
+class DiseaseNotFoundException(Exception):
+    def __init__(self,*args,**kwargs):
+            Exception.__init__(self,*args,**kwargs)
 
 class DTDA:
     def __init__(self):
@@ -47,6 +56,8 @@ class DTDA:
                                        'WHERE synonyms LIKE "%%%s%%" '
                                        'OR name LIKE "%%%s%%"' %\
                                        (drug_name, drug_name)).fetchall()
+            if not res:
+                raise DrugNotFoundException
             for r in res:
                 if r[0].upper() == target_name.upper():
                     return True
@@ -88,8 +99,7 @@ class DTDA:
     def get_mutation_statistics(self, disease_name_filter, mutation_type):
         study_ids = cbio_client.get_cancer_studies(disease_name_filter)
         if not study_ids:
-            warnings.warn('No study found for "%s"' % disease_name_filter)
-            return None
+            raise DiseaseNotFoundException
         gene_list_str = self._get_gene_list_str()
         mutation_dict = {}
         num_case = 0
@@ -119,6 +129,23 @@ class DTDA:
             mutation_dict[k][1]['other'] /= effect_sum
 
         return mutation_dict
+        
+    def get_top_mutation(self, disease_name_filter):
+        # First, look for possible disease targets
+        mutation_stats = self.get_mutation_statistics(disease_name_filter, 'missense')
+        if mutation_stats is None:
+            print 'no mutation stats'
+            return None
+
+        # Return the top mutation as a possible target
+        mutations_sorted = sorted(mutation_stats.items(), 
+            key=operator.itemgetter(1), reverse=True)
+        top_mutation = mutations_sorted[0]
+        mut_protein = top_mutation[0]
+        mut_percent = int(top_mutation[1][0]*100.0)
+        # TODO: return mutated residues
+        # mut_residues =
+        return (mut_protein, mut_percent)
 
     def _get_gene_list_str(self):
         gene_list_str = \

@@ -12,6 +12,7 @@ import cbio_client
 import warnings
 import operator
 import indra.bel.processor
+import chebi_client
 
 class DrugNotFoundException(Exception):
     def __init__(self,*args,**kwargs):
@@ -53,8 +54,9 @@ class DTDA:
         '''
         if self.drug_db is not None:
             res = self.drug_db.execute('SELECT nominal_target FROM agent '
-                                       'WHERE synonyms LIKE "%%%s%%" '
-                                       'OR name LIKE "%%%s%%"' %\
+                                       'WHERE source_id LIKE "HMSL%%" '
+                                       'AND (synonyms LIKE "%%%s%%" '
+                                       'OR name LIKE "%%%s%%")' %\
                                        (drug_name, drug_name)).fetchall()
             if not res:
                 raise DrugNotFoundException
@@ -69,12 +71,17 @@ class DTDA:
         '''
         if self.drug_db is not None:
             res = self.drug_db.execute('SELECT name, synonyms FROM agent '
-                                       'WHERE nominal_target LIKE "%%%s%%" ' %\
+                                       'WHERE source_id LIKE "HMSL%%" '
+                                       'AND nominal_target LIKE "%%%s%%" ' %\
                                        target_name).fetchall()
             drug_names = [r[0] for r in res]
         else:
             drug_names = []
-        return drug_names
+        chebi_ids = []
+        for dn in drug_names:
+            chebi_id = chebi_client.get_id(dn)
+            chebi_ids.append(chebi_id)
+        return drug_names, chebi_ids
 
     def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)

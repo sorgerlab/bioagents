@@ -103,11 +103,15 @@ class DTDA_Module(trips_module.TripsModule):
         target = content_list.getKeywordArg(':target')
         target_str = target.toString()[1:-1]
         print target_str
-        drug_names = self.dtda.find_target_drugs(target_str)
-        drug_list_str = ' '.join(['(:name %s :chebi_id %s)' % (n, 999)
-                         for n in drug_names])
+        drug_names, chebi_ids = self.dtda.find_target_drugs(target_str)
+        drug_list_str = ''
+        for dn, ci in zip(drug_names, chebi_ids):
+            if ci is None:
+                drug_list_str += '(:name %s) ' % dn.encode('ascii', 'ignore')
+            else:
+                drug_list_str += '(:name %s :chebi_id %s) ' % (dn, ci)
         reply_content = KQMLList.fromString(
-            '(SUCCESS :drugs (%s))' % drug_list_str)
+            '(SUCCESS :drugs (' + drug_list_str + '))')
         return reply_content
     
     def respond_find_disease_targets(self, content_list):

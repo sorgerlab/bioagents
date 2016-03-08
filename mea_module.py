@@ -11,7 +11,7 @@ from mea import MEA
 class MEA_Module(trips_module.TripsModule):
     def __init__(self, argv):
         super(MEA_Module, self).__init__(argv)
-        self.tasks = {'ONT::PERFORM': ['ONT::SIMULATE-MODEL']}
+        self.tasks = ['SIMULATE-MODEL']
 
     def init(self):
         '''
@@ -19,11 +19,9 @@ class MEA_Module(trips_module.TripsModule):
         '''
         super(MEA_Module, self).init()
         # Send subscribe messages
-        for task, subtasks in self.tasks.iteritems():
-            for subtask in subtasks:
-                msg_txt = '(subscribe :content (request &key :content ' +\
-                    '(%s &key :content (%s . *))))' % (task, subtask)
-                self.send(KQMLPerformative.fromString(msg_txt))
+        for task in self.tasks:
+            msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
+            self.send(KQMLPerformative.fromString(msg_txt))
         # Instantiate a singleton MEA agent
         self.mea = MEA()
         self.ready()
@@ -36,14 +34,8 @@ class MEA_Module(trips_module.TripsModule):
         '''
         content_list = cast(KQMLList, content)
         task_str = content_list.get(0).toString().upper()
-        if task_str == 'ONT::PERFORM':
-            subtask = cast(KQMLList,content_list.getKeywordArg(':content'))
-            subtask_str = subtask.get(0).toString().upper()
-            if subtask_str == 'ONT::SIMULATE-MODEL':
-                reply_content = self.respond_simulate_model(content_list)
-            else:
-                self.error_reply(msg, 'unknown request subtask ' + subtask_str)
-                return
+        if task_str == 'SIMULATE-MODEL':
+            reply_content = self.respond_simulate_model(content_list)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -56,11 +48,44 @@ class MEA_Module(trips_module.TripsModule):
         '''
         Response content to simulate-model request
         '''
-        # TODO: implement
+        model_str = content_list.getKeywordArg(':model')
+        if model_str is not None:
+            model_str = model_str.toString()
+            model = model_from_string(model_str[1:-1])
+        target_entity = content_list.getKeywordArg(':target_entity')
+        if target_entity is not None:
+            target_entity = target_entity.toString()
+        target_pattern = content_list.getKeywordArg(':target_pattern')
+        if target_pattern is not None:
+            target_pattern = target_pattern.toString()
+        condition_entity = content_list.getKeywordArg(':condition_entity')
+        if condition_entity is not None:
+            condition_entity = condition_entity.toString()
+        condition_type = content_list.getKeywordArg(':condition_type')
+        if condition_type is not None:
+            condition_type = condition_type.toString()
+
+        print condition_entity, condition_type, target_entity, target_pattern
+       
+        if condition_entity is None:
+            target_match = self.mea.simulate_model(model, target_entity,
+                                              target_pattern)
+        else:
+            target_match = self.mea.compare_conditions(model, target_entity,
+                                                  target_pattern,
+                                                  condition_entity,
+                                                  condition_type)
+
         reply_content = KQMLList()
-        reply_content.add('()')
+        reply_content.add('SUCCESS :content (:target_match %s)' % target_match)
         return reply_content
-    
+
+def model_from_string(model_str):
+    with open('tmp_model.py', 'wt') as fh:
+        fh.write(model_str)
+    from tmp_model import model
+    return model
+
 if __name__ == "__main__":
     MEA_Module(['-name', 'MEA'] + sys.argv[1:]).run()
 

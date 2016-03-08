@@ -12,16 +12,16 @@ class MEA:
     def __init__(self):
         pass
 
-    def get_monomer(self, model, agent):
+    def get_monomer(self, model, entity):
         '''
         Return the monomer from a model corresponding to a given
         agent.
         '''
         try:
-            monomer = model.monomers[agent.name]
+            monomer = model.monomers[entity]
         except KeyError:
             warnings.warn('Monomer of interest %s could not be '
-                          'found in model.' % agent.name)
+                          'found in model.' % entity)
             monomer = None
         return monomer
     
@@ -51,23 +51,26 @@ class MEA:
         a_new = numpy.dot(dt, 0.5*(y_new[1:] + y_new[:-1]))
         return a_new / a_ref
 
-    def compare_add(self, model, agent_add, agent_target):
+    def compare_conditions(self, model, target_entity, target_pattern,
+                    condition_entity, condition_pattern):
         '''
         Compare model simulation target with or without adding a given agent.
         '''
         # Get the monomer whose addition is of interest
-        monomer = self.get_monomer(model, agent_add)
+        monomer = self.get_monomer(model, condition_entity)
         # Get the name of the initial conditions for the monomer
         # TODO: how do we know that the name is always constructed as below?
-        init_cond_name = agent_add.name + '_0'
+        init_cond_name = condition_entity + '_0'
         init_orig = model.parameters[init_cond_name].value
         # Simulate without the monomer
         model.parameters[init_cond_name].value = 0
-        yobs_target_noadd = self.simulate_model(model, agent_target)
+        yobs_target_noadd =\
+            self.simulate_model(model, target_entity, target_pattern)
         # Simulate with the monomer
         # TODO: where does this value come from?
         model.parameters[init_cond_name].value = 100
-        yobs_target_add = self.simulate_model(model, agent_target)
+        yobs_target_add =\
+            self.simulate_model(model, target_entity, target_pattern)
         # Restore the original initial condition value
         model.parameters[init_cond_name].value = init_orig
         # TODO: this should be obtained from simulate_model
@@ -75,12 +78,12 @@ class MEA:
         auc_ratio = self.compare_auc(ts, yobs_target_noadd, yobs_target_add)
         return auc_ratio
         
-    def simulate_model(self, model, agent_target):
+    def simulate_model(self, model, target_entity, target_pattern):
         '''
         Simulate a model and return the observed dynamics of 
         a given target agent.
         '''
-        monomer = self.get_monomer(model, agent_target)
+        monomer = self.get_monomer(model, target_entity)
         obs_name = self.get_obs_name(model, monomer)
         obs_pattern = monomer(act='active')
         self.get_create_observable(model, obs_name, obs_pattern)

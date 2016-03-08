@@ -43,6 +43,7 @@ class TestModule(TripsModule):
         self.sent = FIFO()
         # TODO:make this an input argument
         self.test_file = 'integration/test.in'
+        self.msg_counter = 1
 
     def init(self):
         '''
@@ -54,34 +55,38 @@ class TestModule(TripsModule):
         self.run_tests(self.test_file)
         return None
 
+    def get_perf(self, msg_id, msg_txt):
+        perf  = KQMLPerformative.fromString(
+            '(request :reply-with IO-%d :content %s)' % (msg_id, msg_txt))
+        return perf
+
     def run_tests(self, test_file):
         fh = open(test_file, 'rt')
         messages = fh.readlines()
         send_msg = messages[0::2]
         expect_msg = messages[1::2]
-        msg_id = 1
         for sm, em in zip(send_msg, expect_msg):
-            msg_id_str = 'IO-%d' % msg_id
             # TODO: allow non-request messages?
-            perf  = KQMLPerformative.fromString(
-                '(request :reply-with %s :content %s)' % (msg_id_str, sm))
             self.sent.push(sm)
             self.expected.push(em)
-            self.send(perf)
-            msg_id += 1
+        sm = self.sent.pop()
+        self.send(self.get_perf(self.msg_counter, sm))
+        self.msg_counter += 1
 
     def receive_reply(self, msg, content):
         '''
         Handle a "reply" message is received.
         '''
-        sent = self.sent.pop().strip()
         expected_content = self.expected.pop().strip()
         actual_content = content.toString().strip()
-        print 'sent:     ', sent
         print 'expected: ', expected_content
         print 'actual:   ', actual_content
         print '---'
         assert(expected_content == actual_content)
+        if not self.sent.is_empty():
+            sm = self.sent.pop()
+            self.send(self.get_perf(self.msg_counter, sm))
+            self.msg_counter += 1
         if self.expected.is_empty():
             sys.exit(0)
 

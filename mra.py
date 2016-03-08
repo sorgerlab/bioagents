@@ -42,6 +42,17 @@ class MRA:
         self.model = pa.make_model()
         return self.model
 
+    def build_model_from_ekb(self, model_ekb):
+        '''
+        Build a model using DRUM extraction knowledge base.
+        '''
+        pa = PysbAssembler()
+        tp = trips_api.process_xml(model_ekb)
+        pa.add_statements(tp.statements)
+        self.add_statements(tp.statements)
+        self.model = pa.make_model()
+        return self.model
+
     def expand_model_from_text(self, model_txt):
         '''
         Expand a model using INDRA from natural language.
@@ -53,6 +64,17 @@ class MRA:
         self.model = pa.make_model()
         return self.model
     
+    def expand_model_from_ekb(self, model_ekb):
+        '''
+        Expand a model using DRUM extraction knowledge base
+        '''
+        pa = PysbAssembler()
+        tp = trips_api.process_xml(model_ekb)
+        self.add_statements(tp.statements)
+        pa.add_statements(self.statements)
+        self.model = pa.make_model()
+        return self.model
+
     def find_family_members(self, family_name, family_id=None):
         '''
         Find specific members of a protein family. If only family_name is

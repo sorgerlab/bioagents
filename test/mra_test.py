@@ -1,9 +1,22 @@
-import bioagents.mra as mra
+from bioagents import mra
 import indra.statements
+from indra.trips import trips_client
 
 def test_build_model_from_text():
     m = mra.MRA()
     model = m.build_model_from_text('MEK1 phosphorylates ERK2.')
+    assert(model is not None)
+    assert(m.model is not None)
+    assert(len(m.statements) == 1)
+    assert(isinstance(m.statements[0], indra.statements.Phosphorylation))
+    assert(m.statements[0].enz.name == 'MAP2K1')
+    assert(m.statements[0].sub.name == 'MAPK1')
+
+def test_build_model_from_ekb():
+    m = mra.MRA()
+    html = trips_client.send_query('MEK1 phosphorylates ERK2.')
+    ekb_xml = trips_client.get_xml(html)
+    model = m.build_model_from_ekb(ekb_xml)
     assert(model is not None)
     assert(m.model is not None)
     assert(len(m.statements) == 1)

@@ -63,7 +63,7 @@ class DTDA:
                     return True
         return False
 
-    def find_target_drug(self, target_name):
+    def find_target_drugs(self, target_name):
         '''
         Find all the drugs that nominally target the target.
         '''

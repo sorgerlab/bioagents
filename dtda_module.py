@@ -102,7 +102,6 @@ class DTDA_Module(trips_module.TripsModule):
         # TODO: implement
         target = content_list.getKeywordArg(':target')
         target_str = target.toString()[1:-1]
-        print target_str
         drug_names, chebi_ids = self.dtda.find_target_drugs(target_str)
         drug_list_str = ''
         for dn, ci in zip(drug_names, chebi_ids):
@@ -160,28 +159,23 @@ class DTDA_Module(trips_module.TripsModule):
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
-        reply_content =\
-            KQMLList.fromString(
+        reply_content.add(KQMLList.fromString(
                 '(SUCCESS ' +\
                 ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +\
                 ':prevalence %.2f ' % (mut_percent/100.0) +\
-                ':functional-effect ACTIVE)')
-        # Parse content
-        mut_protein, mut_percent = self.dtda.get_top_mutation(disease_type_filter)
+                ':functional-effect ACTIVE)'))
 
-        drug_resp = self.respond_find_target_drugs(content_list)
-
-        # Try to find a drug targeting KRAS
-        drugs = self.dtda.find_target_drug(mut_protein)
-        #import ipdb; ipdb.set_trace()
-        if not drugs:
-            drug_response = KQMLList.fromString('(SUCC :content (ONT::DONT-KNOW :content (ONT::A X1 :instance-of ONT::DRUG)))')
-        else:
-            drugs_str = ', '.join(drugs)
-            drug_response = KQMLList.fromString('(ONT::TELL :content (%s))' % drugs_str)
-        reply_content.add(KQMLList(mut_response))
-        reply_content.add(KQMLList(drug_response))
-
+        # Try to find a drug
+        drug_names, chebi_ids = self.dtda.find_target_drugs(mut_protein)
+        drug_list_str = ''
+        for dn, ci in zip(drug_names, chebi_ids):
+            if ci is None:
+                drug_list_str += '(:name %s) ' % dn.encode('ascii', 'ignore')
+            else:
+                drug_list_str += '(:name %s :chebi_id %s) ' % (dn, ci)
+        reply_content.add(KQMLList.fromString(
+            '(SUCCESS :drugs (' + drug_list_str + '))'))
+        
         return reply_content
 
     @staticmethod

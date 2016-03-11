@@ -1,0 +1,2 @@
+(BUILD-MODEL :description "<ekb>  <EVENT id="R4">    <type>ONT::ACTIVATE</type>    <arg1 id="PK01" role=":AGENT" />    <arg2 id="PK02" role=":AFFECTED" />  </EVENT>  <TERM id="PK01" dbid="UP:P01116">    <type>ONT::PROTEIN</type>    <name>KRAS</name>  </TERM>  <TERM id="PK02" dbid="UP:Q06891">    <type>ONT::PROTEIN</type>    <name>RAF</name>  </TERM></ekb>")
+(SUCCESS :model ())

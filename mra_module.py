@@ -1,6 +1,7 @@
 import sys
 from jnius import autoclass, cast
 from TripsModule import trips_module
+import pysb.export
 
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
@@ -50,11 +51,13 @@ class MRA_Module(trips_module.TripsModule):
         '''
         Response content to build-model request
         '''
-        # TODO: get parameters from content
-        model_txt = 'KRAS activates Raf and Raf activates Erk.'
-        model = mra.build_model_from_text(model_txt)
+        descr_arg = cast(KQMLList, content_list.getKeywordArg(':description'))
+        descr = descr_arg.get(0).toString()
+        model = mra.build_model_from_ekb(descr)
+        model_str = pysb.export.export(model, 'pysb_flat')
+        print model_str
         reply_content = KQMLList()
-        reply_content.add(model)
+        reply_content.add(model_str)
         return reply_content
     
     def respond_expand_model(self, content_list):

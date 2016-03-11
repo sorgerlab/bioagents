@@ -73,11 +73,31 @@ class MRA_Module(trips_module.TripsModule):
         '''
         Response content to expand-model request
         '''
-        # TODO: implement
-        model_txt = 'Vemurafenib inactivates Raf.'
-        model = mra.expand_model_from_text(model_txt)
-        reply_content = KQMLList()
-        reply_content.add(model)
+        descr_arg = cast(KQMLList, content_list.getKeywordArg(':description'))
+        descr = descr_arg.get(0).toString()
+        descr = self.decode_description(descr)
+        
+        model_id_arg = cast(KQMLList,
+                            content_list.getKeywordArg(':model-id'))
+        model_id_str = model_id_arg.toString()
+        try:
+            model_id = int(model_id_str)
+        except ValueError:
+            reply_content =\
+                KQMLList.fromString('(FAILURE :reason INVALID_MODEL_ID)')
+            return reply_content
+        if model_id < 1 or model_id > len(self.models):
+            reply_content =\
+                KQMLList.fromString('(FAILURE :reason INVALID_MODEL_ID)')
+            return reply_content
+        
+        model = self.mra.expand_model_from_ekb(descr)
+        self.models.append(model)
+        model_id = len(self.models)
+        model_enc = self.encode_model(model)
+        reply_content =\
+            KQMLList.fromString(
+            '(SUCCESS :model-id %s :model (%s))' % (model_id, model_enc))
         return reply_content
     
     @staticmethod

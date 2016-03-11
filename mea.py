@@ -89,11 +89,15 @@ class MEA:
         self.get_create_observable(model, obs_name, obs_pattern)
         # TODO: where does the maximal time point come from?
         ts = numpy.linspace(0, 100, 100)
-        try:
-            solver = Solver(model, ts)
-        except pysb.bng.GenerateNetworkError:
-            warnings.warn('Could not generate network')
-            return None
+        #try:
+        solver = Solver(model, ts)
+        #except:
+        #    print model.rules
+        #    print model.observables
+        #    print model.monomers
+        #    print model.initial_conditions
+        #    warnings.warn('Could not generate network')
+        #    return None
         solver.run()
         yobs_target = solver.yobs[obs_name]
         plt.ion()

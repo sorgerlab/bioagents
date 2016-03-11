@@ -1,4 +1,5 @@
 import sys
+import base64
 from jnius import autoclass, cast
 from TripsModule import trips_module
 
@@ -7,6 +8,10 @@ KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
 from mea import MEA
+
+class InvalidModelException(Exception):
+    def __init__(self,*args,**kwargs):
+            Exception.__init__(self,*args,**kwargs)
 
 class MEA_Module(trips_module.TripsModule):
     def __init__(self, argv):
@@ -51,13 +56,26 @@ class MEA_Module(trips_module.TripsModule):
         model_str = content_list.getKeywordArg(':model')
         if model_str is not None:
             model_str = model_str.toString()
-            model = model_from_string(model_str[1:-1])
+            try:
+                model = self.decode_model(model_str[1:-1])
+            except InvalidModelException:
+                reply_content =\
+                    KQMLList.fromString('(FAILURE :reason INVALID_MODEL)')
+                return reply_content
         target_entity = content_list.getKeywordArg(':target_entity')
         if target_entity is not None:
-            target_entity = target_entity.toString()
+            target_entity = target_entity.toString()[1:-1]
+        else:
+            reply_content =\
+                KQMLList.fromString('(FAILURE :reason MISSING_PARAMETER)')
+            return reply_content
         target_pattern = content_list.getKeywordArg(':target_pattern')
         if target_pattern is not None:
             target_pattern = target_pattern.toString()
+        else:
+            reply_content =\
+                KQMLList.fromString('(FAILURE :reason MISSING_PARAMETER)')
+            return reply_content
         condition_entity = content_list.getKeywordArg(':condition_entity')
         if condition_entity is not None:
             condition_entity = condition_entity.toString()
@@ -69,22 +87,32 @@ class MEA_Module(trips_module.TripsModule):
        
         if condition_entity is None:
             target_match = self.mea.simulate_model(model, target_entity,
-                                              target_pattern)
+                                                   target_pattern)
         else:
             target_match = self.mea.compare_conditions(model, target_entity,
-                                                  target_pattern,
-                                                  condition_entity,
-                                                  condition_type)
+                                                       target_pattern,
+                                                       condition_entity,
+                                                       condition_type)
 
         reply_content = KQMLList()
         reply_content.add('SUCCESS :content (:target_match %s)' % target_match)
         return reply_content
+    
+    @staticmethod
+    def decode_model(model_enc_str):
+        try:
+            model_str = base64.b64decode(model_enc_str)
+        except:
+            raise InvalidModelException 
+        model = MEA_Module.model_from_string(model_str)
+        return model
 
-def model_from_string(model_str):
-    with open('tmp_model.py', 'wt') as fh:
-        fh.write(model_str)
-    from tmp_model import model
-    return model
+    @staticmethod
+    def model_from_string(model_str):
+        with open('tmp_model.py', 'wt') as fh:
+            fh.write(model_str)
+        from tmp_model import model
+        return model
 
 if __name__ == "__main__":
     MEA_Module(['-name', 'MEA'] + sys.argv[1:]).run()

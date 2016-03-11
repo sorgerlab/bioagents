@@ -37,6 +37,8 @@ class MRA:
         '''
         pa = PysbAssembler()
         tp = trips_api.process_text(model_txt)
+        if tp is None:
+            return None
         pa.add_statements(tp.statements)
         self.add_statements(tp.statements)
         self.model = pa.make_model()
@@ -48,6 +50,8 @@ class MRA:
         '''
         pa = PysbAssembler()
         tp = trips_api.process_xml(model_ekb)
+        if tp is None:
+            return None
         pa.add_statements(tp.statements)
         self.add_statements(tp.statements)
         self.model = pa.make_model()

@@ -51,12 +51,14 @@ class MRA_Module(trips_module.TripsModule):
         '''
         Response content to build-model request
         '''
+        reply_content = KQMLList()
         descr_arg = cast(KQMLList, content_list.getKeywordArg(':description'))
         descr = descr_arg.get(0).toString()
-        model = mra.build_model_from_ekb(descr)
+        model = self.mra.build_model_from_ekb(descr)
+        if model is None:
+            reply_content.add('FAILURE :reason INVALID_DESCRIPTION')
+            return reply_content
         model_str = pysb.export.export(model, 'pysb_flat')
-        print model_str
-        reply_content = KQMLList()
         reply_content.add(model_str)
         return reply_content
     

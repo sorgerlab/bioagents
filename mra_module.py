@@ -11,7 +11,7 @@ from mra import MRA
 class MRA_Module(trips_module.TripsModule):
     def __init__(self, argv):
         super(MRA_Module, self).__init__(argv)
-        self.tasks = {'ONT::PERFORM': ['ONT::BUILD-MODEL', 'ONT::EXPAND-MODEL']}
+        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL']
 
     def init(self):
         '''
@@ -19,11 +19,9 @@ class MRA_Module(trips_module.TripsModule):
         '''
         super(MRA_Module, self).init()
         # Send subscribe messages
-        for task, subtasks in self.tasks.iteritems():
-            for subtask in subtasks:
-                msg_txt = '(subscribe :content (request &key :content ' +\
-                    '(%s &key :content (%s . *))))' % (task, subtask)
-                self.send(KQMLPerformative.fromString(msg_txt))
+        for task in self.tasks:
+            msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
+            self.send(KQMLPerformative.fromString(msg_txt))
         # Instantiate a singleton MRA agent
         self.mra = MRA()
         self.ready()
@@ -36,18 +34,12 @@ class MRA_Module(trips_module.TripsModule):
         '''
         content_list = cast(KQMLList, content)
         task_str = content_list.get(0).toString().upper()
-        if task_str == 'ONT::PERFORM':
-            subtask = cast(KQMLList,content_list.getKeywordArg(':content'))
-            subtask_str = subtask.get(0).toString().upper()
-            if subtask_str == 'ONT::BUILD-MODEL':
-                reply_content = self.respond_build_model(content_list)
-            elif subtask_str == 'ONT::EXPAND-MODEL':
-                reply_content = self.respond_expand_model(content_list)
-            else:
-                self.error_reply(msg, 'unknown request subtask ' + subtask_str)
-                return
+        if task_str == 'BUILD-MODEL':
+            reply_content = self.respond_build_model(content_list)
+        elif task_str == 'EXPAND-MODEL':
+            reply_content = self.respond_expand_model(content_list)
         else:
-            self.error_reply(msg, 'unknown request task ' + task_str)
+            self.error_reply(msg, 'unknown task ' + task_str)
             return
 
         reply_msg = KQMLPerformative('reply')

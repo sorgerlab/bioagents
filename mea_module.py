@@ -1,6 +1,7 @@
 import sys
 import base64
 from jnius import autoclass, cast
+from pysb import bng, Initial, Parameter
 from TripsModule import trips_module
 
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
@@ -48,7 +49,7 @@ class MEA_Module(trips_module.TripsModule):
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
         self.reply(msg, reply_msg)
-    
+
     def respond_simulate_model(self, content_list):
         '''
         Response content to simulate-model request
@@ -71,7 +72,7 @@ class MEA_Module(trips_module.TripsModule):
             return reply_content
         target_pattern = content_list.getKeywordArg(':target_pattern')
         if target_pattern is not None:
-            target_pattern = target_pattern.toString()
+            target_pattern = target_pattern.toString().lower()
         else:
             reply_content =\
                 KQMLList.fromString('(FAILURE :reason MISSING_PARAMETER)')
@@ -84,20 +85,30 @@ class MEA_Module(trips_module.TripsModule):
             condition_type = condition_type.toString()
 
         print condition_entity, condition_type, target_entity, target_pattern
-       
+
+        self.get_context(model)
+        print model.species
         if condition_entity is None:
-            target_match = self.mea.simulate_model(model, target_entity,
-                                                   target_pattern)
+            target_match = self.mea.check_pattern(model, target_entity,
+                                                  target_pattern)
         else:
             target_match = self.mea.compare_conditions(model, target_entity,
                                                        target_pattern,
                                                        condition_entity,
                                                        condition_type)
-
+        target_match_str = 'TRUE' if target_match else 'FALSE'
         reply_content = KQMLList()
-        reply_content.add('SUCCESS :content (:target_match %s)' % target_match)
+        reply_content.add('SUCCESS :content (:target_match %s)' % target_match_str)
         return reply_content
-    
+
+    @staticmethod
+    def get_context(model):
+        # TODO: Here we will have to query the context
+        kras = model.monomers['KRAS']
+        p = Parameter('kras_act_0', 100)
+        model.add_component(p)
+        model.initial(kras(act='active'), p)
+
     @staticmethod
     def decode_model(model_enc_str):
         try:

@@ -8,6 +8,15 @@ import matplotlib.pyplot as plt
 import pysb
 from pysb.integrate import Solver
 
+
+class InvalidTargetException(Exception):
+    def __init__(self,*args,**kwargs):
+            Exception.__init__(self,*args,**kwargs)
+
+class InvalidConditionException(Exception):
+    def __init__(self,*args,**kwargs):
+            Exception.__init__(self,*args,**kwargs)
+
 class MEA:
     def __init__(self):
         pass
@@ -24,17 +33,17 @@ class MEA:
                           'found in model.' % entity)
             monomer = None
         return monomer
-    
+
     def get_create_observable(self, model, obs_name, obs_pattern):
         '''
         Try to create an observable with the given name and pattern or 
         if it already exists in the model then return it.
         '''
         try:
-            obs = pysb.Observable(obs_name, obs_pattern)
+            obs = pysb.Observable(str(obs_name), obs_pattern)
             model.add_component(obs)
         except pysb.ComponentDuplicateNameError:
-            return model.observables[obs_name]
+            obs = model.observables[obs_name]
         return obs
 
     def get_obs_name(self, model, monomer):
@@ -56,44 +65,65 @@ class MEA:
         '''
         Compare model simulation target with or without adding a given agent.
         '''
-        # Get the monomer whose addition is of interest
-        monomer = self.get_monomer(model, condition_entity)
-        # Get the name of the initial conditions for the monomer
-        # TODO: how do we know that the name is always constructed as below?
-        init_cond_name = condition_entity + '_0'
-        init_orig = model.parameters[init_cond_name].value
-        # Simulate without the monomer
-        model.parameters[init_cond_name].value = 0
-        yobs_target_noadd =\
-            self.simulate_model(model, target_entity, target_pattern)
-        # Simulate with the monomer
-        # TODO: where does this value come from?
-        model.parameters[init_cond_name].value = 100
-        yobs_target_add =\
-            self.simulate_model(model, target_entity, target_pattern)
-        # Restore the original initial condition value
-        model.parameters[init_cond_name].value = init_orig
-        # TODO: this should be obtained from simulate_model
-        ts = numpy.linspace(0, 100, 100)
-        auc_ratio = self.compare_auc(ts, yobs_target_noadd, yobs_target_add)
-        return auc_ratio
-        
-    def simulate_model(self, model, target_entity, target_pattern):
+        if condition_pattern in ['add', 'remove']:
+            # Get the monomer whose addition is of interest
+            monomer = self.get_monomer(model, condition_entity)
+            # Get the name of the initial conditions for the monomer
+            # TODO: how do we know that the name is always constructed as below?
+            init_cond_name = condition_entity + '_0'
+            init_orig = model.parameters[init_cond_name].value
+            # Simulate without the monomer
+            model.parameters[init_cond_name].value = 0
+            yobs_target_noadd =\
+                self.simulate_model(model, target_entity)
+            # Simulate with the monomer
+            # TODO: where does this value come from?
+            model.parameters[init_cond_name].value = 100
+            yobs_target_add =\
+                self.simulate_model(model, target_entity)
+            # Restore the original initial condition value
+            model.parameters[init_cond_name].value = init_orig
+            # TODO: this should be obtained from simulate_model
+            ts = numpy.linspace(0, 100, 100)
+            auc_ratio = self.compare_auc(ts, yobs_target_noadd, yobs_target_add)
+            if condition_pattern == 'add':
+                if auc_ratio > 0.5:
+                    return True
+                else:
+                    return False
+            else:
+                if auc_ratio < 0.5:
+                    return True
+                else:
+                    return False
+
+    def check_pattern(self, model, target_entity, target_pattern):
+        monomer = self.get_monomer(model, target_entity)
+        obs_name = self.get_obs_name(model, monomer)
+        if target_pattern == 'active':
+            obs_pattern = monomer(act='active')
+        elif target_pattern == 'inactive':
+            obs_pattern = monomer(act='active')
+        else:
+            print 'Unhandled target pattern: %s' % target_pattern
+            raise InvalidTargetException
+        self.get_create_observable(model, obs_name, obs_pattern)
+        yobs_target = self.simulate_model(model, target_entity)
+        if numpy.any(yobs_target > 0):
+            return True
+        else:
+            return False
+
+    def simulate_model(self, model, target_entity):
         '''
         Simulate a model and return the observed dynamics of 
         a given target agent.
         '''
+        # TODO: where does the maximal time point come from?
         monomer = self.get_monomer(model, target_entity)
         obs_name = self.get_obs_name(model, monomer)
-        obs_pattern = monomer(act='active')
-        self.get_create_observable(model, obs_name, obs_pattern)
-        # TODO: where does the maximal time point come from?
         ts = numpy.linspace(0, 100, 100)
-        try:
-            solver = Solver(model, ts)
-        except pysb.bng.GenerateNetworkError:
-            warnings.warn('Could not generate network')
-            return None
+        solver = Solver(model, ts)
         solver.run()
         yobs_target = solver.yobs[obs_name]
         plt.ion()

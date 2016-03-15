@@ -128,8 +128,7 @@ class Kappa_Module(trips_module.TripsModule):
         '''
         content_list = cast(KQMLList, content)
         task_str = content_list.get(0).toString().upper()
-        print task_str
-        #arguments = self.request_arguments(content_list)
+        arguments = self.request_arguments(content_list)
         if task_str == 'KAPPA-VERSION':
             reply_content = self.respond_version()
         elif task_str == 'KAPPA-PARSE':
@@ -172,13 +171,15 @@ class Kappa_Module(trips_module.TripsModule):
         return self.format_error(reply_content.toString())
 
     def request_arguments(self, arguments):
-        request = dict()
-        for index in range(arguments.size()):
-            key_value = arguments.get(index)
-            key_value = cast(KQMLList, key_value)
-            if key_value.size() > 1:
-                request[key_value.get(0).toString()] =\
-                    key_value.get(1).toString()
+        request = {}
+        arg_list = [arguments.get(index) for index in range(arguments.size())]
+        for i, a in enumerate(arg_list):
+            arg_str = a.toString()
+            if arg_str.startswith(':'):
+                key = arg_str[1:].upper()
+                val = arg_list[i+1].toString()
+                request[key] = val
+        print request
         return request
 
     def respond_parse(self,arguments):
@@ -205,12 +206,10 @@ class Kappa_Module(trips_module.TripsModule):
         return reply_content
 
     def format_error(self,message):
-        response_content = KQMLList.fromString( '' +\
-                        '(KAPPA ' +\
-                             '( ERRORS %s) ' % message +\
-                        ')')
+        response_content = KQMLList.fromString(
+                            '(FAILURE :REASON %s)' % message)
         return response_content
-    
+
     def respond_start(self,arguments):
         '''
         Response content to start message

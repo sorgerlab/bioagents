@@ -65,6 +65,16 @@ class MEA:
         '''
         Compare model simulation target with or without adding a given agent.
         '''
+        monomer = self.get_monomer(model, target_entity)
+        obs_name = self.get_obs_name(model, monomer)
+        if target_pattern == 'active':
+            obs_pattern = monomer(act='active')
+        elif target_pattern == 'inactive':
+            obs_pattern = monomer(act='inactive')
+        else:
+            print 'Unhandled target pattern: %s' % target_pattern
+            raise InvalidTargetException
+        self.get_create_observable(model, obs_name, obs_pattern)
         if condition_pattern in ['add', 'remove']:
             # Get the monomer whose addition is of interest
             monomer = self.get_monomer(model, condition_entity)
@@ -87,15 +97,9 @@ class MEA:
             ts = numpy.linspace(0, 100, 100)
             auc_ratio = self.compare_auc(ts, yobs_target_noadd, yobs_target_add)
             if condition_pattern == 'add':
-                if auc_ratio > 0.5:
-                    return True
-                else:
-                    return False
+                return (auc_ratio > 1)
             else:
-                if auc_ratio < 0.5:
-                    return True
-                else:
-                    return False
+                return (auc_ratio < 1)
 
     def check_pattern(self, model, target_entity, target_pattern):
         monomer = self.get_monomer(model, target_entity)

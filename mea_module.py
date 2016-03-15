@@ -1,7 +1,7 @@
 import sys
 import base64
 from jnius import autoclass, cast
-from pysb import bng, Initial, Parameter
+from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
 from TripsModule import trips_module
 
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
@@ -79,15 +79,12 @@ class MEA_Module(trips_module.TripsModule):
             return reply_content
         condition_entity = content_list.getKeywordArg(':condition_entity')
         if condition_entity is not None:
-            condition_entity = condition_entity.toString()
+            condition_entity = condition_entity.toString()[1:-1]
         condition_type = content_list.getKeywordArg(':condition_type')
         if condition_type is not None:
-            condition_type = condition_type.toString()
-
-        print condition_entity, condition_type, target_entity, target_pattern
+            condition_type = condition_type.toString().lower()
 
         self.get_context(model)
-        print model.species
         if condition_entity is None:
             target_match = self.mea.check_pattern(model, target_entity,
                                                   target_pattern)
@@ -104,10 +101,14 @@ class MEA_Module(trips_module.TripsModule):
     @staticmethod
     def get_context(model):
         # TODO: Here we will have to query the context
+        # for now it is hard coded
         kras = model.monomers['KRAS']
-        p = Parameter('kras_act_0', 100)
-        model.add_component(p)
-        model.initial(kras(act='active'), p)
+        try:
+            p = Parameter('kras_act_0', 100)
+            model.add_component(p)
+            model.initial(kras(act='active'), p)
+        except ComponentDuplicateNameError:
+            model.parameters['kras_act_0'].value = 100
 
     @staticmethod
     def decode_model(model_enc_str):
@@ -122,7 +123,21 @@ class MEA_Module(trips_module.TripsModule):
     def model_from_string(model_str):
         with open('tmp_model.py', 'wt') as fh:
             fh.write(model_str)
-        from tmp_model import model
+        # TODO: executing the model string is not safe
+        # we should do this through a safer method
+        exec model_str
+        """
+        print '\n\n'
+        print '------BEGIN received model------'
+        print model_str
+        print model.monomers
+        print model.rules
+        print model.parameters
+        print model.initial_conditions
+        print model.observables
+        print '-------END received model------'
+        print '\n\n'
+        """
         return model
 
 if __name__ == "__main__":

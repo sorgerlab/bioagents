@@ -207,7 +207,7 @@ class Kappa_Module(trips_module.TripsModule):
 
     def format_error(self,message):
         response_content = KQMLList.fromString(
-                            '(FAILURE :REASON %s)' % message)
+                            '(FAILURE :reason %s)' % message)
         return response_content
 
     def respond_start(self,arguments):
@@ -234,7 +234,7 @@ class Kappa_Module(trips_module.TripsModule):
                 try: 
                     print parameter
                     response = self.kappa.start(parameter)
-                    response_message = '(KAPPA ( TOKEN %d ) )' % response
+                    response_message = '(SUCCESS :id %d)' % response
                     response_content = KQMLList.fromString(response_message)
                 except RuntimeError as e:
                     response_content = self.response_error(e.errors)
@@ -243,11 +243,11 @@ class Kappa_Module(trips_module.TripsModule):
         return response_content
 
     def respond_status(self,arguments):
-        if not "TOKEN" in arguments:
-            response_content = self.response_error(["Missing token"])
+        if not "ID" in arguments:
+            response_content = self.response_error(["Missing simulation id"])
         else:
             try:
-                token = int(arguments["TOKEN"])
+                token = int(arguments["ID"])
                 status = self.kappa.status(token)
                 response_content = render_status(status)
             except ValueError as e:
@@ -257,13 +257,13 @@ class Kappa_Module(trips_module.TripsModule):
         return response_content
 
     def respond_stop(self,arguments):
-        if not "TOKEN" in arguments:
-            response_content = self.response_error(["Missing token"])
+        if not "ID" in arguments:
+            response_content = self.response_error(["Missing simulation id"])
         else:
             try:
-                token = int(arguments["TOKEN"])
+                token = int(arguments["ID"])
                 status = self.kappa.stop(token)
-                response_content = KQMLList.fromString('(KAPPA ( OK ) )')
+                response_content = KQMLList.fromString('(SUCCESS)')
             except RuntimeError as e:
                 response_content = self.response_error(e.errors)
         return response_content

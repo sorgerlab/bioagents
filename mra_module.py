@@ -1,14 +1,14 @@
 import sys
 import base64
+import pysb.export
 from jnius import autoclass, cast
 from TripsModule import trips_module
-import pysb.export
+from mra import MRA
 
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
-from mra import MRA
 
 class MRA_Module(trips_module.TripsModule):
     def __init__(self, argv):
@@ -23,7 +23,8 @@ class MRA_Module(trips_module.TripsModule):
         super(MRA_Module, self).init()
         # Send subscribe messages
         for task in self.tasks:
-            msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
+            msg_txt =\
+                '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.fromString(msg_txt))
         # Instantiate a singleton MRA agent
         self.mra = MRA()
@@ -32,7 +33,7 @@ class MRA_Module(trips_module.TripsModule):
     def receive_request(self, msg, content):
         '''
         If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply 
+        and call the appropriate function to prepare the response. A reply
         "tell" message is then sent back.
         '''
         content_list = cast(KQMLList, content)
@@ -47,7 +48,7 @@ class MRA_Module(trips_module.TripsModule):
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
         self.reply(msg, reply_msg)
-    
+
     def respond_build_model(self, content_list):
         '''
         Response content to build-model request
@@ -68,7 +69,7 @@ class MRA_Module(trips_module.TripsModule):
             KQMLList.fromString(
             '(SUCCESS :model-id %s :model (%s))' % (model_id, model_enc))
         return reply_content
-    
+
     def respond_expand_model(self, content_list):
         '''
         Response content to expand-model request
@@ -76,7 +77,7 @@ class MRA_Module(trips_module.TripsModule):
         descr_arg = cast(KQMLList, content_list.getKeywordArg(':description'))
         descr = descr_arg.get(0).toString()
         descr = self.decode_description(descr)
-        
+
         model_id_arg = cast(KQMLList,
                             content_list.getKeywordArg(':model-id'))
         model_id_str = model_id_arg.toString()
@@ -90,7 +91,7 @@ class MRA_Module(trips_module.TripsModule):
             reply_content =\
                 KQMLList.fromString('(FAILURE :reason INVALID_MODEL_ID)')
             return reply_content
-        
+
         model = self.mra.expand_model_from_ekb(descr)
         self.models.append(model)
         model_id = len(self.models)
@@ -99,7 +100,7 @@ class MRA_Module(trips_module.TripsModule):
             KQMLList.fromString(
             '(SUCCESS :model-id %s :model (%s))' % (model_id, model_enc))
         return reply_content
-    
+
     @staticmethod
     def decode_description(descr):
         if descr[0] == '"':
@@ -117,4 +118,3 @@ class MRA_Module(trips_module.TripsModule):
 
 if __name__ == "__main__":
     MRA_Module(['-name', 'MRA'] + sys.argv[1:]).run()
-

@@ -1,7 +1,7 @@
 # DTDA stands for disease-target-drug agent whose task is to
-# search for targets known to be implicated in a 
-# certain disease and to look for drugs that are known 
-# to affect that target directly or indirectly.
+# search for targets known to be implicated in a
+# certain disease and to look for drugs that are known
+# to affect that target directly or indirectly
 
 import re
 import os
@@ -14,13 +14,16 @@ import operator
 import indra.bel.processor
 import chebi_client
 
+
 class DrugNotFoundException(Exception):
-    def __init__(self,*args,**kwargs):
-            Exception.__init__(self,*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+
 
 class DiseaseNotFoundException(Exception):
-    def __init__(self,*args,**kwargs):
-            Exception.__init__(self,*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+
 
 class DTDA:
     def __init__(self):
@@ -39,12 +42,12 @@ class DTDA:
         # Load a database of drug targets
         drug_db_file = data_dir + 'drug_targets.db'
         if os.path.isfile(drug_db_file):
-            self.drug_db = sqlite3.connect(drug_db_file, 
+            self.drug_db = sqlite3.connect(drug_db_file,
                                            check_same_thread=False)
         else:
             print 'DTDA could not load drug-target database.'
             self.drug_db = None
-   
+
     def __del__(self):
         self.drug_db.close()
 
@@ -56,7 +59,7 @@ class DTDA:
             res = self.drug_db.execute('SELECT nominal_target FROM agent '
                                        'WHERE source_id LIKE "HMSL%%" '
                                        'AND (synonyms LIKE "%%%s%%" '
-                                       'OR name LIKE "%%%s%%")' %\
+                                       'OR name LIKE "%%%s%%")' %
                                        (drug_name, drug_name)).fetchall()
             if not res:
                 raise DrugNotFoundException
@@ -72,7 +75,7 @@ class DTDA:
         if self.drug_db is not None:
             res = self.drug_db.execute('SELECT name, synonyms FROM agent '
                                        'WHERE source_id LIKE "HMSL%%" '
-                                       'AND nominal_target LIKE "%%%s%%" ' %\
+                                       'AND nominal_target LIKE "%%%s%%" ' %
                                        target_name).fetchall()
             drug_names = [r[0] for r in res]
         else:
@@ -97,12 +100,12 @@ class DTDA:
                 stmt.wt_residue == wt_residue and\
                 stmt.pos == pos and\
                 stmt.sub_residue == sub_residue:
-                if stmt.rel == 'increases':
-                    return 'activate'
-                else:
-                    return 'deactivate'
+                    if stmt.rel == 'increases':
+                        return 'activate'
+                    else:
+                        return 'deactivate'
         return None
-    
+
     def get_mutation_statistics(self, disease_name_filter, mutation_type):
         study_ids = cbio_client.get_cancer_studies(disease_name_filter)
         if not study_ids:
@@ -112,9 +115,10 @@ class DTDA:
         num_case = 0
         for study_id in study_ids:
             num_case += cbio_client.get_num_sequenced(study_id)
-            mutations = cbio_client.get_mutations(study_id, gene_list_str, 
+            mutations = cbio_client.get_mutations(study_id, gene_list_str,
                                                   mutation_type)
-            for g,a in zip(mutations['gene_symbol'], mutations['amino_acid_change']):
+            for g, a in zip(mutations['gene_symbol'],
+                           mutations['amino_acid_change']):
                 mutation_effect = self.find_mutation_effect(g, a)
                 if mutation_effect is None:
                     mutation_effect_key = 'other'
@@ -124,7 +128,8 @@ class DTDA:
                     mutation_dict[g][0] += 1.0
                     mutation_dict[g][1][mutation_effect_key] += 1
                 except KeyError:
-                    effect_dict = {'activate': 0.0, 'deactivate': 0.0, 'other': 0.0}
+                    effect_dict = {'activate': 0.0, 'deactivate': 0.0,
+                                   'other': 0.0}
                     effect_dict[mutation_effect_key] += 1.0
                     mutation_dict[g] = [1.0, effect_dict]
         # Normalize entries
@@ -136,16 +141,17 @@ class DTDA:
             mutation_dict[k][1]['other'] /= effect_sum
 
         return mutation_dict
-        
+
     def get_top_mutation(self, disease_name_filter):
         # First, look for possible disease targets
-        mutation_stats = self.get_mutation_statistics(disease_name_filter, 'missense')
+        mutation_stats = self.get_mutation_statistics(disease_name_filter,
+                                                      'missense')
         if mutation_stats is None:
             print 'no mutation stats'
             return None
 
         # Return the top mutation as a possible target
-        mutations_sorted = sorted(mutation_stats.items(), 
+        mutations_sorted = sorted(mutation_stats.items(),
             key=operator.itemgetter(1), reverse=True)
         top_mutation = mutations_sorted[0]
         mut_protein = top_mutation[0]

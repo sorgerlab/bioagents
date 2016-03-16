@@ -10,12 +10,14 @@ from pysb.integrate import Solver
 
 
 class InvalidTargetException(Exception):
-    def __init__(self,*args,**kwargs):
-            Exception.__init__(self,*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+
 
 class InvalidConditionException(Exception):
-    def __init__(self,*args,**kwargs):
-            Exception.__init__(self,*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+
 
 class MEA:
     def __init__(self):
@@ -36,7 +38,7 @@ class MEA:
 
     def get_create_observable(self, model, obs_name, obs_pattern):
         '''
-        Try to create an observable with the given name and pattern or 
+        Try to create an observable with the given name and pattern or
         if it already exists in the model then return it.
         '''
         try:
@@ -61,7 +63,7 @@ class MEA:
         return a_new / a_ref
 
     def compare_conditions(self, model, target_entity, target_pattern,
-                    condition_entity, condition_pattern):
+                           condition_entity, condition_pattern):
         '''
         Compare model simulation target with or without adding a given agent.
         '''
@@ -79,7 +81,8 @@ class MEA:
             # Get the monomer whose addition is of interest
             monomer = self.get_monomer(model, condition_entity)
             # Get the name of the initial conditions for the monomer
-            # TODO: how do we know that the name is always constructed as below?
+            # TODO: how do we know that the name is always
+            # constructed as below?
             init_cond_name = condition_entity + '_0'
             init_orig = model.parameters[init_cond_name].value
             # Simulate without the monomer
@@ -95,7 +98,8 @@ class MEA:
             model.parameters[init_cond_name].value = init_orig
             # TODO: this should be obtained from simulate_model
             ts = numpy.linspace(0, 100, 100)
-            auc_ratio = self.compare_auc(ts, yobs_target_noadd, yobs_target_add)
+            auc_ratio = self.compare_auc(ts, yobs_target_noadd,
+                                         yobs_target_add)
             if condition_pattern == 'add':
                 return (auc_ratio > 1)
             else:
@@ -120,7 +124,7 @@ class MEA:
 
     def simulate_model(self, model, target_entity):
         '''
-        Simulate a model and return the observed dynamics of 
+        Simulate a model and return the observed dynamics of
         a given target agent.
         '''
         # TODO: where does the maximal time point come from?

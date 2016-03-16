@@ -1,23 +1,30 @@
 import sys
+import argparse
 import base64
 from jnius import autoclass, cast
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
 from TripsModule import trips_module
+from mea import MEA
 
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
-from mea import MEA
 
 class InvalidModelException(Exception):
-    def __init__(self,*args,**kwargs):
-            Exception.__init__(self,*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+
 
 class MEA_Module(trips_module.TripsModule):
     def __init__(self, argv):
         super(MEA_Module, self).__init__(argv)
         self.tasks = ['SIMULATE-MODEL']
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--kappa_url", help="kappa endpoint")
+        args = parser.parse_args()
+        if args.kappa_url:
+            self.kappa_url = args.kappa_url
 
     def init(self):
         '''
@@ -26,7 +33,8 @@ class MEA_Module(trips_module.TripsModule):
         super(MEA_Module, self).init()
         # Send subscribe messages
         for task in self.tasks:
-            msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
+            msg_txt =\
+                '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.fromString(msg_txt))
         # Instantiate a singleton MEA agent
         self.mea = MEA()
@@ -35,7 +43,7 @@ class MEA_Module(trips_module.TripsModule):
     def receive_request(self, msg, content):
         '''
         If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply 
+        and call the appropriate function to prepare the response. A reply
         "tell" message is then sent back.
         '''
         content_list = cast(KQMLList, content)
@@ -95,7 +103,8 @@ class MEA_Module(trips_module.TripsModule):
                                                        condition_type)
         target_match_str = 'TRUE' if target_match else 'FALSE'
         reply_content = KQMLList()
-        reply_content.add('SUCCESS :content (:target_match %s)' % target_match_str)
+        reply_content.add('SUCCESS :content (:target_match %s)' %
+                          target_match_str)
         return reply_content
 
     @staticmethod
@@ -115,7 +124,7 @@ class MEA_Module(trips_module.TripsModule):
         try:
             model_str = base64.b64decode(model_enc_str)
         except:
-            raise InvalidModelException 
+            raise InvalidModelException
         model = MEA_Module.model_from_string(model_str)
         return model
 
@@ -142,4 +151,3 @@ class MEA_Module(trips_module.TripsModule):
 
 if __name__ == "__main__":
     MEA_Module(['-name', 'MEA'] + sys.argv[1:]).run()
-

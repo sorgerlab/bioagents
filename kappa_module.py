@@ -12,8 +12,10 @@ KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
+
 def render_value(value):
     return str(value).encode('string-escape').replace('"', '\\"')
+
 
 def render_status(status):
     reply_content = KQMLList()
@@ -84,7 +86,7 @@ def render_status(status):
     #     log_messages.add(':log_messages')
     #     for message in status['log_messages']:
     #         log_messages.add("'"+render_value(message)+"'")
-    #     plot.add(log_messages)        
+    #     plot.add(log_messages)
     return reply_content
 
 
@@ -141,7 +143,7 @@ class Kappa_Module(trips_module.TripsModule):
             reply_content = self.respond_stop(arguments)
         else:
             message = '"'+'unknown request task ' + task_str + '"'
-            self.error_reply(msg,message)
+            self.error_reply(msg, message)
             return
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
@@ -154,14 +156,13 @@ class Kappa_Module(trips_module.TripsModule):
         '''
         response = self.kappa.version()
         reply_content = KQMLList.fromString(
-                        '(SUCCESS ' +\
-                             ':VERSION "%s" ' % response['version'] +\
-                             ':BUILD   "%s" ' % response['build']   +\
-                        ')')
+                        '(SUCCESS ' +
+                             ':VERSION "%s" ' % response['version'] +
+                             ':BUILD   "%s")' % response['build'])
         print reply_content.toString()
         return reply_content
 
-    def response_error(self,error):
+    def response_error(self, error):
         reply_content = KQMLList()
         for e in error:
             error_msg = '"%s"' %\
@@ -181,11 +182,11 @@ class Kappa_Module(trips_module.TripsModule):
         print request
         return request
 
-    def respond_parse(self,arguments):
+    def respond_parse(self, arguments):
         '''
         Response content to parse message
         '''
-        if not "CODE" in arguments:
+        if "CODE" not in arguments:
             reply_content = self.response_error(["Missing code"])
         else:
             request_code = arguments["CODE"]
@@ -194,7 +195,7 @@ class Kappa_Module(trips_module.TripsModule):
             request_code = request_code.decode('string_escape')
             print 'respond_parse {0}'.format(request_code)
             reply_content = KQMLList()
-            try: 
+            try:
                 response = self.kappa.parse(request_code)
                 print response
                 reply_content = KQMLList.fromString('(SUCCESS)')
@@ -203,18 +204,18 @@ class Kappa_Module(trips_module.TripsModule):
                 reply_content = self.response_error(e.errors)
         return reply_content
 
-    def format_error(self,message):
+    def format_error(self, message):
         response_content = KQMLList.fromString(
                             '(FAILURE :reason %s)' % message)
         return response_content
 
-    def respond_start(self,arguments):
+    def respond_start(self, arguments):
         '''
         Response content to start message
         '''
-        if not "CODE" in arguments:
+        if "CODE" not in arguments:
             response_content = self.response_error(["Missing code"])
-        elif not "NB_PLOT" in arguments:
+        elif "NB_PLOT" not in arguments:
             response_content =\
                 self.response_error(["Missing number of plot points"])
         else:
@@ -229,7 +230,7 @@ class Kappa_Module(trips_module.TripsModule):
                 request_code = request_code[1:-1]
                 request_code = request_code.decode('string_escape')
                 parameter["code"] = request_code
-                try: 
+                try:
                     print parameter
                     response = self.kappa.start(parameter)
                     response_message = '(SUCCESS :id %d)' % response
@@ -240,8 +241,8 @@ class Kappa_Module(trips_module.TripsModule):
                 response_content = self.response_error([str(e)])
         return response_content
 
-    def respond_status(self,arguments):
-        if not "ID" in arguments:
+    def respond_status(self, arguments):
+        if "ID" not in arguments:
             response_content = self.response_error(["Missing simulation id"])
         else:
             try:
@@ -254,8 +255,8 @@ class Kappa_Module(trips_module.TripsModule):
                 response_content = self.response_error(e.errors)
         return response_content
 
-    def respond_stop(self,arguments):
-        if not "ID" in arguments:
+    def respond_stop(self, arguments):
+        if "ID" not in arguments:
             response_content = self.response_error(["Missing simulation id"])
         else:
             try:

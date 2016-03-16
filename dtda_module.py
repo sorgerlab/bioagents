@@ -1,26 +1,25 @@
 import sys
 from jnius import autoclass, cast
 from TripsModule import trips_module
+from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
 
 # Declare KQML java classes
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
-from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
 
 # TODO: standardize dash/underscore
-
 class DTDA_Module(trips_module.TripsModule):
     '''
-    The DTDA module is a TRIPS module built around the DTDA agent. Its role is to
-    receive and decode messages and send responses from and to other agents in 
-    the system.
+    The DTDA module is a TRIPS module built around the DTDA agent.
+    Its role is to receive and decode messages and send responses from and
+    to other agents in the system.
     '''
     def __init__(self, argv):
         # Call the constructor of TripsModule
         super(DTDA_Module, self).__init__(argv)
-        self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG', 
+        self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
                       'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
 
     def init(self):
@@ -30,7 +29,8 @@ class DTDA_Module(trips_module.TripsModule):
         super(DTDA_Module, self).init()
         # Send subscribe messages
         for task in self.tasks:
-            msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
+            msg_txt =\
+                '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.fromString(msg_txt))
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
@@ -40,8 +40,8 @@ class DTDA_Module(trips_module.TripsModule):
     def receive_request(self, msg, content):
         '''
         If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply 
-        "tell" message is then sent back.
+        and call the appropriate function to prepare the response. A reply
+        message is then sent back.
         '''
         content_list = cast(KQMLList, content)
         task_str = content_list.get(0).toString().upper()
@@ -54,18 +54,20 @@ class DTDA_Module(trips_module.TripsModule):
         elif task_str == 'FIND-TREATMENT':
             reply_content = self.respond_find_treatment(content_list)
             if reply_content is None:
-                self.respond_dont_know(msg, '(ONT::A X1 :instance-of ONT::DRUG)')
+                self.respond_dont_know(msg,
+                                       '(ONT::A X1 :instance-of ONT::DRUG)')
                 return
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
-        
+
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
         self.reply(msg, reply_msg)
-   
+
     def respond_dont_know(self, msg, content_string):
-        resp = '(ONT::TELL :content (ONT::DONT-KNOW :content %s))' % content_string
+        resp = '(ONT::TELL :content (ONT::DONT-KNOW :content %s))' %\
+            content_string
         resp_list = KQMLList.fromString(resp)
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, resp_list))
@@ -94,7 +96,7 @@ class DTDA_Module(trips_module.TripsModule):
                   (status, is_target_str)
         reply_content.add(msg_str)
         return reply_content
-    
+
     def respond_find_target_drug(self, content_list):
         '''
         Response content to find-target-drug request
@@ -112,7 +114,7 @@ class DTDA_Module(trips_module.TripsModule):
         reply_content = KQMLList.fromString(
             '(SUCCESS :drugs (' + drug_list_str + '))')
         return reply_content
-    
+
     def respond_find_disease_targets(self, content_list):
         '''
         Response content to find-disease-targets request
@@ -123,19 +125,20 @@ class DTDA_Module(trips_module.TripsModule):
         except DiseaseNotFoundException:
             reply_content = KQMLList.fromString(
                 '(FAILURE :reason DISEASE_NOT_FOUND)')
-            return reply_content  
+            return reply_content
         print disease_type_filter
 
-        mut_protein, mut_percent = self.dtda.get_top_mutation(disease_type_filter)
+        mut_protein, mut_percent =\
+            self.dtda.get_top_mutation(disease_type_filter)
 
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
         reply_content =\
             KQMLList.fromString(
-                '(SUCCESS ' +\
-                ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +\
-                ':prevalence %.2f ' % (mut_percent/100.0) +\
+                '(SUCCESS ' +
+                ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +
+                ':prevalence %.2f ' % (mut_percent/100.0) +
                 ':functional-effect ACTIVE)')
 
         return reply_content
@@ -143,7 +146,7 @@ class DTDA_Module(trips_module.TripsModule):
     def respond_find_treatment(self, content_list):
         '''
         Response content to find-treatment request
-        ''' 
+        '''
         #TODO: eliminate code duplication here
         disease_str = content_list.getKeywordArg(':disease')
         reply_content = KQMLList()
@@ -151,18 +154,19 @@ class DTDA_Module(trips_module.TripsModule):
             disease_type_filter = self.get_disease_filter(disease_str)
         except DiseaseNotFoundException:
             reply_content.add('FAILURE :reason DISEASE_NOT_FOUND')
-            return reply_content 
+            return reply_content
         print disease_type_filter
 
-        mut_protein, mut_percent = self.dtda.get_top_mutation(disease_type_filter)
+        mut_protein, mut_percent =\
+            self.dtda.get_top_mutation(disease_type_filter)
 
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
         reply_content.add(KQMLList.fromString(
-                '(SUCCESS ' +\
-                ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +\
-                ':prevalence %.2f ' % (mut_percent/100.0) +\
+                '(SUCCESS ' +
+                ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +
+                ':prevalence %.2f ' % (mut_percent/100.0) +
                 ':functional-effect ACTIVE)'))
 
         # Try to find a drug
@@ -175,7 +179,7 @@ class DTDA_Module(trips_module.TripsModule):
                 drug_list_str += '(:name %s :chebi_id %s) ' % (dn, ci)
         reply_content.add(KQMLList.fromString(
             '(SUCCESS :drugs (' + drug_list_str + '))'))
-        
+
         return reply_content
 
     @staticmethod
@@ -199,4 +203,3 @@ class DTDA_Module(trips_module.TripsModule):
 if __name__ == "__main__":
     dm = DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])
     dm.run()
-

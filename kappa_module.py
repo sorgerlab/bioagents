@@ -97,13 +97,13 @@ class Kappa_Module(trips_module.TripsModule):
     def __init__(self, argv):
         # Call the constructor of TripsModule
         super(Kappa_Module, self).__init__(argv)
-        self.tasks = {'ONT::PERFORM': ['ONT::VERSION']}
+        self.tasks = ['KAPPA-VERSION', 'KAPPA-PARSE', 'KAPPA-START',
+                      'KAPPA-STATUS', 'KAPPA-STOP']
         parser = argparse.ArgumentParser()
-        parser.add_argument("--kappa_url"
-                           ,help="kappa endpoint")
+        parser.add_argument("--kappa_url", help="kappa endpoint")
         args = parser.parse_args()
         if args.kappa_url:
-            self.kappa_url=args.kappa_url
+            self.kappa_url = args.kappa_url
 
     def init(self):
         '''
@@ -111,11 +111,10 @@ class Kappa_Module(trips_module.TripsModule):
         '''
         super(Kappa_Module, self).init()
         # Send subscribe messages
-        for task, subtasks in self.tasks.iteritems():
-            for subtask in subtasks:
-                msg_txt = '(subscribe :content (request &key :content ' +\
-                    '(%s &key :content (%s . *))))' % (task, subtask)
-                self.send(KQMLPerformative.fromString(msg_txt))
+        for task in self.tasks:
+            msg_txt =\
+                '(subscribe :content (request &key :content (%s . *)))' % task
+            self.send(KQMLPerformative.fromString(msg_txt))
         # Instantiate a kappa runtime
         self.kappa = KappaRuntime(self.kappa_url)
         # Send ready message
@@ -127,73 +126,69 @@ class Kappa_Module(trips_module.TripsModule):
         and call the appropriate function to prepare the response. A reply
         "tell" message is then sent back.
         '''
-        print msg
         content_list = cast(KQMLList, content)
         task_str = content_list.get(0).toString().upper()
-        if task_str == 'ONT::PERFORM':
-            subtask = cast(KQMLList,content_list.getKeywordArg(':content'))
-            subtask_str = subtask.get(0).toString().upper()
-            subtask.remove(0)
-            arguments = self.request_arguments(subtask)
-            if subtask_str == 'ONT::VERSION':
-                reply_content = self.respond_version()
-            elif subtask_str == 'ONT::PARSE':
-                reply_content = self.respond_parse(arguments)
-            elif subtask_str == 'ONT::START':
-                reply_content = self.respond_start(arguments)
-            elif subtask_str == 'ONT::STATUS':
-                reply_content = self.respond_status(arguments)
-            elif subtask_str == 'ONT::STOP':
-                reply_content = self.respond_stop(arguments)
-            else:
-                message = '"'+'unknown request subtask ' + subtask_str + '"'
-                self.error_reply(msg,message)
-                return
+        arguments = self.request_arguments(content_list)
+        if task_str == 'KAPPA-VERSION':
+            reply_content = self.respond_version()
+        elif task_str == 'KAPPA-PARSE':
+            reply_content = self.respond_parse(arguments)
+        elif task_str == 'KAPPA-START':
+            reply_content = self.respond_start(arguments)
+        elif task_str == 'KAPPA-STATUS':
+            reply_content = self.respond_status(arguments)
+        elif task_str == 'KAPPA-STOP':
+            reply_content = self.respond_stop(arguments)
         else:
             message = '"'+'unknown request task ' + task_str + '"'
             self.error_reply(msg,message)
             return
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
+        print reply_content.toString()
         self.reply(msg, reply_msg)
 
     def respond_version(self):
         '''
         Response content to version message
         '''
-        reply_content = KQMLList()
         response = self.kappa.version()
-        response_content = KQMLList.fromString( '' +\
-                        '(ONT::KAPPA ' +\
-                             '( ONT::VERSION "%s") ' % response['version'] +\
-                             '( ONT::BUILD   "%s") ' % response['build']   +\
+        reply_content = KQMLList.fromString(
+                        '(SUCCESS ' +\
+                             ':VERSION "%s" ' % response['version'] +\
+                             ':BUILD   "%s" ' % response['build']   +\
                         ')')
-        reply_content.add(KQMLList(response_content))
+        print reply_content.toString()
         return reply_content
+
     def response_error(self,error):
         reply_content = KQMLList()
         for e in error:
-            error_msg = '"%s"' % str(e).encode('string-escape').replace('"', '\\"')
+            error_msg = '"%s"' %\
+                str(e).encode('string-escape').replace('"', '\\"')
             reply_content.add(error_msg)
         return self.format_error(reply_content.toString())
 
-    def request_arguments(self,arguments):
-        request = dict()
-        for index in range(arguments.size()):
-            key_value = arguments.get(index)
-            key_value = cast(KQMLList, key_value)
-            if key_value.size() > 1:
-                request[key_value.get(0).toString()] = key_value.get(1).toString()
+    def request_arguments(self, arguments):
+        request = {}
+        arg_list = [arguments.get(index) for index in range(arguments.size())]
+        for i, a in enumerate(arg_list):
+            arg_str = a.toString()
+            if arg_str.startswith(':'):
+                key = arg_str[1:].upper()
+                val = arg_list[i+1].toString()
+                request[key] = val
+        print request
         return request
 
     def respond_parse(self,arguments):
         '''
         Response content to parse message
         '''
-        if not "ONT::CODE" in arguments:
+        if not "CODE" in arguments:
             reply_content = self.response_error(["Missing code"])
         else:
-            request_code = arguments["ONT::CODE"]
+            request_code = arguments["CODE"]
             request_code = request_code[1:-1]
             print 'raw {0}'.format(request_code)
             request_code = request_code.decode('string_escape')
@@ -202,44 +197,42 @@ class Kappa_Module(trips_module.TripsModule):
             try: 
                 response = self.kappa.parse(request_code)
                 print response
-                response_content = KQMLList.fromString('(ONT::KAPPA ( ONT::OK ) )')
-                reply_content.add(KQMLList(response_content))
+                reply_content = KQMLList.fromString('(SUCCESS)')
             except RuntimeError as e:
                 print e.errors
                 reply_content = self.response_error(e.errors)
         return reply_content
 
     def format_error(self,message):
-        response_content = KQMLList.fromString( '' +\
-                        '(ONT::KAPPA ' +\
-                             '( ONT::ERRORS %s) ' % message +\
-                        ')')
+        response_content = KQMLList.fromString(
+                            '(FAILURE :reason %s)' % message)
         return response_content
-    
+
     def respond_start(self,arguments):
         '''
         Response content to start message
         '''
-        if not "ONT::CODE" in arguments:
+        if not "CODE" in arguments:
             response_content = self.response_error(["Missing code"])
-        elif not "ONT::NB_PLOT" in arguments:
-            response_content = self.response_error(["Missing number of plot points"])
+        elif not "NB_PLOT" in arguments:
+            response_content =\
+                self.response_error(["Missing number of plot points"])
         else:
             try:
-                parameter = dict()
-                parameter["nb_plot"] = arguments["ONT::NB_PLOT"]
-                if "ONT::MAX_TIME" in arguments:
-                    parameter["max_time"] = float(arguments["ONT::MAX_TIME"])
-                if "ONT::MAX_EVENTS" in arguments:
-                    parameter["max_events"] = int(arguments["ONT::MAX_EVENTS"])
-                request_code = arguments["ONT::CODE"]
+                parameter = {}
+                parameter["nb_plot"] = arguments["NB_PLOT"]
+                if "MAX_TIME" in arguments:
+                    parameter["max_time"] = float(arguments["MAX_TIME"])
+                if "MAX_EVENTS" in arguments:
+                    parameter["max_events"] = int(arguments["MAX_EVENTS"])
+                request_code = arguments["CODE"]
                 request_code = request_code[1:-1]
                 request_code = request_code.decode('string_escape')
                 parameter["code"] = request_code
                 try: 
                     print parameter
                     response = self.kappa.start(parameter)
-                    response_message = '(ONT::KAPPA ( ONT::TOKEN %d ) )' % response
+                    response_message = '(SUCCESS :id %d)' % response
                     response_content = KQMLList.fromString(response_message)
                 except RuntimeError as e:
                     response_content = self.response_error(e.errors)
@@ -248,11 +241,11 @@ class Kappa_Module(trips_module.TripsModule):
         return response_content
 
     def respond_status(self,arguments):
-        if not "ONT::TOKEN" in arguments:
-            response_content = self.response_error(["Missing token"])
+        if not "ID" in arguments:
+            response_content = self.response_error(["Missing simulation id"])
         else:
             try:
-                token = int(arguments["ONT::TOKEN"])
+                token = int(arguments["ID"])
                 status = self.kappa.status(token)
                 response_content = render_status(status)
             except ValueError as e:
@@ -262,13 +255,13 @@ class Kappa_Module(trips_module.TripsModule):
         return response_content
 
     def respond_stop(self,arguments):
-        if not "ONT::TOKEN" in arguments:
-            response_content = self.response_error(["Missing token"])
+        if not "ID" in arguments:
+            response_content = self.response_error(["Missing simulation id"])
         else:
             try:
-                token = int(arguments["ONT::TOKEN"])
+                token = int(arguments["ID"])
                 status = self.kappa.stop(token)
-                response_content = KQMLList.fromString('(ONT::KAPPA ( ONT::OK ) )')
+                response_content = KQMLList.fromString('(SUCCESS)')
             except RuntimeError as e:
                 response_content = self.response_error(e.errors)
         return response_content

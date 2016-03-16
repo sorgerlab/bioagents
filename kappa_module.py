@@ -166,7 +166,8 @@ class Kappa_Module(trips_module.TripsModule):
     def response_error(self,error):
         reply_content = KQMLList()
         for e in error:
-            error_msg = '"%s"' % str(e).encode('string-escape').replace('"', '\\"')
+            error_msg = '"%s"' %\
+                str(e).encode('string-escape').replace('"', '\\"')
             reply_content.add(error_msg)
         return self.format_error(reply_content.toString())
 
@@ -198,8 +199,7 @@ class Kappa_Module(trips_module.TripsModule):
             try: 
                 response = self.kappa.parse(request_code)
                 print response
-                response_content = KQMLList.fromString('(KAPPA ( OK ) )')
-                reply_content.add(KQMLList(response_content))
+                reply_content = KQMLList.fromString('(SUCCESS)')
             except RuntimeError as e:
                 print e.errors
                 reply_content = self.response_error(e.errors)
@@ -217,10 +217,11 @@ class Kappa_Module(trips_module.TripsModule):
         if not "CODE" in arguments:
             response_content = self.response_error(["Missing code"])
         elif not "NB_PLOT" in arguments:
-            response_content = self.response_error(["Missing number of plot points"])
+            response_content =\
+                self.response_error(["Missing number of plot points"])
         else:
             try:
-                parameter = dict()
+                parameter = {}
                 parameter["nb_plot"] = arguments["NB_PLOT"]
                 if "MAX_TIME" in arguments:
                     parameter["max_time"] = float(arguments["MAX_TIME"])

@@ -152,15 +152,13 @@ class Kappa_Module(trips_module.TripsModule):
         '''
         Response content to version message
         '''
-        reply_content = KQMLList()
         response = self.kappa.version()
-        response_content = KQMLList.fromString( '' +\
-                        '(KAPPA ' +\
+        reply_content = KQMLList.fromString(
+                        '(SUCCESS ' +\
                              ':VERSION "%s" ' % response['version'] +\
                              ':BUILD   "%s" ' % response['build']   +\
                         ')')
-        print response_content.toString()
-        reply_content.add(KQMLList(response_content))
+        print reply_content.toString()
         return reply_content
 
     def response_error(self,error):

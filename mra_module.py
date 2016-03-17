@@ -68,11 +68,11 @@ class MRA_Module(trips_module.TripsModule):
         self.models.append(model)
         model_id = len(self.models)
         model_enc = self.encode_model(model)
-        model_diagram = self.get_model_diagram(model)
+        model_diagram = self.get_model_diagram(model, model_id)
         reply_content =\
             KQMLList.fromString(
             '(SUCCESS :model-id %s :model (%s) :diagram "%s")' %\
-                (model_id, model_enc. model_diagram))
+                (model_id, model_enc, model_diagram))
         return reply_content
 
     def respond_expand_model(self, content_list):
@@ -101,7 +101,7 @@ class MRA_Module(trips_module.TripsModule):
         self.models.append(model)
         model_id = len(self.models)
         model_enc = self.encode_model(model)
-        model_diagram = self.get_model_diagram(model)
+        model_diagram = self.get_model_diagram(model, model_id)
         reply_content =\
             KQMLList.fromString(
             '(SUCCESS :model-id %s :model (%s) :diagram "%s")' %\
@@ -111,7 +111,12 @@ class MRA_Module(trips_module.TripsModule):
     @staticmethod
     def get_model_diagram(model, model_id=None):
         fname = 'model%d' % ('' if model_id is None else model_id)
-        diagram_dot = render_reactions.run(model)
+        try:
+            diagram_dot = render_reactions.run(model)
+        #TODO: use specific PySB/BNG exceptions and handle them
+        # here to show meaningful error messages
+        except:
+            return ''
         with open(fname + '.dot', 'wt') as fh:
             fh.write(diagram_dot)
         subprocess.call(('dot -T png -o %s.png %s.dot' %

@@ -1,8 +1,11 @@
 import sys
+import os
+import subprocess
 import base64
 import pysb.export
 from jnius import autoclass, cast
 from TripsModule import trips_module
+from pysb.tools import render_reactions
 from mra import MRA
 
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
@@ -65,9 +68,11 @@ class MRA_Module(trips_module.TripsModule):
         self.models.append(model)
         model_id = len(self.models)
         model_enc = self.encode_model(model)
+        model_diagram = self.get_model_diagram(model)
         reply_content =\
             KQMLList.fromString(
-            '(SUCCESS :model-id %s :model (%s))' % (model_id, model_enc))
+            '(SUCCESS :model-id %s :model (%s) :diagram "%s")' %\
+                (model_id, model_enc. model_diagram))
         return reply_content
 
     def respond_expand_model(self, content_list):
@@ -96,10 +101,25 @@ class MRA_Module(trips_module.TripsModule):
         self.models.append(model)
         model_id = len(self.models)
         model_enc = self.encode_model(model)
+        model_diagram = self.get_model_diagram(model)
         reply_content =\
             KQMLList.fromString(
-            '(SUCCESS :model-id %s :model (%s))' % (model_id, model_enc))
+            '(SUCCESS :model-id %s :model (%s) :diagram "%s")' %\
+                (model_id, model_enc, model_diagram))
         return reply_content
+
+    @staticmethod
+    def get_model_diagram(model, model_id=None):
+        fname = 'model%d' % ('' if model_id is None else model_id)
+        diagram_dot = render_reactions.run(model)
+        with open(fname + '.dot', 'wt') as fh:
+            fh.write(diagram_dot)
+        subprocess.call(('dot -T png -o %s.png %s.dot' %
+                         (fname, fname)).split(' '))
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        if abs_path[-1] != '/':
+            abs_path = abs_path + '/'
+        return abs_path + fname + '.png'
 
     @staticmethod
     def decode_description(descr):

@@ -61,7 +61,6 @@ class MRA_Module(trips_module.TripsModule):
         descr_arg = cast(KQMLList, content_list.getKeywordArg(':description'))
         descr = descr_arg.get(0).toString()
         descr = self.decode_description(descr)
-        print descr
         model = self.mra.build_model_from_ekb(descr)
         if model is None:
             reply_content =\
@@ -115,14 +114,12 @@ class MRA_Module(trips_module.TripsModule):
     @staticmethod
     def get_model_diagram(model, model_id=None):
         fname = 'model%d' % ('' if model_id is None else model_id)
-        print model.rules
-        print model.initial_conditions
         try:
             diagram_dot = render_reactions.run(model)
         #TODO: use specific PySB/BNG exceptions and handle them
         # here to show meaningful error messages
         except:
-            traceback.print_exc()
+            #traceback.print_exc()
             return ''
         with open(fname + '.dot', 'wt') as fh:
             fh.write(diagram_dot)

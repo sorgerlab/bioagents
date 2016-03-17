@@ -1,8 +1,13 @@
 import sys
+import traceback
+import os
+import subprocess
 import base64
 import pysb.export
 from jnius import autoclass, cast
 from TripsModule import trips_module
+from pysb.tools import render_reactions
+from pysb import Parameter
 from mra import MRA
 
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
@@ -56,18 +61,20 @@ class MRA_Module(trips_module.TripsModule):
         descr_arg = cast(KQMLList, content_list.getKeywordArg(':description'))
         descr = descr_arg.get(0).toString()
         descr = self.decode_description(descr)
-        print descr
         model = self.mra.build_model_from_ekb(descr)
         if model is None:
             reply_content =\
                 KQMLList.fromString('(FAILURE :reason INVALID_DESCRIPTION)')
             return reply_content
+        self.get_context(model)
         self.models.append(model)
         model_id = len(self.models)
         model_enc = self.encode_model(model)
+        model_diagram = self.get_model_diagram(model, model_id)
         reply_content =\
             KQMLList.fromString(
-            '(SUCCESS :model-id %s :model (%s))' % (model_id, model_enc))
+            '(SUCCESS :model-id %s :model "%s" :diagram "%s")' %\
+                (model_id, model_enc, model_diagram))
         return reply_content
 
     def respond_expand_model(self, content_list):
@@ -93,13 +100,47 @@ class MRA_Module(trips_module.TripsModule):
             return reply_content
 
         model = self.mra.expand_model_from_ekb(descr)
+        self.get_context(model)
         self.models.append(model)
         model_id = len(self.models)
         model_enc = self.encode_model(model)
+        model_diagram = self.get_model_diagram(model, model_id)
         reply_content =\
             KQMLList.fromString(
-            '(SUCCESS :model-id %s :model (%s))' % (model_id, model_enc))
+            '(SUCCESS :model-id %s :model "%s" :diagram "%s")' %\
+                (model_id, model_enc, model_diagram))
         return reply_content
+
+    @staticmethod
+    def get_model_diagram(model, model_id=None):
+        fname = 'model%d' % ('' if model_id is None else model_id)
+        try:
+            diagram_dot = render_reactions.run(model)
+        #TODO: use specific PySB/BNG exceptions and handle them
+        # here to show meaningful error messages
+        except:
+            #traceback.print_exc()
+            return ''
+        with open(fname + '.dot', 'wt') as fh:
+            fh.write(diagram_dot)
+        subprocess.call(('dot -T png -o %s.png %s.dot' %
+                         (fname, fname)).split(' '))
+        abs_path = os.path.abspath(os.path.dirname(__file__))
+        if abs_path[-1] != '/':
+            abs_path = abs_path + '/'
+        return abs_path + fname + '.png'
+
+    @staticmethod
+    def get_context(model):
+        # TODO: Here we will have to query the context
+        # for now it is hard coded
+        try:
+            kras = model.monomers['KRAS']
+            p = Parameter('kras_act_0', 100)
+            model.add_component(p)
+            model.initial(kras(act='active'), p)
+        except:
+            return
 
     @staticmethod
     def decode_description(descr):
@@ -113,8 +154,11 @@ class MRA_Module(trips_module.TripsModule):
     @staticmethod
     def encode_model(model):
         model_str = pysb.export.export(model, 'pysb_flat')
+        model_str = str(model_str)
         b64str = base64.b64encode(model_str)
         return b64str
 
 if __name__ == "__main__":
-    MRA_Module(['-name', 'MRA'] + sys.argv[1:]).run()
+    m = MRA_Module(['-name', 'MRA'] + sys.argv[1:])
+    m.start()
+    m.join()

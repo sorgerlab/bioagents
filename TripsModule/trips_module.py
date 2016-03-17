@@ -41,6 +41,7 @@ class TripsModule(Thread):
     def run(self):
         self.init()
         self.dispatcher.start()
+        self.dispatcher.join()
 
     def init(self):
         self.handle_common_parameters()

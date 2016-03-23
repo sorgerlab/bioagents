@@ -19,12 +19,14 @@ rdflib, jnius-indra, functools32, requests, lxml, pandas, suds
 
 The MRA uses [INDRA](https://github.com/sorgerlab/indra) to assemble models
 based on a natural language description of mechanisms. Please follow the
-instructions on the [INDRA page](https://github.com/sorgerlab/indra) to install
-it and its dependencies.
+more detailed instructions on the [INDRA page](https://github.com/sorgerlab/indra) 
+to install it and its dependencies:
+
+`pip install git+https://github.com/sorgerlab/indra.git`
 
 INDRA depends on [PySB](http://pysb.org), which is best installed from Github:
 
-`pip install https://github.com/pysb/pysb.git`
+`pip install git+https://github.com/pysb/pysb.git`
 
 PySB depends on [BioNetGen](http://bionetgen.org/index.php/Download). Make sure
 that BioNetGen is unzipped into /usr/local/share/BioNetGen, such that BNG2.pl is located at /usr/local/share/BioNetGen/BNG2.pl. Alternatively, set BNGPATH 

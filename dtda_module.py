@@ -183,13 +183,23 @@ class DTDA_Module(trips_module.TripsModule):
         return reply_content
 
     @staticmethod
+    def get_single_argument(arg):
+        if arg is None:
+            return None
+        arg_str = arg.toString()
+        if arg_str[0] == '(' and arg_str[-1] == ')':
+             arg_str = arg_str[1:-1]
+        arg_str = arg_str.lower()
+        return arg_str
+
+    @staticmethod
     def get_disease_filter(disease_str):
-        if disease_str is None:
-            print 'no disease set'
-            raise DiseaseNotFoundException
-        disease_str = disease_str.toString()
-        disease_terms = disease_str[1:-1].split('-')
-        disease_str = disease_terms[1].lower()
+        disease_str = DTDA_Module.get_single_argument(disease_str)
+        disease_terms = disease_str.split('-')
+        if len(disease_terms) > 1:
+            disease_str = disease_terms[1]
+        else:
+            disease_str = disease_terms[0]
 
         if disease_str not in ['cancer', 'tumor'] and\
             disease_str.find('carcinoma') == -1 and\

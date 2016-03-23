@@ -12,7 +12,7 @@ def main():
           url='http://github.com/sorgerlab/bioagents',
           packages=['bioagents', 'bioagents.KQML', 'bioagents.TripsModule'],
           install_requires=['pysb', 'objectpath', 'rdflib', 'jnius-indra', 
-                            'functools32', 'requests', 'lxml', 'suds'],
+                            'functools32', 'requests', 'lxml', 'pandas', 'suds'],
           include_package_data=True,
           keywords=['systems', 'biology', 'model', 'pathway', 'assembler', 'nlp', 
                     'mechanism', 'biochemistry'],

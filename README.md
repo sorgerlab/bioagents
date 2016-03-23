@@ -14,9 +14,18 @@ Installing the bioagents
 Note that currently the bioagents have limited usage on their own. They are
 meant to be launched in the context of a communication system. 
 
+The bioagents depend on the following non-default python packages: objectpath,
+rdflib, jnius-indra, functools32, requests, lxml, pandas, suds
+
 The MRA uses [INDRA](https://github.com/sorgerlab/indra) to assemble models
 based on a natural language description of mechanisms. Please follow the
 instructions on the [INDRA page](https://github.com/sorgerlab/indra) to install
 it and its dependencies.
 
-The 
+INDRA depends on [PySB](http://pysb.org), which is best installed from Github:
+
+`pip install https://github.com/pysb/pysb.git`
+
+PySB depends on [BioNetGen](http://bionetgen.org/index.php/Download). Make sure
+that BioNetGen is unzipped into /usr/local/share/BioNetGen, such that BNG2.pl is located at /usr/local/share/BioNetGen/BNG2.pl. Alternatively, set BNGPATH 
+to the folder in which BNG2.pl is.

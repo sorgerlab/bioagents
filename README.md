@@ -8,3 +8,15 @@ A collection of agents for biological reasoning in a communication system. The f
 - DTDA (Disease, Target and Drug Agent): The DTDA's task is to search for targets known to be implicated in a disease and to look for drugs that are known to affect that target.
 
 We also provide a python implementation of a generic module in the TRIPS dialogue system and a python implementation of a KQML message dispatcher. 
+
+Installing the bioagents
+========================
+Note that currently the bioagents have limited usage on their own. They are
+meant to be launched in the context of a communication system. 
+
+The MRA uses [INDRA](https://github.com/sorgerlab/indra) to assemble models
+based on a natural language description of mechanisms. Please follow the
+instructions on the [INDRA page](https://github.com/sorgerlab/indra) to install
+it and its dependencies.
+
+The 

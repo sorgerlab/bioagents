@@ -18,6 +18,9 @@ def run_query(model, query):
     if target_str == 'A-B complex':
         target = 'AB'
 
+    if target_str == 'A':
+        target = 'A'
+
     for i, a in enumerate(solver.yobs[target]):
         solver.yobs[target][i] = 1 if a > 50 else 0
 
@@ -26,10 +29,23 @@ def run_query(model, query):
     elif pattern_str == 'unchanged':
         fstr = noact_formula(target)
 
+    print '\n\n'
+    print '-----------'
+    print query
     print 'LTL formula: %s' % fstr
     mc = ModelChecker(fstr, solver.yobs)
+    print solver.yobs[target]
     print 'Result:', mc.truth
+    print '-----------'
+
+query = 'Is the amount of A-B complex unchanged in time?'
+run_query(model, query)
 
 query = 'Is the amount of A-B complex sustained in time?'
 run_query(model, query)
 
+query = 'Is the amount of A sustained in time?'
+run_query(model, query)
+
+query = 'Is the amount of A unchanged in time?'
+run_query(model, query)

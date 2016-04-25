@@ -3,10 +3,10 @@
 # biochemical systems from natural language, publications
 # and databases.
 
-from indra.pysb_assembler import PysbAssembler
+from indra.assemblers import PysbAssembler
 from indra.statements import Agent, Complex
-from indra.biopax import biopax_api
-from indra.trips import trips_api
+from indra import biopax
+from indra import trips
 from indra.databases import uniprot_client
 import nextprot_client
 import copy
@@ -29,8 +29,8 @@ class MRA:
                 self.statements.append(stmt)
 
     def find_mechanism(self, source, target, force_contains):
-        bp = biopax_api.process_pc_pathsfromto(source, target,
-                                               neighbor_limit=1)
+        bp = biopax.process_pc_pathsfromto(source, target,
+                                           neighbor_limit=1)
         return bp
 
     def build_model_from_text(self, model_txt):
@@ -38,7 +38,7 @@ class MRA:
         Build a model using INDRA from natural language.
         '''
         pa = PysbAssembler()
-        tp = trips_api.process_text(model_txt)
+        tp = trips.process_text(model_txt)
         if tp is None:
             return None
         pa.add_statements(tp.statements)
@@ -51,7 +51,7 @@ class MRA:
         Build a model using DRUM extraction knowledge base.
         '''
         pa = PysbAssembler()
-        tp = trips_api.process_xml(model_ekb)
+        tp = trips.process_xml(model_ekb)
         if tp is None:
             return None
         pa.add_statements(tp.statements)
@@ -64,7 +64,7 @@ class MRA:
         Expand a model using INDRA from natural language.
         '''
         pa = PysbAssembler()
-        tp = trips_api.process_text(model_txt)
+        tp = trips.process_text(model_txt)
         self.add_statements(tp.statements)
         pa.add_statements(self.statements)
         self.model = pa.make_model()
@@ -75,7 +75,7 @@ class MRA:
         Expand a model using DRUM extraction knowledge base
         '''
         pa = PysbAssembler()
-        tp = trips_api.process_xml(model_ekb)
+        tp = trips.process_xml(model_ekb)
         self.add_statements(tp.statements)
         pa.add_statements(self.statements)
         self.model = pa.make_model()

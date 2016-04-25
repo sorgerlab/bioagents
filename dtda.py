@@ -97,9 +97,9 @@ class DTDA:
 
         for stmt in self.sub_statements:
             if stmt.monomer.name == protein_name and\
-                stmt.wt_residue == wt_residue and\
-                stmt.pos == pos and\
-                stmt.sub_residue == sub_residue:
+                stmt.mutation.residue_from == wt_residue and\
+                stmt.mutation.position == pos and\
+                stmt.mutation.residue_to == sub_residue:
                     if stmt.rel == 'increases':
                         return 'activate'
                     else:

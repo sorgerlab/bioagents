@@ -1,4 +1,4 @@
-from bioagents import cbio_client
+from bioagents.databases import cbio_client
 
 def test_get_cancer_studies():
     study_ids = cbio_client.get_cancer_studies('pancreatic')

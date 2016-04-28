@@ -5,7 +5,7 @@ import subprocess
 import base64
 import pysb.export
 from jnius import autoclass, cast
-from TripsModule import trips_module
+from bioagents.trips import trips_module
 from pysb.tools import render_reactions
 from pysb import Parameter
 from mra import MRA

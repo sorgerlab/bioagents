@@ -1,7 +1,7 @@
 import sys
 from jnius import autoclass, cast, JavaException
 from threading import Thread
-from KQML.kqml_dispatcher import KQMLDispatcher
+from kqml_dispatcher import KQMLDispatcher
 
 # Declare java classes for convenience
 java_ostream = autoclass('java.io.OutputStream')

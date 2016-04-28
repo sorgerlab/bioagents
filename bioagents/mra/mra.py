@@ -3,13 +3,13 @@
 # biochemical systems from natural language, publications
 # and databases.
 
+import copy
 from indra.assemblers import PysbAssembler
 from indra.statements import Agent, Complex
 from indra import biopax
 from indra import trips
 from indra.databases import uniprot_client
-import nextprot_client
-import copy
+from bioagents.databases import nextprot_client
 
 
 class MRA:

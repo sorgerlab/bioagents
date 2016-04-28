@@ -1,6 +1,6 @@
 import sys
 from jnius import autoclass, cast
-from TripsModule import trips_module
+from bioagents.trips import trips_module
 from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
 
 # Declare KQML java classes

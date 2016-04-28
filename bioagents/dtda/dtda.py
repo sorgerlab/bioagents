@@ -8,11 +8,11 @@ import os
 import rdflib
 import sqlite3
 import numpy
-import cbio_client
 import warnings
 import operator
 import indra.bel.processor
-import chebi_client
+from bioagents.databases import chebi_client
+from bioagents.databases import cbio_client
 
 
 class DrugNotFoundException(Exception):

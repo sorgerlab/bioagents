@@ -26,6 +26,8 @@ def run_query(model, query):
 
     if pattern_str == 'sustained':
         fstr = sustained_formula(target)
+    elif pattern_str == 'transient':
+        fstr = transient_formula(target)
     elif pattern_str == 'unchanged':
         fstr = noact_formula(target)
 
@@ -48,4 +50,7 @@ query = 'Is the amount of A sustained in time?'
 run_query(model, query)
 
 query = 'Is the amount of A unchanged in time?'
+run_query(model, query)
+
+query = 'Is the amount of A transient in time?'
 run_query(model, query)

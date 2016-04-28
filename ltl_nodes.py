@@ -1,3 +1,4 @@
+import re
 from copy import deepcopy
 
 def is_balanced(s, lc='(', rc=')'):
@@ -9,9 +10,35 @@ def is_balanced(s, lc='(', rc=')'):
 def build_tree(formula_str, time_lim=None):
     root = None
     fstr = formula_str.strip()
+
+    str_r = fstr
+    str_l = None
+    while True:
+        parts = re.split('|', fstr)
+        if len(parts) == 1:
+            break
+        str_l, str_r = parts[0], '|'.join(parts[1:])
+        if (is_balanced(str_l) == 0):
+            child1 = build_tree(str_l, time_lim)
+            child2 = build_tree(str_r, time_lim)
+            root = OrNode(time_lim, child1, child2)
+            return root
+
+    str_r = fstr
+    str_l = None
+    while True:
+        parts = re.split('&', fstr)
+        if len(parts) == 1:
+            break
+        str_l, str_r = parts[0], '&'.join(parts[1:])
+        if (is_balanced(str_l) == 0):
+            child1 = build_tree(str_l, time_lim)
+            child2 = build_tree(str_r, time_lim)
+            root = AndNode(time_lim, child1, child2)
+            return root
+
     first_ch = fstr[0]
     last_ch = fstr[-1]
-
     if first_ch == '!':
         child1 = build_tree(fstr[1:], time_lim)
         root = NotNode(time_lim, child1)
@@ -33,23 +60,6 @@ def build_tree(formula_str, time_lim=None):
     if root is not None:
         return root
 
-    tokens = ['&', '|']
-    str_r = fstr
-    str_l = None
-    while True:
-        parts = fstr.split(tokens)
-        if len(parts) == 1:
-            return
-        str_l, str_r = parts[0], parts[1:]
-        token = fstr[len(parts[0])]
-        if (token in tokens) and (is_balanced(str_l) == 0):
-            child1 = build_tree(str_l, time_lim)
-            child2 = build_tree(str_r, time_lim)
-            if token == '&':
-                root = AndNode(time_lim, child1, child2)
-            elif token == '|':
-                root = OrNode(time_lim, child1, child2)
-            return root
 
 class Node(object):
     def __init__(self, time_lim=None, child1=None, child2=None):

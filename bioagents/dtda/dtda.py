@@ -27,9 +27,11 @@ class DiseaseNotFoundException(Exception):
 
 class DTDA:
     def __init__(self):
-        data_dir = os.path.dirname(os.path.realpath(__file__)) + '/data/'
+        resource_dir = os.path.dirname(os.path.realpath(__file__)) +\
+                       '/../resources/'
+        print resource_dir
         # Build an initial set of substitution statements
-        bel_corpus = data_dir + 'large_corpus_direct_subs.rdf'
+        bel_corpus = resource_dir + 'large_corpus_direct_subs.rdf'
         if os.path.isfile(bel_corpus):
             g = rdflib.Graph()
             g.parse(bel_corpus, format='nt')
@@ -40,7 +42,7 @@ class DTDA:
             self.sub_statements = []
             print 'DTDA could not load mutation effect data.'
         # Load a database of drug targets
-        drug_db_file = data_dir + 'drug_targets.db'
+        drug_db_file = resource_dir + 'drug_targets.db'
         if os.path.isfile(drug_db_file):
             self.drug_db = sqlite3.connect(drug_db_file,
                                            check_same_thread=False)

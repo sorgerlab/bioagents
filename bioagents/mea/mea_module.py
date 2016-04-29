@@ -3,7 +3,7 @@ import argparse
 import base64
 from jnius import autoclass, cast
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
-from TripsModule import trips_module
+from bioagents.trips import trips_module
 from mea import MEA
 
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')

@@ -5,7 +5,7 @@ import threading
 import time
 
 from jnius import autoclass, cast
-from TripsModule.trips_module import TripsModule
+from bioagents.trips.trips_module import TripsModule
 
 # Declare KQML java classes
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')

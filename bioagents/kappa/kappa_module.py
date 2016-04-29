@@ -4,7 +4,7 @@ import operator
 import json
 
 from jnius import autoclass, cast
-from TripsModule import trips_module
+from indra.trips import trips_module
 from kappa_client import KappaRuntime, RuntimeError
 
 # Declare KQML java classes

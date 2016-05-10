@@ -125,7 +125,7 @@ class MRA_Module(trips_module.TripsModule):
             fh.write(diagram_dot)
         subprocess.call(('dot -T png -o %s.png %s.dot' %
                          (fname, fname)).split(' '))
-        abs_path = os.path.abspath(os.path.dirname(__file__))
+        abs_path = os.path.abspath(os.getcwd())
         if abs_path[-1] != '/':
             abs_path = abs_path + '/'
         return abs_path + fname + '.png'

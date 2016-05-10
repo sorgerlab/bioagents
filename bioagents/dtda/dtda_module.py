@@ -212,4 +212,5 @@ class DTDA_Module(trips_module.TripsModule):
 
 if __name__ == "__main__":
     dm = DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])
-    dm.run()
+    dm.start()
+    dm.join()

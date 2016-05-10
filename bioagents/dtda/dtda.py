@@ -10,7 +10,8 @@ import sqlite3
 import numpy
 import warnings
 import operator
-import indra.bel.processor
+from indra.statements import ActiveForm
+from indra.bel.processor import BelProcessor
 from bioagents.databases import chebi_client
 from bioagents.databases import cbio_client
 
@@ -35,7 +36,7 @@ class DTDA:
         if os.path.isfile(bel_corpus):
             g = rdflib.Graph()
             g.parse(bel_corpus, format='nt')
-            bp = indra.bel.processor.BelProcessor(g)
+            bp = BelProcessor(g)
             bp.get_activating_subs()
             self.sub_statements = bp.statements
         else:
@@ -98,11 +99,18 @@ class DTDA:
         sub_residue = matches[2]
 
         for stmt in self.sub_statements:
-            if stmt.monomer.name == protein_name and\
-                stmt.mutation.residue_from == wt_residue and\
-                stmt.mutation.position == pos and\
-                stmt.mutation.residue_to == sub_residue:
-                    if stmt.rel == 'increases':
+            # Make sure it's an active form statements
+            if not isinstance(stmt, ActiveForm):
+                continue
+            mutations = stmt.agent.mutations
+            # Make sure the Agent has exactly one mutation
+            if len(mutations) != 1:
+                continue
+            if stmt.agent.name == protein_name and\
+                mutations[0].residue_from == wt_residue and\
+                mutations[0].position == pos and\
+                mutations[0].residue_to == sub_residue:
+                    if stmt.is_active:
                         return 'activate'
                     else:
                         return 'deactivate'

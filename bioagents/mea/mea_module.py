@@ -150,4 +150,6 @@ class MEA_Module(trips_module.TripsModule):
         return model
 
 if __name__ == "__main__":
-    MEA_Module(['-name', 'MEA'] + sys.argv[1:]).run()
+    m = MEA_Module(['-name', 'MEA'] + sys.argv[1:]).run()
+    m.start()
+    m.join()

@@ -2,12 +2,15 @@
 # Its task is to simulate models and interpret
 # the simulation output.
 
-import warnings
 import numpy
 import matplotlib.pyplot as plt
+import logging
 import pysb
 from pysb.integrate import Solver
 
+logger = logging.getLogger('MEA')
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.DEBUG)
 
 class InvalidTargetException(Exception):
     def __init__(self, *args, **kwargs):
@@ -31,8 +34,8 @@ class MEA:
         try:
             monomer = model.monomers[entity]
         except KeyError:
-            warnings.warn('Monomer of interest %s could not be '
-                          'found in model.' % entity)
+            logger.warning('Monomer of interest %s could not be '
+                           'found in model.' % entity)
             monomer = None
         return monomer
 
@@ -74,7 +77,7 @@ class MEA:
         elif target_pattern == 'inactive':
             obs_pattern = monomer(act='inactive')
         else:
-            print 'Unhandled target pattern: %s' % target_pattern
+            logger.error('Unhandled target pattern: %s' % target_pattern)
             raise InvalidTargetException
         self.get_create_observable(model, obs_name, obs_pattern)
         if condition_pattern in ['add', 'remove']:
@@ -113,7 +116,7 @@ class MEA:
         elif target_pattern == 'inactive':
             obs_pattern = monomer(act='active')
         else:
-            print 'Unhandled target pattern: %s' % target_pattern
+            logger.error('Unhandled target pattern: %s' % target_pattern)
             raise InvalidTargetException
         self.get_create_observable(model, obs_name, obs_pattern)
         yobs_target = self.simulate_model(model, target_entity)

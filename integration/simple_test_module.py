@@ -13,11 +13,11 @@ KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
 class TestModule(TripsModule):
-    '''
-    The Test module is a TRIPS module built to run unit test. It will
-    ts role is to receive and decode messages and send responses from
-    and to other agents in the system.
-    '''
+    """The Test module is a TRIPS module built to run unit tests.
+
+    Its role is to receive and decode messages and send responses to
+    other agents in the system.
+    """
     def __init__(self, argv, file_in):
         # Call the constructor of TripsModule
         super(TestModule, self).__init__(argv[1:])
@@ -28,9 +28,7 @@ class TestModule(TripsModule):
         self.msg_counter = 1
 
     def init(self):
-        '''
-        Initialize TRIPS module
-        '''
+        """Initialize TRIPS module."""
         super(TestModule, self).init()
         # Send ready message
         self.ready()

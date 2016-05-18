@@ -5,16 +5,19 @@
 
 import re
 import os
+import logging
 import rdflib
 import sqlite3
 import numpy
-import warnings
 import operator
 from indra.statements import ActiveForm
 from indra.bel.processor import BelProcessor
 from bioagents.databases import chebi_client
 from bioagents.databases import cbio_client
 
+logger = logging.getLogger('DTDA')
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.DEBUG)
 
 class DrugNotFoundException(Exception):
     def __init__(self, *args, **kwargs):
@@ -30,7 +33,7 @@ class DTDA:
     def __init__(self):
         resource_dir = os.path.dirname(os.path.realpath(__file__)) +\
                        '/../resources/'
-        print resource_dir
+        logging.debug('Using resource folder: %s' % resource_dir)
         # Build an initial set of substitution statements
         bel_corpus = resource_dir + 'large_corpus_direct_subs.rdf'
         if os.path.isfile(bel_corpus):
@@ -41,14 +44,14 @@ class DTDA:
             self.sub_statements = bp.statements
         else:
             self.sub_statements = []
-            print 'DTDA could not load mutation effect data.'
+            logging.error('DTDA could not load mutation effect data.')
         # Load a database of drug targets
         drug_db_file = resource_dir + 'drug_targets.db'
         if os.path.isfile(drug_db_file):
             self.drug_db = sqlite3.connect(drug_db_file,
                                            check_same_thread=False)
         else:
-            print 'DTDA could not load drug-target database.'
+            logging.error('DTDA could not load drug-target database.')
             self.drug_db = None
 
     def __del__(self):
@@ -157,7 +160,7 @@ class DTDA:
         mutation_stats = self.get_mutation_statistics(disease_name_filter,
                                                       'missense')
         if mutation_stats is None:
-            print 'no mutation stats'
+            logging.error('No mutation stats')
             return None
 
         # Return the top mutation as a possible target

@@ -1,4 +1,5 @@
 import sys
+import logging
 from jnius import autoclass, cast
 from bioagents.trips import trips_module
 from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
@@ -8,6 +9,9 @@ KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
+logger = logging.getLogger('DTDA')
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.DEBUG)
 
 # TODO: standardize dash/underscore
 class DTDA_Module(trips_module.TripsModule):
@@ -126,7 +130,7 @@ class DTDA_Module(trips_module.TripsModule):
             reply_content = KQMLList.fromString(
                 '(FAILURE :reason DISEASE_NOT_FOUND)')
             return reply_content
-        print disease_type_filter
+        logger.debug('Disease type filter: %s' % disease_type_filter)
 
         mut_protein, mut_percent =\
             self.dtda.get_top_mutation(disease_type_filter)
@@ -155,7 +159,7 @@ class DTDA_Module(trips_module.TripsModule):
         except DiseaseNotFoundException:
             reply_content.add('FAILURE :reason DISEASE_NOT_FOUND')
             return reply_content
-        print disease_type_filter
+        logger.debug('Disease type filter: %s' % disease_type_filter)
 
         mut_protein, mut_percent =\
             self.dtda.get_top_mutation(disease_type_filter)
@@ -205,7 +209,7 @@ class DTDA_Module(trips_module.TripsModule):
             disease_str.find('carcinoma') == -1 and\
             disease_str.find('cancer') == -1 and\
             disease_str.find('melanoma') == -1:
-            print 'problem with disease name'
+            logger.error('Problem with disease name: %s' % disease_str)
             raise DiseaseNotFoundException
         disease_type_filter = disease_terms[0].lower()
         return disease_type_filter

@@ -1,5 +1,9 @@
 import suds
 import re
+import logging
+
+logger = logging.getLogger('suds')
+logger.setLevel(logging.ERROR)
 
 chebi_wsdl = 'http://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl'
 chebi_client = suds.client.Client(chebi_wsdl)
@@ -15,4 +19,3 @@ def get_id(name, max_results=1):
     match = re.search(r'"CHEBI:(.*)"', res_str)
     chebi_id = match.groups()[0]
     return chebi_id
-    

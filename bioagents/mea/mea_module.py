@@ -1,6 +1,7 @@
 import sys
 import argparse
 import base64
+import logging
 from jnius import autoclass, cast
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
 from bioagents.trips import trips_module
@@ -9,6 +10,10 @@ from mea import MEA
 KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
+
+logger = logging.getLogger('MEA')
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.DEBUG)
 
 
 class InvalidModelException(Exception):
@@ -135,18 +140,16 @@ class MEA_Module(trips_module.TripsModule):
         # TODO: executing the model string is not safe
         # we should do this through a safer method
         exec model_str
-        """
-        print '\n\n'
-        print '------BEGIN received model------'
-        print model_str
-        print model.monomers
-        print model.rules
-        print model.parameters
-        print model.initial_conditions
-        print model.observables
-        print '-------END received model------'
-        print '\n\n'
-        """
+        logger.debug('\n\n')
+        logger.debug('------BEGIN received model------')
+        logger.debug('%s' % model_str)
+        logger.debug('%s' % model.monomers)
+        logger.debug('%s' % model.rules)
+        logger.debug('%s' % model.parameters)
+        logger.debug('%s' % model.initial_conditions)
+        logger.debug('%s' % model.observables)
+        logger.debug('-------END received model------')
+        logger.debug('\n\n')
         return model
 
 if __name__ == "__main__":

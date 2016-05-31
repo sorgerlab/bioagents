@@ -1,18 +1,27 @@
 import StringIO
+from kqml_token import KQMLToken
 
 class KQMLList(object):
-    def __init__(self, objects):
-        self.data = []
-        for o in objects:
-            self.data.append(o)
-    
+    def __init__(self, objects=None):
+        if objects is None:
+            self.data = []
+        else:
+            for o in objects:
+                self.data.append(o)
+
+    def __getitem__(self, *args):
+        return self.data.__getitem__(*args)
+
+    def __len__(self):
+        return len(self.data)
+
     #TODO: implement adding by index, KQMLList line 246
     def add(self, obj):
         if isinstance(obj, basestring):
-            self.add(KQMLToken(obj)
+            self.data.append(KQMLToken(obj))
         else:
-            self.add(obj)
-    
+            self.data.append(obj)
+
     # TODO: check if java indexOf return values are consistent
     def index_of_string(self, s):
         try:
@@ -49,7 +58,7 @@ class KQMLList(object):
         raise Exception('Not implemented')
 
     def write(self, out):
-        full_str = '(' + [s for s in self.data].join(' ') + ')'
+        full_str = '(' + ' '.join([str(s) for s in self.data]) + ')'
         out.write(full_str)
 
     def to_string(self):
@@ -62,7 +71,7 @@ class KQMLList(object):
         sreader = StringIO.StringIO(s)
         kreader = KQMLReader(sreader)
         return kreader.read_list()
-       
+
     def sublist(self, from_idx, to_idx):
         return KQMLList(self.data[from_idx:to_idx])
 

@@ -27,7 +27,7 @@ class KQMLDispatcher(Thread):
 
     def warn(self, msg):
         sys.stderr.write(msg)
-    
+
     def shutdown(self):
         self.shutdown_initiated = True
         try:

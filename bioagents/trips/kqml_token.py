@@ -17,8 +17,8 @@ class KQMLToken(object):
         return self.__eq__(self, other)
 
     def equals_ignore_case(self, s):
-        if isinstance(s, KQMLToken)
-        return (self.data.lower() == s.lower())
+        if isinstance(s, KQMLToken):
+            return (self.data.lower() == s.lower())
 
     def write(self, out):
         out.write(self.data)
@@ -51,7 +51,7 @@ class KQMLToken(object):
     def is_keyword(self):
         package_name = self.get_package()
         return (KEYWORD_PACKAGE_NAME.lower() == package_name)
-    
+
     def parse_package(self):
         package_name = None
         bare_name = ''
@@ -73,7 +73,7 @@ class KQMLToken(object):
                     raise Exception('token ends in a colon: ' + self.data)
                 i += 1
                 c = chars[i]
-                if c == ':'
+                if c == ':':
                     if i == len(chars)-1:
                         raise Exception('token ends in a colon: ' + self.data)
                 else:
@@ -85,11 +85,11 @@ class KQMLToken(object):
 
         return (package_name, bare_name)
 
-    def __getitem__(self, index):
-        return self.data[index]
+    def __getitem__(self, *args):
+        return self.data__getitem__(*args)
 
     def __str__(self):
-        return self.data
+        return self.to_string()
 
     def __eq__(self, other):
         if not isinstance(other, KQMLToken):

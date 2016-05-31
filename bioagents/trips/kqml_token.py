@@ -86,7 +86,7 @@ class KQMLToken(object):
         return (package_name, bare_name)
 
     def __getitem__(self, *args):
-        return self.data__getitem__(*args)
+        return self.data.__getitem__(*args)
 
     def __str__(self):
         return self.to_string()

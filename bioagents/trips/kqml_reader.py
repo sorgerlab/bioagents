@@ -1,5 +1,7 @@
 import logging
 from kqml_exceptions import *
+from kqml_list import KQMLList
+from kqml_token import KQMLToken
 
 logging.getLogger('KQMLReader')
 
@@ -14,8 +16,11 @@ class KQMLReader(object):
     def read_char(self):
         ch = self.reader.read(n=1)
         self.inbuf += ch
+        return ch
 
     def unget_char(self, ch):
+        # Rewind by 1 relative to current position
+        self.reader.seek(-1, mode=1)
         self.reader.write(ch)
         # Rewind by 1 relative to current position
         self.reader.seek(-1, mode=1)
@@ -42,7 +47,7 @@ class KQMLReader(object):
         else:
             return False
 
-    def read_expr(self, backqouted=False):
+    def read_expr(self, backquoted=False):
         ch = self.peek_char()
         if ch == "'" or ch == "`":
             return self.read_quotation(backquoted)
@@ -55,7 +60,7 @@ class KQMLReader(object):
                 ch = read_char()
                 raise KQMLBadCommandException(self.inbuf)
             else:
-                self.read_quotation(backqouted)
+                self.read_quotation(backquoted)
         else:
             if self.is_token_char(ch):
                 return self.read_token()
@@ -128,18 +133,18 @@ class KQMLReader(object):
         return self.read_list()
         # TODO: handle EOF
 
-    def read_list(self, backqouted=False):
+    def read_list(self, backquoted=False):
         lst = KQMLList()
         ch = self.read_char()
         if ch != '(':
             raise KQMLBadOpenException(self.inbuf)
         self.skip_whitespace()
         while True:
-            ch = self.peak_char()
+            ch = self.peek_char()
             if ch == ')':
                 break
             lst.add(self.read_expr(backquoted))
-            ch = peek_char
+            ch = self.peek_char()
             if ch != ')':
                 if ch != '(':
                     self.read_whitespace()

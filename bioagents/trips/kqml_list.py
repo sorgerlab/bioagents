@@ -9,6 +9,9 @@ class KQMLList(object):
             for o in objects:
                 self.data.append(o)
 
+    def __str__(self):
+        return '(' + ' '.join(d.__str__() for d in self.data) + ')'
+
     def __getitem__(self, *args):
         return self.data.__getitem__(*args)
 

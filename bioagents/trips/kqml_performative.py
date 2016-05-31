@@ -1,5 +1,8 @@
+import StringIO
 from kqml_list import KQMLList
 from kqml_token import KQMLToken
+from kqml_reader import KQMLReader
+from kqml_exceptions import KQMLBadPerformativeException
 
 class KQMLPerformative(object):
     def __init__(self, verb):
@@ -10,19 +13,22 @@ class KQMLPerformative(object):
             length = verb.length()
             if length == 0:
                 raise KQMLBadPerformativeException('list has no elements')
-            elif isinstance(verb[0], KQMLToken):
+            elif not isinstance(verb[0], KQMLToken):
                 raise KQMLBadPerformativeException('list doesn\'t start ' + \
-                    'with KQMLToken' + verb.nth(0))
+                    'with KQMLToken: ' + str(verb.nth(0)))
             else:
-                for i in range(1, length):
+                i = 1
+                while i < length:
                     if not isinstance(verb[i], KQMLToken) or \
                         verb[i][0] != ':':
                         raise KQMLBadPerformativeException('performative ' + \
                             'element not a keyword: ' + verb[i])
+                    # Increment counter after keyword
                     i += 1
                     if i == length:
                         raise KQMLBadPerformativeException('missing value ' + \
                             'for keyword: ' + verb[i-1])
+                    i += 1
             self.data = verb
 
     def get_verb(self):
@@ -62,10 +68,10 @@ class KQMLPerformative(object):
         return self.data.to_string()
 
     @classmethod
-    def from_string(s):
+    def from_string(cls, s):
         sreader = StringIO.StringIO(s)
         kreader = KQMLReader(sreader)
-        return KQMLPerformative(kreader.read_list())
+        return cls(kreader.read_list())
 
     def __str__(self):
         return self.to_string()

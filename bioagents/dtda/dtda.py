@@ -16,8 +16,6 @@ from bioagents.databases import chebi_client
 from bioagents.databases import cbio_client
 
 logger = logging.getLogger('DTDA')
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.DEBUG)
 
 class DrugNotFoundException(Exception):
     def __init__(self, *args, **kwargs):

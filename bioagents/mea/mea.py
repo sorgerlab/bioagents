@@ -9,8 +9,6 @@ import pysb
 from pysb.integrate import Solver
 
 logger = logging.getLogger('MEA')
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.DEBUG)
 
 class InvalidTargetException(Exception):
     def __init__(self, *args, **kwargs):

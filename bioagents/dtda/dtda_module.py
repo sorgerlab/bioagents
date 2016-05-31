@@ -10,8 +10,6 @@ KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
 logger = logging.getLogger('DTDA')
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.DEBUG)
 
 # TODO: standardize dash/underscore
 class DTDA_Module(trips_module.TripsModule):

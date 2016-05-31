@@ -12,9 +12,6 @@ KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
 logger = logging.getLogger('MEA')
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.DEBUG)
-
 
 class InvalidModelException(Exception):
     def __init__(self, *args, **kwargs):

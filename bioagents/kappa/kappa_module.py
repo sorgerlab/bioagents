@@ -1,4 +1,5 @@
 import sys
+import logging
 import argparse
 import operator
 import json
@@ -12,6 +13,7 @@ KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 KQMLList = autoclass('TRIPS.KQML.KQMLList')
 KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
+logger = logging.getLogger('KAPPA')
 
 def render_value(value):
     return str(value).encode('string-escape').replace('"', '\\"')
@@ -147,7 +149,7 @@ class Kappa_Module(trips_module.TripsModule):
             return
         reply_msg = KQMLPerformative('reply')
         reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
-        print reply_content.toString()
+        logger.debug(reply_content.toString())
         self.reply(msg, reply_msg)
 
     def respond_version(self):
@@ -159,7 +161,7 @@ class Kappa_Module(trips_module.TripsModule):
                         '(SUCCESS ' +
                              ':VERSION "%s" ' % response['version'] +
                              ':BUILD   "%s")' % response['build'])
-        print reply_content.toString()
+        logger.debug(reply_content.toString())
         return reply_content
 
     def response_error(self, error):
@@ -179,7 +181,7 @@ class Kappa_Module(trips_module.TripsModule):
                 key = arg_str[1:].upper()
                 val = arg_list[i+1].toString()
                 request[key] = val
-        print request
+        logger.debug(request)
         return request
 
     def respond_parse(self, arguments):
@@ -191,16 +193,16 @@ class Kappa_Module(trips_module.TripsModule):
         else:
             request_code = arguments["CODE"]
             request_code = request_code[1:-1]
-            print 'raw {0}'.format(request_code)
+            logger.debug('raw {0}'.format(request_code))
             request_code = request_code.decode('string_escape')
-            print 'respond_parse {0}'.format(request_code)
+            logger.debug('respond_parse {0}'.format(request_code))
             reply_content = KQMLList()
             try:
                 response = self.kappa.parse(request_code)
-                print response
+                logger.debug(response)
                 reply_content = KQMLList.fromString('(SUCCESS)')
             except RuntimeError as e:
-                print e.errors
+                logger.debug(e.errors)
                 reply_content = self.response_error(e.errors)
         return reply_content
 
@@ -231,7 +233,7 @@ class Kappa_Module(trips_module.TripsModule):
                 request_code = request_code.decode('string_escape')
                 parameter["code"] = request_code
                 try:
-                    print parameter
+                    logger.debug(parameter)
                     response = self.kappa.start(parameter)
                     response_message = '(SUCCESS :id %d)' % response
                     response_content = KQMLList.fromString(response_message)
@@ -268,5 +270,6 @@ class Kappa_Module(trips_module.TripsModule):
         return response_content
 
 if __name__ == "__main__":
-    dm = Kappa_Module(['-name', 'Kappa'] + sys.argv[1:])
-    dm.run()
+    km = Kappa_Module(['-name', 'Kappa'] + sys.argv[1:])
+    km.start()
+    km.join()

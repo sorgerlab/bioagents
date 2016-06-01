@@ -4,16 +4,13 @@ import os
 import subprocess
 import base64
 import pysb.export
-from jnius import autoclass, cast
 from bioagents.trips import trips_module
 from pysb.tools import render_reactions
 from pysb import Parameter
 from mra import MRA
 
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
-
+from bioagents.trips.kqml_performative import KQMLPerformative
+from bioagents.trips.kqml_list import KQMLList
 
 class MRA_Module(trips_module.TripsModule):
     def __init__(self, argv):
@@ -30,7 +27,7 @@ class MRA_Module(trips_module.TripsModule):
         for task in self.tasks:
             msg_txt =\
                 '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.fromString(msg_txt))
+            self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton MRA agent
         self.mra = MRA()
         self.ready()
@@ -41,8 +38,8 @@ class MRA_Module(trips_module.TripsModule):
         and call the appropriate function to prepare the response. A reply
         "tell" message is then sent back.
         '''
-        content_list = cast(KQMLList, content)
-        task_str = content_list.get(0).toString().upper()
+        content_list = content
+        task_str = content_list[0].to_string().upper()
         if task_str == 'BUILD-MODEL':
             reply_content = self.respond_build_model(content_list)
         elif task_str == 'EXPAND-MODEL':
@@ -51,20 +48,20 @@ class MRA_Module(trips_module.TripsModule):
             self.error_reply(msg, 'unknown task ' + task_str)
             return
         reply_msg = KQMLPerformative('reply')
-        reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
+        reply_msg.set_parameter(':content', reply_content)
         self.reply(msg, reply_msg)
 
     def respond_build_model(self, content_list):
         '''
         Response content to build-model request
         '''
-        descr_arg = cast(KQMLList, content_list.getKeywordArg(':description'))
-        descr = descr_arg.get(0).toString()
+        descr_arg = content_list.get_keyword_arg(':description')
+        descr = descr_arg[0].to_string()
         descr = self.decode_description(descr)
         model = self.mra.build_model_from_ekb(descr)
         if model is None:
             reply_content =\
-                KQMLList.fromString('(FAILURE :reason INVALID_DESCRIPTION)')
+                KQMLList.from_string('(FAILURE :reason INVALID_DESCRIPTION)')
             return reply_content
         self.get_context(model)
         self.models.append(model)
@@ -72,7 +69,7 @@ class MRA_Module(trips_module.TripsModule):
         model_enc = self.encode_model(model)
         model_diagram = self.get_model_diagram(model, model_id)
         reply_content =\
-            KQMLList.fromString(
+            KQMLList.from_string(
             '(SUCCESS :model-id %s :model "%s" :diagram "%s")' %\
                 (model_id, model_enc, model_diagram))
         return reply_content
@@ -81,22 +78,21 @@ class MRA_Module(trips_module.TripsModule):
         '''
         Response content to expand-model request
         '''
-        descr_arg = cast(KQMLList, content_list.getKeywordArg(':description'))
-        descr = descr_arg.get(0).toString()
+        descr_arg = content_list.get_keyword_arg(':description')
+        descr = descr_arg[0].to_string()
         descr = self.decode_description(descr)
 
-        model_id_arg = cast(KQMLList,
-                            content_list.getKeywordArg(':model-id'))
-        model_id_str = model_id_arg.toString()
+        model_id_arg = content_list.get_keyword_arg(':model-id')
+        model_id_str = model_id_arg.to_string()
         try:
             model_id = int(model_id_str)
         except ValueError:
             reply_content =\
-                KQMLList.fromString('(FAILURE :reason INVALID_MODEL_ID)')
+                KQMLList.from_string('(FAILURE :reason INVALID_MODEL_ID)')
             return reply_content
         if model_id < 1 or model_id > len(self.models):
             reply_content =\
-                KQMLList.fromString('(FAILURE :reason INVALID_MODEL_ID)')
+                KQMLList.from_string('(FAILURE :reason INVALID_MODEL_ID)')
             return reply_content
 
         model = self.mra.expand_model_from_ekb(descr)
@@ -106,7 +102,7 @@ class MRA_Module(trips_module.TripsModule):
         model_enc = self.encode_model(model)
         model_diagram = self.get_model_diagram(model, model_id)
         reply_content =\
-            KQMLList.fromString(
+            KQMLList.from_string(
             '(SUCCESS :model-id %s :model "%s" :diagram "%s")' %\
                 (model_id, model_enc, model_diagram))
         return reply_content

@@ -3,11 +3,11 @@ import sys
 import socket
 from jnius import autoclass, cast, JavaException
 from threading import Thread
+import kqml_reader
 from kqml_dispatcher import KQMLDispatcher
 from kqml_token import KQMLToken
 from kqml_list import KQMLList
 from kqml_performative import KQMLPerformative
-from kqml_reader import KQMLReader
 
 # Declare java classes for convenience
 java_ostream = autoclass('java.io.OutputStream')
@@ -53,7 +53,7 @@ class TripsModule(Thread):
             print 'TripsModule: using stdio connection'
             self.out = java_pw(cast(java_ostream, java_sys.out))
             java_in = getattr(java_sys, 'in')
-            self.inp = KQMLReader(java_in)
+            self.inp = kqml_reader.KQMLReader(java_in)
 
         self.dispatcher = KQMLDispatcher(self, self.inp)
 
@@ -133,8 +133,8 @@ class TripsModule(Thread):
             sfn = self.socket.makefile().fileno()
             self.out = io.BufferedWriter(io.FileIO(sfn, mode='w'))
             fio = io.FileIO(sfn, mode='r')
-            self.inp = KQMLReader(io.BufferedReader(fio))
-            #self.inp = KQMLReader(self.socket.getInputStream())
+            self.inp = kqml_reader.KQMLReader(io.BufferedReader(fio))
+            #self.inp = kqml_reader.KQMLReader(self.socket.getInputStream())
             return True
         # FIXME: cannot test for more specific exception with jnius
         except JavaException as msg:

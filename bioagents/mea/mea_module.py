@@ -2,14 +2,12 @@ import sys
 import argparse
 import base64
 import logging
-from jnius import autoclass, cast
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
 from bioagents.trips import trips_module
 from mea import MEA
 
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
+from bioagents.trips.kqml_performative import KQMLPerformative
+from bioagents.trips.kqml_list import KQMLList
 
 logger = logging.getLogger('MEA')
 
@@ -37,7 +35,7 @@ class MEA_Module(trips_module.TripsModule):
         for task in self.tasks:
             msg_txt =\
                 '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.fromString(msg_txt))
+            self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton MEA agent
         self.mea = MEA()
         self.ready()
@@ -48,8 +46,8 @@ class MEA_Module(trips_module.TripsModule):
         and call the appropriate function to prepare the response. A reply
         "tell" message is then sent back.
         '''
-        content_list = cast(KQMLList, content)
-        task_str = content_list.get(0).toString().upper()
+        content_list = content
+        task_str = content_list[0].to_string().upper()
         if task_str == 'SIMULATE-MODEL':
             reply_content = self.respond_simulate_model(content_list)
         else:
@@ -57,42 +55,42 @@ class MEA_Module(trips_module.TripsModule):
             return
 
         reply_msg = KQMLPerformative('reply')
-        reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
+        reply_msg.set_parameter(':content', reply_content)
         self.reply(msg, reply_msg)
 
     def respond_simulate_model(self, content_list):
         '''
         Response content to simulate-model request
         '''
-        model_str = content_list.getKeywordArg(':model')
+        model_str = content_list.get_keyword_arg(':model')
         if model_str is not None:
-            model_str = model_str.toString()
+            model_str = model_str.to_string()
             try:
                 model = self.decode_model(model_str[1:-1])
             except InvalidModelException:
                 reply_content =\
-                    KQMLList.fromString('(FAILURE :reason INVALID_MODEL)')
+                    KQMLList.from_string('(FAILURE :reason INVALID_MODEL)')
                 return reply_content
-        target_entity = content_list.getKeywordArg(':target_entity')
+        target_entity = content_list.get_keyword_arg(':target_entity')
         if target_entity is not None:
-            target_entity = target_entity.toString()[1:-1]
+            target_entity = target_entity.to_string()[1:-1]
         else:
             reply_content =\
-                KQMLList.fromString('(FAILURE :reason MISSING_PARAMETER)')
+                KQMLList.from_string('(FAILURE :reason MISSING_PARAMETER)')
             return reply_content
-        target_pattern = content_list.getKeywordArg(':target_pattern')
+        target_pattern = content_list.get_keyword_arg(':target_pattern')
         if target_pattern is not None:
-            target_pattern = target_pattern.toString().lower()
+            target_pattern = target_pattern.to_string().lower()
         else:
             reply_content =\
-                KQMLList.fromString('(FAILURE :reason MISSING_PARAMETER)')
+                KQMLList.from_string('(FAILURE :reason MISSING_PARAMETER)')
             return reply_content
-        condition_entity = content_list.getKeywordArg(':condition_entity')
+        condition_entity = content_list.get_keyword_arg(':condition_entity')
         if condition_entity is not None:
-            condition_entity = condition_entity.toString()[1:-1]
-        condition_type = content_list.getKeywordArg(':condition_type')
+            condition_entity = condition_entity.to_string()[1:-1]
+        condition_type = content_list.get_keyword_arg(':condition_type')
         if condition_type is not None:
-            condition_type = condition_type.toString().lower()
+            condition_type = condition_type.to_string().lower()
 
         self.get_context(model)
         if condition_entity is None:

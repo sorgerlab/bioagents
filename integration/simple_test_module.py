@@ -6,11 +6,8 @@ import time
 
 from jnius import autoclass, cast
 from bioagents.trips.trips_module import TripsModule
-
-# Declare KQML java classes
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
+from bioagents.trips.kqml_performative import KQMLPerformative
+from bioagents.trips.kqml_list import KQMLList
 
 class TestModule(TripsModule):
     """The Test module is a TRIPS module built to run unit tests.
@@ -23,7 +20,6 @@ class TestModule(TripsModule):
         super(TestModule, self).__init__(argv[1:])
         self.expected = FIFO()
         self.sent = FIFO()
-        # TODO:make this an input argument
         self.test_file = file_in
         self.msg_counter = 1
 
@@ -36,7 +32,7 @@ class TestModule(TripsModule):
         return None
 
     def get_perf(self, msg_id, msg_txt):
-        perf  = KQMLPerformative.fromString(
+        perf  = KQMLPerformative.from_string(
             '(request :reply-with IO-%d :content %s)' % (msg_id, msg_txt))
         return perf
 
@@ -58,7 +54,7 @@ class TestModule(TripsModule):
         Handle a "reply" message is received.
         '''
         expected_content = self.expected.pop().strip()
-        actual_content = content.toString().strip()
+        actual_content = content.to_string().strip()
         print 'expected: ', expected_content
         print 'actual:   ', actual_content
         print '---'

@@ -121,10 +121,9 @@ class TripsModule(Thread):
             fio = io.FileIO(sfn, mode='r')
             self.inp = kqml_reader.KQMLReader(io.BufferedReader(fio))
             return True
-        # FIXME: cannot test for more specific exception with jnius
-        except JavaException as msg:
+        except socket.error as e:
             if verbose:
-                print msg
+                print e
 
     def register(self):
         if self.name is not None:

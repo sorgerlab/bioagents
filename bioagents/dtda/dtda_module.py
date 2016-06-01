@@ -1,12 +1,9 @@
 import sys
 import logging
 from bioagents.trips import trips_module
-from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
-
-# Declare KQML java classes
-#KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 from bioagents.trips.kqml_performative import KQMLPerformative
 from bioagents.trips.kqml_list import KQMLList
+from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
 
 logger = logging.getLogger('DTDA')
 

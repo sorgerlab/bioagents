@@ -1,21 +1,23 @@
+import io
 import sys
+import socket
 from jnius import autoclass, cast, JavaException
 from threading import Thread
 from kqml_dispatcher import KQMLDispatcher
 from kqml_token import KQMLToken
+from kqml_list import KQMLList
 from kqml_performative import KQMLPerformative
+from kqml_reader import KQMLReader
 
 # Declare java classes for convenience
 java_ostream = autoclass('java.io.OutputStream')
 java_pw = autoclass('java.io.PrintWriter')
 java_sys = autoclass('java.lang.System')
 java_socket = autoclass('java.net.Socket')
-KQMLReader = autoclass('TRIPS.KQML.KQMLReader')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
+#KQMLReader = autoclass('TRIPS.KQML.KQMLReader')
+#KQMLList = autoclass('TRIPS.KQML.KQMLList')
 #KQMLToken = autoclass('TRIPS.KQML.KQMLToken')
 #KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLString = autoclass('TRIPS.KQML.KQMLString')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
 
 class TripsModule(Thread):
     def __init__(self, argv, is_application=False):
@@ -129,9 +131,15 @@ class TripsModule(Thread):
 
     def connect1(self, host, port, verbose=True):
         try:
-            self.socket = java_socket(host, port)
-            self.out = java_pw(self.socket.getOutputStream(), True)
-            self.inp = KQMLReader(self.socket.getInputStream())
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((host, port))
+            #self.socket = java_socket(host, port)
+            #self.out = java_pw(self.socket.getOutputStream(), True)
+            sfn = self.socket.makefile().fileno()
+            self.out = io.BufferedWriter(io.FileIO(sfn, mode='w'))
+            fio = io.FileIO(sfn, mode='r')
+            self.inp = KQMLReader(io.BufferedReader(fio))
+            #self.inp = KQMLReader(self.socket.getInputStream())
             return True
         # FIXME: cannot test for more specific exception with jnius
         except JavaException as msg:
@@ -158,7 +166,7 @@ class TripsModule(Thread):
         content = KQMLList()
         content.add('module-status')
         content.add('ready')
-        perf.set_parameter(':content', cast(KQMLObject, content))
+        perf.set_parameter(':content', content)
         self.send(perf)
 
     def exit(self, n):
@@ -301,7 +309,8 @@ class TripsModule(Thread):
         except IOError:
             print 'IOError'
             pass
-        self.out.println()
+        self.out.write('\n')
+        self.out.flush()
         print msg.to_string()
 
     def send_with_continuation(self, msg, cont):

@@ -1,3 +1,4 @@
+import io
 import logging
 from kqml_exceptions import *
 from kqml_list import KQMLList
@@ -14,21 +15,24 @@ class KQMLReader(object):
         self.reader.close()
 
     def read_char(self):
-        ch = self.reader.read(n=1)
+        ch = self.reader.read(1)
         self.inbuf += ch
         return ch
 
     def unget_char(self, ch):
         # Rewind by 1 relative to current position
-        self.reader.seek(-1, mode=1)
+        self.reader.seek(-1, 1)
         self.reader.write(ch)
         # Rewind by 1 relative to current position
-        self.reader.seek(-1, mode=1)
+        self.reader.seek(-1, 1)
         self.inbuf = self.inbuf[:-1]
 
     def peek_char(self):
-        ch = self.read_char()
-        self.unget_char(ch)
+        if isinstance(self.reader, io.BufferedReader):
+            ch = self.reader.peek(1)
+        else:
+            ch = self.read_char()
+            self.unget_char(ch)
         return ch
 
     @staticmethod
@@ -72,14 +76,19 @@ class KQMLReader(object):
         buf = ''
         done = False
         in_pipes = False
+        can_peek = isinstance(self.reader, io.BufferedReader)
         while not done:
-            ch = self.read_char()
+            if can_peek:
+                ch = self.peek_char()
+            else:
+                ch = self.read_char()
             if ch == '|':
                 in_pipes = not in_pipes
             if in_pipes or self.is_token_char(ch):
                 buf += ch
             else:
-                self.unget_char(ch)
+                if not can_peek:
+                    self.unget_char(ch)
                 done = True
         return KQMLToken(buf)
 
@@ -163,10 +172,11 @@ class KQMLReader(object):
     def skip_whitespace(self):
         done = False
         while not done:
-            ch = self.read_char()
+            ch = self.peek_char()
             if not ch.isspace():
-                self.unget_char(ch)
                 done = True
+            else:
+                self.read_char()
 
     def read_performative(self):
         self.inbuf = ''

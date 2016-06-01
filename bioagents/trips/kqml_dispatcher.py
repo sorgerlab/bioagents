@@ -15,7 +15,7 @@ class KQMLDispatcher(Thread):
     def run(self):
         try:
             while True:
-                msg = self.reader.readPerformative()
+                msg = self.reader.read_performative()
                 self.dispatch_message(msg)
         # FIXME: not handling KQMLException and
         # KQMLBadCharacterException

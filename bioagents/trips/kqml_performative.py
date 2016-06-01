@@ -1,7 +1,6 @@
 import StringIO
 from kqml_list import KQMLList
 from kqml_token import KQMLToken
-from kqml_reader import KQMLReader
 from kqml_exceptions import KQMLBadPerformativeException
 
 class KQMLPerformative(object):
@@ -35,14 +34,14 @@ class KQMLPerformative(object):
         return self.data[0].to_string()
 
     def get_parameter(self, keyword):
-        for i, key in enumerate([d.to_string() in self.data[1:-1]]):
+        for i, key in enumerate([d.to_string() for d in self.data[:-1]]):
             if key.lower() == keyword.lower():
                 return self.data[i+1]
         return None
 
     def set_parameter(self, keyword, value):
         found = False
-        for i, key in enumerate([d.to_string() for d in self.data[1:-1]]):
+        for i, key in enumerate([d.to_string() for d in self.data[:-1]]):
             if key.lower() == keyword.lower():
                 found = True
                 self.data[i+1] = value
@@ -51,7 +50,7 @@ class KQMLPerformative(object):
             self.data.add(value)
 
     def remove_parameter(self, keyword, value):
-        for i, key in enumerate([d.to_string() in self.data[1:-1]]):
+        for i, key in enumerate([d.to_string() for d in self.data[:-1]]):
             if key.lower() == keyword.lower():
                 del self.data[i]
                 del self.data[i]
@@ -78,3 +77,6 @@ class KQMLPerformative(object):
 
     def __repr__(self):
         return self.__str__()
+
+from kqml_reader import KQMLReader
+

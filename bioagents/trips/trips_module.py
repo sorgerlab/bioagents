@@ -325,10 +325,10 @@ class TripsModule(Thread):
         self.send(msg)
 
     def reply(self, msg, reply_msg):
-        sender = msg.getParameter(':sender')
+        sender = msg.get_parameter(':sender')
         if sender is not None:
             reply_msg.set_parameter(':receiver', sender)
-        reply_with = msg.getParameter(':reply-with')
+        reply_with = msg.get_parameter(':reply-with')
         if reply_with is not None:
             reply_msg.set_parameter(':in-reply-to', reply_with)
         self.send(reply_msg)

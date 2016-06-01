@@ -50,7 +50,7 @@ class KQMLList(object):
 
     def get_keyword_arg(self, keyword):
         for i, s in enumerate(self.data):
-            if s == keyword:
+            if s.to_string().upper() == keyword.upper():
                 if i < len(self.data)-1:
                     return self.data[i+1] 
                 else:

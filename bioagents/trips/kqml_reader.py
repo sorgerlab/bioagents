@@ -3,6 +3,7 @@ import logging
 from kqml_exceptions import *
 from kqml_list import KQMLList
 from kqml_token import KQMLToken
+from kqml_performative import KQMLPerformative
 
 logging.getLogger('KQMLReader')
 
@@ -29,7 +30,7 @@ class KQMLReader(object):
 
     def peek_char(self):
         if isinstance(self.reader, io.BufferedReader):
-            ch = self.reader.peek(1)
+            ch = self.reader.peek(1)[0]
         else:
             ch = self.read_char()
             self.unget_char(ch)
@@ -78,17 +79,14 @@ class KQMLReader(object):
         in_pipes = False
         can_peek = isinstance(self.reader, io.BufferedReader)
         while not done:
-            if can_peek:
-                ch = self.peek_char()
-            else:
-                ch = self.read_char()
+            ch = self.peek_char()
             if ch == '|':
                 in_pipes = not in_pipes
+                self.read_char()
             if in_pipes or self.is_token_char(ch):
                 buf += ch
+                self.read_char()
             else:
-                if not can_peek:
-                    self.unget_char(ch)
                 done = True
         return KQMLToken(buf)
 

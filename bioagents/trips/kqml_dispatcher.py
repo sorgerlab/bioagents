@@ -42,11 +42,11 @@ class KQMLDispatcher(Thread):
             pass
 
     def dispatch_message(self, msg):
-        verb = msg.getVerb()
+        verb = msg.get_verb()
         if verb is None:
             self.receiver.receive_message_missing_verb(msg)
             return
-        reply_id_obj = msg.getParameter(':in-reply-to')
+        reply_id_obj = msg.get_parameter(':in-reply-to')
         if reply_id_obj is not None:
             reply_id = reply_id_obj.stringValue().upper()
             try:
@@ -58,7 +58,7 @@ class KQMLDispatcher(Thread):
                 pass
 
         vl = verb.lower()
-        content = msg.getParameter(':content')
+        content = msg.get_parameter(':content')
         content_msg_types = ['ask-if','ask-all','ask-one','stream-all','tell', 
                             'untell', 'deny', 'insert', 'uninsert', 
                             'delete-one', 'delete-all', 'undelete', 'achieve', 

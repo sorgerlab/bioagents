@@ -4,7 +4,6 @@ import operator
 import threading
 import time
 
-from jnius import autoclass, cast
 from bioagents.trips.trips_module import TripsModule
 from bioagents.trips.kqml_performative import KQMLPerformative
 from bioagents.trips.kqml_list import KQMLList
@@ -85,5 +84,6 @@ class FIFO(object):
         return False
 
 if __name__ == "__main__":
-    dm = TestModule(['-name', 'Test'] + sys.argv[2:], sys.argv[1])
-    dm.run()
+    m = TestModule(['-name', 'Test'] + sys.argv[2:], sys.argv[1])
+    m.start()
+    m.join()

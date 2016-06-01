@@ -4,13 +4,9 @@ import operator
 import threading
 import time
 
-from jnius import autoclass, cast
 from bioagents.trips.trips_module import TripsModule
-
-# Declare KQML java classes
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
+from bioagents.trips.kqml_performative import KQMLPerformative
+from bioagents.trips.kqml_list import KQMLList
 
 class Test_State():
     def __init__(self,request,expected):
@@ -33,10 +29,10 @@ class Test_State():
         return self.actual
 
     def get_content(self):
-        reply_content = KQMLList()        
+        reply_content = KQMLList()
         if self.get_actual():
-            actual_string = self.get_actual().toString()
-            expected_string = self.get_expected().toString()
+            actual_string = self.get_actual().to_string()
+            expected_string = self.get_expected().to_string()
             print 'get_content:actual_string {0}'.format(actual_string)
             print 'get_content:expected_string {0}'.format(expected_string)
             if expected_string in actual_string:
@@ -87,8 +83,8 @@ class Unit_Test():
             print 'reply {0}'.format(t)
             t_content = t.get_content()
             if t_content:
-                reply_content.add(t_content.toString())
-        reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
+                reply_content.add(t_content.to_string())
+        reply_msg.setParameter(':content', reply_content)
         return reply_msg
 
 class Handler():
@@ -104,7 +100,7 @@ class Handler():
             request.add('Test')
             print 'runtest_time:test_state:{0}'.format(self.test_state)
             self.reciever.send_with_continuation(request,self)
-            print 'runtest_time:request:{0}'.format(request.toString())
+            print 'runtest_time:request:{0}'.format(request.to_string())
             self.unit_test.next()
 
     def receive(self,actual):
@@ -138,7 +134,7 @@ class Test_Module(TripsModule):
             for subtask in subtasks:
                 msg_txt = '(subscribe :content (request &key :content ' +\
                     '(%s &key :content (%s . *))))' % (task, subtask)
-                self.send(KQMLPerformative.fromString(msg_txt))
+                self.send(KQMLPerformative.from_string(msg_txt))
         # Send ready message
         self.ready()
         return None
@@ -149,16 +145,16 @@ class Test_Module(TripsModule):
         and call the appropriate function to prepare the response. A reply
         "tell" message is then sent back.
         '''
-        content_list = cast(KQMLList, content)
-        task_str = content_list.get(0).toString().upper()
+        content_list = content
+        task_str = content_list[0].to_string().upper()
 
         unit_test = Unit_Test()
         if task_str == 'ONT::PERFORM':
-            for i in range(1,content_list.size()):
-                test_wrapper = cast(KQMLList, content_list.get(i))
-                if test_wrapper.get(0).toString().upper() == 'ONT::TEST':
-                    request = cast(KQMLList, test_wrapper.get(1))
-                    expected = test_wrapper.get(2)
+            for i in range(1,content_list.length()):
+                test_wrapper = content_list[i]
+                if test_wrapper[0].to_string().upper() == 'ONT::TEST':
+                    request = test_wrapper[1]
+                    expected = test_wrapper[2]
                     unit_test.save_test(request,expected)
             self.runtest_time(msg,unit_test)
         else:
@@ -184,7 +180,7 @@ class Test_Module(TripsModule):
         Response content to version message
         '''
         reply_content = KQMLList()
-        version_response = KQMLList.fromString( '' +\
+        version_response = KQMLList.from_string( '' +\
             '(ONT::TELL :content ' +\
             ')')
 
@@ -192,5 +188,6 @@ class Test_Module(TripsModule):
         return reply_content
 
 if __name__ == "__main__":
-    dm = Test_Module(['-name', 'Test'] + sys.argv[1:])
-    dm.run()
+    m = Test_Module(['-name', 'Test'] + sys.argv[1:])
+    m.start()
+    m.join()

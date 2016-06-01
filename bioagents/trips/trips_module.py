@@ -1,18 +1,12 @@
 import io
 import sys
 import socket
-from jnius import autoclass, cast, JavaException
 from threading import Thread
 import kqml_reader
 from kqml_dispatcher import KQMLDispatcher
 from kqml_token import KQMLToken
 from kqml_list import KQMLList
 from kqml_performative import KQMLPerformative
-
-# Declare java classes for convenience
-java_ostream = autoclass('java.io.OutputStream')
-java_pw = autoclass('java.io.PrintWriter')
-java_sys = autoclass('java.lang.System')
 
 class TripsModule(Thread):
     def __init__(self, argv, is_application=False):
@@ -51,20 +45,13 @@ class TripsModule(Thread):
                 self.exit(-1)
         else:
             print 'TripsModule: using stdio connection'
-            self.out = java_pw(cast(java_ostream, java_sys.out))
-            java_in = getattr(java_sys, 'in')
-            self.inp = kqml_reader.KQMLReader(java_in)
+            self.out = sys.stdout
+            self.inp = kqml_reader.KQMLReader(sys.stdin)
 
         self.dispatcher = KQMLDispatcher(self, self.inp)
 
         if self.name is not None:
             self.register()
-
-    def is_connected(self):
-        if self.socket is not None:
-            return self.socket.isConnected()
-        else:
-            return False
 
     def get_parameter(self, param_str):
         for i, a in enumerate(self.argv):
@@ -128,13 +115,11 @@ class TripsModule(Thread):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((host, port))
-            #self.socket = java_socket(host, port)
-            #self.out = java_pw(self.socket.getOutputStream(), True)
             sfn = self.socket.makefile().fileno()
-            self.out = io.BufferedWriter(io.FileIO(sfn, mode='w'))
+            fio = io.FileIO(sfn, mode='w')
+            self.out = io.BufferedWriter(fio)
             fio = io.FileIO(sfn, mode='r')
             self.inp = kqml_reader.KQMLReader(io.BufferedReader(fio))
-            #self.inp = kqml_reader.KQMLReader(self.socket.getInputStream())
             return True
         # FIXME: cannot test for more specific exception with jnius
         except JavaException as msg:

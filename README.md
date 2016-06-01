@@ -15,7 +15,7 @@ Note that currently the bioagents have limited usage on their own. They are
 meant to be launched in the context of a communication system. 
 
 The bioagents depend on the following non-default python packages: objectpath,
-rdflib, jnius-indra, functools32, requests, lxml, pandas, suds
+rdflib, functools32, requests, lxml, pandas, suds
 
 The MRA uses [INDRA](https://github.com/sorgerlab/indra) to assemble models
 based on a natural language description of mechanisms. Please follow the

@@ -4,7 +4,7 @@
 import urllib, urllib2
 import json
 import subprocess
-
+from time import sleep
 
 class RuntimeError(Exception):
     def __init__(self, errors):
@@ -152,17 +152,6 @@ class KappaRuntime(object):
             raise RuntimeError(text)
         else:
             raise e
-
-from jnius import autoclass, cast
-from TripsModule import trips_module
-from kappa_client import KappaRuntime, RuntimeError
-from time import sleep
-
-# Declare KQML java classes
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
-
 
 if __name__ == "__main__":
     with open("../abc-pert.ka") as f:

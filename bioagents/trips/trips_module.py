@@ -1,20 +1,12 @@
+import io
 import sys
-from jnius import autoclass, cast, JavaException
+import socket
 from threading import Thread
+import kqml_reader
 from kqml_dispatcher import KQMLDispatcher
-
-# Declare java classes for convenience
-java_ostream = autoclass('java.io.OutputStream')
-java_pw = autoclass('java.io.PrintWriter')
-java_sys = autoclass('java.lang.System')
-java_socket = autoclass('java.net.Socket')
-KQMLReader = autoclass('TRIPS.KQML.KQMLReader')
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
-KQMLToken = autoclass('TRIPS.KQML.KQMLToken')
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLString = autoclass('TRIPS.KQML.KQMLString')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
+from kqml_token import KQMLToken
+from kqml_list import KQMLList
+from kqml_performative import KQMLPerformative
 
 class TripsModule(Thread):
     def __init__(self, argv, is_application=False):
@@ -53,20 +45,13 @@ class TripsModule(Thread):
                 self.exit(-1)
         else:
             print 'TripsModule: using stdio connection'
-            self.out = java_pw(cast(java_ostream, java_sys.out))
-            java_in = getattr(java_sys, 'in')
-            self.inp = KQMLReader(java_in)
+            self.out = sys.stdout
+            self.inp = kqml_reader.KQMLReader(sys.stdin)
 
         self.dispatcher = KQMLDispatcher(self, self.inp)
-        
+
         if self.name is not None:
             self.register()
-    
-    def is_connected(self):
-        if self.socket is not None:
-            return self.socket.isConnected()
-        else:
-            return False
 
     def get_parameter(self, param_str):
         for i, a in enumerate(self.argv):
@@ -89,7 +74,7 @@ class TripsModule(Thread):
                 else:
                     self.host = value
                     self.port = self.DEFAULT_PORT
-        
+
         value = self.get_parameter('-name')
         if value is not None:
             self.name = value
@@ -103,13 +88,13 @@ class TripsModule(Thread):
             self.scan_for_port = True
         else:
             self.scan_for_port = False
-            
+
         value = self.get_parameter('-debug')
         if value in ('true', 't', 'yes'):
             self.set_debugging_enabled(True)
         else:
             self.set_debugging_enabled(False)
-    
+
     def connect(self, host=None, startport=None):
         if host is None:
             host = self.host
@@ -128,26 +113,29 @@ class TripsModule(Thread):
 
     def connect1(self, host, port, verbose=True):
         try:
-            self.socket = java_socket(host, port)
-            self.out = java_pw(self.socket.getOutputStream(), True)
-            self.inp = KQMLReader(self.socket.getInputStream())
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((host, port))
+            sfn = self.socket.makefile().fileno()
+            fio = io.FileIO(sfn, mode='w')
+            self.out = io.BufferedWriter(fio)
+            fio = io.FileIO(sfn, mode='r')
+            self.inp = kqml_reader.KQMLReader(io.BufferedReader(fio))
             return True
-        # FIXME: cannot test for more specific exception with jnius
-        except JavaException as msg:
+        except socket.error as e:
             if verbose:
-                print msg
-    
+                print e
+
     def register(self):
         if self.name is not None:
             perf = KQMLPerformative('register')
-            perf.setParameter(':name', self.name)
+            perf.set_parameter(':name', self.name)
             if self.group_name is not None:
                 try:
                     if self.group_name.startswith('('):
                         group = KQMLList.fromString(self.group_name)
                     else:
                         group = KQMLToken(self.group_name)
-                    perf.setParameter(':group', group)
+                    perf.set_parameter(':group', group)
                 except IOError:
                     print 'bad group name: ' + self.group_name
             self.send(perf)
@@ -157,7 +145,7 @@ class TripsModule(Thread):
         content = KQMLList()
         content.add('module-status')
         content.add('ready')
-        perf.setParameter(':content', cast(KQMLObject, content))
+        perf.set_parameter(':content', content)
         self.send(perf)
 
     def exit(self, n):
@@ -167,19 +155,19 @@ class TripsModule(Thread):
             if self.dispatcher is not None:
                 self.dispatcher.shutdown()
             sys.exit(n)
-   
+
     def receive_eof(self):
         self.exit(0)
-    
+
     def receive_message_missing_verb(self, msg):
         self.error_reply(msg, 'missing verb in performative')
-    
+
     def receive_message_missing_content(self, msg):
         self.error_reply(msg, 'missing content in performative')
-    
+
     def receive_ask_if(self, msg, content):
         self.error_reply(msg, 'unexpected performative: ask-if')
-    
+
     def receive_ask_all(self, msg, content):
         self.error_reply(msg, 'unexpected performative: ask-all')
 
@@ -269,10 +257,10 @@ class TripsModule(Thread):
 
     def receive_error(self, msg):
         self.error_reply(msg, 'unexpected performative: error')
-    
+
     def receive_sorry(self, msg):
         self.error_reply(msg, 'unexpected performative: sorry')
-    
+
     def receive_ready(self, msg):
         self.error_reply(msg, 'unexpected performative: ready')
 
@@ -300,9 +288,10 @@ class TripsModule(Thread):
         except IOError:
             print 'IOError'
             pass
-        self.out.println()
-        print msg.toString()
-    
+        self.out.write('\n')
+        self.out.flush()
+        print msg.to_string()
+
     def send_with_continuation(self, msg, cont):
         reply_id_base = 'IO-'
         if self.name is not None:
@@ -315,17 +304,17 @@ class TripsModule(Thread):
         self.send(msg)
 
     def reply(self, msg, reply_msg):
-        sender = msg.getParameter(':sender')
+        sender = msg.get_parameter(':sender')
         if sender is not None:
-            reply_msg.setParameter(':receiver', sender)
-        reply_with = msg.getParameter(':reply-with')
+            reply_msg.set_parameter(':receiver', sender)
+        reply_with = msg.get_parameter(':reply-with')
         if reply_with is not None:
-            reply_msg.setParameter(':in-reply-to', reply_with)
+            reply_msg.set_parameter(':in-reply-to', reply_with)
         self.send(reply_msg)
 
     def error_reply(self, msg, comment):
         reply_msg = KQMLPerformative('error')
-        reply_msg.setParameter(':comment', comment)
+        reply_msg.set_parameter(':comment', comment)
         self.reply(msg, reply_msg)
 
     def error(self, msg):

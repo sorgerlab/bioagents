@@ -4,14 +4,11 @@ import argparse
 import operator
 import json
 
-from jnius import autoclass, cast
-from indra.trips import trips_module
 from kappa_client import KappaRuntime, RuntimeError
 
-# Declare KQML java classes
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
+from bioagents.trips.trips_module import TripsModule
+from bioagents.trips.kqml_performative import KQMLPerformative
+from bioagents.trips.kqml_list import KQMLList
 
 logger = logging.getLogger('KAPPA')
 
@@ -92,7 +89,7 @@ def render_status(status):
     return reply_content
 
 
-class Kappa_Module(trips_module.TripsModule):
+class Kappa_Module(TripsModule):
     '''
     The Kappa module is a TRIPS module built around the Kappa client. Its role
     is to receive and decode messages and send responses from and to other
@@ -108,6 +105,9 @@ class Kappa_Module(trips_module.TripsModule):
         args = parser.parse_args()
         if args.kappa_url:
             self.kappa_url = args.kappa_url
+        else:
+            logging.error('No Kappa URL given.')
+            sys.exit()
 
     def init(self):
         '''
@@ -118,7 +118,7 @@ class Kappa_Module(trips_module.TripsModule):
         for task in self.tasks:
             msg_txt =\
                 '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.fromString(msg_txt))
+            self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a kappa runtime
         self.kappa = KappaRuntime(self.kappa_url)
         # Send ready message
@@ -130,8 +130,8 @@ class Kappa_Module(trips_module.TripsModule):
         and call the appropriate function to prepare the response. A reply
         "tell" message is then sent back.
         '''
-        content_list = cast(KQMLList, content)
-        task_str = content_list.get(0).toString().upper()
+        content_list = content
+        task_str = content_list[0].to_string().upper()
         arguments = self.request_arguments(content_list)
         if task_str == 'KAPPA-VERSION':
             reply_content = self.respond_version()
@@ -148,8 +148,8 @@ class Kappa_Module(trips_module.TripsModule):
             self.error_reply(msg, message)
             return
         reply_msg = KQMLPerformative('reply')
-        reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
-        logger.debug(reply_content.toString())
+        reply_msg.set_parameter(':content', reply_content)
+        logger.debug(reply_content.to_string())
         self.reply(msg, reply_msg)
 
     def respond_version(self):
@@ -157,11 +157,11 @@ class Kappa_Module(trips_module.TripsModule):
         Response content to version message
         '''
         response = self.kappa.version()
-        reply_content = KQMLList.fromString(
+        reply_content = KQMLList.from_string(
                         '(SUCCESS ' +
                              ':VERSION "%s" ' % response['version'] +
                              ':BUILD   "%s")' % response['build'])
-        logger.debug(reply_content.toString())
+        logger.debug(reply_content.to_string())
         return reply_content
 
     def response_error(self, error):
@@ -170,16 +170,17 @@ class Kappa_Module(trips_module.TripsModule):
             error_msg = '"%s"' %\
                 str(e).encode('string-escape').replace('"', '\\"')
             reply_content.add(error_msg)
-        return self.format_error(reply_content.toString())
+        return self.format_error(reply_content.to_string())
 
     def request_arguments(self, arguments):
         request = {}
-        arg_list = [arguments.get(index) for index in range(arguments.size())]
+        arg_list = [arguments[index] for index in
+                    range(arguments.length())]
         for i, a in enumerate(arg_list):
-            arg_str = a.toString()
+            arg_str = a.to_string()
             if arg_str.startswith(':'):
                 key = arg_str[1:].upper()
-                val = arg_list[i+1].toString()
+                val = arg_list[i+1].to_string()
                 request[key] = val
         logger.debug(request)
         return request
@@ -200,14 +201,14 @@ class Kappa_Module(trips_module.TripsModule):
             try:
                 response = self.kappa.parse(request_code)
                 logger.debug(response)
-                reply_content = KQMLList.fromString('(SUCCESS)')
+                reply_content = KQMLList.from_string('(SUCCESS)')
             except RuntimeError as e:
                 logger.debug(e.errors)
                 reply_content = self.response_error(e.errors)
         return reply_content
 
     def format_error(self, message):
-        response_content = KQMLList.fromString(
+        response_content = KQMLList.from_string(
                             '(FAILURE :reason %s)' % message)
         return response_content
 
@@ -236,7 +237,7 @@ class Kappa_Module(trips_module.TripsModule):
                     logger.debug(parameter)
                     response = self.kappa.start(parameter)
                     response_message = '(SUCCESS :id %d)' % response
-                    response_content = KQMLList.fromString(response_message)
+                    response_content = KQMLList.from_string(response_message)
                 except RuntimeError as e:
                     response_content = self.response_error(e.errors)
             except ValueError as e:
@@ -264,7 +265,7 @@ class Kappa_Module(trips_module.TripsModule):
             try:
                 token = int(arguments["ID"])
                 status = self.kappa.stop(token)
-                response_content = KQMLList.fromString('(SUCCESS)')
+                response_content = KQMLList.from_string('(SUCCESS)')
             except RuntimeError as e:
                 response_content = self.response_error(e.errors)
         return response_content

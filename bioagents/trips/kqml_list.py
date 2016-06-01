@@ -1,5 +1,6 @@
 import StringIO
 from kqml_token import KQMLToken
+import kqml_reader
 
 class KQMLList(object):
     def __init__(self, objects=None):
@@ -10,7 +11,7 @@ class KQMLList(object):
                 self.data.append(o)
 
     def __str__(self):
-        return '(' + ' '.join(d.__str__() for d in self.data) + ')'
+        return '(' + ' '.join([str(d) for d in self.data]) + ')'
 
     def __getitem__(self, *args):
         return self.data.__getitem__(*args)
@@ -52,7 +53,7 @@ class KQMLList(object):
         for i, s in enumerate(self.data):
             if s.to_string().upper() == keyword.upper():
                 if i < len(self.data)-1:
-                    return self.data[i+1] 
+                    return self.data[i+1]
                 else:
                     return None
         return None
@@ -70,9 +71,9 @@ class KQMLList(object):
         return out.getvalue()
 
     @classmethod
-    def from_string(s):
+    def from_string(cls, s):
         sreader = StringIO.StringIO(s)
-        kreader = KQMLReader(sreader)
+        kreader = kqml_reader.KQMLReader(sreader)
         return kreader.read_list()
 
     def sublist(self, from_idx, to_idx):
@@ -90,6 +91,7 @@ class KQMLList(object):
                 return idx
             except ValueError:
                 return -1
+
     def index_of_ignore_cae(self, keyword):
         for i, s in enumerate(self.data):
             if s.lower() == keyword.lower():
@@ -97,3 +99,4 @@ class KQMLList(object):
         return -1
 
     #TODO: didn't implement all the functions here
+

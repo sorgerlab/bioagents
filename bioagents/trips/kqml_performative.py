@@ -1,4 +1,5 @@
 import StringIO
+import kqml_reader
 from kqml_list import KQMLList
 from kqml_token import KQMLToken
 from kqml_exceptions import KQMLBadPerformativeException
@@ -69,7 +70,7 @@ class KQMLPerformative(object):
     @classmethod
     def from_string(cls, s):
         sreader = StringIO.StringIO(s)
-        kreader = KQMLReader(sreader)
+        kreader = kqml_reader.KQMLReader(sreader)
         return cls(kreader.read_list())
 
     def __str__(self):
@@ -77,6 +78,3 @@ class KQMLPerformative(object):
 
     def __repr__(self):
         return self.__str__()
-
-from kqml_reader import KQMLReader
-

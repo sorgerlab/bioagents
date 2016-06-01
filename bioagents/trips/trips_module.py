@@ -13,11 +13,6 @@ from kqml_reader import KQMLReader
 java_ostream = autoclass('java.io.OutputStream')
 java_pw = autoclass('java.io.PrintWriter')
 java_sys = autoclass('java.lang.System')
-java_socket = autoclass('java.net.Socket')
-#KQMLReader = autoclass('TRIPS.KQML.KQMLReader')
-#KQMLList = autoclass('TRIPS.KQML.KQMLList')
-#KQMLToken = autoclass('TRIPS.KQML.KQMLToken')
-#KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
 
 class TripsModule(Thread):
     def __init__(self, argv, is_application=False):

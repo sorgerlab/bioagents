@@ -48,7 +48,7 @@ class KQMLDispatcher(Thread):
             return
         reply_id_obj = msg.get_parameter(':in-reply-to')
         if reply_id_obj is not None:
-            reply_id = reply_id_obj.stringValue().upper()
+            reply_id = reply_id_obj.string_value().upper()
             try:
                 value = self.reply_continuations[reply_id]
                 value.receive(msg)

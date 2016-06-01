@@ -1,9 +1,11 @@
 import io
 import logging
 from kqml_exceptions import *
+
 from kqml_list import KQMLList
 from kqml_token import KQMLToken
 from kqml_performative import KQMLPerformative
+from kqml_string import KQMLString
 
 logging.getLogger('KQMLReader')
 
@@ -185,4 +187,3 @@ class KQMLReader(object):
             return KQMLPerformative(expr)
         else:
             raise KQMLExpectedListException(self.inbuf)
-

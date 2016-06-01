@@ -69,7 +69,7 @@ class DTDA_Module(trips_module.TripsModule):
     def respond_dont_know(self, msg, content_string):
         resp = '(ONT::TELL :content (ONT::DONT-KNOW :content %s))' %\
             content_string
-        resp_list = KQMLList.fromString(resp)
+        resp_list = KQMLList.from_string(resp)
         reply_msg = KQMLPerformative('reply')
         reply_msg.set_parameter(':content', resp_list)
         self.reply(msg, reply_msg)
@@ -112,7 +112,7 @@ class DTDA_Module(trips_module.TripsModule):
                 drug_list_str += '(:name %s) ' % dn.encode('ascii', 'ignore')
             else:
                 drug_list_str += '(:name %s :chebi_id %s) ' % (dn, ci)
-        reply_content = KQMLList.fromString(
+        reply_content = KQMLList.from_string(
             '(SUCCESS :drugs (' + drug_list_str + '))')
         return reply_content
 
@@ -124,7 +124,7 @@ class DTDA_Module(trips_module.TripsModule):
         try:
             disease_type_filter = self.get_disease_filter(disease_str)
         except DiseaseNotFoundException:
-            reply_content = KQMLList.fromString(
+            reply_content = KQMLList.from_string(
                 '(FAILURE :reason DISEASE_NOT_FOUND)')
             return reply_content
         logger.debug('Disease type filter: %s' % disease_type_filter)
@@ -136,7 +136,7 @@ class DTDA_Module(trips_module.TripsModule):
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
         reply_content =\
-            KQMLList.fromString(
+            KQMLList.from_string(
                 '(SUCCESS ' +
                 ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +
                 ':prevalence %.2f ' % (mut_percent/100.0) +
@@ -164,7 +164,7 @@ class DTDA_Module(trips_module.TripsModule):
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
-        reply_content.add(KQMLList.fromString(
+        reply_content.add(KQMLList.from_string(
                 '(SUCCESS ' +
                 ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +
                 ':prevalence %.2f ' % (mut_percent/100.0) +
@@ -178,7 +178,7 @@ class DTDA_Module(trips_module.TripsModule):
                 drug_list_str += '(:name %s) ' % dn.encode('ascii', 'ignore')
             else:
                 drug_list_str += '(:name %s :chebi_id %s) ' % (dn, ci)
-        reply_content.add(KQMLList.fromString(
+        reply_content.add(KQMLList.from_string(
             '(SUCCESS :drugs (' + drug_list_str + '))'))
 
         return reply_content

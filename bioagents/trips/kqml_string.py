@@ -18,14 +18,25 @@ class KQMLString(object):
             return False
         else:
             return obj.data == self.data
-    
-    # TODO: make sure that the double quotes are printed correctly
+
     def write(self, out):
-        data_str = out.write(self.data)
+        out.write('"')
+        for ch in self.data:
+            if ch == '"' or ch == '\\':
+                out.write('\\')
+            out.write(ch)
+        out.write('"')
 
     def to_string(self):
         out = StringIO.StringIO()
         self.write(out)
+        return out.getvalue()
 
     def string_value(self):
         return self.data
+
+    def __str__(self):
+        return self.to_string()
+
+    def __repr__(self):
+        return self.__str__()

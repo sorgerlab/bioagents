@@ -1,13 +1,12 @@
 import sys
 import logging
-from jnius import autoclass, cast
 from bioagents.trips import trips_module
 from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
 
 # Declare KQML java classes
-KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
-KQMLList = autoclass('TRIPS.KQML.KQMLList')
-KQMLObject = autoclass('TRIPS.KQML.KQMLObject')
+#KQMLPerformative = autoclass('TRIPS.KQML.KQMLPerformative')
+from bioagents.trips.kqml_performative import KQMLPerformative
+from bioagents.trips.kqml_list import KQMLList
 
 logger = logging.getLogger('DTDA')
 
@@ -33,7 +32,7 @@ class DTDA_Module(trips_module.TripsModule):
         for task in self.tasks:
             msg_txt =\
                 '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.fromString(msg_txt))
+            self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
         # Send ready message
@@ -45,8 +44,8 @@ class DTDA_Module(trips_module.TripsModule):
         and call the appropriate function to prepare the response. A reply
         message is then sent back.
         '''
-        content_list = cast(KQMLList, content)
-        task_str = content_list.get(0).toString().upper()
+        content_list = content
+        task_str = content_list[0].to_string().upper()
         if task_str == 'IS-DRUG-TARGET':
             reply_content = self.respond_is_drug_target(content_list)
         elif task_str == 'FIND-TARGET-DRUG':
@@ -64,7 +63,7 @@ class DTDA_Module(trips_module.TripsModule):
             return
 
         reply_msg = KQMLPerformative('reply')
-        reply_msg.setParameter(':content', cast(KQMLObject, reply_content))
+        reply_msg.set_parameter(':content', reply_content)
         self.reply(msg, reply_msg)
 
     def respond_dont_know(self, msg, content_string):
@@ -72,17 +71,17 @@ class DTDA_Module(trips_module.TripsModule):
             content_string
         resp_list = KQMLList.fromString(resp)
         reply_msg = KQMLPerformative('reply')
-        reply_msg.setParameter(':content', cast(KQMLObject, resp_list))
+        reply_msg.set_parameter(':content', resp_list)
         self.reply(msg, reply_msg)
 
     def respond_is_drug_target(self, content_list):
         '''
         Response content to is-drug-target request
         '''
-        drug_arg = cast(KQMLList, content_list.getKeywordArg(':drug'))
-        drug = drug_arg.get(0).toString()
-        target_arg = cast(KQMLList, content_list.getKeywordArg(':target'))
-        target = target_arg.get(0).toString()
+        drug_arg = content_list.get_keyword_arg(':drug')
+        drug = drug_arg[0].to_string()
+        target_arg = content_list.get_keyword_arg(':target')
+        target = target_arg[0].to_string()
         reply_content = KQMLList()
         try:
             is_target = self.dtda.is_nominal_drug_target(drug, target)
@@ -104,8 +103,8 @@ class DTDA_Module(trips_module.TripsModule):
         Response content to find-target-drug request
         '''
         # TODO: implement
-        target = content_list.getKeywordArg(':target')
-        target_str = target.toString()[1:-1]
+        target = content_list.get_keyword_arg(':target')
+        target_str = target.to_string()[1:-1]
         drug_names, chebi_ids = self.dtda.find_target_drugs(target_str)
         drug_list_str = ''
         for dn, ci in zip(drug_names, chebi_ids):
@@ -121,7 +120,7 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         Response content to find-disease-targets request
         '''
-        disease_str = content_list.getKeywordArg(':disease')
+        disease_str = content_list.get_keyword_arg(':disease')
         try:
             disease_type_filter = self.get_disease_filter(disease_str)
         except DiseaseNotFoundException:
@@ -150,7 +149,7 @@ class DTDA_Module(trips_module.TripsModule):
         Response content to find-treatment request
         '''
         #TODO: eliminate code duplication here
-        disease_str = content_list.getKeywordArg(':disease')
+        disease_str = content_list.get_keyword_arg(':disease')
         reply_content = KQMLList()
         try:
             disease_type_filter = self.get_disease_filter(disease_str)
@@ -188,7 +187,7 @@ class DTDA_Module(trips_module.TripsModule):
     def get_single_argument(arg):
         if arg is None:
             return None
-        arg_str = arg.toString()
+        arg_str = arg.to_string()
         if arg_str[0] == '(' and arg_str[-1] == ')':
              arg_str = arg_str[1:-1]
         arg_str = arg_str.lower()

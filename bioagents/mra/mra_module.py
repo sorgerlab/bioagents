@@ -53,11 +53,21 @@ class MRA_Module(trips_module.TripsModule):
             except InvalidModelDescriptionError as e:
                 logger.error('Invalid model description.')
                 logger.error(e)
-                reply_content =\
-                    KQMLList.from_string('(FAILURE :reason INVALID_DESCRIPTION)')
-
+                fail_msg = '(FAILURE :reason INVALID_DESCRIPTION)'
+                reply_content = KQMLList.from_string(fail_msg)
         elif task_str == 'EXPAND-MODEL':
-            reply_content = self.respond_expand_model(content)
+            try:
+                reply_content = self.respond_expand_model(content)
+            except InvalidModelIdError as e:
+                logger.error('Invalid model ID.')
+                logger.error(e)
+                fail_msg = '(FAILURE :reason INVALID_MODEL_ID)'
+                reply_content = KQMLList.from_string(fail_msg)
+            except InvalidModelDescriptionError as e:
+                logger.error('Invalid model description.')
+                logger.error(e)
+                fail_msg = '(FAILURE :reason INVALID_DESCRIPTION)'
+                reply_content = KQMLList.from_string(fail_msg)
         else:
             self.error_reply(msg, 'Unknown task ' + task_str)
             return
@@ -84,9 +94,13 @@ class MRA_Module(trips_module.TripsModule):
         model_enc = self.encode_model(model)
         try:
             model_diagram = self.get_model_diagram(model, model_id)
-        except DiagramGenerationError:
+        except DiagramGenerationError as e:
+            logger.error('Could not generate model diagram.')
+            logger.error(e)
             model_diagram = ''
-        except DiagramConversionError:
+        except DiagramConversionError as e:
+            logger.error('Could not save model diagram.')
+            logger.error(e)
             model_diagram = ''
         reply_content =\
             KQMLList.from_string(
@@ -98,24 +112,30 @@ class MRA_Module(trips_module.TripsModule):
         '''
         Response content to expand-model request
         '''
-        descr_arg = content_list.get_keyword_arg(':description')
-        descr = descr_arg[0].to_string()
-        descr = self.decode_description(descr)
-
-        model_id_arg = content_list.get_keyword_arg(':model-id')
-        model_id_str = model_id_arg.to_string()
         try:
+            descr_arg = content_list.get_keyword_arg(':description')
+            descr = descr_arg[0].to_string()
+            descr = self.decode_description(descr)
+        except Exception as e:
+            raise InvalidModelDescriptionError(e)
+        model_id_arg = content_list.get_keyword_arg(':model-id')
+        if model_id_arg is None:
+            logger.error('Model ID missing.')
+            raise InvalidModelIdError
+        try:
+            model_id_str = model_id_arg.to_string()
             model_id = int(model_id_str)
-        except ValueError:
-            reply_content =\
-                KQMLList.from_string('(FAILURE :reason INVALID_MODEL_ID)')
-            return reply_content
+        except Exception as e:
+            logger.error('Could not get model ID as integer.')
+            raise InvalidModelIdError(e)
         if model_id < 1 or model_id > len(self.models):
-            reply_content =\
-                KQMLList.from_string('(FAILURE :reason INVALID_MODEL_ID)')
-            return reply_content
+            logger.error('Model ID does not refer to an existing model.')
+            raise InvalidModelIdError
 
-        model = self.mra.expand_model_from_ekb(descr)
+        try:
+            model = self.mra.expand_model_from_ekb(descr)
+        except Exception as e:
+            raise InvalidModelDescriptionError
         self.get_context(model)
         self.models.append(model)
         model_id = len(self.models)
@@ -140,8 +160,6 @@ class MRA_Module(trips_module.TripsModule):
         #TODO: use specific PySB/BNG exceptions and handle them
         # here to show meaningful error messages
         except Exception as e:
-            logger.error('Could not generate model diagram.')
-            logger.error(e)
             raise DiagramGenerationError
         try:
             with open(fname + '.dot', 'wt') as fh:
@@ -153,8 +171,6 @@ class MRA_Module(trips_module.TripsModule):
                 abs_path = abs_path + '/'
             full_path = abs_path + fname + '.png'
         except Exception as e:
-            logger.error('Could not save model diagram as PNG.')
-            logger.error(e)
             raise DiagramConversionError
         return full_path
 
@@ -194,6 +210,9 @@ class DiagramConversionError(Exception):
     pass
 
 class InvalidModelDescriptionError(Exception):
+    pass
+
+class InvalidModelIdError(Exception):
     pass
 
 if __name__ == "__main__":

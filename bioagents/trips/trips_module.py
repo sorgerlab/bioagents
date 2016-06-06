@@ -1,6 +1,7 @@
 import io
 import sys
 import socket
+import logging
 from threading import Thread
 import kqml_reader
 from kqml_dispatcher import KQMLDispatcher
@@ -29,6 +30,7 @@ class TripsModule(Thread):
         self.dispatcher = None
         self.warning_enabled = True
         self.debugging_enabled = False
+        self.logger = logging.getLogger('TripsModule')
 
     def run(self):
         self.init()
@@ -38,13 +40,13 @@ class TripsModule(Thread):
     def init(self):
         self.handle_common_parameters()
         if self.auto_connect:
-            print 'TripsModule: using socket connection'
+            self.logger.info('Using socket connection')
             conn = self.connect(self.host, self.port)
             if not conn:
-                print 'TripsModule: connection failed'
+                self.logger.error('Connection failed')
                 self.exit(-1)
         else:
-            print 'TripsModule: using stdio connection'
+            self.logger.info('Using stdio connection')
             self.out = sys.stdout
             self.inp = kqml_reader.KQMLReader(sys.stdin)
 
@@ -78,6 +80,7 @@ class TripsModule(Thread):
         value = self.get_parameter('-name')
         if value is not None:
             self.name = value
+            self.logger = logging.getLogger(self.name)
 
         value = self.get_parameter('-group')
         if value is not None:
@@ -108,7 +111,8 @@ class TripsModule(Thread):
                 conn = self.connect1(host, port, False)
                 if conn:
                     return True
-            print 'Failed to connect to ' + host + ':' + startport + '-' + port
+            self.logger.error('Failed to connect to ' + host + ':' + \
+                              startport + '-' + port)
             return False
 
     def connect1(self, host, port, verbose=True):
@@ -123,7 +127,7 @@ class TripsModule(Thread):
             return True
         except socket.error as e:
             if verbose:
-                print e
+                self.logger.error(e)
 
     def register(self):
         if self.name is not None:
@@ -137,7 +141,7 @@ class TripsModule(Thread):
                         group = KQMLToken(self.group_name)
                     perf.set_parameter(':group', group)
                 except IOError:
-                    print 'bad group name: ' + self.group_name
+                    self.logger.error('bad group name: ' + self.group_name)
             self.send(perf)
 
     def ready(self):
@@ -286,11 +290,11 @@ class TripsModule(Thread):
         try:
             msg.write(self.out)
         except IOError:
-            print 'IOError'
+            self.logger.error('IOError during message sending')
             pass
         self.out.write('\n')
         self.out.flush()
-        print msg.to_string()
+        self.logger.debug(msg.to_string())
 
     def send_with_continuation(self, msg, cont):
         reply_id_base = 'IO-'

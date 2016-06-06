@@ -22,7 +22,8 @@ class KQMLString(object):
     def write(self, out):
         out.write('"')
         for ch in self.data:
-            if ch == '"' or ch == '\\':
+            #if ch == '"' or ch == '\\':
+            if ch == '"':
                 out.write('\\')
             out.write(ch)
         out.write('"')

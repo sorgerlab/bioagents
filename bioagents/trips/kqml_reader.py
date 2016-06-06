@@ -7,7 +7,7 @@ from kqml_token import KQMLToken
 from kqml_performative import KQMLPerformative
 from kqml_string import KQMLString
 
-logging.getLogger('KQMLReader')
+logger = logging.getLogger('KQMLReader')
 
 class KQMLReader(object):
     def __init__(self, reader):
@@ -115,7 +115,13 @@ class KQMLReader(object):
             if ch == '"':
                 break
             if ch == '\\':
+                # Look at the next character
                 ch = self.read_char()
+                # If it is another backslash, preserve the two
+                if ch == '\\':
+                    buf += '\\\\'
+                    continue
+                # Otherwise only the next character is added to the buffer
             buf += ch
         return KQMLString(buf)
 
@@ -165,6 +171,7 @@ class KQMLReader(object):
     def read_whitespace(self):
         ch = self.read_char()
         if not ch.isspace():
+            logger.error('Expected whitespace, got: %s' % ch)
             raise KQMLExpectedWhitespaceException(self.inbuf)
         else:
             self.skip_whitespace()

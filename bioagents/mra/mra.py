@@ -6,7 +6,6 @@
 import copy
 from indra.assemblers import PysbAssembler
 from indra.statements import Agent, Complex
-from indra import biopax
 from indra import trips
 from indra.databases import uniprot_client
 from bioagents.databases import nextprot_client
@@ -27,11 +26,6 @@ class MRA:
         for stmt in stmts:
             if not self.statement_exists(stmt):
                 self.statements.append(stmt)
-
-    def find_mechanism(self, source, target, force_contains):
-        bp = biopax.process_pc_pathsfromto(source, target,
-                                           neighbor_limit=1)
-        return bp
 
     def build_model_from_text(self, model_txt):
         '''

@@ -1,13 +1,13 @@
 import StringIO
 import kqml_reader
-from kqml_list import KQMLList
+import kqml_list
 from kqml_token import KQMLToken
 from kqml_exceptions import KQMLBadPerformativeException
 
 class KQMLPerformative(object):
     def __init__(self, verb):
-        if not isinstance(verb, KQMLList):
-            self.data = KQMLList()
+        if not isinstance(verb, kqml_list.KQMLList):
+            self.data = kqml_list.KQMLList()
             self.data.add(KQMLToken(verb))
         else:
             length = verb.length()

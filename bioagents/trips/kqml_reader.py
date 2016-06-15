@@ -2,7 +2,7 @@ import io
 import logging
 from kqml_exceptions import *
 
-from kqml_list import KQMLList
+import kqml_list
 from kqml_token import KQMLToken
 from kqml_performative import KQMLPerformative
 from kqml_string import KQMLString
@@ -149,7 +149,7 @@ class KQMLReader(object):
         # TODO: handle EOF
 
     def read_list(self, backquoted=False):
-        lst = KQMLList()
+        lst = kqml_list.KQMLList()
         ch = self.read_char()
         if ch != '(':
             raise KQMLBadOpenException(self.inbuf)
@@ -190,7 +190,7 @@ class KQMLReader(object):
         self.skip_whitespace()
         self.inbuf = ''
         expr = self.read_expr()
-        if isinstance(expr, KQMLList):
+        if isinstance(expr, kqml_list.KQMLList):
             return KQMLPerformative(expr)
         else:
             raise KQMLExpectedListException(self.inbuf)

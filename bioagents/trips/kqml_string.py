@@ -40,4 +40,6 @@ class KQMLString(object):
         return self.to_string()
 
     def __repr__(self):
-        return self.__str__()
+        s = self.__str__()
+        s = s.replace('\n', '\\n')
+        return s

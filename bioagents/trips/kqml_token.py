@@ -92,7 +92,9 @@ class KQMLToken(object):
         return self.to_string()
 
     def __repr__(self):
-        return "KQMLToken('%s')" % self.to_string()
+        s = self.to_string()
+        s = s.replace('\n', '\\n')
+        return s
 
     def __eq__(self, other):
         if not isinstance(other, KQMLToken):

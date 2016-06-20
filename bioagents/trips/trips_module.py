@@ -50,7 +50,7 @@ class TripsModule(Thread):
             self.out = sys.stdout
             self.inp = kqml_reader.KQMLReader(sys.stdin)
 
-        self.dispatcher = KQMLDispatcher(self, self.inp)
+        self.dispatcher = KQMLDispatcher(self, self.inp, self.name)
 
         if self.name is not None:
             self.register()
@@ -294,7 +294,7 @@ class TripsModule(Thread):
             pass
         self.out.write('\n')
         self.out.flush()
-        self.logger.debug(msg.to_string())
+        self.logger.debug(msg.__repr__())
 
     def send_with_continuation(self, msg, cont):
         reply_id_base = 'IO-'

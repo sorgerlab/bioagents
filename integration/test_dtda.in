@@ -17,7 +17,7 @@
 (FIND-DISEASE-TARGETS :disease (LUNG-CANCER))
 (SUCCESS :protein (:name KRAS :hgnc KRAS) :prevalence 0.19 :functional-effect ACTIVE)
 (FIND-DISEASE-TARGETS :disease (BREAST-CANCER))
-(SUCCESS :protein (:name PIK3CA :hgnc PIK3CA) :prevalence 0.33 :functional-effect ACTIVE)
+(SUCCESS :protein (:name PIK3CA :hgnc PIK3CA) :prevalence 0.38 :functional-effect ACTIVE)
 (FIND-DISEASE-TARGETS :disease (COMMON-COLD))
 (FAILURE :reason DISEASE_NOT_FOUND)
 (FIND-TARGET-DRUG :target (BRAF))

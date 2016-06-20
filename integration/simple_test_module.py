@@ -31,6 +31,7 @@ class TestModule(TripsModule):
         return None
 
     def get_perf(self, msg_id, msg_txt):
+        msg_txt = msg_txt.replace('\\n', '\n')
         perf  = KQMLPerformative.from_string(
             '(request :reply-with IO-%d :content %s)' % (msg_id, msg_txt))
         return perf
@@ -50,10 +51,10 @@ class TestModule(TripsModule):
 
     def receive_reply(self, msg, content):
         '''
-        Handle a "reply" message is received.
+        Handle a "reply" message being received.
         '''
         expected_content = self.expected.pop().strip()
-        actual_content = content.to_string().strip()
+        actual_content = content.__repr__().strip()
         print 'expected: ', expected_content
         print 'actual:   ', actual_content
         print '---'

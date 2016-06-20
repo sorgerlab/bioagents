@@ -200,7 +200,6 @@ class MRA_Module(trips_module.TripsModule):
         model_str = pysb.export.export(model, 'pysb_flat')
         model_str = str(model_str.strip())
         model_str = model_str.replace('"', '\\"')
-        model_str = model_str.replace('\n', r'\\n')
         return model_str
 
 class DiagramGenerationError(Exception):

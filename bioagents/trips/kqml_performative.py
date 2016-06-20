@@ -77,4 +77,4 @@ class KQMLPerformative(object):
         return self.to_string()
 
     def __repr__(self):
-        return self.__str__()
+        return self.data.__repr__()

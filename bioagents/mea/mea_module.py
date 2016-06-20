@@ -158,5 +158,3 @@ class InvalidModelDescriptionError(Exception):
 
 if __name__ == "__main__":
     m = MEA_Module(['-name', 'MEA'] + sys.argv[1:]).run()
-    m.start()
-    m.join()

@@ -272,5 +272,3 @@ class Kappa_Module(TripsModule):
 
 if __name__ == "__main__":
     km = Kappa_Module(['-name', 'Kappa'] + sys.argv[1:])
-    km.start()
-    km.join()

@@ -50,10 +50,10 @@ class TestModule(TripsModule):
 
     def receive_reply(self, msg, content):
         '''
-        Handle a "reply" message is received.
+        Handle a "reply" message being received.
         '''
         expected_content = self.expected.pop().strip()
-        actual_content = content.to_string().strip()
+        actual_content = content.__repr__().strip()
         print 'expected: ', expected_content
         print 'actual:   ', actual_content
         print '---'

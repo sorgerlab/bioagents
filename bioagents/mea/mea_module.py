@@ -1,6 +1,5 @@
 import sys
 import argparse
-import base64
 import logging
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
 from bioagents.trips import trips_module
@@ -48,6 +47,7 @@ class MEA_Module(trips_module.TripsModule):
                 reply_content = self.respond_simulate_model(content_list)
             except Exception as e:
                 self.error_reply(msg, 'Error in performing simulation task.')
+                return
         else:
             self.error_reply(msg, 'Unknown request task ' + task_str)
             return
@@ -62,12 +62,19 @@ class MEA_Module(trips_module.TripsModule):
         '''
         model_str = content_list.get_keyword_arg(':model')
         try:
-            model_str = model_str.to_string()
-            model = self.decode_model(model_str[1:-1])
-        except InvalidModelDescriptionError:
+            #model_str = model_str.to_string()
+            model = self.decode_model(model_str)
+        except InvalidModelDescriptionError as e:
+            logger.error(e)
             reply_content =\
                 KQMLList.from_string('(FAILURE :reason INVALID_MODEL)')
             return reply_content
+        except Exception as e:
+            logger.error(e)
+            reply_content =\
+                KQMLList.from_string('(FAILURE :reason INVALID_MODEL)')
+            return reply_content
+
         target_entity = content_list.get_keyword_arg(':target_entity')
         if target_entity is not None:
             target_entity = target_entity.to_string()[1:-1]
@@ -123,15 +130,17 @@ class MEA_Module(trips_module.TripsModule):
         return model
 
     @staticmethod
-    def model_from_string(model_str):
+    def model_from_string(model_kqml_str):
         try:
+            model_str = model_kqml_str.to_string()
+            model_str = model_str[1:-1]
             with open('tmp_model.py', 'wt') as fh:
                 fh.write(model_str)
             # TODO: executing the model string is not safe
             # we should do this through a safer method
             exec model_str
         except Exception as e:
-            raise InvalidModelDescriptionError
+            raise InvalidModelDescriptionError(e)
         logger.debug('\n\n')
         logger.debug('------BEGIN received model------')
         logger.debug('%s' % model_str)

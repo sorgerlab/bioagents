@@ -50,7 +50,7 @@ class TripsModule(Thread):
             self.out = sys.stdout
             self.inp = kqml_reader.KQMLReader(sys.stdin)
 
-        self.dispatcher = KQMLDispatcher(self, self.inp)
+        self.dispatcher = KQMLDispatcher(self, self.inp, self.name)
 
         if self.name is not None:
             self.register()

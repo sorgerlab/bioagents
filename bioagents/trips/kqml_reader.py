@@ -32,7 +32,10 @@ class KQMLReader(object):
 
     def peek_char(self):
         if isinstance(self.reader, io.BufferedReader):
-            ch = self.reader.peek(1)[0]
+            ch_ = self.reader.peek(1)
+            if not ch_:
+                raise EOFError
+            ch = ch_[0]
         else:
             ch = self.read_char()
             self.unget_char(ch)

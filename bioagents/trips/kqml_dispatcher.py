@@ -1,14 +1,17 @@
 import sys
+import logging
 from threading import Thread
 
 class KQMLDispatcher(Thread):
-    def __init__(self, rec, inp):
+    def __init__(self, rec, inp, agent_name):
         super(KQMLDispatcher, self).__init__()
         self.receiver = rec
         self.reader = inp
         self.reply_continuations = {}
         self.counter = 0
         self.name = 'KQML-Dispatcher-%d' % self.counter
+        self.agent_name = agent_name
+        self.logger = logging.getLogger(agent_name)
         self.counter += 1
         self.shutdown_initiated = False
 
@@ -26,19 +29,20 @@ class KQMLDispatcher(Thread):
                 self.receiver.handle_exception(ex)
 
     def warn(self, msg):
-        sys.stderr.write(msg)
+        logger.warning(msg)
 
     def shutdown(self):
         self.shutdown_initiated = True
         try:
             # FIXME: print thread info instead of blank quotes
-            sys.stderr.write('KQMLDispatcher.shutdown: ' + '' + ': closing reader')
-            self.interrupt()
+            self.logger.error('KQML dispatcher shutdown: ' + '' +
+                              ': closing reader')
             self.reader.close()
             # FIXME: print thread info instead of blank quotes
-            sys.stderr.write('KQMLDispatcher.shutdown: ' + '' + ': done')
+            self.logger.error('KQML dispatcher shutdown: ' + '' +
+                              ': done')
         except IOError:
-            print 'IOError'
+            logger.error('KQML dispatched IOError.')
             pass
 
     def dispatch_message(self, msg):

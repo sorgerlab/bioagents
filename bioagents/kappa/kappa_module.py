@@ -10,7 +10,7 @@ from bioagents.trips.trips_module import TripsModule
 from bioagents.trips.kqml_performative import KQMLPerformative
 from bioagents.trips.kqml_list import KQMLList
 
-logger = logging.getLogger('KAPPA')
+logger = logging.getLogger('Kappa')
 
 def render_value(value):
     return str(value).encode('string-escape').replace('"', '\\"')
@@ -134,17 +134,42 @@ class Kappa_Module(TripsModule):
         task_str = content_list[0].to_string().upper()
         arguments = self.request_arguments(content_list)
         if task_str == 'KAPPA-VERSION':
-            reply_content = self.respond_version()
+            try:
+                reply_content = self.respond_version()
+            except Exception as e:
+                message = 'Could not get Kappa version: (%s)' % e
+                self.error_reply(msg, message)
+                return
         elif task_str == 'KAPPA-PARSE':
-            reply_content = self.respond_parse(arguments)
+            try:
+                reply_content = self.respond_parse(arguments)
+            except Exception as e:
+                message = 'Could not parse Kappa model: (%s)' % e
+                self.error_reply(msg, message)
+                return
         elif task_str == 'KAPPA-START':
-            reply_content = self.respond_start(arguments)
+            try:
+                reply_content = self.respond_start(arguments)
+            except Exception as e:
+                message = 'Could not start Kappa simulation: (%s)' % e
+                self.error_reply(msg, message)
+                return
         elif task_str == 'KAPPA-STATUS':
-            reply_content = self.respond_status(arguments)
+            try:
+                reply_content = self.respond_status(arguments)
+            except Exception as e:
+                message = 'Could not get Kappa status: (%s)' % e
+                self.error_reply(msg, message)
+                return
         elif task_str == 'KAPPA-STOP':
-            reply_content = self.respond_stop(arguments)
+            try:
+                reply_content = self.respond_stop(arguments)
+            except Exception as e:
+                message = 'Could not stop Kappa simulation: (%s)' % e
+                self.error_reply(msg, message)
+                return
         else:
-            message = '"'+'unknown request task ' + task_str + '"'
+            message = '"unknown request task ' + task_str + '"'
             self.error_reply(msg, message)
             return
         reply_msg = KQMLPerformative('reply')

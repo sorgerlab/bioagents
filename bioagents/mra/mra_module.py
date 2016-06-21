@@ -216,3 +216,5 @@ class InvalidModelIdError(Exception):
 
 if __name__ == "__main__":
     m = MRA_Module(['-name', 'MRA'] + sys.argv[1:])
+    m.start()
+    m.join()

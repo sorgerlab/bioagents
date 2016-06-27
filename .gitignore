@@ -1,4 +1,6 @@
 *.pyc
+*.png
+*.dot
 *.xml
 *.txt
 *.csv

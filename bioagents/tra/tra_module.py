@@ -6,6 +6,7 @@ from indra.trips import processor as trips_processor
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
 
 from bioagents.tra.tra import *
+from bioagents.kappa import kappa_client
 from bioagents.trips import trips_module
 from bioagents.trips.kqml_list import KQMLList
 from bioagents.trips.kqml_performative import KQMLPerformative
@@ -16,6 +17,14 @@ class TRA_Module(trips_module.TripsModule):
     def __init__(self, argv):
         super(TRA_Module, self).__init__(argv)
         self.tasks = ['SATISFIES-PATTERN']
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--kappa_url", help="kappa endpoint")
+        args = parser.parse_args()
+        if args.kappa_url:
+            self.kappa_url = args.kappa_url
+        else:
+            logging.error('No Kappa URL given.')
+            sys.exit()
 
     def init(self):
         '''
@@ -28,7 +37,8 @@ class TRA_Module(trips_module.TripsModule):
                 '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton TRA agent
-        self.tra = TRA()
+        kappa = kappa_client.KappaClient(self.kappa_url)
+        self.tra = TRA(kappa)
         self.ready()
 
     def receive_request(self, msg, content):
@@ -113,8 +123,9 @@ def get_molecular_quantity(lst):
 
 def get_molecular_quantity_ref(lst):
     quant_type = get_string_arg(lst.get_keyword_arg(':type'))
-    entity = get_molecular_entity(lst)
-    return MolecularQuantityRef(quant_type, entity)
+    entity_lst = lst.get_keyword_arg(':entity')
+    entity = get_molecular_entity(entity_lst)
+    return MolecularQuantityReference(quant_type, entity)
 
 def get_time_interval(lst):
     lb = get_string_arg(lst.get_keyword_arg(':lower-bound'))
@@ -138,10 +149,10 @@ def get_temporal_pattern(lst):
     return TemporalPattern(pattern_type, entities, time_limit)
 
 def get_molecular_condition(lst):
-    condition_type = lst.get_keyword_arg(':type')
+    condition_type = get_string_arg(lst.get_keyword_arg(':type'))
     quantity_ref_lst = lst.get_keyword_arg(':quantity')
-    quantity = get_molecular_quantity_ref(lst)
-    value = lst.get_keyword_arg(':value')
+    quantity = get_molecular_quantity_ref(quantity_ref_lst)
+    value = get_string_arg(lst.get_keyword_arg(':value'))
     return MolecularCondition(condition_type, quantity, value)
 
 if __name__ == "__main__":

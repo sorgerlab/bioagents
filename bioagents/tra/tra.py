@@ -40,12 +40,12 @@ class TRA(object):
         truths = []
         for i in range(num_sim):
             tspan, yobs = self.simulate_model(model, conditions, max_time)
-            logger.debug(yobs)
+            print yobs
             self.discretize_obs(yobs, obs.name)
             MC = mc.ModelChecker(fstr, yobs)
             tf = MC.truth
             truths.append(tf)
-        sat_rate = len(numpy.where(truths)) / (1.0*num_sim)
+        sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
         return sat_rate, num_sim
 
     def discretize_obs(self, yobs, obs_name):

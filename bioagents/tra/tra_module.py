@@ -69,8 +69,10 @@ class TRA_Module(trips_module.TripsModule):
                 KQMLList.from_string('(FAILURE :reason INVALID_PATTERN)')
             return reply_content
         try:
+            conditions = []
             for condition_lst in conditions_lst:
-                conditions_lst = self.get_molecular_condition(condition_lst)
+                condition = self.get_molecular_condition(condition_lst)
+                conditions.append(condition)
         except Exception as e:
             logger.error(e)
             reply_content =\
@@ -82,42 +84,65 @@ class TRA_Module(trips_module.TripsModule):
                           target_match_str)
         return reply_content
 
+def get_string_arg(kqml_str):
+    if kqml_str is None:
+        return None
+    s = kqml_str.to_string()
+    if s[0] == '"':
+        s = s[1:]
+    if s[-1] == '"':
+        s = s[:-1]
+    s = s.replace('\\"', '"')
+    return s
+
 def get_molecular_entity(lst):
-    try:
-        description = lst.get_keyword_arg(':description')
-        tp = trips_processor.TripsProcessor(description)
-        # Get Agent from TERM
-    except Exception as e:
-        raise InvalidMolecularEntityError
-    return
+    #try:
+        description_ks = lst.get_keyword_arg(':description')
+        description_str = get_string_arg(description_ks)
+        tp = trips_processor.TripsProcessor(description_str)
+        agent = tp._get_agent_by_id('V34770', None)
+        return agent
+    #except Exception as e:
+    #    raise InvalidMolecularEntityError
+    #return agent
 
 def get_molecular_quantity(lst):
-    quant_type = lst.get_keyword_arg(':type')
-    value = lst.get_keyword_arg(':value')
+    quant_type = get_string_arg(lst.get_keyword_arg(':type'))
+    value = get_string_arg(lst.get_keyword_arg(':value'))
     return MolecularQuantity(quant_type, value)
 
 def get_molecular_quantity_ref(lst):
-    quant_type = lst.get_keyword_arg(':type')
+    quant_type = get_string_arg(lst.get_keyword_arg(':type'))
     entity = get_molecular_entity(lst)
     return MolecularQuantityRef(quant_type, entity)
 
 def get_time_interval(lst):
-    lb = lst.get_keyword_arg(':lower-bound')
-    ub = lst.get_keyword_arg(':upper-bound')
-    unit = lst.get_keyword_arg(':unit')
+    lb = get_string_arg(lst.get_keyword_arg(':lower-bound'))
+    ub = get_string_arg(lst.get_keyword_arg(':upper-bound'))
+    unit = get_string_arg(lst.get_keyword_arg(':unit'))
     return TimeInterval(lb, ub, unit)
 
 def get_temporal_pattern(lst):
-    pattern_type = lst.get_keyword_arg(':type')
-    pass
+    pattern_type = get_string_arg(lst.get_keyword_arg(':type'))
+    entities_lst = lst.get_keyword_arg(':entities')
+    entities = []
+    for e in entities_lst:
+        entity = get_molecular_entity(e)
+        entities.append(entity)
+    time_limit_lst = lst.get_keyword_arg('time-limit')
+    if time_limit_lst is None:
+        time_limit = None
+    else:
+        time_limit = get_time_limit(time_limit_lst)
+    # TODO: handle more pattern-specific extra arguments
+    return TemporalPattern(pattern_type, entities, time_limit)
 
 def get_molecular_condition(lst):
     condition_type = lst.get_keyword_arg(':type')
     quantity_ref_lst = lst.get_keyword_arg(':quantity')
     quantity = get_molecular_quantity_ref(lst)
     value = lst.get_keyword_arg(':value')
-    mc = MolecularCondition(condition_type, quantity, value)
-    return mc
+    return MolecularCondition(condition_type, quantity, value)
 
 if __name__ == "__main__":
     m = TRA_Module(['-name', 'TRA'] + sys.argv[1:])

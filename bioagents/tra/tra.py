@@ -42,12 +42,6 @@ class TimeInterval(object):
 
 class TemporalPattern(object):
     def __init__(self, pattern_type, entities, time_limit, *args, **kwargs):
-        if pattern_type == 'transient':
-            get_transient_pattern(lst)
-        elif pattern_type == 'sustained':
-            get_transient_pattern(lst)
-        else:
-            raise InvalidTemporalPatternError
         self.pattern_type = pattern_type
         self.entities = entities
         self.time_limit = time_limit

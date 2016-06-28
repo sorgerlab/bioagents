@@ -26,7 +26,6 @@ class TRA(object):
             max_time = time_limit.ub
         # TODO: handle multiple entities
         obs = get_create_observable(model, pattern.entities[0])
-        tspan, yobs = self.simulate_model(model, conditions, max_time)
         if pattern.pattern_type == 'transient':
             fstr = mc.transient_formula(obs.name)
         elif pattern.pattern_type == 'sustained':
@@ -36,12 +35,18 @@ class TRA(object):
         else:
             msg = 'Unknown pattern %s' % pattern.pattern_type
             raise InvalidTemporalPatternError(msg)
-        print yobs
-        self.discretize_obs(yobs, obs.name)
-        print yobs
-        MC = mc.ModelChecker(fstr, yobs)
-        tf = MC.truth
-        return tf
+        # TODO: make this adaptive
+        num_sim = 10
+        truths = []
+        for i in range(num_sim):
+            tspan, yobs = self.simulate_model(model, conditions, max_time)
+            logger.debug(yobs)
+            self.discretize_obs(yobs, obs.name)
+            MC = mc.ModelChecker(fstr, yobs)
+            tf = MC.truth
+            truths.append(tf)
+        sat_rate = len(numpy.where(truths)) / (1.0*num_sim)
+        return sat_rate, num_sim
 
     def discretize_obs(self, yobs, obs_name):
         # TODO: This needs to be done in a model/observable-dependent way

@@ -2,6 +2,8 @@ import sys
 import argparse
 import logging
 
+from indra import trips
+from indra.assemblers import PysbAssembler
 from indra.trips import processor as trips_processor
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
 
@@ -25,6 +27,11 @@ class TRA_Module(trips_module.TripsModule):
         else:
             logging.error('No Kappa URL given.')
             sys.exit()
+        # Generate a basic model as placeholder
+        model_text = 'MAPK1 binds MAP2K1.'
+        pa = PysbAssembler()
+        pa.add_statements(trips.process_text(model_text).statements)
+        self.model = pa.make_model()
 
     def init(self):
         '''
@@ -37,7 +44,7 @@ class TRA_Module(trips_module.TripsModule):
                 '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton TRA agent
-        kappa = kappa_client.KappaClient(self.kappa_url)
+        kappa = kappa_client.KappaRuntime(self.kappa_url)
         self.tra = TRA(kappa)
         self.ready()
 
@@ -72,26 +79,33 @@ class TRA_Module(trips_module.TripsModule):
         conditions_lst = content_list.get_keyword_arg('conditions')
 
         try:
-            pattern = self.get_temporal_pattern(pattern_lst)
+            pattern = get_temporal_pattern(pattern_lst)
+            print pattern_lst
         except Exception as e:
             logger.error(e)
             reply_content =\
                 KQMLList.from_string('(FAILURE :reason INVALID_PATTERN)')
             return reply_content
-        try:
-            conditions = []
-            for condition_lst in conditions_lst:
-                condition = self.get_molecular_condition(condition_lst)
-                conditions.append(condition)
-        except Exception as e:
-            logger.error(e)
-            reply_content =\
-                KQMLList.from_string('(FAILURE :reason INVALID_CONDITIONS)')
+        if conditions_lst is None:
+            conditions = None
+        else:
+            try:
+                conditions = []
+                for condition_lst in conditions_lst:
+                    condition = get_molecular_condition(condition_lst)
+                    conditions.append(condition)
+            except Exception as e:
+                logger.error(e)
+                msg_str = '(FAILURE :reason INVALID_CONDITIONS)'
+                reply_content = KQMLList.from_string(msg_str)
             return reply_content
 
+        sat_rate, num_sim = \
+            self.tra.check_property(self.model, pattern, conditions)
+
         reply_content = KQMLList()
-        reply_content.add('SUCCESS :content (:target_match %s)' %
-                          target_match_str)
+        msg_str = '(:satisfies-rate %s :num-sim %d)' % (sat_rate, num_sim)
+        reply_content.add('SUCCESS :content %s' % msg_str)
         return reply_content
 
 def get_string_arg(kqml_str):
@@ -106,15 +120,17 @@ def get_string_arg(kqml_str):
     return s
 
 def get_molecular_entity(lst):
-    #try:
+    try:
         description_ks = lst.get_keyword_arg(':description')
         description_str = get_string_arg(description_ks)
         tp = trips_processor.TripsProcessor(description_str)
-        agent = tp._get_agent_by_id('V34770', None)
+        terms = tp.tree.findall('TERM')
+        # TODO: handle multiple terms here
+        term_id = terms[0].attrib['id']
+        agent = tp._get_agent_by_id(term_id, None)
         return agent
-    #except Exception as e:
-    #    raise InvalidMolecularEntityError
-    #return agent
+    except Exception as e:
+        raise InvalidMolecularEntityError
 
 def get_molecular_quantity(lst):
     quant_type = get_string_arg(lst.get_keyword_arg(':type'))

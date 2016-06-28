@@ -2,7 +2,10 @@ import numpy
 import logging
 import itertools
 from time import sleep
+import indra.assemblers.pysb_assembler as pa
 from pysb.export.kappa import KappaExporter
+from pysb import Observable
+import model_checker as mc
 
 logger = logging.getLogger('TRA')
 
@@ -15,13 +18,35 @@ class TRA(object):
         logger.debug('Using kappa version %s / build %s' %
                      (kappa_ver.get('version'), kappa_ver.get('build')))
 
-    def check_property(self, model, pattern, conditions):
-        if time_limit is None:
+    def check_property(self, model, pattern, conditions=None):
+        if pattern.time_limit is None:
             #TODO: set this based on some model property
-            max_time = 100.0
-        elif time_limit.ub > 0:
+            max_time = 20000.0
+        elif pattern.time_limit.ub > 0:
             max_time = time_limit.ub
+        # TODO: handle multiple entities
+        obs = get_create_observable(model, pattern.entities[0])
         tspan, yobs = self.simulate_model(model, conditions, max_time)
+        if pattern.pattern_type == 'transient':
+            fstr = mc.transient_formula(obs.name)
+        elif pattern.pattern_type == 'sustained':
+            fstr = mc.sustained_formula(obs.name)
+        elif pattern.pattern_type == 'no_change':
+            fstr = mc.noact_formula(obs.name)
+        else:
+            msg = 'Unknown pattern %s' % pattern.pattern_type
+            raise InvalidTemporalPatternError(msg)
+        print yobs
+        self.discretize_obs(yobs, obs.name)
+        print yobs
+        MC = mc.ModelChecker(fstr, yobs)
+        tf = MC.truth
+        return tf
+
+    def discretize_obs(self, yobs, obs_name):
+        # TODO: This needs to be done in a model/observable-dependent way
+        for i, v in enumerate(yobs[obs_name]):
+            yobs[obs_name][i] = 1 if v > 50 else 0
 
     def simulate_model(self, model, conditions, max_time):
         # Export kappa model
@@ -45,6 +70,14 @@ class TRA(object):
         tspan, yobs = get_sim_result(status.get('plot'))
         return tspan, yobs
 
+def get_create_observable(model, agent):
+    site_pattern = pa.get_site_pattern(agent)
+    obs_name = pa.get_agent_rule_str(agent) + '_obs'
+    monomer = model.monomers[agent.name]
+    obs = Observable(obs_name, monomer(site_pattern))
+    model.add_component(obs)
+    return obs
+
 def pysb_to_kappa(model):
     ke = KappaExporter(model)
     kappa_model = ke.export()
@@ -58,10 +91,10 @@ def get_sim_result(kappa_plot):
     yobs = numpy.ndarray(nt, list(zip(obs_list, itertools.repeat(float))))
 
     tspan = []
-    for value in values:
+    for t, value in enumerate(values):
         tspan.append(value['time'])
         for i, obs in enumerate(obs_list):
-            yobs[obs] = value['values'][i]
+            yobs[obs][t] = value['values'][i]
     return (tspan, yobs)
 
 class TemporalPattern(object):

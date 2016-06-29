@@ -1,8 +1,6 @@
-import sys
 import logging
-from threading import Thread
 
-class KQMLDispatcher(Thread):
+class KQMLDispatcher(object):
     def __init__(self, rec, inp, agent_name):
         super(KQMLDispatcher, self).__init__()
         self.receiver = rec
@@ -15,7 +13,7 @@ class KQMLDispatcher(Thread):
         self.counter += 1
         self.shutdown_initiated = False
 
-    def run(self):
+    def start(self):
         try:
             while True:
                 msg = self.reader.read_performative()

@@ -20,6 +20,8 @@ class KQMLDispatcher(object):
                 self.dispatch_message(msg)
         # FIXME: not handling KQMLException and
         # KQMLBadCharacterException
+        except KeyboardInterrupt:
+            self.receiver.receive_eof()
         except EOFError:
             self.receiver.receive_eof()
         except IOError as ex:

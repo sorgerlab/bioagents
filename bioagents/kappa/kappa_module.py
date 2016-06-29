@@ -108,12 +108,6 @@ class Kappa_Module(TripsModule):
         else:
             logging.error('No Kappa URL given.')
             sys.exit()
-
-    def init(self):
-        '''
-        Initialize Kappa module
-        '''
-        super(Kappa_Module, self).init()
         # Send subscribe messages
         for task in self.tasks:
             msg_txt =\
@@ -123,6 +117,7 @@ class Kappa_Module(TripsModule):
         self.kappa = KappaRuntime(self.kappa_url)
         # Send ready message
         self.ready()
+        super(Kappa_Module, self).start()
 
     def receive_request(self, msg, content):
         '''
@@ -297,5 +292,3 @@ class Kappa_Module(TripsModule):
 
 if __name__ == "__main__":
     km = Kappa_Module(['-name', 'Kappa'] + sys.argv[1:])
-    km.start()
-    km.join()

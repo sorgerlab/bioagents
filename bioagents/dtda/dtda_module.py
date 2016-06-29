@@ -19,12 +19,6 @@ class DTDA_Module(trips_module.TripsModule):
         super(DTDA_Module, self).__init__(argv)
         self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
                       'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
-
-    def init(self):
-        '''
-        Initialize TRIPS module
-        '''
-        super(DTDA_Module, self).init()
         # Send subscribe messages
         for task in self.tasks:
             msg_txt =\
@@ -34,6 +28,7 @@ class DTDA_Module(trips_module.TripsModule):
         self.dtda = DTDA()
         # Send ready message
         self.ready()
+        super(DTDA_Module, self).start()
 
     def receive_request(self, msg, content):
         '''
@@ -209,6 +204,4 @@ class DTDA_Module(trips_module.TripsModule):
         return disease_type_filter
 
 if __name__ == "__main__":
-    dm = DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])
-    dm.start()
-    dm.join()
+    DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])

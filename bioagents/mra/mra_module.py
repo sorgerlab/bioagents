@@ -20,13 +20,6 @@ class MRA_Module(trips_module.TripsModule):
         super(MRA_Module, self).__init__(argv)
         self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL']
         self.models = []
-
-    def init(self):
-        '''
-        Initialize TRIPS module
-        '''
-        super(MRA_Module, self).init()
-        # Send subscribe messages
         for task in self.tasks:
             msg_txt =\
                 '(subscribe :content (request &key :content (%s . *)))' % task
@@ -34,6 +27,7 @@ class MRA_Module(trips_module.TripsModule):
         # Instantiate a singleton MRA agent
         self.mra = MRA()
         self.ready()
+        super(MRA_Module, self).start()
 
     def receive_request(self, msg, content):
         '''
@@ -215,6 +209,4 @@ class InvalidModelIdError(Exception):
     pass
 
 if __name__ == "__main__":
-    m = MRA_Module(['-name', 'MRA'] + sys.argv[1:])
-    m.start()
-    m.join()
+    MRA_Module(['-name', 'MRA'] + sys.argv[1:])

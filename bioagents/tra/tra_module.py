@@ -33,11 +33,6 @@ class TRA_Module(trips_module.TripsModule):
         pa.add_statements(trips.process_text(model_text).statements)
         self.model = pa.make_model()
 
-    def init(self):
-        '''
-        Initialize TRIPS module
-        '''
-        super(TRA_Module, self).init()
         # Send subscribe messages
         for task in self.tasks:
             msg_txt =\
@@ -47,6 +42,7 @@ class TRA_Module(trips_module.TripsModule):
         kappa = kappa_client.KappaRuntime(self.kappa_url)
         self.tra = TRA(kappa)
         self.ready()
+        super(TRA_Module, self).start()
 
     def receive_request(self, msg, content):
         '''
@@ -173,5 +169,3 @@ def get_molecular_condition(lst):
 
 if __name__ == "__main__":
     m = TRA_Module(['-name', 'TRA'] + sys.argv[1:])
-    m.start()
-    m.join()

@@ -16,22 +16,18 @@ class TestModule(TripsModule):
     """
     def __init__(self, argv, file_in):
         # Call the constructor of TripsModule
-        super(TestModule, self).__init__(argv[1:])
+        super(TestModule, self).__init__(argv)
         self.expected = FIFO()
         self.sent = FIFO()
         self.test_file = file_in
         self.msg_counter = 1
-
-    def init(self):
-        """Initialize TRIPS module."""
-        super(TestModule, self).init()
         # Send ready message
         self.ready()
         self.run_tests(self.test_file)
         return None
 
     def get_perf(self, msg_id, msg_txt):
-        msg_txt = msg_txt.replace('\\n', '\n')
+        #msg_txt = msg_txt.replace('\\n', '\n')
         perf  = KQMLPerformative.from_string(
             '(request :reply-with IO-%d :content %s)' % (msg_id, msg_txt))
         return perf
@@ -87,4 +83,3 @@ class FIFO(object):
 if __name__ == "__main__":
     m = TestModule(['-name', 'Test'] + sys.argv[2:], sys.argv[1])
     m.start()
-    m.join()

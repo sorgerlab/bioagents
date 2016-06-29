@@ -19,12 +19,6 @@ class MEA_Module(trips_module.TripsModule):
         args = parser.parse_args()
         if args.kappa_url:
             self.kappa_url = args.kappa_url
-
-    def init(self):
-        '''
-        Initialize TRIPS module
-        '''
-        super(MEA_Module, self).init()
         # Send subscribe messages
         for task in self.tasks:
             msg_txt =\
@@ -33,6 +27,7 @@ class MEA_Module(trips_module.TripsModule):
         # Instantiate a singleton MEA agent
         self.mea = MEA()
         self.ready()
+        super(MEA_Module, self).start()
 
     def receive_request(self, msg, content):
         '''
@@ -157,6 +152,4 @@ class InvalidModelDescriptionError(Exception):
     pass
 
 if __name__ == "__main__":
-    m = MEA_Module(['-name', 'MEA'] + sys.argv[1:])
-    m.start()
-    m.join()
+    MEA_Module(['-name', 'MEA'] + sys.argv[1:])

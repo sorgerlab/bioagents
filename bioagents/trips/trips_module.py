@@ -2,16 +2,14 @@ import io
 import sys
 import socket
 import logging
-from threading import Thread
 import kqml_reader
 from kqml_dispatcher import KQMLDispatcher
 from kqml_token import KQMLToken
 from kqml_list import KQMLList
 from kqml_performative import KQMLPerformative
 
-class TripsModule(Thread):
+class TripsModule(object):
     def __init__(self, argv, is_application=False):
-        super(TripsModule, self).__init__()
         self.DEFAULT_HOST = 'localhost'
         self.DEFAULT_PORT = 6200
         self.MAX_PORT_TRIES = 100
@@ -31,11 +29,10 @@ class TripsModule(Thread):
         self.warning_enabled = True
         self.debugging_enabled = False
         self.logger = logging.getLogger('TripsModule')
-
-    def run(self):
         self.init()
+
+    def start(self):
         self.dispatcher.start()
-        self.dispatcher.join()
 
     def init(self):
         self.handle_common_parameters()

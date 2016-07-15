@@ -40,7 +40,7 @@ class TRA(object):
         truths = []
         for i in range(num_sim):
             tspan, yobs = self.simulate_model(model, conditions, max_time)
-            print yobs
+            #print yobs
             self.discretize_obs(yobs, obs.name)
             MC = mc.ModelChecker(fstr, yobs)
             tf = MC.truth

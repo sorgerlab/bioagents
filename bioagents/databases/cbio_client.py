@@ -63,12 +63,14 @@ def get_genetic_profiles(study_id, filter_str=None):
 def get_cancer_studies(filter_str=None):
     '''
     Get the list of all cancer studies that have filter_str 
-    in their name. There are typically multiple studies for
+    in their id. There are typically multiple studies for
     a given type of cancer. 
     '''
     data = {'cmd': 'getCancerStudies'}
     df = send_request(data)
-    res = _filter_data_frame(df, ['cancer_study_id'], 'name', filter_str)
+    df.to_csv('cbio_cancer_studies.tsv', sep='\t', index=False)
+    res = _filter_data_frame(df, ['cancer_study_id'],
+                             'cancer_study_id', filter_str)
     study_ids = res['cancer_study_id'].values()
     return study_ids
 
@@ -79,6 +81,7 @@ def get_cancer_types(filter_str=None):
     '''
     data = {'cmd': 'getTypesOfCancer'}
     df = send_request(data)
+    df.to_csv('cbio_cancer_types.tsv', sep='\t', index=False)
     res = _filter_data_frame(df, ['type_of_cancer_id'], 'name', filter_str)
     type_ids = res['type_of_cancer_id'].values()
     return type_ids

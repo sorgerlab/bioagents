@@ -3,7 +3,8 @@ import logging
 from bioagents.trips import trips_module
 from bioagents.trips.kqml_performative import KQMLPerformative
 from bioagents.trips.kqml_list import KQMLList
-from dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
+from dtda import DTDA, Disease, \
+                 DrugNotFoundException, DiseaseNotFoundException
 
 logger = logging.getLogger('DTDA')
 
@@ -94,7 +95,6 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         Response content to find-target-drug request
         '''
-        # TODO: implement
         target = content_list.get_keyword_arg(':target')
         target_str = target.to_string()[1:-1]
         drug_names, chebi_ids = self.dtda.find_target_drugs(target_str)
@@ -112,17 +112,29 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         Response content to find-disease-targets request
         '''
-        disease_str = content_list.get_keyword_arg(':disease')
+        disease_arg = content_list.get_keyword_arg(':disease')
         try:
-            disease_type_filter = self.get_disease_filter(disease_str)
-        except DiseaseNotFoundException:
-            reply_content = KQMLList.from_string(
-                '(FAILURE :reason DISEASE_NOT_FOUND)')
+            disease = self.get_disease(disease_arg)
+        except Exception as e:
+            logger.error(e)
+            msg_str = '(FAILURE :reason INVALID_DISEASE)'
+            reply_content = KQMLList.from_string(msg_str)
             return reply_content
-        logger.debug('Disease type filter: %s' % disease_type_filter)
 
-        mut_protein, mut_percent =\
-            self.dtda.get_top_mutation(disease_type_filter)
+        if disease.disease_type != 'cancer':
+            msg_str = '(FAILURE :reason DISEASE_NOT_FOUND)'
+            reply_content = KQMLList.from_string(msg_str)
+            return reply_content
+
+        logger.debug('Disease: %s' % disease.name)
+
+        try:
+            mut_protein, mut_percent =\
+                self.dtda.get_top_mutation(disease.name)
+        except DiseaseNotFoundException:
+            msg_str = '(FAILURE :reason DISEASE_NOT_FOUND)'
+            reply_content = KQMLList.from_string(msg_str)
+            return reply_content
 
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
@@ -140,18 +152,29 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         Response content to find-treatment request
         '''
-        #TODO: eliminate code duplication here
-        disease_str = content_list.get_keyword_arg(':disease')
         reply_content = KQMLList()
+        #TODO: eliminate code duplication here
+        disease_arg = content_list.get_keyword_arg(':disease')
         try:
-            disease_type_filter = self.get_disease_filter(disease_str)
+            disease = self.get_disease(disease_arg)
+        except Exception as e:
+            logger.error(e)
+            msg_str = '(FAILURE :reason INVALID_DISEASE)'
+            reply_content = KQMLList.from_string(msg_str)
+            return reply_content
+
+        if disease.disease_type != 'cancer':
+            reply_content.add('FAILURE :reason DISEASE_NOT_FOUND')
+            return reply_content
+
+        logger.debug('Disease: %s' % disease.name)
+
+        try:
+            mut_protein, mut_percent = \
+                self.dtda.get_top_mutation(disease.name)
         except DiseaseNotFoundException:
             reply_content.add('FAILURE :reason DISEASE_NOT_FOUND')
             return reply_content
-        logger.debug('Disease type filter: %s' % disease_type_filter)
-
-        mut_protein, mut_percent =\
-            self.dtda.get_top_mutation(disease_type_filter)
 
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
@@ -176,6 +199,16 @@ class DTDA_Module(trips_module.TripsModule):
         return reply_content
 
     @staticmethod
+    def get_disease(disease_arg):
+        disease_type = str(disease_arg[0]).lower()
+        dbname = str(disease_arg.get_keyword_arg(':dbname'))[1:-1]
+        dbid = str(disease_arg.get_keyword_arg(':dbid'))[1:-1]
+        dbids = dbid.split('|')
+        dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
+        disease = Disease(disease_type, dbname, dbid_dict)
+        return disease
+
+    @staticmethod
     def get_single_argument(arg):
         if arg is None:
             return None
@@ -184,24 +217,6 @@ class DTDA_Module(trips_module.TripsModule):
              arg_str = arg_str[1:-1]
         arg_str = arg_str.lower()
         return arg_str
-
-    @staticmethod
-    def get_disease_filter(disease_str):
-        disease_str = DTDA_Module.get_single_argument(disease_str)
-        disease_terms = disease_str.split('-')
-        if len(disease_terms) > 1:
-            disease_str = disease_terms[1]
-        else:
-            disease_str = disease_terms[0]
-
-        if disease_str not in ['cancer', 'tumor'] and\
-            disease_str.find('carcinoma') == -1 and\
-            disease_str.find('cancer') == -1 and\
-            disease_str.find('melanoma') == -1:
-            logger.error('Problem with disease name: %s' % disease_str)
-            raise DiseaseNotFoundException
-        disease_type_filter = disease_terms[0].lower()
-        return disease_type_filter
 
 if __name__ == "__main__":
     DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])

@@ -1,0 +1,57 @@
+acc	adenocortical carcinoma
+acyc	adenoid cystic carcinoma
+all	acute lymphoblastic leukemia
+blca	bladder carcinoma
+brca	breast carcinoma
+ccrcc	renal carcinoma
+cesc	cervical carcinoma
+chol	cholangiocarcinoma
+coadread	colorectal carcinoma
+cscc	skin neoplasm
+desm	melanoma
+dlbc	lymphoma
+egc	gastric carcinoma
+es	ewing sarcoma
+esca	esophageal carcinoma
+escc	esophageal carcinoma
+gbc	gallbladder carcinoma
+gbm	glioblastoma
+hnsc	head and neck malignant neoplasia
+kich	renal carcinoma
+kirc	renal carcinoma
+kirp	renal carcinoma
+laml	acute myeloid leukemia
+lgg	brain neoplasm
+lgggbm	brain neoplasm
+lihc	hepatocellular carcinoma
+luad	lung carcinoma
+lusc	lung carcinoma
+mbl	medulloblastoma
+meso	mesothelioma
+mm	multiple myeloma
+mpnst	neurofibroma
+nbl	neuroblastoma
+nccrcc	renal carcinoma
+nepc	prostate carcinoma
+npc	nasopharyngeal carcinoma
+ov	ovarian carcinoma
+paac	pancreatic carcinoma
+paad	pancreatic carcinoma
+panet	pancreatic neuroendocrine tumor
+pcnsl	lymphoma
+pcpg	paraganglioma
+prad	prostate carcinoma
+rms	rhabdomyosarcoma
+sarc	sarcoma
+scco	ovarian carcinoma
+sclc	lung carcinoma
+skcm	melanoma
+stad	stomach carcinoma
+tet	thymic carcinoma
+tgct	testicular carcinoma
+thca	thyroid carcinoma
+thym	thymoma
+thyroid	thyroid carcinoma
+ucec	uterine neoplasm
+ucs	uterine neoplasm
+uvm	melanoma

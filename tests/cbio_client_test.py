@@ -1,7 +1,7 @@
 from bioagents.databases import cbio_client
 
 def test_get_cancer_studies():
-    study_ids = cbio_client.get_cancer_studies('pancreatic')
+    study_ids = cbio_client.get_cancer_studies('paad')
     assert(len(study_ids) > 0)
     assert('paad_tcga' in study_ids)
 

@@ -29,11 +29,11 @@ class TRA_Module(trips_module.TripsModule):
         else:
             logging.error('No Kappa URL given.')
             sys.exit()
-        # Generate a basic model as placeholder
-        model_text = 'MAPK1 binds MAP2K1.'
-        pa = PysbAssembler()
-        pa.add_statements(trips.process_text(model_text).statements)
-        self.model = pa.make_model()
+        # Generate a basic model as placeholder (for testing)
+        #model_text = 'MAPK1 binds MAP2K1.'
+        #pa = PysbAssembler()
+        #pa.add_statements(trips.process_text(model_text).statements)
+        #self.model = pa.make_model()
 
         # Send subscribe messages
         for task in self.tasks:
@@ -109,7 +109,7 @@ class TRA_Module(trips_module.TripsModule):
             return reply_content
 
         sat_rate, num_sim = \
-            self.tra.check_property(self.model, pattern, conditions)
+            self.tra.check_property(model, pattern, conditions)
 
         reply_content = KQMLList()
         msg_str = '(:satisfies-rate %s :num-sim %d)' % (sat_rate, num_sim)

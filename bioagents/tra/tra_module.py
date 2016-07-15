@@ -1,11 +1,13 @@
 import sys
 import argparse
 import logging
+import tempfile
 
 from indra import trips
 from indra.assemblers import PysbAssembler
 from indra.trips import processor as trips_processor
-from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
+from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \
+                 SelfExporter
 
 from bioagents.tra.tra import *
 from bioagents.kappa import kappa_client
@@ -71,8 +73,18 @@ class TRA_Module(trips_module.TripsModule):
         '''
         Response content to satisfies-pattern request
         '''
+        model_token = content_list.get_keyword_arg(':model')
         pattern_lst = content_list.get_keyword_arg(':pattern')
         conditions_lst = content_list.get_keyword_arg('conditions')
+
+        try:
+            model_str = str(model_token)
+            model = decode_model(model_str)
+        except Exception as e:
+            logger.error(e)
+            reply_content =\
+                KQMLList.from_string('(FAILURE :reason INVALID_MODEL)')
+            return reply_content
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
@@ -103,6 +115,16 @@ class TRA_Module(trips_module.TripsModule):
         msg_str = '(:satisfies-rate %s :num-sim %d)' % (sat_rate, num_sim)
         reply_content.add('SUCCESS :content %s' % msg_str)
         return reply_content
+
+def decode_model(model_str):
+    try:
+        s = model_str[1:-1].replace('\\"', '"')
+        SelfExporter.do_export = True
+        exec s
+        SelfExporter.do_export = False
+        return model
+    except Exception as e:
+        raise InvalidModelDescriptionError(e)
 
 def get_string_arg(kqml_str):
     if kqml_str is None:
@@ -166,6 +188,9 @@ def get_molecular_condition(lst):
     quantity = get_molecular_quantity_ref(quantity_ref_lst)
     value = get_string_arg(lst.get_keyword_arg(':value'))
     return MolecularCondition(condition_type, quantity, value)
+
+class InvalidModelDescriptionError(Exception):
+    pass
 
 if __name__ == "__main__":
     m = TRA_Module(['-name', 'TRA'] + sys.argv[1:])

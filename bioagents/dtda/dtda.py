@@ -17,23 +17,34 @@ from bioagents.databases import cbio_client
 
 logger = logging.getLogger('DTDA')
 
+_resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
+
 class DrugNotFoundException(Exception):
     def __init__(self, *args, **kwargs):
             Exception.__init__(self, *args, **kwargs)
-
 
 class DiseaseNotFoundException(Exception):
     def __init__(self, *args, **kwargs):
             Exception.__init__(self, *args, **kwargs)
 
+def _make_cbio_efo_map():
+    lines = open(_resource_dir + 'cbio_efo_map.tsv', 'rt').readlines()
+    cbio_efo_map = {}
+    for lin in lines:
+        cbio_id, efo_id = lin.strip().split('\t')
+        try:
+            cbio_efo_map[efo_id].append(cbio_id)
+        except KeyError:
+            cbio_efo_map[efo_id] = [cbio_id]
+    return cbio_efo_map
+
+cbio_efo_map = _make_cbio_efo_map()
 
 class DTDA:
     def __init__(self):
-        resource_dir = os.path.dirname(os.path.realpath(__file__)) +\
-                       '/../resources/'
-        logging.debug('Using resource folder: %s' % resource_dir)
+        logging.debug('Using resource folder: %s' % _resource_dir)
         # Build an initial set of substitution statements
-        bel_corpus = resource_dir + 'large_corpus_direct_subs.rdf'
+        bel_corpus = _resource_dir + 'large_corpus_direct_subs.rdf'
         if os.path.isfile(bel_corpus):
             g = rdflib.Graph()
             g.parse(bel_corpus, format='nt')
@@ -44,7 +55,7 @@ class DTDA:
             self.sub_statements = []
             logging.error('DTDA could not load mutation effect data.')
         # Load a database of drug targets
-        drug_db_file = resource_dir + 'drug_targets.db'
+        drug_db_file = _resource_dir + 'drug_targets.db'
         if os.path.isfile(drug_db_file):
             self.drug_db = sqlite3.connect(drug_db_file,
                                            check_same_thread=False)
@@ -117,8 +128,18 @@ class DTDA:
                         return 'deactivate'
         return None
 
-    def get_mutation_statistics(self, disease_name_filter, mutation_type):
-        study_ids = cbio_client.get_cancer_studies(disease_name_filter)
+    @staticmethod
+    def _get_studies_from_disease_name(disease_name):
+        study_prefixes = cbio_efo_map.get(disease_name)
+        if study_prefixes is None:
+            return None
+        study_ids = []
+        for sp in study_prefixes:
+            study_ids += cbio_client.get_cancer_studies(sp)
+        return list(set(study_ids))
+
+    def get_mutation_statistics(self, disease_name, mutation_type):
+        study_ids = self._get_studies_from_disease_name(disease_name)
         if not study_ids:
             raise DiseaseNotFoundException
         gene_list_str = self._get_gene_list_str()
@@ -153,10 +174,13 @@ class DTDA:
 
         return mutation_dict
 
-    def get_top_mutation(self, disease_name_filter):
+    def get_top_mutation(self, disease_name):
         # First, look for possible disease targets
-        mutation_stats = self.get_mutation_statistics(disease_name_filter,
-                                                      'missense')
+        try:
+            mutation_stats = self.get_mutation_statistics(disease_name,
+                                                          'missense')
+        except DiseaseNotFoundException:
+            raise DiseaseNotFoundException
         if mutation_stats is None:
             logging.error('No mutation stats')
             return None
@@ -191,6 +215,19 @@ class DTDA:
         "MAP2K5", "MAPK1", "MAPK3", "MAPK4", "MAPK6", "MAPK7", "MAPK8", 
         "MAPK9", "MAPK12", "MAPK14", "DAB2", "RASSF1", "RAB25"]
         }
+
+class Disease(object):
+    def __init__(self, disease_type, name, db_refs):
+        self.disease_type = disease_type
+        self.name = name
+        self.db_refs = db_refs
+
+    def __repr__(self):
+        return 'Disease(%s, %s, %s)' % \
+            (self.disease_type, self.name, self.db_refs)
+
+    def __str__(self):
+        return self.__repr__()
 
 if __name__ == '__main__':
     mutation_dict = get_mutation_statistics('pancreatic', 'missense')

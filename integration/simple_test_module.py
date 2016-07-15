@@ -27,7 +27,7 @@ class TestModule(TripsModule):
         return None
 
     def get_perf(self, msg_id, msg_txt):
-        #msg_txt = msg_txt.replace('\\n', '\n')
+        msg_txt = msg_txt.replace('\\n', '\n')
         perf  = KQMLPerformative.from_string(
             '(request :reply-with IO-%d :content %s)' % (msg_id, msg_txt))
         return perf

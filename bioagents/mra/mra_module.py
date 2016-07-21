@@ -9,6 +9,7 @@ from bioagents.trips import trips_module
 from pysb.tools import render_reactions
 from pysb import Parameter
 from mra import MRA
+from indra.assemblers import pysb_assembler
 
 from bioagents.trips.kqml_performative import KQMLPerformative
 from bioagents.trips.kqml_list import KQMLList
@@ -148,13 +149,15 @@ class MRA_Module(trips_module.TripsModule):
 
     @staticmethod
     def get_model_diagram(model, model_id=None):
+        for m in model.monomers:
+            pysb_assembler.set_extended_initial_condition(model, m, 100)
         fname = 'model%d' % ('' if model_id is None else model_id)
         try:
             diagram_dot = render_reactions.run(model)
         #TODO: use specific PySB/BNG exceptions and handle them
         # here to show meaningful error messages
         except Exception as e:
-            raise DiagramGenerationError
+            raise DiagramGenerationError(e)
         try:
             with open(fname + '.dot', 'wt') as fh:
                 fh.write(diagram_dot)
@@ -165,20 +168,14 @@ class MRA_Module(trips_module.TripsModule):
                 abs_path = abs_path + '/'
             full_path = abs_path + fname + '.png'
         except Exception as e:
-            raise DiagramConversionError
+            raise DiagramConversionError(e)
         return full_path
 
     @staticmethod
     def get_context(model):
         # TODO: Here we will have to query the context
-        # for now it is hard coded
-        try:
-            kras = model.monomers['KRAS']
-            p = Parameter('kras_act_0', 100)
-            model.add_component(p)
-            model.initial(kras(act='active'), p)
-        except:
-            return
+        # for now it is not used
+        pass
 
     @staticmethod
     def decode_description(descr):

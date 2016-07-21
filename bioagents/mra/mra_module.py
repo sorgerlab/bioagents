@@ -150,7 +150,7 @@ class MRA_Module(trips_module.TripsModule):
     @staticmethod
     def get_model_diagram(model, model_id=None):
         for m in model.monomers:
-            pysb_assembler.set_extended_initial_condition(model, m, 100)
+            pysb_assembler.set_extended_initial_condition(model, m, 0)
         fname = 'model%d' % ('' if model_id is None else model_id)
         try:
             diagram_dot = render_reactions.run(model)

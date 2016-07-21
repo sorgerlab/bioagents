@@ -149,10 +149,10 @@ class MRA_Module(trips_module.TripsModule):
 
     @staticmethod
     def get_model_diagram(model, model_id=None):
-        for m in model.monomers:
-            pysb_assembler.set_extended_initial_condition(model, m, 0)
-        fname = 'model%d' % ('' if model_id is None else model_id)
         try:
+            for m in model.monomers:
+                pysb_assembler.set_extended_initial_condition(model, m, 0)
+            fname = 'model%d' % ('' if model_id is None else model_id)
             diagram_dot = render_reactions.run(model)
         #TODO: use specific PySB/BNG exceptions and handle them
         # here to show meaningful error messages

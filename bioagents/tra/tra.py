@@ -1,4 +1,5 @@
 import numpy
+import sympy.physics.units as units
 import logging
 import itertools
 from time import sleep
@@ -37,12 +38,19 @@ class TRA(object):
             raise InvalidTemporalPatternError(msg)
         # TODO: make this adaptive
         num_sim = 10
+        num_times = 100
+        if pattern.time_limit.lb > 0:
+            min_time = time_limit.lb
+            min_time_idx = int(num_times * (1.0*min_time / max_time))
+        else:
+            min_time_idx = 0
         truths = []
         for i in range(num_sim):
-            tspan, yobs = self.simulate_model(model, conditions, max_time)
+            tspan, yobs = self.simulate_model(model, conditions, max_time, num_times)
             #print yobs
             self.discretize_obs(yobs, obs.name)
-            MC = mc.ModelChecker(fstr, yobs)
+            yobs_from_min = yobs[min_time_idx:]
+            MC = mc.ModelChecker(fstr, yobs_from_min)
             tf = MC.truth
             truths.append(tf)
         sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
@@ -53,15 +61,15 @@ class TRA(object):
         for i, v in enumerate(yobs[obs_name]):
             yobs[obs_name][i] = 1 if v > 50 else 0
 
-    def simulate_model(self, model, conditions, max_time):
+    def simulate_model(self, model, conditions, max_time, num_times):
         # Export kappa model
         kappa_model = pysb_to_kappa(model)
         # Set up simulation conditions
+
         # Start simulation
-        nb_plot = 100
         kappa_params = {'code': kappa_model,
                         'max_time': max_time,
-                        'nb_plot': nb_plot}
+                        'nb_plot': num_times}
         sim_id = self.kappa.start(kappa_params)
         while True:
             sleep(0.2)
@@ -107,6 +115,7 @@ class TemporalPattern(object):
         self.pattern_type = pattern_type
         self.entities = entities
         self.time_limit = time_limit
+        # TODO: handle extra arguments by pattern type
 
 class MolecularCondition(object):
     def __init__(self, condition_type, quantity, value):
@@ -149,9 +158,40 @@ class MolecularQuantityReference(object):
 
 class TimeInterval(object):
     def __init__(self, lb, ub, unit):
-        self.lb = lb
-        self.ub = ub
-        self.unit = unit
+        if unit == 'hour':
+            sym_unit = units.hour
+        elif unit == 'minute':
+            sym_unit = units.minute
+        elif unit == 'second':
+            sym_unit = units.second
+        else:
+            raise InvalidTimeIntervalError('Invalid unit %s' % unit)
+        if lb is not None:
+            try:
+                lb_num = float(lb)
+            except ValueError:
+                raise InvalidTimeIntervalError('Invalid bound %s' % lb)
+            self.lb = lb_num * sym_unit
+        else:
+            self.lb = None
+        if ub is not None:
+            try:
+                ub_num = float(ub)
+            except ValueError:
+                raise InvalidTimeIntervalError('Invalid bound %s' % ub)
+            self.ub = ub_num * sym_unit
+        else:
+            self.ub = None
+
+    def get_lb_seconds(self):
+        if self.lb is not None:
+            return self.lb / units.second
+        return None
+
+    def get_ub_seconds(self):
+        if self.ub is not None:
+            return self.ub / units.second
+        return None
 
 class InvalidMolecularQuantityError(Exception):
     pass
@@ -160,6 +200,9 @@ class InvalidMolecularEntityError(Exception):
     pass
 
 class InvalidTemporalPatternError(Exception):
+    pass
+
+class InvalidTimeIntervalError(Exception):
     pass
 
 class SimulatorError(Exception):

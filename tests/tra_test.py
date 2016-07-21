@@ -1,26 +1,44 @@
+import sympy.physics.units as units
 from bioagents.trips.kqml_list import KQMLList
 from bioagents.tra import tra_module
+from bioagents.tra.tra import *
+from nose.tools import raises
+
+def test_time_interval():
+    TimeInterval(2.0, 4.0, 'second')
 
 def test_get_time_interval_full():
     ts = '(:lower-bound 2 :upper-bound 4 :unit "hour")'
     lst = KQMLList.from_string(ts)
     ti = tra_module.get_time_interval(lst)
+    assert ti.lb == 2*units.hour
+    assert ti.ub == 4*units.hour
+    assert ti.get_lb_seconds() == 7200
+    assert ti.get_ub_seconds() == 14400
 
 def test_get_time_interval_ub():
     ts = '(:upper-bound 4 :unit "hour")'
     lst = KQMLList.from_string(ts)
     ti = tra_module.get_time_interval(lst)
+    assert ti.lb is None
+    assert ti.ub == 4*units.hours
+    assert ti.get_ub_seconds() == 14400
 
 def test_get_time_interval_lb():
     ts = '(:lower-bound 4 :unit "hour")'
     lst = KQMLList.from_string(ts)
     ti = tra_module.get_time_interval(lst)
+    assert ti.lb == 4*units.hours
+    assert ti.ub is None
+    assert ti.get_lb_seconds() == 14400
 
+@raises(InvalidTimeIntervalError)
 def test_get_time_interval_nounit():
     ts = '(:lower-bound 4)'
     lst = KQMLList.from_string(ts)
     ti = tra_module.get_time_interval(lst)
 
+@raises(InvalidTimeIntervalError)
 def test_get_time_interval_badunit():
     ts = '(:lower-bound 4 :unit "xyz")'
     lst = KQMLList.from_string(ts)

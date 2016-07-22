@@ -8,6 +8,7 @@ import indra.assemblers.pysb_assembler as pa
 from pysb.export.kappa import KappaExporter
 from pysb import Observable
 import model_checker as mc
+from copy import deepcopy
 
 logger = logging.getLogger('TRA')
 
@@ -63,10 +64,15 @@ class TRA(object):
             yobs[obs_name][i] = 1 if v > 50 else 0
 
     def simulate_model(self, model, conditions, max_time, num_times):
-        # Export kappa model
-        kappa_model = pysb_to_kappa(model)
         # Set up simulation conditions
-
+        if conditions:
+            model_sim = deepcopy(model)
+            for condition in conditions:
+                apply_condition(model, condition)
+        else:
+            model_sim = model
+        # Export kappa model
+        kappa_model = pysb_to_kappa(model_sim)
         # Start simulation
         kappa_params = {'code': kappa_model,
                         'max_time': max_time,
@@ -83,6 +89,31 @@ class TRA(object):
                               status.get('event_percentage'))
         tspan, yobs = get_sim_result(status.get('plot'))
         return tspan, yobs
+
+def apply_condition(model, condition):
+    agent = condition.quantity.entity
+    monomer = model.monomers[agent.name]
+    site_pattern = pa.get_site_pattern(agent)
+    # TODO: handle modified patterns
+    if site_pattern:
+        logger.warning('Cannot handle initial conditions on' +
+                       ' modified monomers.')
+    if condition.condition_type == 'exact':
+        if condition.value.quant_type == 'number':
+            pa.set_base_initial_condition(model, monomer,
+                                          condition.value.value)
+        else:
+            logger.warning('Cannot handle non-number initial conditions')
+    elif condition.condition_type == 'multiple':
+        # TODO: refer to annotations for the IC name
+        ic_name = monomer.name + '_0'
+        model.parameters[ic_name].value *= condition.value
+    elif condition.condition_type == 'decrease':
+        ic_name = monomer.name + '_0'
+        model.parameters[ic_name].value *= 0.9
+    elif condition.condition_type == 'increase':
+        ic_name = monomer.name + '_0'
+        model.parameters[ic_name].value *= 1.1
 
 def get_create_observable(model, agent):
     site_pattern = pa.get_site_pattern(agent)

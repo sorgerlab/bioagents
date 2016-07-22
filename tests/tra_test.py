@@ -2,6 +2,7 @@ import sympy.physics.units as units
 from bioagents.trips.kqml_list import KQMLList
 from bioagents.tra import tra_module
 from bioagents.tra.tra import *
+from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from nose.tools import raises
 
 def test_time_interval():
@@ -178,6 +179,36 @@ def test_get_molecular_condition_badentity():
                                ':entity (:description "xyz")))')
     mc = tra_module.get_molecular_condition(lst)
 
+def test_apply_condition_exact():
+    model = _get_gk_model()
+    lst = KQMLList.from_string('(:type "exact" :value (:value 0 :type "number") ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "%s")))' % ekb_map2k1)
+    mc = tra_module.get_molecular_condition(lst)
+    apply_condition(model, mc)
+    assert model.parameters['MAP2K1_0'].value == 0
+    mc.value.value = 2000
+    apply_condition(model, mc)
+    assert model.parameters['MAP2K1_0'].value == 2000
+
+def test_apply_condition_multiple():
+    model = _get_gk_model()
+    lst = KQMLList.from_string('(:type "multiple" :value 2.5 ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "%s")))' % ekb_map2k1)
+    mc = tra_module.get_molecular_condition(lst)
+    apply_condition(model, mc)
+    assert model.parameters['MAP2K1_0'].value == 250
+
+def test_apply_condition_decrease():
+    model = _get_gk_model()
+    lst = KQMLList.from_string('(:type "decrease" ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "%s")))' % ekb_map2k1)
+    mc = tra_module.get_molecular_condition(lst)
+    pold = model.parameters['MAP2K1_0'].value
+    apply_condition(model, mc)
+    assert model.parameters['MAP2K1_0'].value < pold
 
 def test_get_molecular_entity():
     me = KQMLList.from_string('(:description "%s")' % ekb_complex)
@@ -194,6 +225,48 @@ def test_decode_model():
     model_str = '"from pysb import *\nModel()\nMonomer(\\"M\\")"'
     model = tra_module.decode_model(model_str)
     assert(model.monomers[0].name == 'M')
+
+def _get_gk_model():
+    SelfExporter.do_export = True
+    Model()
+    Monomer('DUSP6', ['mapk1'])
+    Monomer('MAP2K1', ['mapk1'])
+    Monomer('MAPK1', ['phospho', 'map2k1', 'dusp6'], {'phospho': ['u', 'p']})
+
+    Parameter('kf_mm_bind_1', 1e-06)
+    Parameter('kr_mm_bind_1', 0.001)
+    Parameter('kc_mm_phos_1', 0.001)
+    Parameter('kf_dm_bind_1', 1e-06)
+    Parameter('kr_dm_bind_1', 0.001)
+    Parameter('kc_dm_dephos_1', 0.001)
+    Parameter('DUSP6_0', 100.0)
+    Parameter('MAP2K1_0', 100.0)
+    Parameter('MAPK1_0', 100.0)
+
+    Rule('MAP2K1_phospho_bind_MAPK1_phospho_1', MAP2K1(mapk1=None) + \
+         MAPK1(phospho='u', map2k1=None) >>
+         MAP2K1(mapk1=1) % MAPK1(phospho='u', map2k1=1), kf_mm_bind_1)
+    Rule('MAP2K1_phospho_MAPK1_phospho_1', MAP2K1(mapk1=1) % \
+         MAPK1(phospho='u', map2k1=1) >>
+        MAP2K1(mapk1=None) + MAPK1(phospho='p', map2k1=None), kc_mm_phos_1)
+    Rule('MAP2K1_dissoc_MAPK1', MAP2K1(mapk1=1) % MAPK1(map2k1=1) >> 
+         MAP2K1(mapk1=None) + MAPK1(map2k1=None), kr_mm_bind_1)
+    Rule('DUSP6_dephos_bind_MAPK1_phospho_1', DUSP6(mapk1=None) + 
+         MAPK1(phospho='p', dusp6=None) >>
+         DUSP6(mapk1=1) % MAPK1(phospho='p', dusp6=1), kf_dm_bind_1)
+    Rule('DUSP6_dephos_MAPK1_phospho_1', DUSP6(mapk1=1) % 
+         MAPK1(phospho='p', dusp6=1) >>
+         DUSP6(mapk1=None) + MAPK1(phospho='u', dusp6=None), kc_dm_dephos_1)
+    Rule('DUSP6_dissoc_MAPK1', DUSP6(mapk1=1) % MAPK1(dusp6=1) >> 
+         DUSP6(mapk1=None) + MAPK1(dusp6=None), kr_dm_bind_1)
+
+    Initial(DUSP6(mapk1=None), DUSP6_0)
+    Initial(MAP2K1(mapk1=None), MAP2K1_0)
+    Initial(MAPK1(phospho='u', map2k1=None, dusp6=None), MAPK1_0)
+    SelfExporter.do_export = False
+    return model
+
+ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
 
 ekb_braf = '<ekb><TERM dbid=\\"UP:P15056|HGNC:1097\\" id=\\"V34744\\"><type>ONT::GENE</type><name>BRAF</name><text>BRAF</text></TERM></ekb>'
 

@@ -41,13 +41,14 @@ class TRA(object):
         # TODO: make this adaptive
         num_sim = 10
         num_times = 100
-        if pattern.time_limit.lb > 0:
+        if pattern.time_limit and pattern.time_limit.lb > 0:
             min_time = time_limit.get_lb_seconds()
             min_time_idx = int(num_times * (1.0*min_time / max_time))
         else:
             min_time_idx = 0
         truths = []
         for i in range(num_sim):
+            logging.info('Simulation %d' % i)
             tspan, yobs = self.simulate_model(model, conditions, max_time, num_times)
             #print yobs
             self.discretize_obs(yobs, obs.name)
@@ -85,7 +86,7 @@ class TRA(object):
             if not is_running:
                 break
             else:
-                logging.debug('Sim event percentage: %d' %
+                logging.info('Sim event percentage: %d' %
                               status.get('event_percentage'))
         tspan, yobs = get_sim_result(status.get('plot'))
         return tspan, yobs

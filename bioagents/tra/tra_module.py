@@ -159,7 +159,11 @@ def get_molecular_quantity(lst):
     try:
         quant_type = get_string_arg(lst.get_keyword_arg(':type'))
         value = get_string_arg(lst.get_keyword_arg(':value'))
-        return MolecularQuantity(quant_type, value)
+        if quant_type == 'concentration':
+            unit = get_string_arg(lst.get_keyword_arg(':unit'))
+        else:
+            unit = None
+        return MolecularQuantity(quant_type, value, unit)
     except Exception as e:
         raise InvalidMolecularQuantityError(e)
 
@@ -200,7 +204,15 @@ def get_molecular_condition(lst):
     condition_type = get_string_arg(lst.get_keyword_arg(':type'))
     quantity_ref_lst = lst.get_keyword_arg(':quantity')
     quantity = get_molecular_quantity_ref(quantity_ref_lst)
-    value = get_string_arg(lst.get_keyword_arg(':value'))
+    if condition_type == 'exact':
+        value = get_molecular_quantity(lst.get_keyword_arg(':value'))
+    elif condition_type == 'multiple':
+        value = get_string_arg(lst.get_keyword_arg(':value'))
+    elif condition_type in ['increase', 'decrease']:
+        value = None
+    else:
+        raise InvalidMolecularConditionError('Unknown condition type: %s' %
+                                             condition_type)
     return MolecularCondition(condition_type, quantity, value)
 
 class InvalidModelDescriptionError(Exception):

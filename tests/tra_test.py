@@ -44,6 +44,58 @@ def test_get_time_interval_badunit():
     lst = KQMLList.from_string(ts)
     ti = tra_module.get_time_interval(lst)
 
+def test_molecular_quantity_conc1():
+    s = '(:type "concentration" :value 2 :unit "uM")'
+    lst = KQMLList.from_string(s)
+    mq = tra_module.get_molecular_quantity(lst)
+    assert mq.quant_type == 'concentration'
+    assert mq.value == 2 * units.micro * units.mol / units.liter
+
+def test_molecular_quantity_conc2():
+    s = '(:type "concentration" :value 200 :unit "nM")'
+    lst = KQMLList.from_string(s)
+    mq = tra_module.get_molecular_quantity(lst)
+    assert mq.quant_type == 'concentration'
+    assert mq.value == 200 * units.nano * units.mol / units.liter
+
+@raises(InvalidMolecularQuantityError)
+def test_molecular_quantity_conc_badval():
+    s = '(:type "concentration" :value "xyz" :unit "nM")'
+    lst = KQMLList.from_string(s)
+    mq = tra_module.get_molecular_quantity(lst)
+
+@raises(InvalidMolecularQuantityError)
+def test_molecular_quantity_conc_badunit():
+    s = '(:type "concentration" :value 200 :unit "meter")'
+    lst = KQMLList.from_string(s)
+    mq = tra_module.get_molecular_quantity(lst)
+
+def test_molecular_quantity_num():
+    s = '(:type "number" :value 20000)'
+    lst = KQMLList.from_string(s)
+    mq = tra_module.get_molecular_quantity(lst)
+    assert mq.quant_type == 'number'
+    assert mq.value == 20000
+
+@raises(InvalidMolecularQuantityError)
+def test_molecular_quantity_num_badval():
+    s = '(:type "number" :value -1)'
+    lst = KQMLList.from_string(s)
+    mq = tra_module.get_molecular_quantity(lst)
+
+def test_molecular_quantity_qual():
+    s = '(:type "qualitative" :value "high")'
+    lst = KQMLList.from_string(s)
+    mq = tra_module.get_molecular_quantity(lst)
+    assert mq.quant_type == 'qualitative'
+    assert mq.value == 'high'
+
+@raises(InvalidMolecularQuantityError)
+def test_molecular_quantity_qual_badval():
+    s = '(:type "qualitative" :value 123)'
+    lst = KQMLList.from_string(s)
+    mq = tra_module.get_molecular_quantity(lst)
+
 def test_get_molecular_entity():
     me = KQMLList.from_string('(:description "%s")' % ekb_complex)
     ent = tra_module.get_molecular_entity(me)

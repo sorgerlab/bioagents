@@ -24,7 +24,7 @@ class TRA(object):
             #TODO: set this based on some model property
             max_time = 20000.0
         elif pattern.time_limit.ub > 0:
-            max_time = time_limit.ub
+            max_time = time_limit.get_ub_seconds()
         # TODO: handle multiple entities
         obs = get_create_observable(model, pattern.entities[0])
         if pattern.pattern_type == 'transient':
@@ -40,7 +40,7 @@ class TRA(object):
         num_sim = 10
         num_times = 100
         if pattern.time_limit.lb > 0:
-            min_time = time_limit.lb
+            min_time = time_limit.get_lb_seconds()
             min_time_idx = int(num_times * (1.0*min_time / max_time))
         else:
             min_time_idx = 0
@@ -126,30 +126,42 @@ class MolecularCondition(object):
 class MolecularQuantity(object):
     def __init__(self, quant_type, value, unit=None):
         if quant_type == 'concentration':
-            unit = lst.get_keyword_arg(':unit')
             try:
-                value_num = float(falue)
+                value_num = float(value)
             except ValueError:
-                msg = 'Invalid quantity type %s' % quant_type
+                msg = 'Invalid concentration value %s' % value
                 raise InvalidMolecularQuantityError(msg)
-            pass
+            if unit == 'mM':
+                sym_value = value_num * units.milli * units.mol / units.liter
+            elif unit == 'uM':
+                sym_value = value_num * units.micro * units.mol / units.liter
+            elif unit == 'nM':
+                sym_value = value_num * units.nano * units.mol / units.liter
+            elif unit == 'pM':
+                sym_value = value_num * units.pico * units.mol / units.liter
+            else:
+                msg = 'Invalid unit %s' % unit
+                raise InvalidMolecularQuantityError(msg)
+            self.value = sym_value
         elif quant_type == 'number':
-            pass
+            try:
+                value_num = int(value)
+                if value_num < 0:
+                    raise ValueError
+            except ValueError:
+                msg = 'Invalid molecule number value %s' % value
+                raise InvalidMolecularQuantityError(msg)
+            self.value = value_num
         elif quant_type == 'qualitative':
-            if value == 'high':
-                pass
-            elif value == 'low':
-                pass
+            if value in ['low', 'high']:
+                self.value = value
             else:
                 msg = 'Invalid qualitative quantity value %s' % value
                 raise InvalidMolecularQuantityError(msg)
-            pass
         else:
             raise InvalidMolecularQuantityError('Invalid quantity type %s' %
                                                 quant_type)
         self.quant_type = quant_type
-        self.value = value
-        self.unit = unit
 
 class MolecularQuantityReference(object):
     def __init__(self, quant_type, entity):

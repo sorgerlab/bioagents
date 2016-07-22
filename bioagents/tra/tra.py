@@ -3,6 +3,7 @@ import sympy.physics.units as units
 import logging
 import itertools
 from time import sleep
+import indra.statements as ist
 import indra.assemblers.pysb_assembler as pa
 from pysb.export.kappa import KappaExporter
 from pysb import Observable
@@ -165,12 +166,22 @@ class MolecularQuantity(object):
 
 class MolecularQuantityReference(object):
     def __init__(self, quant_type, entity):
-        self.quant_type = quant_type
-        self.entity = entity
+        if quant_type in ['total', 'initial']:
+            self.quant_type = quant_type
+        else:
+            msg = 'Unknown quantity type %s' % quant_type
+            raise InvalidMolecularQuantityRefError(msg)
+        if not isinstance(entity, ist.Agent):
+            msg = 'Invalid molecular Agent'
+            raise InvalidMolecularQuantityRefError(msg)
+        else:
+            self.entity = entity
 
 class TimeInterval(object):
     def __init__(self, lb, ub, unit):
-        if unit == 'hour':
+        if unit == 'day':
+            sym_unit = units.day
+        elif unit == 'hour':
             sym_unit = units.hour
         elif unit == 'minute':
             sym_unit = units.minute
@@ -206,6 +217,9 @@ class TimeInterval(object):
         return None
 
 class InvalidMolecularQuantityError(Exception):
+    pass
+
+class InvalidMolecularQuantityRefError(Exception):
     pass
 
 class InvalidMolecularEntityError(Exception):

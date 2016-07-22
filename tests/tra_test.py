@@ -96,9 +96,36 @@ def test_molecular_quantity_qual_badval():
     lst = KQMLList.from_string(s)
     mq = tra_module.get_molecular_quantity(lst)
 
+def test_molecular_quantity_ref():
+    s = '(:type "total" :entity (:description "%s"))' % ekb_complex
+    lst = KQMLList.from_string(s)
+    mqr = tra_module.get_molecular_quantity_ref(lst)
+    assert mqr.quant_type == 'total'
+    assert len(mqr.entity.bound_conditions) == 1
+
+def test_molecular_quantity_ref2():
+    s = '(:type "initial" :entity (:description "%s"))' % ekb_complex
+    lst = KQMLList.from_string(s)
+    mqr = tra_module.get_molecular_quantity_ref(lst)
+    assert mqr.quant_type == 'initial'
+    assert len(mqr.entity.bound_conditions) == 1
+
+@raises(InvalidMolecularQuantityRefError)
+def test_molecular_quantity_badtype():
+    s = '(:type "xyz" :entity (:description "%s"))' % ekb_complex
+    lst = KQMLList.from_string(s)
+    mqr = tra_module.get_molecular_quantity_ref(lst)
+
+@raises(InvalidMolecularQuantityRefError)
+def test_molecular_quantity_badentity():
+    s = '(:type "xyz" :entity (:description "xyz"))'
+    lst = KQMLList.from_string(s)
+    mqr = tra_module.get_molecular_quantity_ref(lst)
+
 def test_get_molecular_entity():
     me = KQMLList.from_string('(:description "%s")' % ekb_complex)
     ent = tra_module.get_molecular_entity(me)
+    assert len(ent.bound_conditions) == 1
 
 def test_get_molecular_condition():
     lst = KQMLList.from_string('(:type "decrease" :quantity (:type "total" ' +\

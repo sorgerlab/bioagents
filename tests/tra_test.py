@@ -122,15 +122,67 @@ def test_molecular_quantity_badentity():
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
 
+def test_get_molecular_condition_dec():
+    lst = KQMLList.from_string('(:type "decrease" :quantity (:type "total" ' +\
+                               ':entity (:description "%s")))' % ekb_braf)
+    mc = tra_module.get_molecular_condition(lst)
+    assert mc.condition_type == 'decrease'
+    assert mc.quantity.quant_type == 'total'
+    assert mc.quantity.entity.name == 'BRAF'
+
+def test_get_molecular_condition_exact():
+    lst = KQMLList.from_string('(:type "exact" :value (:value 0 :type "number") ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "%s")))' % ekb_braf)
+    mc = tra_module.get_molecular_condition(lst)
+    assert mc.condition_type == 'exact'
+    assert mc.value.quant_type == 'number'
+    assert mc.quantity.quant_type == 'total'
+    assert mc.quantity.entity.name == 'BRAF'
+
+def test_get_molecular_condition_multiple():
+    lst = KQMLList.from_string('(:type "multiple" :value 2 ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "%s")))' % ekb_braf)
+    mc = tra_module.get_molecular_condition(lst)
+    assert mc.condition_type == 'multiple'
+    assert mc.value == 2.0
+    assert mc.quantity.quant_type == 'total'
+    assert mc.quantity.entity.name == 'BRAF'
+
+@raises(InvalidMolecularConditionError)
+def test_get_molecular_condition_badtype():
+    lst = KQMLList.from_string('(:type "xyz" :value 2 ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "%s")))' % ekb_braf)
+    mc = tra_module.get_molecular_condition(lst)
+
+@raises(InvalidMolecularConditionError)
+def test_get_molecular_condition_badvalue():
+    lst = KQMLList.from_string('(:type "multiple" :value "xyz" ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "%s")))' % ekb_braf)
+    mc = tra_module.get_molecular_condition(lst)
+
+@raises(InvalidMolecularConditionError)
+def test_get_molecular_condition_badvalue2():
+    lst = KQMLList.from_string('(:type "exact" :value 2 ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "%s")))' % ekb_braf)
+    mc = tra_module.get_molecular_condition(lst)
+
+@raises(InvalidMolecularConditionError)
+def test_get_molecular_condition_badentity():
+    lst = KQMLList.from_string('(:type "exact" :value 2 ' +
+                               ':quantity (:type "total" ' +
+                               ':entity (:description "xyz")))')
+    mc = tra_module.get_molecular_condition(lst)
+
+
 def test_get_molecular_entity():
     me = KQMLList.from_string('(:description "%s")' % ekb_complex)
     ent = tra_module.get_molecular_entity(me)
     assert len(ent.bound_conditions) == 1
-
-def test_get_molecular_condition():
-    lst = KQMLList.from_string('(:type "decrease" :quantity (:type "total" ' +\
-                               ':entity (:description "%s")))' % ekb_braf)
-    mc = tra_module.get_molecular_condition(lst)
 
 def test_get_temporal_pattern():
     pattern_msg = '(:type "transient" :entities ((:description ' + \

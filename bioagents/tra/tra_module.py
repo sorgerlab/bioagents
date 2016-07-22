@@ -201,19 +201,19 @@ def get_temporal_pattern(lst):
     return TemporalPattern(pattern_type, entities, time_limit)
 
 def get_molecular_condition(lst):
-    condition_type = get_string_arg(lst.get_keyword_arg(':type'))
-    quantity_ref_lst = lst.get_keyword_arg(':quantity')
-    quantity = get_molecular_quantity_ref(quantity_ref_lst)
-    if condition_type == 'exact':
-        value = get_molecular_quantity(lst.get_keyword_arg(':value'))
-    elif condition_type == 'multiple':
-        value = get_string_arg(lst.get_keyword_arg(':value'))
-    elif condition_type in ['increase', 'decrease']:
-        value = None
-    else:
-        raise InvalidMolecularConditionError('Unknown condition type: %s' %
-                                             condition_type)
-    return MolecularCondition(condition_type, quantity, value)
+    try:
+        condition_type = get_string_arg(lst.get_keyword_arg(':type'))
+        quantity_ref_lst = lst.get_keyword_arg(':quantity')
+        quantity = get_molecular_quantity_ref(quantity_ref_lst)
+        if condition_type == 'exact':
+            value = get_molecular_quantity(lst.get_keyword_arg(':value'))
+        elif condition_type == 'multiple':
+            value = get_string_arg(lst.get_keyword_arg(':value'))
+        else:
+            value = None
+        return MolecularCondition(condition_type, quantity, value)
+    except Exception as e:
+        raise InvalidMolecularConditionError(e)
 
 class InvalidModelDescriptionError(Exception):
     pass

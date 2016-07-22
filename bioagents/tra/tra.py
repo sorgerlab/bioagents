@@ -119,10 +119,32 @@ class TemporalPattern(object):
         # TODO: handle extra arguments by pattern type
 
 class MolecularCondition(object):
-    def __init__(self, condition_type, quantity, value):
+    def __init__(self, condition_type, quantity, value=None):
+        if isinstance(quantity, MolecularQuantityReference):
+            self.quantity = quantity
+        else:
+            msg = 'Invalid molecular quantity reference'
+            raise InvalidMolecularConditionError(msg)
+        if condition_type == 'exact':
+            if isinstance(value, MolecularQuantity):
+                self.value = value
+            else:
+                msg = 'Invalid molecular condition value'
+                raise InvalidMolecularConditionError(msg)
+        elif condition_type == 'multiple':
+            try:
+                value_num = float(value)
+                if value_num < 0:
+                    raise ValueError('Negative molecular quantity not allowed')
+            except ValueError as e:
+                raise InvalidMolecularConditionError(e)
+            self.value = value_num
+        elif condition_type in ['increase', 'decrease']:
+            self.value = None
+        else:
+            msg = 'Unknown condition type: %s' % condition_type
+            raise InvalidMolecularConditionError(msg)
         self.condition_type = condition_type
-        self.quantity = quantity
-        self.value = value
 
 class MolecularQuantity(object):
     def __init__(self, quant_type, value, unit=None):
@@ -223,6 +245,9 @@ class InvalidMolecularQuantityRefError(Exception):
     pass
 
 class InvalidMolecularEntityError(Exception):
+    pass
+
+class InvalidMolecularConditionError(Exception):
     pass
 
 class InvalidTemporalPatternError(Exception):

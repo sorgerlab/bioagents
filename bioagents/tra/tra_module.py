@@ -117,7 +117,7 @@ class TRA_Module(trips_module.TripsModule):
             self.tra.check_property(model, pattern, conditions)
 
         reply_content = KQMLList()
-        msg_str = '(:satisfies-rate %s :num-sim %d)' % (sat_rate, num_sim)
+        msg_str = '(:satisfies-rate %.1f :num-sim %d)' % (sat_rate, num_sim)
         reply_content.add('SUCCESS :content %s' % msg_str)
         return reply_content
 

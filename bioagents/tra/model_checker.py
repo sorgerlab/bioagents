@@ -40,3 +40,14 @@ def noact_formula(var_id):
     fstr = 'G[%s,0,0]' % var_id
     return fstr
 
+def always_formula(var_id, value):
+    fstr = 'G[%s,%d,%d]' % (var_id, value, value)
+    return fstr
+
+def eventual_formula(var_id, value):
+    fstr = 'FG[%s,%d,%d]' % (var_id, value, value)
+    return fstr
+
+def sometime_formula(var_id, value):
+    fstr = 'F[%s,%d,%d]' % (var_id, value, value)
+    return fstr

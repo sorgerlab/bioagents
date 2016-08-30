@@ -51,9 +51,33 @@ class TRA(object):
                 raise InvalidTemporalPatternError(msg)
             fstr = mc.always_formula(obs.name, val)
         elif pattern.pattern_type == 'eventual_value':
-            fstr = mc.eventual_formula(obs.name, pattern.value)
+            if not pattern.value.quant_type == 'qualitative':
+                msg = 'Cannot handle eventual value of "%s" type.' % \
+                    pattern.value.quant_type
+                raise InvalidTemporalPatternError(msg)
+            if pattern.value.value == 'low':
+                val = 0
+            elif pattern.value.value == 'high':
+                val = 1
+            else:
+                msg = 'Cannot handle eventual value of "%s".' % \
+                    pattern.value.value
+                raise InvalidTemporalPatternError(msg)
+            fstr = mc.eventual_formula(obs.name, val)
         elif pattern.pattern_type == 'sometime_value':
-            fstr = mc.sometime_formula(obs.name, pattern.value)
+            if not pattern.value.quant_type == 'qualitative':
+                msg = 'Cannot handle sometime value of "%s" type.' % \
+                    pattern.value.quant_type
+                raise InvalidTemporalPatternError(msg)
+            if pattern.value.value == 'low':
+                val = 0
+            elif pattern.value.value == 'high':
+                val = 1
+            else:
+                msg = 'Cannot handle sometime value of "%s".' % \
+                    pattern.value.value
+                raise InvalidTemporalPatternError(msg)
+            fstr = mc.sometime_formula(obs.name, val)
         else:
             msg = 'Unknown pattern %s' % pattern.pattern_type
             raise InvalidTemporalPatternError(msg)

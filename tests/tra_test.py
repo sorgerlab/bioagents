@@ -219,7 +219,41 @@ def test_get_temporal_pattern():
     pattern_msg = '(:type "transient" :entities ((:description ' + \
                     '"%s")))' % ekb_complex
     lst = KQMLList.from_string(pattern_msg)
-    ent = tra_module.get_temporal_pattern(lst)
+    pattern = tra_module.get_temporal_pattern(lst)
+    assert pattern.pattern_type == 'transient'
+
+def test_get_temporal_pattern_always():
+    pattern_msg = '(:type "always_value" :entities ((:description ' + \
+                    '"%s")) :value (:type "qualitative" :value "low"))' % \
+                    ekb_complex
+    lst = KQMLList.from_string(pattern_msg)
+    pattern = tra_module.get_temporal_pattern(lst)
+    assert pattern.pattern_type == 'always_value'
+    assert pattern.value is not None
+    assert pattern.value.quant_type == 'qualitative'
+    assert pattern.value.value == 'low'
+
+def test_get_temporal_pattern_sometime():
+    pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
+                    '"%s")) :value (:type "qualitative" :value "high"))' % \
+                    ekb_complex
+    lst = KQMLList.from_string(pattern_msg)
+    pattern = tra_module.get_temporal_pattern(lst)
+    assert pattern.pattern_type == 'sometime_value'
+    assert pattern.value is not None
+    assert pattern.value.quant_type == 'qualitative'
+    assert pattern.value.value == 'high'
+
+def test_get_temporal_pattern_eventual():
+    pattern_msg = '(:type "eventual_value" :entities ((:description ' + \
+                    '"%s")) :value (:type "qualitative" :value "high"))' % \
+                    ekb_complex
+    lst = KQMLList.from_string(pattern_msg)
+    pattern = tra_module.get_temporal_pattern(lst)
+    assert pattern.pattern_type == 'eventual_value'
+    assert pattern.value is not None
+    assert pattern.value.quant_type == 'qualitative'
+    assert pattern.value.value == 'high'
 
 def test_decode_model():
     model_str = '"from pysb import *\nModel()\nMonomer(\\"M\\")"'

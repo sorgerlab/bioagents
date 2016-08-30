@@ -11,6 +11,7 @@ import model_checker as mc
 from copy import deepcopy
 
 logger = logging.getLogger('TRA')
+import matplotlib.pyplot as plt
 
 class TRA(object):
     def __init__(self, kappa):
@@ -35,27 +36,73 @@ class TRA(object):
             fstr = mc.sustained_formula(obs.name)
         elif pattern.pattern_type == 'no_change':
             fstr = mc.noact_formula(obs.name)
+        elif pattern.pattern_type == 'always_value':
+            if not pattern.value.quant_type == 'qualitative':
+                msg = 'Cannot handle always value of "%s" type.' % \
+                    pattern.value.quant_type
+                raise InvalidTemporalPatternError(msg)
+            if pattern.value.value == 'low':
+                val = 0
+            elif pattern.value.value == 'high':
+                val = 1
+            else:
+                msg = 'Cannot handle always value of "%s".' % \
+                    pattern.value.value
+                raise InvalidTemporalPatternError(msg)
+            fstr = mc.always_formula(obs.name, val)
+        elif pattern.pattern_type == 'eventual_value':
+            if not pattern.value.quant_type == 'qualitative':
+                msg = 'Cannot handle eventual value of "%s" type.' % \
+                    pattern.value.quant_type
+                raise InvalidTemporalPatternError(msg)
+            if pattern.value.value == 'low':
+                val = 0
+            elif pattern.value.value == 'high':
+                val = 1
+            else:
+                msg = 'Cannot handle eventual value of "%s".' % \
+                    pattern.value.value
+                raise InvalidTemporalPatternError(msg)
+            fstr = mc.eventual_formula(obs.name, val)
+        elif pattern.pattern_type == 'sometime_value':
+            if not pattern.value.quant_type == 'qualitative':
+                msg = 'Cannot handle sometime value of "%s" type.' % \
+                    pattern.value.quant_type
+                raise InvalidTemporalPatternError(msg)
+            if pattern.value.value == 'low':
+                val = 0
+            elif pattern.value.value == 'high':
+                val = 1
+            else:
+                msg = 'Cannot handle sometime value of "%s".' % \
+                    pattern.value.value
+                raise InvalidTemporalPatternError(msg)
+            fstr = mc.sometime_formula(obs.name, val)
         else:
             msg = 'Unknown pattern %s' % pattern.pattern_type
             raise InvalidTemporalPatternError(msg)
         # TODO: make this adaptive
         num_sim = 10
-        num_times = 100
+        num_times = 200
         if pattern.time_limit and pattern.time_limit.lb > 0:
             min_time = time_limit.get_lb_seconds()
             min_time_idx = int(num_times * (1.0*min_time / max_time))
         else:
             min_time_idx = 0
         truths = []
+        plt.figure()
+        plt.ion()
         for i in range(num_sim):
             logging.info('Simulation %d' % i)
             tspan, yobs = self.simulate_model(model, conditions, max_time, num_times)
+            plt.plot(tspan, yobs)
             #print yobs
             self.discretize_obs(yobs, obs.name)
             yobs_from_min = yobs[min_time_idx:]
             MC = mc.ModelChecker(fstr, yobs_from_min)
             tf = MC.truth
             truths.append(tf)
+        plt.savefig('%s.png' % fstr)
         sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
         return sat_rate, num_sim
 
@@ -149,6 +196,14 @@ class TemporalPattern(object):
         self.entities = entities
         self.time_limit = time_limit
         # TODO: handle extra arguments by pattern type
+        if self.pattern_type in \
+            ('always_value', 'eventual_value', 'sometime_value'):
+            value = kwargs.get('value')
+            if value is None:
+                msg = 'Missing molecular quantity'
+                raise InvalidTemporalPatternError(msg)
+            self.value = value
+
 
 class MolecularCondition(object):
     def __init__(self, condition_type, quantity, value=None):

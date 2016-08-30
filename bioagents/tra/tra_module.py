@@ -117,7 +117,7 @@ class TRA_Module(trips_module.TripsModule):
             self.tra.check_property(model, pattern, conditions)
 
         reply_content = KQMLList()
-        msg_str = '(:satisfies-rate %s :num-sim %d)' % (sat_rate, num_sim)
+        msg_str = '(:satisfies-rate %.1f :num-sim %d)' % (sat_rate, num_sim)
         reply_content.add('SUCCESS :content %s' % msg_str)
         return reply_content
 
@@ -198,7 +198,12 @@ def get_temporal_pattern(lst):
     else:
         time_limit = get_time_interval(time_limit_lst)
     # TODO: handle more pattern-specific extra arguments
-    return TemporalPattern(pattern_type, entities, time_limit)
+    value_lst = lst.get_keyword_arg(':value')
+    if value_lst is not None:
+        value = get_molecular_quantity(value_lst)
+    else:
+        value = None
+    return TemporalPattern(pattern_type, entities, time_limit, value=value)
 
 def get_molecular_condition(lst):
     try:

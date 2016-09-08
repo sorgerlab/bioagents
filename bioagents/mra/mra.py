@@ -10,11 +10,11 @@ from indra import trips
 from indra.databases import uniprot_client
 from bioagents.databases import nextprot_client
 
-
 class MRA:
     def __init__(self):
         # This is a list of lists of Statements
         self.statements = []
+        self.default_policy = 'two_step'
 
     def new_statements(self, stmts):
         self.statements.append(stmts)
@@ -30,8 +30,8 @@ class MRA:
         if tp is None:
             return None
         self.new_statements(tp.statements)
-        pa = PysbAssembler()
-        pa.new_statements(tp.statements)
+        pa = PysbAssembler(policies=self.default_policy)
+        pa.add_statements(tp.statements)
         model = pa.make_model()
         return model
 
@@ -43,7 +43,7 @@ class MRA:
         if tp is None:
             return None
         self.new_statements(tp.statements)
-        pa = PysbAssembler()
+        pa = PysbAssembler(policies=self.default_policy)
         pa.add_statements(tp.statements)
         model = pa.make_model()
         return model
@@ -54,7 +54,7 @@ class MRA:
         '''
         tp = trips.process_text(model_txt)
         self.extend_statements(tp.statements, model_id)
-        pa = PysbAssembler()
+        pa = PysbAssembler(policies=self.default_policy)
         pa.add_statements(self.statements[model_id-1])
         model = pa.make_model()
         return model
@@ -65,7 +65,7 @@ class MRA:
         '''
         tp = trips.process_xml(model_ekb)
         self.extend_statements(tp.statements, model_id)
-        pa = PysbAssembler()
+        pa = PysbAssembler(policies=self.default_policy)
         pa.add_statements(self.statements[model_id-1])
         model = pa.make_model()
         return model

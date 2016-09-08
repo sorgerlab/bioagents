@@ -85,13 +85,13 @@ class MRA:
             return None
         return family_members
 
-    def replace_agent(self, agent_name, agent_replacement_names):
+    def replace_agent(self, agent_name, agent_replacement_names, model_id):
         '''
         Replace an agent in the stored statements with one or more
         other agents. This is used, for instance, to expand a protein family
         to multiple specific proteins.
         '''
-        for stmt in self.statements:
+        for stmt in self.statements[model_id-1]:
             if isinstance(stmt, Complex):
                 agent_key = [i for i, m in enumerate(stmt.members) if
                              m.name == agent_name]
@@ -99,16 +99,16 @@ class MRA:
                 agent_key = [k for k, v in stmt.__dict__.iteritems() if
                              isinstance(v, Agent) and v.name == agent_name]
             if agent_key:
-                self.statements.remove(stmt)
+                self.statements[model_id-1].remove(stmt)
                 for p in agent_replacement_names:
                     s = copy.deepcopy(stmt)
                     if isinstance(stmt, Complex):
                         s.members[agent_key[0]].name = p
                     else:
                         s.__dict__[agent_key[0]].name = p
-                    self.add_statements([s])
+                    self.extend_statements([s], model_id)
         pa = PysbAssembler()
-        pa.add_statements(self.statements)
+        pa.add_statements(self.statements[model_id-1])
         model = pa.make_model()
         return model
 

@@ -13,67 +13,62 @@ from bioagents.databases import nextprot_client
 
 class MRA:
     def __init__(self):
+        # This is a list of lists of Statements
         self.statements = []
-        self.model = None
 
-    def statement_exists(self, stmt):
-        for s in self.statements:
-            if stmt == s:
-                return True
-        return False
+    def new_statements(self, stmts):
+        self.statements.append(stmts)
 
-    def add_statements(self, stmts):
-        for stmt in stmts:
-            if not self.statement_exists(stmt):
-                self.statements.append(stmt)
+    def extend_statements(self, stmts, model_id):
+        self.statements[model_id-1] += stmts
 
     def build_model_from_text(self, model_txt):
         '''
         Build a model using INDRA from natural language.
         '''
-        pa = PysbAssembler()
         tp = trips.process_text(model_txt)
         if tp is None:
             return None
-        pa.add_statements(tp.statements)
-        self.add_statements(tp.statements)
-        self.model = pa.make_model()
-        return self.model
+        self.new_statements(tp.statements)
+        pa = PysbAssembler()
+        pa.new_statements(tp.statements)
+        model = pa.make_model()
+        return model
 
     def build_model_from_ekb(self, model_ekb):
         '''
         Build a model using DRUM extraction knowledge base.
         '''
-        pa = PysbAssembler()
         tp = trips.process_xml(model_ekb)
         if tp is None:
             return None
+        self.new_statements(tp.statements)
+        pa = PysbAssembler()
         pa.add_statements(tp.statements)
-        self.add_statements(tp.statements)
-        self.model = pa.make_model()
-        return self.model
+        model = pa.make_model()
+        return model
 
-    def expand_model_from_text(self, model_txt):
+    def expand_model_from_text(self, model_txt, model_id):
         '''
         Expand a model using INDRA from natural language.
         '''
-        pa = PysbAssembler()
         tp = trips.process_text(model_txt)
-        self.add_statements(tp.statements)
-        pa.add_statements(self.statements)
-        self.model = pa.make_model()
-        return self.model
+        self.extend_statements(tp.statements, model_id)
+        pa = PysbAssembler()
+        pa.add_statements(self.statements[model_id-1])
+        model = pa.make_model()
+        return model
 
-    def expand_model_from_ekb(self, model_ekb):
+    def expand_model_from_ekb(self, model_ekb, model_id):
         '''
         Expand a model using DRUM extraction knowledge base
         '''
-        pa = PysbAssembler()
         tp = trips.process_xml(model_ekb)
-        self.add_statements(tp.statements)
-        pa.add_statements(self.statements)
-        self.model = pa.make_model()
-        return self.model
+        self.extend_statements(tp.statements, model_id)
+        pa = PysbAssembler()
+        pa.add_statements(self.statements[model_id-1])
+        model = pa.make_model()
+        return model
 
     def find_family_members(self, family_name, family_id=None):
         '''
@@ -114,8 +109,8 @@ class MRA:
                     self.add_statements([s])
         pa = PysbAssembler()
         pa.add_statements(self.statements)
-        self.model = pa.make_model()
-        return self.model
+        model = pa.make_model()
+        return model
 
 if __name__ == '__main__':
     mra = MRA()

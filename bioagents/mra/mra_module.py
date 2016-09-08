@@ -128,15 +128,15 @@ class MRA_Module(trips_module.TripsModule):
             raise InvalidModelIdError
 
         try:
-            model = self.mra.expand_model_from_ekb(descr)
+            model = self.mra.expand_model_from_ekb(descr, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError
         self.get_context(model)
         self.models.append(model)
-        model_id = len(self.models)
+        new_model_id = len(self.models)
         model_enc = self.encode_model(model)
         try:
-            model_diagram = self.get_model_diagram(model, model_id)
+            model_diagram = self.get_model_diagram(model, new_model_id)
         except DiagramGenerationError:
             model_diagram = ''
         except DiagramConversionError:
@@ -144,7 +144,7 @@ class MRA_Module(trips_module.TripsModule):
         reply_content =\
             KQMLList.from_string(
             '(SUCCESS :model-id %s :model "%s" :diagram "%s")' %\
-                (model_id, model_enc, model_diagram))
+                (new_model_id, model_enc, model_diagram))
         return reply_content
 
     @staticmethod

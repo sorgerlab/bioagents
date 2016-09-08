@@ -88,7 +88,6 @@ class TRA_Module(trips_module.TripsModule):
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
-            print pattern_lst
         except InvalidTimeUnitError as e:
             logger.error(e)
             reply_content =\
@@ -111,10 +110,16 @@ class TRA_Module(trips_module.TripsModule):
                 logger.error(e)
                 msg_str = '(FAILURE :reason INVALID_CONDITIONS)'
                 reply_content = KQMLList.from_string(msg_str)
-            return reply_content
+                return reply_content
 
-        sat_rate, num_sim = \
-            self.tra.check_property(model, pattern, conditions)
+        try:
+            sat_rate, num_sim = \
+                self.tra.check_property(model, pattern, conditions)
+        except Exception as e:
+            logger.error(e)
+            reply_content =\
+                KQMLList.from_string('(FAILURE :reason INVALID_PATTERN)')
+            return reply_content
 
         reply_content = KQMLList()
         msg_str = '(:satisfies-rate %.1f :num-sim %d)' % (sat_rate, num_sim)
@@ -203,7 +208,8 @@ def get_temporal_pattern(lst):
         value = get_molecular_quantity(value_lst)
     else:
         value = None
-    return TemporalPattern(pattern_type, entities, time_limit, value=value)
+    tp = TemporalPattern(pattern_type, entities, time_limit, value=value)
+    return tp
 
 def get_molecular_condition(lst):
     try:

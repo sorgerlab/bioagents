@@ -204,7 +204,6 @@ class TemporalPattern(object):
                 raise InvalidTemporalPatternError(msg)
             self.value = value
 
-
 class MolecularCondition(object):
     def __init__(self, condition_type, quantity, value=None):
         if isinstance(quantity, MolecularQuantityReference):

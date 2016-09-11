@@ -34,8 +34,8 @@ class MRA_Module(trips_module.TripsModule):
         tell_content =  content[0].to_string().upper()
         if tell_content == 'START-CONVERSATION':
             logger.info('MRA resetting')
-            self.mra = MRA()
-            self.models = []
+            #self.mra = MRA()
+            #self.models = []
 
     def receive_request(self, msg, content):
         '''

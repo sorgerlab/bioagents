@@ -16,11 +16,20 @@ class MRA:
         self.statements = []
         self.default_policy = 'two_step'
 
+    def stmt_exists(self, stmts, stmt):
+        for st1 in stmts:
+            if st1.matches(stmt):
+                return True
+        return False
+
     def new_statements(self, stmts):
         self.statements.append(stmts)
 
     def extend_statements(self, stmts, model_id):
-        self.statements[model_id-1] += stmts
+        self.statements.append(self.statements[model_id-1])
+        for st in stmts:
+            if not self.stmt_exists(self.statements[model_id], st):
+                self.statements[model_id].append(st)
 
     def build_model_from_text(self, model_txt):
         '''

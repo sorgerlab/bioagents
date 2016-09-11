@@ -30,6 +30,13 @@ class MRA_Module(trips_module.TripsModule):
         self.ready()
         super(MRA_Module, self).start()
 
+    def receive_tell(self, msg, content):
+        tell_content =  content[0].to_string().upper()
+        if tell_content == 'START-CONVERSATION':
+            logger.info('MRA resetting')
+            self.mra = MRA()
+            self.models = []
+
     def receive_request(self, msg, content):
         '''
         If a "request" message is received, decode the task and the content

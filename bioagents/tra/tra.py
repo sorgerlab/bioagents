@@ -93,7 +93,7 @@ class TRA(object):
         plt.figure()
         plt.ion()
         for i in range(num_sim):
-            logging.info('Simulation %d' % i)
+            logger.info('Simulation %d' % i)
             tspan, yobs = self.simulate_model(model, conditions, max_time, num_times)
             plt.plot(tspan, yobs)
             #print yobs
@@ -101,6 +101,7 @@ class TRA(object):
             yobs_from_min = yobs[min_time_idx:]
             MC = mc.ModelChecker(fstr, yobs_from_min)
             tf = MC.truth
+            logger.info('Property %s' % tf)
             truths.append(tf)
         plt.savefig('%s.png' % fstr)
         sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
@@ -116,7 +117,7 @@ class TRA(object):
         if conditions:
             model_sim = deepcopy(model)
             for condition in conditions:
-                apply_condition(model, condition)
+                apply_condition(model_sim, condition)
         else:
             model_sim = model
         # Export kappa model
@@ -133,7 +134,7 @@ class TRA(object):
             if not is_running:
                 break
             else:
-                logging.info('Sim event percentage: %d' %
+                logger.info('Sim event percentage: %d' %
                               status.get('event_percentage'))
         tspan, yobs = get_sim_result(status.get('plot'))
         return tspan, yobs
@@ -162,6 +163,7 @@ def apply_condition(model, condition):
     elif condition.condition_type == 'increase':
         ic_name = monomer.name + '_0'
         model.parameters[ic_name].value *= 1.1
+    logger.info('New initial condition: %s' % model.parameters[ic_name])
 
 def get_create_observable(model, agent):
     site_pattern = pa.get_site_pattern(agent)

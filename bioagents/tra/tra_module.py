@@ -75,7 +75,7 @@ class TRA_Module(trips_module.TripsModule):
         '''
         model_token = content_list.get_keyword_arg(':model')
         pattern_lst = content_list.get_keyword_arg(':pattern')
-        conditions_lst = content_list.get_keyword_arg('conditions')
+        conditions_lst = content_list.get_keyword_arg(':conditions')
 
         try:
             model_str = str(model_token)

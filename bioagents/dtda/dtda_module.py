@@ -200,7 +200,11 @@ class DTDA_Module(trips_module.TripsModule):
 
     @staticmethod
     def get_disease(disease_arg):
-        disease_type = str(disease_arg[0]).lower()
+        disease_type_str = str(disease_arg[0]).lower()
+        if disease_type_str.startswith('ont::'):
+            disease_type = disease_type_str[5:]
+        else:
+            disease_type = disease_type_str
         dbname = str(disease_arg.get_keyword_arg(':dbname'))[1:-1]
         dbid = str(disease_arg.get_keyword_arg(':dbid'))[1:-1]
         dbids = dbid.split('|')

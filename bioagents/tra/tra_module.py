@@ -27,7 +27,7 @@ class TRA_Module(trips_module.TripsModule):
         if args.kappa_url:
             self.kappa_url = args.kappa_url
         else:
-            logging.error('No Kappa URL given.')
+            logger.error('No Kappa URL given.')
             sys.exit()
         # Generate a basic model as placeholder (for testing)
         #model_text = 'MAPK1 binds MAP2K1.'

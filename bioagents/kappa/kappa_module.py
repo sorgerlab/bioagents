@@ -106,7 +106,7 @@ class Kappa_Module(TripsModule):
         if args.kappa_url:
             self.kappa_url = args.kappa_url
         else:
-            logging.error('No Kappa URL given.')
+            logger.error('No Kappa URL given.')
             sys.exit()
         # Send subscribe messages
         for task in self.tasks:

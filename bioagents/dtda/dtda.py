@@ -42,7 +42,7 @@ cbio_efo_map = _make_cbio_efo_map()
 
 class DTDA:
     def __init__(self):
-        logging.debug('Using resource folder: %s' % _resource_dir)
+        logger.debug('Using resource folder: %s' % _resource_dir)
         # Build an initial set of substitution statements
         bel_corpus = _resource_dir + 'large_corpus_direct_subs.rdf'
         if os.path.isfile(bel_corpus):
@@ -53,14 +53,14 @@ class DTDA:
             self.sub_statements = bp.statements
         else:
             self.sub_statements = []
-            logging.error('DTDA could not load mutation effect data.')
+            logger.error('DTDA could not load mutation effect data.')
         # Load a database of drug targets
         drug_db_file = _resource_dir + 'drug_targets.db'
         if os.path.isfile(drug_db_file):
             self.drug_db = sqlite3.connect(drug_db_file,
                                            check_same_thread=False)
         else:
-            logging.error('DTDA could not load drug-target database.')
+            logger.error('DTDA could not load drug-target database.')
             self.drug_db = None
 
     def __del__(self):
@@ -182,7 +182,7 @@ class DTDA:
         except DiseaseNotFoundException:
             raise DiseaseNotFoundException
         if mutation_stats is None:
-            logging.error('No mutation stats')
+            logger.error('No mutation stats')
             return None
 
         # Return the top mutation as a possible target

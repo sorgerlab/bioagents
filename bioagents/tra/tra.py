@@ -17,10 +17,11 @@ class TRA(object):
     def __init__(self, kappa):
         self.kappa = kappa
         kappa_ver = kappa.version()
-        if kappa_ver is None or kappa_ver.get('version') is None:
+        if kappa_ver is None or kappa_ver.get('version_id') is None:
             raise SimulatorError('Invalid Kappa client.')
-        logger.debug('Using kappa version %s / build %s' %
-                     (kappa_ver.get('version'), kappa_ver.get('build')))
+        logger.info('Using kappa version %s / build %s' %
+                     (kappa_ver.get('version_id'),
+                      kappa_ver.get('version_build')))
 
     def check_property(self, model, pattern, conditions=None):
         if pattern.time_limit is None:

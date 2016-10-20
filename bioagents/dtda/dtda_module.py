@@ -97,6 +97,7 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         target = content_list.get_keyword_arg(':target')
         target_str = target.to_string()[1:-1]
+        prefix, target_str = target_str.split('::')
         drug_names, chebi_ids = self.dtda.find_target_drugs(target_str)
         drug_list_str = ''
         for dn, ci in zip(drug_names, chebi_ids):

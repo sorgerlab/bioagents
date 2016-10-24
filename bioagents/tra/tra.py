@@ -149,6 +149,7 @@ def apply_condition(model, condition):
         logger.warning('Cannot handle initial conditions on' +
                        ' modified monomers.')
     if condition.condition_type == 'exact':
+        ic_name = monomer.name + '_0'
         if condition.value.quant_type == 'number':
             pa.set_base_initial_condition(model, monomer,
                                           condition.value.value)
@@ -180,17 +181,17 @@ def pysb_to_kappa(model):
     return kappa_model
 
 def get_sim_result(kappa_plot):
-    values = kappa_plot['observables']
-    values.sort(key = lambda x: x['time'])
+    values = kappa_plot['time_series']
+    values.sort(key = lambda x: x['observation_time'])
     nt = len(values)
     obs_list = [str(l[1:-1]) for l in kappa_plot['legend']]
     yobs = numpy.ndarray(nt, list(zip(obs_list, itertools.repeat(float))))
 
     tspan = []
     for t, value in enumerate(values):
-        tspan.append(value['time'])
+        tspan.append(value['observation_time'])
         for i, obs in enumerate(obs_list):
-            yobs[obs][t] = value['values'][i]
+            yobs[obs][t] = value['observation_values'][i]
     return (tspan, yobs)
 
 class TemporalPattern(object):

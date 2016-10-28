@@ -54,3 +54,9 @@ def test_find_family_members_id():
     assert(len(family_members) == 3)
     assert('BRAF' in family_members)
 
+def test_has_mechanism():
+    m = MRA()
+    ekb = '<ekb><EVENT id="V33716"><type>ONT::BIND</type><arg1 id="V33712" role=":AGENT" /><arg2 id="V33734" role=":AFFECTED" /></EVENT><TERM id="V33712" dbid="HGNC:1097|NCIT:C51194|NCIT:C17476"><features></features><type>ONT::GENE-PROTEIN</type><name>BRAF</name></TERM><TERM id="V33734" dbid="NCIT:C52823|NCIT:C105947|NCIT:C17808|HGNC:6840|UP:Q91447|UP:Q05116"><features></features><type>ONT::GENE-PROTEIN</type><name>MEK-1</name></TERM></ekb>'
+    m.build_model_from_ekb(ekb)
+    has_mechanism = m.has_mechanism(ekb, 1)
+    assert(has_mechanism)

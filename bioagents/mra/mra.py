@@ -9,6 +9,7 @@ from indra.statements import Agent, Complex
 from indra import trips
 from indra.databases import uniprot_client
 from bioagents.databases import nextprot_client
+from indra.preassembler.hierarchy_manager import hierarchies
 
 class MRA:
     def __init__(self):
@@ -56,6 +57,18 @@ class MRA:
         pa.add_statements(tp.statements)
         model = pa.make_model()
         return model
+
+    def has_mechanism(self, mech_ekb, model_id):
+        """Return True if the given model contains the given mechanism."""
+        tp = trips.process_xml(mech_ekb)
+        if not tp.statements:
+            return False
+        query_st = tp.statements[0]
+        model_stmts = self.statements[model_id-1]
+        for model_st in model_stmts:
+            if model_st.refinement_of(query_st, hierarchies):
+                return True
+        return False
 
     def expand_model_from_text(self, model_txt, model_id):
         '''

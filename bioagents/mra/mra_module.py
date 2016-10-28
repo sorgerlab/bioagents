@@ -19,7 +19,7 @@ logger = logging.getLogger('MRA')
 class MRA_Module(trips_module.TripsModule):
     def __init__(self, argv):
         super(MRA_Module, self).__init__(argv)
-        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL']
+        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM']
         self.models = []
         for task in self.tasks:
             msg_txt =\
@@ -70,6 +70,8 @@ class MRA_Module(trips_module.TripsModule):
                 logger.error(e)
                 fail_msg = '(FAILURE :reason INVALID_DESCRIPTION)'
                 reply_content = KQMLList.from_string(fail_msg)
+        elif task_str == 'MODEL-HAS-MECHANISM':
+            reply_content = self.respond_has_mechanism(content)
         else:
             self.error_reply(msg, 'Unknown task ' + task_str)
             return
@@ -152,6 +154,40 @@ class MRA_Module(trips_module.TripsModule):
             KQMLList.from_string(
             '(SUCCESS :model-id %s :model "%s" :diagram "%s")' %\
                 (new_model_id, model_enc, model_diagram))
+        return reply_content
+
+    def respond_has_mechanism(self, content_list):
+        '''
+        Response content to model-has-mechanism request
+        '''
+        try:
+            descr_arg = content_list.get_keyword_arg(':description')
+            descr = descr_arg[0].to_string()
+            descr = self.decode_description(descr)
+        except Exception as e:
+            raise InvalidModelDescriptionError(e)
+        model_id_arg = content_list.get_keyword_arg(':model-id')
+        if model_id_arg is None:
+            logger.error('Model ID missing.')
+            raise InvalidModelIdError
+        try:
+            model_id_str = model_id_arg.to_string()
+            model_id = int(model_id_str)
+        except Exception as e:
+            logger.error('Could not get model ID as integer.')
+            raise InvalidModelIdError(e)
+        if model_id < 1 or model_id > len(self.models):
+            logger.error('Model ID does not refer to an existing model.')
+            raise InvalidModelIdError
+
+        try:
+            has_mechanism = self.mra.has_mechanism(descr, model_id)
+        except Exception as e:
+            raise InvalidModelDescriptionError
+        reply_content =\
+            KQMLList.from_string(
+            '(SUCCESS :model-id %s :has-mechanism %s)' %\
+                (model_id, has_mechanism))
         return reply_content
 
     @staticmethod

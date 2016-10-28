@@ -19,7 +19,7 @@ logger = logging.getLogger('MRA')
 class MRA_Module(trips_module.TripsModule):
     def __init__(self, argv):
         super(MRA_Module, self).__init__(argv)
-        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL']
+        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM']
         self.models = []
         for task in self.tasks:
             msg_txt =\

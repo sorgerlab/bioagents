@@ -1,0 +1,17 @@
+%agent: MAP2K1(mapk1)
+%agent: MAPK1(phospho~u~p,map2k1)
+
+%var: 'kf_mm_bind_1' 1.000000e-06
+%var: 'kr_mm_bind_1' 1.000000e-03
+%var: 'kc_mm_phos_1' 1.000000e-03
+%var: 'MAP2K1_0' 1.000000e+02
+%var: 'MAPK1_0' 1.000000e+02
+
+'MAP2K1_phospho_bind_MAPK1_phospho_1' MAP2K1(mapk1),MAPK1(phospho~u,map2k1) -> MAP2K1(mapk1!1),MAPK1(phospho~u,map2k1!1) @ 'kf_mm_bind_1'
+'MAP2K1_phospho_MAPK1_phospho_1' MAP2K1(mapk1!1),MAPK1(phospho~u,map2k1!1) -> MAP2K1(mapk1),MAPK1(phospho~p,map2k1) @ 'kc_mm_phos_1'
+'MAP2K1_dissoc_MAPK1' MAP2K1(mapk1!1),MAPK1(map2k1!1) -> MAP2K1(mapk1),MAPK1(map2k1) @ 'kr_mm_bind_1'
+
+%obs: 'MAPK1_phospho_obs' MAPK1(phospho~p)
+
+%init: 'MAP2K1_0' MAP2K1(mapk1)
+%init: 'MAPK1_0' MAPK1(phospho~u,map2k1)

@@ -1,3 +1,4 @@
+import os
 import numpy
 import itertools
 from time import sleep
@@ -5,20 +6,28 @@ from bioagents.kappa import kappa_client
 
 kappa = kappa_client.KappaRuntime('http://maasha.org:8080')
 
-with open('test_model.ka', 'rt') as fh:
+fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     'test_model.ka')
+with open(fname, 'rt') as fh:
     kappa_model = fh.read()
 
 kappa_params = {'code': kappa_model,
-                'plot_period': 10000,
-                'nb_plot': 100}
+                'plot_period': 100,
+                'max_time': 10000}
+print('Starting simulation')
 sim_id = kappa.start(kappa_params)
+print('Started simulation')
 
 while True:
-    sleep(0.2)
+    sleep(1)
+    print('Checking status')
     status = kappa.status(sim_id)
+    print('Got status')
     is_running = status.get('is_running')
     if not is_running:
         break
+    else:
+        print(status.get('time_percentage'))
 kappa_plot = status.get('plot')
 
 values = kappa_plot['time_series']

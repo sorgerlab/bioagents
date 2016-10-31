@@ -83,8 +83,12 @@ class TRA(object):
             msg = 'Unknown pattern %s' % pattern.pattern_type
             raise InvalidTemporalPatternError(msg)
         # TODO: make this adaptive
+        # The number of independent simulations to perform
         num_sim = 10
-        num_times = 200
+        # The numer of time points to get output at
+        num_times = 100
+        # The periof at which the output is sampled
+        plot_period = int(1.0*max_time / num_times)
         if pattern.time_limit and pattern.time_limit.lb > 0:
             min_time = time_limit.get_lb_seconds()
             min_time_idx = int(num_times * (1.0*min_time / max_time))
@@ -94,10 +98,20 @@ class TRA(object):
         plt.figure()
         plt.ion()
         for i in range(num_sim):
-            logger.info('Simulation %d' % i)
-            tspan, yobs = self.simulate_model(model, conditions, max_time, num_times)
+            try:
+                model_sim = self.condition_model(model, conditions)
+            except Exception as e:
+                logger.error(e)
+                msg = 'Applying molecular condition failed.'
+                raise InvalidMolecularConditionError(msg)
+            logger.info('Starting simulation %d' % i)
+            try:
+                tspan, yobs = self.simulate_model(model_sim, max_time,
+                                                  plot_period)
+            except Exception as e:
+                logger.error(e)
+                raise SimulatorError('Kappa simulation failed.')
             plt.plot(tspan, yobs)
-            #print yobs
             self.discretize_obs(yobs, obs.name)
             yobs_from_min = yobs[min_time_idx:]
             MC = mc.ModelChecker(fstr, yobs_from_min)
@@ -113,7 +127,7 @@ class TRA(object):
         for i, v in enumerate(yobs[obs_name]):
             yobs[obs_name][i] = 1 if v > 50 else 0
 
-    def simulate_model(self, model, conditions, max_time, num_times):
+    def condition_model(self, model, conditions):
         # Set up simulation conditions
         if conditions:
             model_sim = deepcopy(model)
@@ -121,12 +135,15 @@ class TRA(object):
                 apply_condition(model_sim, condition)
         else:
             model_sim = model
+        return model_sim
+
+    def simulate_model(self, model_sim, max_time, plot_period):
         # Export kappa model
         kappa_model = pysb_to_kappa(model_sim)
         # Start simulation
         kappa_params = {'code': kappa_model,
-                        'max_time': max_time,
-                        'nb_plot': num_times}
+                        'plot_period': plot_period,
+                        'max_time': max_time}
         sim_id = self.kappa.start(kappa_params)
         while True:
             sleep(0.2)
@@ -135,8 +152,9 @@ class TRA(object):
             if not is_running:
                 break
             else:
-                logger.info('Sim event percentage: %d' %
-                              status.get('event_percentage'))
+                if status.get('time_percentage') is not None:
+                    logger.info('Sim time percentage: %d' %
+                                  status.get('time_percentage'))
         tspan, yobs = get_sim_result(status.get('plot'))
         return tspan, yobs
 

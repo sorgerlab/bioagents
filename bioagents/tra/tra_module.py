@@ -115,6 +115,11 @@ class TRA_Module(trips_module.TripsModule):
         try:
             sat_rate, num_sim = \
                 self.tra.check_property(model, pattern, conditions)
+        except SimulatorError as e:
+            logger.error(e)
+            reply_content =\
+                KQMLList.from_string('(FAILURE :reason KAPPA_FAILURE)')
+            return reply_content
         except Exception as e:
             logger.error(e)
             reply_content =\

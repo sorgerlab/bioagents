@@ -11,32 +11,16 @@ from indra.databases import uniprot_client
 from bioagents.databases import nextprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
 
-class MRA:
+
+class MRA(object):
     def __init__(self):
         # This is a list of lists of Statements
         self.statements = []
         self.default_policy = 'two_step'
         self.default_initial_amount = 100.0
 
-    def stmt_exists(self, stmts, stmt):
-        for st1 in stmts:
-            if st1.matches(stmt):
-                return True
-        return False
-
-    def new_statements(self, stmts):
-        self.statements.append(stmts)
-
-    def extend_statements(self, stmts, model_id):
-        self.statements.append(self.statements[model_id-1])
-        for st in stmts:
-            if not self.stmt_exists(self.statements[model_id], st):
-                self.statements[model_id].append(st)
-
     def build_model_from_text(self, model_txt):
-        '''
-        Build a model using INDRA from natural language.
-        '''
+        """Build a model using INDRA from natural language."""
         tp = trips.process_text(model_txt)
         if tp is None:
             return None
@@ -48,9 +32,7 @@ class MRA:
         return model
 
     def build_model_from_ekb(self, model_ekb):
-        '''
-        Build a model using DRUM extraction knowledge base.
-        '''
+        """Build a model using DRUM extraction knowledge base."""
         tp = trips.process_xml(model_ekb)
         if tp is None:
             return None
@@ -74,9 +56,7 @@ class MRA:
         return False
 
     def expand_model_from_text(self, model_txt, model_id):
-        '''
-        Expand a model using INDRA from natural language.
-        '''
+        """Expand a model using INDRA from natural language."""
         tp = trips.process_text(model_txt)
         self.extend_statements(tp.statements, model_id)
         pa = PysbAssembler(policies=self.default_policy)
@@ -86,9 +66,7 @@ class MRA:
         return model
 
     def expand_model_from_ekb(self, model_ekb, model_id):
-        '''
-        Expand a model using DRUM extraction knowledge base
-        '''
+        """Expand a model using DRUM extraction knowledge base."""
         tp = trips.process_xml(model_ekb)
         self.extend_statements(tp.statements, model_id)
         pa = PysbAssembler(policies=self.default_policy)
@@ -97,12 +75,30 @@ class MRA:
         pa.add_default_initial_conditions(self.default_initial_amount)
         return model
 
-    def find_family_members(self, family_name, family_id=None):
-        '''
-        Find specific members of a protein family. If only family_name is
-        given then a Uniprot query is performed, if family_id is given then
-        the information is taken from the corresponding database.
-        '''
+    @staticmethod
+    def stmt_exists(stmts, stmt):
+        for st1 in stmts:
+            if st1.matches(stmt):
+                return True
+        return False
+
+    def new_statements(self, stmts):
+        self.statements.append(stmts)
+
+    def extend_statements(self, stmts, model_id):
+        self.statements.append(self.statements[model_id-1])
+        for st in stmts:
+            if not self.stmt_exists(self.statements[model_id], st):
+                self.statements[model_id].append(st)
+
+    @staticmethod
+    def find_family_members(family_name, family_id=None):
+        """Find specific members of a protein family.
+
+        If only family_name is given then a Uniprot query is
+        performed, if family_id is given then the information is taken
+        from the corresponding database.
+        """
         if family_id is None:
             family_members = uniprot_client.get_family_members(family_name)
         elif family_id.startswith('FA'):
@@ -113,18 +109,14 @@ class MRA:
         return family_members
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):
-        '''
-        Replace an agent in the stored statements with one or more
-        other agents. This is used, for instance, to expand a protein family
-        to multiple specific proteins.
-        '''
+        """Replace an agent in a model with other agents.
+
+        This is used, for instance, to expand a protein family to
+        multiple specific proteins.
+        """
         for stmt in self.statements[model_id-1]:
-            if isinstance(stmt, Complex):
-                agent_key = [i for i, m in enumerate(stmt.members) if
-                             m.name == agent_name]
-            else:
-                agent_key = [k for k, v in stmt.__dict__.iteritems() if
-                             isinstance(v, Agent) and v.name == agent_name]
+            agent_key = [i for i, m in enumerate(stmt.agent_list())
+                         if m is not None and m.name == agent_name]
             if agent_key:
                 self.statements[model_id-1].remove(stmt)
                 for p in agent_replacement_names:
@@ -139,7 +131,3 @@ class MRA:
         model = pa.make_model()
         pa.add_default_initial_conditions(self.default_initial_amount)
         return model
-
-if __name__ == '__main__':
-    mra = MRA()
-    model = mra.build_model('EGF stimulation leads to the activity of HRAS')

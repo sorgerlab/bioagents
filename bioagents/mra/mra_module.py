@@ -16,7 +16,7 @@ class MRA_Module(KQMLModule):
     def __init__(self, argv):
         super(MRA_Module, self).__init__(argv)
         self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
-                      'MODEL-REPLACE-MECHANISM', 'REMOVE-FROM-MODEL',
+                      'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
                       'MODEL-UNDO']
         self.models = []
         for task in self.tasks:
@@ -53,6 +53,8 @@ class MRA_Module(KQMLModule):
                 reply_content = self.respond_expand_model(content)
             elif task_str == 'MODEL-HAS-MECHANISM':
                 reply_content = self.respond_has_mechanism(content)
+            elif task_str == 'MODEL-REMOVE-MECHANISM':
+                reply_content = self.respond_remove_mechanism(content)
             else:
                 self.error_reply(msg, 'Unknown task ' + task_str)
                 return
@@ -81,14 +83,12 @@ class MRA_Module(KQMLModule):
             raise InvalidModelDescriptionError
         self.get_context(model)
         self.models.append(model)
-        model_id = len(self.models)
+        new_model_id = len(self.models)
         model_enc = self.encode_model(model)
-        model_diagram = self.make_model_diagram(model, model_id)
-
-        reply_content = \
-            KQMLList.from_string(
-                '(SUCCESS :model-id %s :model "%s" :diagram "%s")' %
-                (model_id, model_enc, model_diagram))
+        model_diagram = self.make_model_diagram(model, new_model_id)
+        msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
+              (new_model_id, model_enc, model_diagram)
+        reply_content = KQMLList.from_string(msg)
         return reply_content
 
     def respond_expand_model(self, content_list):
@@ -104,10 +104,9 @@ class MRA_Module(KQMLModule):
         new_model_id = len(self.models)
         model_enc = self.encode_model(model)
         model_diagram = self.make_model_diagram(model, new_model_id)
-        reply_content =\
-            KQMLList.from_string(
-                '(SUCCESS :model-id %s :model "%s" :diagram "%s")' %
-                (new_model_id, model_enc, model_diagram))
+        msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
+              (new_model_id, model_enc, model_diagram)
+        reply_content = KQMLList.from_string(msg)
         return reply_content
 
     def respond_has_mechanism(self, content_list):
@@ -119,10 +118,28 @@ class MRA_Module(KQMLModule):
             has_mechanism = self.mra.has_mechanism(descr, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
-        reply_content =\
-            KQMLList.from_string(
-                '(SUCCESS :model-id %s :has-mechanism %s)' %
-                (model_id, has_mechanism))
+        msg = '(SUCCESS :model-id %s :has-mechanism %s)' % \
+              (model_id, has_mechanism)
+        reply_content = KQMLList.from_string(msg)
+        return reply_content
+
+    def respond_remove_mechanism(self, content_list):
+        """Return response content to model-remove-mechanism request."""
+        descr = self._get_model_descr(content_list, ':description')
+        model_id = self._get_model_id(content_list)
+
+        try:
+            model = self.mra.remove_mechanism(descr, model_id)
+        except Exception as e:
+            raise InvalidModelDescriptionError(e)
+        self.get_context(model)
+        self.models.append(model)
+        new_model_id = len(self.models)
+        model_enc = self.encode_model(model)
+        model_diagram = self.make_model_diagram(model, new_model_id)
+        msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
+              (new_model_id, model_enc, model_diagram)
+        reply_content = KQMLList.from_string(msg)
         return reply_content
 
     @staticmethod

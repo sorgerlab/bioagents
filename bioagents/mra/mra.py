@@ -5,7 +5,7 @@
 
 import copy
 from indra.assemblers import PysbAssembler
-from indra.statements import Agent, Complex
+from indra.statements import Complex
 from indra import trips
 from indra.databases import uniprot_client
 from bioagents.databases import nextprot_client
@@ -54,6 +54,25 @@ class MRA(object):
             if model_st.refinement_of(query_st, hierarchies):
                 return True
         return False
+
+    def remove_mechanism(self, mech_ekb, model_id):
+        """Return a new model with the given mechanism having been removed."""
+        tp = trips.process_xml(mech_ekb)
+        model_stmts = self.statements[model_id-1]
+        new_stmts = []
+        for model_st in model_stmts:
+            found = False
+            for rem_st in tp.statements:
+                if model_st.refinement_of(rem_st, hierarchies):
+                    found = True
+                    break
+            if not found:
+                new_stmts.append(model_st)
+        self.new_statements(new_stmts)
+        pa = PysbAssembler(policies=self.default_policy)
+        pa.add_statements(new_stmts)
+        model = pa.make_model()
+        return model
 
     def expand_model_from_text(self, model_txt, model_id):
         """Expand a model using INDRA from natural language."""

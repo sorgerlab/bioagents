@@ -1,5 +1,6 @@
 import sys
 import logging
+import xml.etree.ElementTree as ET
 from indra.trips.processor import TripsProcessor
 from bioagents.trips import trips_module
 from bioagents.trips.kqml_performative import KQMLPerformative
@@ -210,15 +211,16 @@ class DTDA_Module(trips_module.TripsModule):
         agent = tp._get_agent_by_id(term_id, None)
         return agent
 
-    @staticmethod
-    def get_disease(disease_arg):
-        disease_type_str = str(disease_arg[0]).lower()
-        if disease_type_str.startswith('ont::'):
-            disease_type = disease_type_str[5:]
-        else:
-            disease_type = disease_type_str
-        dbname = str(disease_arg.get_keyword_arg(':dbname'))[1:-1]
-        dbid = str(disease_arg.get_keyword_arg(':dbid'))[1:-1]
+    def get_disease(self, disease_arg):
+        disease_str = str(disease_arg)
+        disease_str = self.decode_description(disease_str)
+        term = ET.fromstring(disease_str)
+        disease_type = term.find('type').text
+        if disease_type.startswith('ONT::'):
+            disease_type = disease_type[5:].lower()
+        drum_term = term.find('drum-terms/drum-term')
+        dbname = drum_term.attrib['name']
+        dbid = term.attrib['dbid']
         dbids = dbid.split('|')
         dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
         disease = Disease(disease_type, dbname, dbid_dict)

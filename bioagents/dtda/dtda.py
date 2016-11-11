@@ -228,6 +228,3 @@ class Disease(object):
 
     def __str__(self):
         return self.__repr__()
-
-if __name__ == '__main__':
-    mutation_dict = get_mutation_statistics('pancreatic', 'missense')

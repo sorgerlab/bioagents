@@ -1,5 +1,6 @@
 import sys
 import logging
+from indra.trips.processor import TripsProcessor
 from bioagents.trips import trips_module
 from bioagents.trips.kqml_performative import KQMLPerformative
 from bioagents.trips.kqml_list import KQMLList
@@ -74,10 +75,11 @@ class DTDA_Module(trips_module.TripsModule):
         drug_arg = content_list.get_keyword_arg(':drug')
         drug = drug_arg[0].to_string()
         target_arg = content_list.get_keyword_arg(':target')
-        target = target_arg[0].to_string()
+        target = self._get_target(target_arg)
+        target_name = target.name
         reply_content = KQMLList()
         try:
-            is_target = self.dtda.is_nominal_drug_target(drug, target)
+            is_target = self.dtda.is_nominal_drug_target(drug, target_name)
         except DrugNotFoundException:
             reply_content.add('FAILURE :reason DRUG_NOT_FOUND')
             return reply_content
@@ -95,10 +97,10 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         Response content to find-target-drug request
         '''
-        target = content_list.get_keyword_arg(':target')
-        target_str = target.to_string()[1:-1]
-        prefix, target_str = target_str.split('::')
-        drug_names, chebi_ids = self.dtda.find_target_drugs(target_str)
+        target_arg = content_list.get_keyword_arg(':target')
+        target = self._get_target(target_arg)
+        target_name = target.name
+        drug_names, chebi_ids = self.dtda.find_target_drugs(target_name)
         drug_list_str = ''
         for dn, ci in zip(drug_names, chebi_ids):
             if ci is None:
@@ -199,6 +201,15 @@ class DTDA_Module(trips_module.TripsModule):
 
         return reply_content
 
+    def _get_target(self, target_arg):
+        target_str = str(target_arg)
+        target_str = self.decode_description('<ekb>' + target_str + '</ekb>')
+        tp = TripsProcessor(target_str)
+        terms = tp.tree.findall('TERM')
+        term_id = terms[0].attrib['id']
+        agent = tp._get_agent_by_id(term_id, None)
+        return agent
+
     @staticmethod
     def get_disease(disease_arg):
         disease_type_str = str(disease_arg[0]).lower()
@@ -222,6 +233,15 @@ class DTDA_Module(trips_module.TripsModule):
              arg_str = arg_str[1:-1]
         arg_str = arg_str.lower()
         return arg_str
+
+    @staticmethod
+    def decode_description(descr):
+        if descr[0] == '"':
+            descr = descr[1:]
+        if descr[-1] == '"':
+            descr = descr[:-1]
+        descr = descr.replace('\\"', '"')
+        return descr
 
 if __name__ == "__main__":
     DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])

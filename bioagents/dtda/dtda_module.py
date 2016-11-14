@@ -1,5 +1,7 @@
 import sys
 import logging
+import xml.etree.ElementTree as ET
+from indra.trips.processor import TripsProcessor
 from bioagents.trips import trips_module
 from bioagents.trips.kqml_performative import KQMLPerformative
 from bioagents.trips.kqml_list import KQMLList
@@ -74,10 +76,11 @@ class DTDA_Module(trips_module.TripsModule):
         drug_arg = content_list.get_keyword_arg(':drug')
         drug = drug_arg[0].to_string()
         target_arg = content_list.get_keyword_arg(':target')
-        target = target_arg[0].to_string()
+        target = self._get_target(target_arg)
+        target_name = target.name
         reply_content = KQMLList()
         try:
-            is_target = self.dtda.is_nominal_drug_target(drug, target)
+            is_target = self.dtda.is_nominal_drug_target(drug, target_name)
         except DrugNotFoundException:
             reply_content.add('FAILURE :reason DRUG_NOT_FOUND')
             return reply_content
@@ -95,10 +98,10 @@ class DTDA_Module(trips_module.TripsModule):
         '''
         Response content to find-target-drug request
         '''
-        target = content_list.get_keyword_arg(':target')
-        target_str = target.to_string()[1:-1]
-        prefix, target_str = target_str.split('::')
-        drug_names, chebi_ids = self.dtda.find_target_drugs(target_str)
+        target_arg = content_list.get_keyword_arg(':target')
+        target = self._get_target(target_arg)
+        target_name = target.name
+        drug_names, chebi_ids = self.dtda.find_target_drugs(target_name)
         drug_list_str = ''
         for dn, ci in zip(drug_names, chebi_ids):
             if ci is None:
@@ -199,15 +202,25 @@ class DTDA_Module(trips_module.TripsModule):
 
         return reply_content
 
-    @staticmethod
-    def get_disease(disease_arg):
-        disease_type_str = str(disease_arg[0]).lower()
-        if disease_type_str.startswith('ont::'):
-            disease_type = disease_type_str[5:]
-        else:
-            disease_type = disease_type_str
-        dbname = str(disease_arg.get_keyword_arg(':dbname'))[1:-1]
-        dbid = str(disease_arg.get_keyword_arg(':dbid'))[1:-1]
+    def _get_target(self, target_arg):
+        target_str = str(target_arg)
+        target_str = self.decode_description('<ekb>' + target_str + '</ekb>')
+        tp = TripsProcessor(target_str)
+        terms = tp.tree.findall('TERM')
+        term_id = terms[0].attrib['id']
+        agent = tp._get_agent_by_id(term_id, None)
+        return agent
+
+    def get_disease(self, disease_arg):
+        disease_str = str(disease_arg)
+        disease_str = self.decode_description(disease_str)
+        term = ET.fromstring(disease_str)
+        disease_type = term.find('type').text
+        if disease_type.startswith('ONT::'):
+            disease_type = disease_type[5:].lower()
+        drum_term = term.find('drum-terms/drum-term')
+        dbname = drum_term.attrib['name']
+        dbid = term.attrib['dbid']
         dbids = dbid.split('|')
         dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
         disease = Disease(disease_type, dbname, dbid_dict)
@@ -222,6 +235,15 @@ class DTDA_Module(trips_module.TripsModule):
              arg_str = arg_str[1:-1]
         arg_str = arg_str.lower()
         return arg_str
+
+    @staticmethod
+    def decode_description(descr):
+        if descr[0] == '"':
+            descr = descr[1:]
+        if descr[-1] == '"':
+            descr = descr[:-1]
+        descr = descr.replace('\\"', '"')
+        return descr
 
 if __name__ == "__main__":
     DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])

@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 class TRA(object):
     def __init__(self, kappa):
         self.kappa = kappa
-        kappa_ver = kappa.version()
         if kappa_ver is None or kappa_ver.get('version_id') is None:
             raise SimulatorError('Invalid Kappa client.')
         logger.info('Using kappa version %s / build %s' %
@@ -104,7 +103,7 @@ class TRA(object):
                 logger.error(e)
                 msg = 'Applying molecular condition failed.'
                 raise InvalidMolecularConditionError(msg)
-            logger.info('Starting simulation %d' % i)
+            logger.info('Starting simulation %d' % (i+1))
             try:
                 tspan, yobs = self.simulate_model(model_sim, max_time,
                                                   plot_period)

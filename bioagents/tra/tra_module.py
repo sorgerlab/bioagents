@@ -41,8 +41,12 @@ class TRA_Module(trips_module.TripsModule):
                 '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton TRA agent
-        kappa = kappa_client.KappaRuntime(self.kappa_url)
-        self.tra = TRA(kappa)
+        try:
+            kappa = kappa_client.KappaRuntime(self.kappa_url)
+            self.tra = TRA(kappa)
+        except Exception as e:
+            logger.error('Could not instantiate TRA with Kappa service.')
+            self.tra = None
         self.ready()
         super(TRA_Module, self).start()
 
@@ -52,6 +56,14 @@ class TRA_Module(trips_module.TripsModule):
         and call the appropriate function to prepare the response. A reply
         "tell" message is then sent back.
         '''
+        if self.tra is None:
+            reply_content =\
+                KQMLList.from_string('(FAILURE :reason KAPPA_FAILURE)')
+            reply_msg = KQMLPerformative('reply')
+            reply_msg.set_parameter(':content', reply_content)
+            self.reply(msg, reply_msg)
+            return
+
         content_list = content
         task_str = content_list[0].to_string().upper()
         if task_str == 'SATISFIES-PATTERN':

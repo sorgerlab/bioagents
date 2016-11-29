@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 class TRA(object):
     def __init__(self, kappa):
         self.kappa = kappa
+        kappa_ver = kappa.version()
         if kappa_ver is None or kappa_ver.get('version_id') is None:
             raise SimulatorError('Invalid Kappa client.')
         logger.info('Using kappa version %s / build %s' %

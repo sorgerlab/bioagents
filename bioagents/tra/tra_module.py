@@ -11,13 +11,11 @@ from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \
 
 from bioagents.tra.tra import *
 from bioagents.kappa import kappa_client
-from bioagents.trips import trips_module
-from bioagents.trips.kqml_list import KQMLList
-from bioagents.trips.kqml_performative import KQMLPerformative
+from kqml import KQMLModule, KQMLList, KQMLPerformative
 
 logger = logging.getLogger('TRA')
 
-class TRA_Module(trips_module.TripsModule):
+class TRA_Module(KQMLModule):
     def __init__(self, argv):
         super(TRA_Module, self).__init__(argv)
         self.tasks = ['SATISFIES-PATTERN']

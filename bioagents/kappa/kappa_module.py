@@ -6,9 +6,7 @@ import json
 
 from kappa_client import KappaRuntime, RuntimeError
 
-from bioagents.trips.trips_module import TripsModule
-from bioagents.trips.kqml_performative import KQMLPerformative
-from bioagents.trips.kqml_list import KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 logger = logging.getLogger('Kappa')
 
@@ -89,7 +87,7 @@ def render_status(status):
     return reply_content
 
 
-class Kappa_Module(TripsModule):
+class Kappa_Module(KQMLModule):
     '''
     The Kappa module is a TRIPS module built around the Kappa client. Its role
     is to receive and decode messages and send responses from and to other

@@ -4,9 +4,7 @@ import operator
 import threading
 import time
 
-from bioagents.trips.trips_module import TripsModule
-from bioagents.trips.kqml_performative import KQMLPerformative
-from bioagents.trips.kqml_list import KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 class Test_State():
     def __init__(self,request,expected):

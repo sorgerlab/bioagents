@@ -2,15 +2,13 @@ import sys
 import argparse
 import logging
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
-from bioagents.trips import trips_module
 from mea import MEA
 
-from bioagents.trips.kqml_performative import KQMLPerformative
-from bioagents.trips.kqml_list import KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 logger = logging.getLogger('MEA')
 
-class MEA_Module(trips_module.TripsModule):
+class MEA_Module(KQMLModule):
     def __init__(self, argv):
         super(MEA_Module, self).__init__(argv)
         self.tasks = ['SIMULATE-MODEL']

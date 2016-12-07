@@ -7,7 +7,7 @@ A collection of agents for biological reasoning in a communication system. The f
 - TRA (Temporal Reasoning Agent): The TRA executes dynamical models built by the MRA under variable experimental conditions and verifies whether the dynamics meets a given temporal pattern
 - DTDA (Disease, Target and Drug Agent): The DTDA's task is to search for targets known to be implicated in a disease and to look for drugs that are known to affect that target.
 
-We also provide a python implementation of a generic module in the TRIPS dialogue system and a python implementation of a KQML message dispatcher. 
+KQML messaging classes used by the agents are available at: https://github.com/bgyori/pykqml
 
 Installing the bioagents
 ========================

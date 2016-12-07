@@ -5,18 +5,16 @@ import subprocess
 import base64
 import pysb.export
 import logging
-from bioagents.trips import trips_module
 from pysb.tools import render_reactions
 from pysb import Parameter
 from mra import MRA
 from indra.assemblers import pysb_assembler
 
-from bioagents.trips.kqml_performative import KQMLPerformative
-from bioagents.trips.kqml_list import KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 logger = logging.getLogger('MRA')
 
-class MRA_Module(trips_module.TripsModule):
+class MRA_Module(KQMLModule):
     def __init__(self, argv):
         super(MRA_Module, self).__init__(argv)
         self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM']

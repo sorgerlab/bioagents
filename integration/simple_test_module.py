@@ -4,11 +4,9 @@ import operator
 import threading
 import time
 
-from bioagents.trips.trips_module import TripsModule
-from bioagents.trips.kqml_performative import KQMLPerformative
-from bioagents.trips.kqml_list import KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 
-class TestModule(TripsModule):
+class TestModule(KQMLModule):
     """The Test module is a TRIPS module built to run unit tests.
 
     Its role is to receive and decode messages and send responses to

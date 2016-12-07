@@ -2,16 +2,14 @@ import sys
 import logging
 import xml.etree.ElementTree as ET
 from indra.trips.processor import TripsProcessor
-from bioagents.trips import trips_module
-from bioagents.trips.kqml_performative import KQMLPerformative
-from bioagents.trips.kqml_list import KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException
 
 logger = logging.getLogger('DTDA')
 
 # TODO: standardize dash/underscore
-class DTDA_Module(trips_module.TripsModule):
+class DTDA_Module(KQMLModule):
     '''
     The DTDA module is a TRIPS module built around the DTDA agent.
     Its role is to receive and decode messages and send responses from and

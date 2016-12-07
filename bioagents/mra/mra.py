@@ -74,6 +74,18 @@ class MRA(object):
         model = pa.make_model()
         return model
 
+    def model_undo(self):
+        """Revert to the previous model version."""
+        if len(self.statements) > 1:
+            model = self.statements[model_id-2]
+            self.statements.append(model)
+        elif len(self.statements) == 1:
+            model = []
+            self.statements.append(model)
+        else:
+            model = None
+        return model
+
     def expand_model_from_text(self, model_txt, model_id):
         """Expand a model using INDRA from natural language."""
         tp = trips.process_text(model_txt)

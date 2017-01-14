@@ -1,0 +1,312 @@
+# DTDA stands for disease-target-drug agent whose task is to
+# search for targets known to be implicated in a
+# certain disease and to look for drugs that are known
+# to affect that target directly or indirectly
+
+import re
+import os
+import logging
+import rdflib
+import sqlite3
+import numpy
+import operator
+from indra.statements import ActiveForm
+from indra.bel.processor import BelProcessor
+from bioagents.databases import chebi_client
+from bioagents.databases import cbio_client
+from ndex.networkn import NdexGraph
+import ndex.beta.toolbox as toolbox
+import causal_utilities as cu
+
+logger = logging.getLogger('QCA')
+
+_resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
+
+class DrugNotFoundException(Exception):
+    def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+
+class DiseaseNotFoundException(Exception):
+    def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+
+def _make_cbio_efo_map():
+    lines = open(_resource_dir + 'cbio_efo_map.tsv', 'rt').readlines()
+    cbio_efo_map = {}
+    for lin in lines:
+        cbio_id, efo_id = lin.strip().split('\t')
+        try:
+            cbio_efo_map[efo_id].append(cbio_id)
+        except KeyError:
+            cbio_efo_map[efo_id] = [cbio_id]
+    return cbio_efo_map
+
+cbio_efo_map = _make_cbio_efo_map()
+
+class QCA:
+    def __init__(self):
+        logger.debug('Using resource folder: %s' % _resource_dir)
+        # Build an initial set of substitution statements
+        bel_corpus = _resource_dir + 'large_corpus_direct_subs.rdf'
+        if os.path.isfile(bel_corpus):
+            g = rdflib.Graph()
+            g.parse(bel_corpus, format='nt')
+            bp = BelProcessor(g)
+            bp.get_activating_subs()
+            self.sub_statements = bp.statements
+        else:
+            self.sub_statements = []
+            logger.error('QCA could not load mutation effect data.')
+        # Load a database of drug targets
+        drug_db_file = _resource_dir + 'drug_targets.db'
+        if os.path.isfile(drug_db_file):
+            self.drug_db = sqlite3.connect(drug_db_file,
+                                           check_same_thread=False)
+        else:
+            logger.error('QCA could not load drug-target database.')
+            self.drug_db = None
+
+    def __del__(self):
+        self.drug_db.close()
+
+    def find_causal_path(self):
+        directedPaths = DirectedPaths()
+        if(pathnum is not None):
+            return dict(data=directedPaths.findDirectedPaths(network, source, target, npaths=pathnum))
+
+
+    def is_nominal_drug_target(self, drug_name, target_name):
+        '''
+        Return True if the drug targets the target, and False if not
+        '''
+        if self.drug_db is not None:
+            res = self.drug_db.execute('SELECT nominal_target FROM agent '
+                                       'WHERE source_id LIKE "HMSL%%" '
+                                       'AND (synonyms LIKE "%%%s%%" '
+                                       'OR name LIKE "%%%s%%")' %
+                                       (drug_name, drug_name)).fetchall()
+            if not res:
+                raise DrugNotFoundException
+            for r in res:
+                if r[0].upper() == target_name.upper():
+                    return True
+        return False
+
+    def find_target_drugs(self, target_name):
+        '''
+        Find all the drugs that nominally target the target.
+        '''
+        if self.drug_db is not None:
+            res = self.drug_db.execute('SELECT name, synonyms FROM agent '
+                                       'WHERE source_id LIKE "HMSL%%" '
+                                       'AND nominal_target LIKE "%%%s%%" ' %
+                                       target_name).fetchall()
+            drug_names = [r[0] for r in res]
+        else:
+            drug_names = []
+        chebi_ids = []
+        for dn in drug_names:
+            chebi_id = chebi_client.get_id(dn)
+            chebi_ids.append(chebi_id)
+        return drug_names, chebi_ids
+
+    def find_mutation_effect(self, protein_name, amino_acid_change):
+        match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)
+        if match is None:
+            return None
+        matches = match.groups()
+        wt_residue = matches[0]
+        pos = matches[1]
+        sub_residue = matches[2]
+
+        for stmt in self.sub_statements:
+            # Make sure it's an active form statements
+            if not isinstance(stmt, ActiveForm):
+                continue
+            mutations = stmt.agent.mutations
+            # Make sure the Agent has exactly one mutation
+            if len(mutations) != 1:
+                continue
+            if stmt.agent.name == protein_name and\
+                mutations[0].residue_from == wt_residue and\
+                mutations[0].position == pos and\
+                mutations[0].residue_to == sub_residue:
+                    if stmt.is_active:
+                        return 'activate'
+                    else:
+                        return 'deactivate'
+        return None
+
+    @staticmethod
+    def _get_studies_from_disease_name(disease_name):
+        study_prefixes = cbio_efo_map.get(disease_name)
+        if study_prefixes is None:
+            return None
+        study_ids = []
+        for sp in study_prefixes:
+            study_ids += cbio_client.get_cancer_studies(sp)
+        return list(set(study_ids))
+
+    def get_mutation_statistics(self, disease_name, mutation_type):
+        study_ids = self._get_studies_from_disease_name(disease_name)
+        if not study_ids:
+            raise DiseaseNotFoundException
+        gene_list_str = self._get_gene_list_str()
+        mutation_dict = {}
+        num_case = 0
+        for study_id in study_ids:
+            num_case += cbio_client.get_num_sequenced(study_id)
+            mutations = cbio_client.get_mutations(study_id, gene_list_str,
+                                                  mutation_type)
+            for g, a in zip(mutations['gene_symbol'],
+                           mutations['amino_acid_change']):
+                mutation_effect = self.find_mutation_effect(g, a)
+                if mutation_effect is None:
+                    mutation_effect_key = 'other'
+                else:
+                    mutation_effect_key = mutation_effect
+                try:
+                    mutation_dict[g][0] += 1.0
+                    mutation_dict[g][1][mutation_effect_key] += 1
+                except KeyError:
+                    effect_dict = {'activate': 0.0, 'deactivate': 0.0,
+                                   'other': 0.0}
+                    effect_dict[mutation_effect_key] += 1.0
+                    mutation_dict[g] = [1.0, effect_dict]
+        # Normalize entries
+        for k, v in mutation_dict.iteritems():
+            mutation_dict[k][0] /= num_case
+            effect_sum = numpy.sum(mutation_dict[k][1].values())
+            mutation_dict[k][1]['activate'] /= effect_sum
+            mutation_dict[k][1]['deactivate'] /= effect_sum
+            mutation_dict[k][1]['other'] /= effect_sum
+
+        return mutation_dict
+
+    def get_top_mutation(self, disease_name):
+        # First, look for possible disease targets
+        try:
+            mutation_stats = self.get_mutation_statistics(disease_name,
+                                                          'missense')
+        except DiseaseNotFoundException:
+            raise DiseaseNotFoundException
+        if mutation_stats is None:
+            logger.error('No mutation stats')
+            return None
+
+        # Return the top mutation as a possible target
+        mutations_sorted = sorted(mutation_stats.items(),
+            key=operator.itemgetter(1), reverse=True)
+        top_mutation = mutations_sorted[0]
+        mut_protein = top_mutation[0]
+        mut_percent = int(top_mutation[1][0]*100.0)
+        # TODO: return mutated residues
+        # mut_residues =
+        return (mut_protein, mut_percent)
+
+    def _get_gene_list_str(self):
+        gene_list_str = \
+            ','.join([','.join(v) for v in self.gene_lists.values()])
+        return gene_list_str
+
+    gene_lists = {
+        'rtk_signaling':
+        ["EGFR", "ERBB2", "ERBB3", "ERBB4", "PDGFA", "PDGFB",
+        "PDGFRA", "PDGFRB", "KIT", "FGF1", "FGFR1", "IGF1",
+        "IGF1R", "VEGFA", "VEGFB", "KDR"],
+        'pi3k_signaling':
+        ["PIK3CA", "PIK3R1", "PIK3R2", "PTEN", "PDPK1", "AKT1",
+        "AKT2", "FOXO1", "FOXO3", "MTOR", "RICTOR", "TSC1", "TSC2",
+        "RHEB", "AKT1S1", "RPTOR", "MLST8"],
+        'mapk_signaling':
+        ["KRAS", "HRAS", "BRAF", "RAF1", "MAP3K1", "MAP3K2", "MAP3K3", 
+        "MAP3K4", "MAP3K5", "MAP2K1", "MAP2K2", "MAP2K3", "MAP2K4", 
+        "MAP2K5", "MAPK1", "MAPK3", "MAPK4", "MAPK6", "MAPK7", "MAPK8", 
+        "MAPK9", "MAPK12", "MAPK14", "DAB2", "RASSF1", "RAB25"]
+        }
+
+class DirectedPaths:
+
+    def __init__(self):
+        logging.info('DirectedPaths: Initializing')
+
+        logging.info('DirectedPaths: Initialization complete')
+
+    def findPaths(self, network_id, source_list, target_list, ndex_server="http://public.ndexbio.org",
+                  rm_username="test",rm_password="test",npaths=20, network_name="Directed Path Network"):
+        print "in paths"
+
+        G = NdexGraph(server=ndex_server, uuid=network_id, username=rm_username, password=rm_password)
+
+        # Compute the source-target network
+        P1 = cu.get_source_target_network(G, source_list, target_list, network_name, npaths=npaths)
+
+        # Apply a layout
+        toolbox.apply_source_target_layout(P1.get('network'))
+
+        # Apply a cytoscape style from a template network
+        template_id = '4f53171c-600f-11e6-b0a6-06603eb7f303'
+        toolbox.apply_template(P1.get('network'), template_id)
+
+        return {'forward': P1.get('forward'), 'reverse': P1.get('reverse'), 'network': P1.get('network').to_cx()}
+
+    def findDirectedPaths(self, network_cx,source_list,target_list,npaths=20):
+        print "in paths"
+
+        G = NdexGraph(cx=network_cx)
+
+        # Compute the source-target network
+        P1 = cu.get_source_target_network(G, source_list, target_list, "Title placeholder", npaths=npaths)
+
+        # Apply a layout
+        #toolbox.apply_source_target_layout(P1.get('network'))
+
+        # Apply a cytoscape style from a template network
+        template_id = '4f53171c-600f-11e6-b0a6-06603eb7f303'
+        #toolbox.apply_template(P1.get('network'), template_id)
+
+        #TODO: Process the forward and reverse lists.  Generate [{node1},{edge1},{node2},{edge2},etc...]
+
+        F = P1.get('forward')
+        R = P1.get('reverse')
+        G_prime = P1.get('network')
+
+        new_forward_list = self.label_node_list(F, G, G_prime)
+
+        return {'forward': P1.get('forward'), 'forward_english': new_forward_list, 'reverse': P1.get('reverse'), 'network': P1.get('network').to_cx()}
+
+    def label_node_list(self, n_list, G, G_prime):
+        outer = []
+        for f in n_list:
+            inner = []
+            #====================================
+            # Take an array of nodes and fill in
+            # the edge between the nodes
+            #====================================
+            for first, second in zip(f, f[1:]):
+                this_edge = G_prime.edge.get(first).get(second)
+                print G.get_edge_data(first,second)
+
+                if(this_edge is not None):
+                    if(len(inner) < 1):
+                        inner.append(G_prime.node.get(first).get('name'))
+
+                    inner.append(G.get_edge_data(first,second))
+                    inner.append(G_prime.node.get(second).get('name'))
+
+            outer.append(inner)
+
+        return outer
+
+class Disease(object):
+    def __init__(self, disease_type, name, db_refs):
+        self.disease_type = disease_type
+        self.name = name
+        self.db_refs = db_refs
+
+    def __repr__(self):
+        return 'Disease(%s, %s, %s)' % \
+            (self.disease_type, self.name, self.db_refs)
+
+    def __str__(self):
+        return self.__repr__()

@@ -59,29 +59,42 @@ class QCA:
         print "deleting class"
         #self.drug_db.close()
 
-    def find_causal_path(self, source_names, target_names):
+    def find_causal_path(self, source_names, target_names, exit_on_found_path=False, relation_types=None):
         results_list = []
 
+        #==========================================
+        # Find paths in all available networks
+        #==========================================
         for key in self.loaded_networks.keys():
-            path_response = self.get_directed_paths_by_names(source_names,target_names,self.loaded_networks[key])
-            path_response_content = path_response.content
-            if(path_response_content is not None):
-                result_json = json.loads(path_response.content)
-                if result_json.get('data') is not None:
-                    if result_json.get("data").get("forward_english") is not None:
-                        forward_english = result_json.get("data").get("forward_english")
-                        for itm in forward_english:
-                            print len(itm)
-                        f_e = result_json.get("data").get("forward_english")
-                        if len(f_e) > 0:
-                            for f_e_i in f_e:
-                                results_list.append(f_e_i)
+            pr = self.get_directed_paths_by_names(source_names, target_names, self.loaded_networks[key], relation_types=relation_types)
+            prc = pr.content
+            if prc is not None and len(prc.strip()) > 0:
+                try:
+                    result_json = json.loads(prc)
+                    if result_json.get('data') is not None:
+                        if result_json.get("data").get("forward_english") is not None:
+                            forward_english = result_json.get("data").get("forward_english")
+                            for itm in forward_english:
+                                print len(itm)
+                            f_e = result_json.get("data").get("forward_english")
+                            if len(f_e) > 0:
+                                for f_e_i in f_e:
+                                    results_list.append(f_e_i)
+                                    if exit_on_found_path:
+                                        return results_list
+                except ValueError as ve:
+                    print "value is not json.  html 500?"
 
         results_list_sorted = sorted(results_list, lambda x,y: 1 if len(x)>len(y) else -1 if len(x)<len(y) else 0)
 
         print results_list_sorted[:2]
         print results_list[:2]
         return results_list_sorted[:2]
+
+    def has_path(self, source_names, target_names):
+        found_path = self.find_causal_path(source_names, target_names, exit_on_found_path=True)
+
+        return len(found_path) > 0
 
     # --------------------------
     # NDEx and Services
@@ -121,6 +134,8 @@ class QCA:
 
     #directed_path_query_url = 'http://ec2-52-37-182-174.us-west-2.compute.amazonaws.com:5603/directedpath/query'
     directed_path_query_url = 'http://general.bigmech.ndexbio.org:5603/directedpath/query'
+    #directed_path_query_url = 'http://localhost:5603/directedpath/query'
+
 
     context_expression_query_url = 'http://general.bigmech.ndexbio.org:8081/context/expression/cell_line'
 
@@ -195,11 +210,16 @@ class QCA:
             else:
                 raise Exception("reference network descriptors require both name and id")
 
-    def get_directed_paths_by_names(self, source_names, target_names, reference_network_cx, max_number_of_paths=5):
+    def get_directed_paths_by_names(self, source_names, target_names, reference_network_cx, max_number_of_paths=5, relation_types=None):
         target = " ".join(target_names)
         source = " ".join(source_names)
-        url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths)
+        if relation_types is not None:
+            rts = " ".join(relation_types)
+            url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths) + '&relationtypes=' + rts
+        else:
+            url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths)
 
+        #print url
         f = io.BytesIO()
         f.write(reference_network_cx)
         f.seek(0)

@@ -1,3 +1,5 @@
+(FIND-QCA-PATH : TARGET ("SHC1") : SOURCE ("IRS1") : RELTYPE ("controls-state-change-of" "in-complex-with"))
+(SUCCESS :paths ("MAP2K1" Activation MAPK1 Phosphorylation EGFR" MAP2K1 Phosphorylation MAPK3 Phosphorylation EGFR ~ MAP2K2 Activation MAPK1 Phosphorylation EGFR ~ MAP2K2 Phosphorylation MAPK3 Phosphorylation EGFR ~ MAP2K1 Activation MAPK1 Phosphorylation SOS1 Complex EGFR))
 (FIND-QCA-PATH : TARGET ("SHC1") : SOURCE ("IRS1"))
 (SUCCESS :paths ("MAP2K1" Activation MAPK1 Phosphorylation EGFR" MAP2K1 Phosphorylation MAPK3 Phosphorylation EGFR ~ MAP2K2 Activation MAPK1 Phosphorylation EGFR ~ MAP2K2 Phosphorylation MAPK3 Phosphorylation EGFR ~ MAP2K1 Activation MAPK1 Phosphorylation SOS1 Complex EGFR))
 (HELLO-WORLD : "MESSAGE")

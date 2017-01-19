@@ -79,6 +79,8 @@ class QCA_Module(KQMLModule):
         targets = []
         source_arg = content_list.get_keyword_arg('SOURCE')
         sources = []
+        reltype_arg = content_list.get_keyword_arg('RELTYPE')
+        relation_types = []
 
         if len(target_arg.data) < 1:
             raise ValueError("Target list is empty")
@@ -90,11 +92,16 @@ class QCA_Module(KQMLModule):
         else:
             sources = [str(k.data) for k in source_arg.data]
 
+        if len(reltype_arg.data) < 1:
+            relation_types = None
+        else:
+            relation_types = [str(k.data) for k in reltype_arg.data]
+
 
         qca = QCA()
         #source_names = ["IRS1"]
         #target_names = ["SHC1"]
-        results_list = qca.find_causal_path(sources, targets)
+        results_list = qca.find_causal_path(sources, targets, relation_types=relation_types)
 
         lispify_helper = Lispify(results_list)
 

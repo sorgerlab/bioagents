@@ -134,7 +134,6 @@ class QCA_Module(KQMLModule):
         #source_names = ["IRS1"]
         #target_names = ["SHC1"]
 
-        print "in has path"
         has_path = self.qca.has_path(sources, targets)
 
         reply_content = KQMLList.from_string(

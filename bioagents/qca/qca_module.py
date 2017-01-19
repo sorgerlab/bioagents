@@ -43,7 +43,7 @@ class QCA_Module(KQMLModule):
         if task_str == 'FIND-QCA-PATH':
             reply_content = self.respond_find_qca_path(content_list)
         if task_str == 'HAS-QCA-PATH':
-            reply_content = self.respond_find_qca_path(content_list)
+            reply_content = self.has_qca_path(content_list)
         elif task_str == 'HELLO-WORLD':
             reply_content = self.respond_hello_world('msg', 'content string')
         else:

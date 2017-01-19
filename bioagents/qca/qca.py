@@ -6,17 +6,23 @@
 import re
 import os
 import logging
-import rdflib
+#import rdflib
 import sqlite3
 import numpy
 import operator
-from indra.statements import ActiveForm
-from indra.bel.processor import BelProcessor
+#from indra.statements import ActiveForm
+#from indra.bel.processor import BelProcessor
 from bioagents.databases import chebi_client
 from bioagents.databases import cbio_client
 from ndex.networkn import NdexGraph
 import ndex.beta.toolbox as toolbox
 import causal_utilities as cu
+import json
+import ndex.client as nc
+from ndex.networkn import NdexGraph
+import ndex
+import requests
+import io
 
 logger = logging.getLogger('QCA')
 
@@ -45,185 +51,259 @@ cbio_efo_map = _make_cbio_efo_map()
 
 class QCA:
     def __init__(self):
-        logger.debug('Using resource folder: %s' % _resource_dir)
-        # Build an initial set of substitution statements
-        bel_corpus = _resource_dir + 'large_corpus_direct_subs.rdf'
-        if os.path.isfile(bel_corpus):
-            g = rdflib.Graph()
-            g.parse(bel_corpus, format='nt')
-            bp = BelProcessor(g)
-            bp.get_activating_subs()
-            self.sub_statements = bp.statements
-        else:
-            self.sub_statements = []
-            logger.error('QCA could not load mutation effect data.')
-        # Load a database of drug targets
-        drug_db_file = _resource_dir + 'drug_targets.db'
-        if os.path.isfile(drug_db_file):
-            self.drug_db = sqlite3.connect(drug_db_file,
-                                           check_same_thread=False)
-        else:
-            logger.error('QCA could not load drug-target database.')
-            self.drug_db = None
+        logger.debug('Starting QCA')
+
+        self.load_reference_networks()
 
     def __del__(self):
-        self.drug_db.close()
+        print "deleting class"
+        #self.drug_db.close()
 
-    def find_causal_path(self):
-        directedPaths = DirectedPaths()
-        if(pathnum is not None):
-            return dict(data=directedPaths.findDirectedPaths(network, source, target, npaths=pathnum))
+    def find_causal_path(self, source_names, target_names):
+        results_list = []
+
+        for key in self.loaded_networks.keys():
+            path_response = self.get_directed_paths_by_names(source_names,target_names,self.loaded_networks[key])
+            path_response_content = path_response.content
+            if(path_response_content is not None):
+                result_json = json.loads(path_response.content)
+                if result_json.get('data') is not None:
+                    if result_json.get("data").get("forward_english") is not None:
+                        forward_english = result_json.get("data").get("forward_english")
+                        for itm in forward_english:
+                            print len(itm)
+                        f_e = result_json.get("data").get("forward_english")
+                        if len(f_e) > 0:
+                            for f_e_i in f_e:
+                                results_list.append(f_e_i)
+
+        results_list_sorted = sorted(results_list, lambda x,y: 1 if len(x)>len(y) else -1 if len(x)<len(y) else 0)
+
+        print results_list_sorted[:2]
+        print results_list[:2]
+        return results_list_sorted[:2]
+
+    # --------------------------
+    # NDEx and Services
+
+    host = "http://www.ndexbio.org"
+    username = "drh"
+    password = "drh"
+    ndex = nc.Ndex(host=host, username=username, password=password)
+
+    # --------------------------
+    # Schemas
+
+    query_result_schema = {
+        "network_description": {},
+        "forward_paths": [],
+        "reverse_paths": [],
+        "forward_mutation_paths": [],
+        "reverse_mutation_paths": []
+    }
+
+    reference_network_schema = {
+        "id": "",
+        "name": "",
+        "type": "cannonical"
+    }
+
+    query_schema = {
+        "source_names": [],
+        "target_names": [],
+        "cell_line": ""
+    }
+
+    # --------------------------
+    #  Globals
+
+    results_directory = "qca_results"
+
+    #directed_path_query_url = 'http://ec2-52-37-182-174.us-west-2.compute.amazonaws.com:5603/directedpath/query'
+    directed_path_query_url = 'http://general.bigmech.ndexbio.org:5603/directedpath/query'
+
+    context_expression_query_url = 'http://general.bigmech.ndexbio.org:8081/context/expression/cell_line'
+
+    context_mutation_query_url = url = 'http://general.bigmech.ndexbio.org:8081/context/mutation/cell_line'
+
+    # dict of reference network descriptors by network name
+    reference_networks = [
+        {
+            "id": "09f3c90a-121a-11e6-a039-06603eb7f303",
+            "name": "NCI Pathway Interaction Database - Final Revision - Extended Binary SIF",
+            "type": "cannonical"
+        }
+    ]
+
+    reference_networks_full = [
+        {
+            "id": "5294f70b-618f-11e5-8ac5-06603eb7f303",
+            "name": "Calcium signaling in the CD4 TCR pathway",
+            "type": "cannonical"
+        },
+        {
+            "id": "5e904cd6-6193-11e5-8ac5-06603eb7f303",
+            "name": "IGF1 pathway",
+            "type": "cannonical"
+        },
+        {
+            "id": "20ef2b81-6193-11e5-8ac5-06603eb7f303",
+            "name": "HIF-1-alpha transcription factor network ",
+            "type": "cannonical"
+        },
+        {
+            "id": "ac39d2b9-6195-11e5-8ac5-06603eb7f303",
+            "name": "Signaling events mediated by Hepatocyte Growth Factor Receptor (c-Met)",
+            "type": "cannonical"
+        },
+        {
+            "id": "d3747df2-6190-11e5-8ac5-06603eb7f303",
+            "name": "Ceramide signaling pathway",
+            "type": "cannonical"
+        },
+        {
+            "id": "09f3c90a-121a-11e6-a039-06603eb7f303",
+            "name": "NCI Pathway Interaction Database - Final Revision - Extended Binary SIF",
+            "type": "cannonical"
+        }
+    ]
 
 
-    def is_nominal_drug_target(self, drug_name, target_name):
-        '''
-        Return True if the drug targets the target, and False if not
-        '''
-        if self.drug_db is not None:
-            res = self.drug_db.execute('SELECT nominal_target FROM agent '
-                                       'WHERE source_id LIKE "HMSL%%" '
-                                       'AND (synonyms LIKE "%%%s%%" '
-                                       'OR name LIKE "%%%s%%")' %
-                                       (drug_name, drug_name)).fetchall()
-            if not res:
-                raise DrugNotFoundException
-            for r in res:
-                if r[0].upper() == target_name.upper():
-                    return True
-        return False
+    # dict of available network CX data by name
+    loaded_networks = {}
 
-    def find_target_drugs(self, target_name):
-        '''
-        Find all the drugs that nominally target the target.
-        '''
-        if self.drug_db is not None:
-            res = self.drug_db.execute('SELECT name, synonyms FROM agent '
-                                       'WHERE source_id LIKE "HMSL%%" '
-                                       'AND nominal_target LIKE "%%%s%%" ' %
-                                       target_name).fetchall()
-            drug_names = [r[0] for r in res]
-        else:
-            drug_names = []
-        chebi_ids = []
-        for dn in drug_names:
-            chebi_id = chebi_client.get_id(dn)
-            chebi_ids.append(chebi_id)
-        return drug_names, chebi_ids
+    # --------------------------
+    #  Cell Lines
 
-    def find_mutation_effect(self, protein_name, amino_acid_change):
-        match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)
-        if match is None:
-            return None
-        matches = match.groups()
-        wt_residue = matches[0]
-        pos = matches[1]
-        sub_residue = matches[2]
+    cell_lines = []
 
-        for stmt in self.sub_statements:
-            # Make sure it's an active form statements
-            if not isinstance(stmt, ActiveForm):
-                continue
-            mutations = stmt.agent.mutations
-            # Make sure the Agent has exactly one mutation
-            if len(mutations) != 1:
-                continue
-            if stmt.agent.name == protein_name and\
-                mutations[0].residue_from == wt_residue and\
-                mutations[0].position == pos and\
-                mutations[0].residue_to == sub_residue:
-                    if stmt.is_active:
-                        return 'activate'
-                    else:
-                        return 'deactivate'
+    # --------------------------
+    #  Queries
+
+    # list of query dicts
+    queries = []
+
+
+    # --------------------------
+    # Functions
+
+    def load_reference_networks(self):
+        for rn in self.reference_networks_full:
+            if "id" in rn and "name" in rn:
+                result = self.ndex.get_network_as_cx_stream(rn["id"])
+                self.loaded_networks[rn["name"]] = result.content #json.loads(result.content)
+            else:
+                raise Exception("reference network descriptors require both name and id")
+
+    def get_directed_paths_by_names(self, source_names, target_names, reference_network_cx, max_number_of_paths=5):
+        target = " ".join(target_names)
+        source = " ".join(source_names)
+        url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths)
+
+        f = io.BytesIO()
+        f.write(reference_network_cx)
+        f.seek(0)
+        r = requests.post(url, files={'network_cx': f})
+        return r
+
+    def get_path_node_names(self, query_result):
         return None
 
-    @staticmethod
-    def _get_studies_from_disease_name(disease_name):
-        study_prefixes = cbio_efo_map.get(disease_name)
-        if study_prefixes is None:
-            return None
-        study_ids = []
-        for sp in study_prefixes:
-            study_ids += cbio_client.get_cancer_studies(sp)
-        return list(set(study_ids))
+    def get_expression_context(self, node_name_list, cell_line_list):
+        query_string = " ".join(node_name_list)
+        params = json.dumps({query_string: cell_line_list})
+        r = requests.post(self.context_expression_query_url, json=params)
+        return r
 
-    def get_mutation_statistics(self, disease_name, mutation_type):
-        study_ids = self._get_studies_from_disease_name(disease_name)
-        if not study_ids:
-            raise DiseaseNotFoundException
-        gene_list_str = self._get_gene_list_str()
-        mutation_dict = {}
-        num_case = 0
-        for study_id in study_ids:
-            num_case += cbio_client.get_num_sequenced(study_id)
-            mutations = cbio_client.get_mutations(study_id, gene_list_str,
-                                                  mutation_type)
-            for g, a in zip(mutations['gene_symbol'],
-                           mutations['amino_acid_change']):
-                mutation_effect = self.find_mutation_effect(g, a)
-                if mutation_effect is None:
-                    mutation_effect_key = 'other'
-                else:
-                    mutation_effect_key = mutation_effect
-                try:
-                    mutation_dict[g][0] += 1.0
-                    mutation_dict[g][1][mutation_effect_key] += 1
-                except KeyError:
-                    effect_dict = {'activate': 0.0, 'deactivate': 0.0,
-                                   'other': 0.0}
-                    effect_dict[mutation_effect_key] += 1.0
-                    mutation_dict[g] = [1.0, effect_dict]
-        # Normalize entries
-        for k, v in mutation_dict.iteritems():
-            mutation_dict[k][0] /= num_case
-            effect_sum = numpy.sum(mutation_dict[k][1].values())
-            mutation_dict[k][1]['activate'] /= effect_sum
-            mutation_dict[k][1]['deactivate'] /= effect_sum
-            mutation_dict[k][1]['other'] /= effect_sum
+    def get_mutation_context(self, node_name_list, cell_line_list):
+        query_string = " ".join(node_name_list)
+        params = json.dumps({query_string: cell_line_list})
+        r = requests.post(self.context_mutation_query_url, json=params)
+        return r
 
-        return mutation_dict
+    def save_query_results(self, query, query_results):
+        path = self.results_directory + "/" + query.get("name")
+        outfile = open(path, 'wt')
+        json.dump(query_results,outfile, indent=4)
+        outfile.close()
 
-    def get_top_mutation(self, disease_name):
-        # First, look for possible disease targets
-        try:
-            mutation_stats = self.get_mutation_statistics(disease_name,
-                                                          'missense')
-        except DiseaseNotFoundException:
-            raise DiseaseNotFoundException
-        if mutation_stats is None:
-            logger.error('No mutation stats')
-            return None
+    def get_mutation_paths(self, query_result, mutated_nodes, reference_network):
+        return None
 
-        # Return the top mutation as a possible target
-        mutations_sorted = sorted(mutation_stats.items(),
-            key=operator.itemgetter(1), reverse=True)
-        top_mutation = mutations_sorted[0]
-        mut_protein = top_mutation[0]
-        mut_percent = int(top_mutation[1][0]*100.0)
-        # TODO: return mutated residues
-        # mut_residues =
-        return (mut_protein, mut_percent)
+    def create_merged_network(self, query_result):
+        return None
 
-    def _get_gene_list_str(self):
-        gene_list_str = \
-            ','.join([','.join(v) for v in self.gene_lists.values()])
-        return gene_list_str
+    def run_query(self, query):
+        query_results = {}
 
-    gene_lists = {
-        'rtk_signaling':
-        ["EGFR", "ERBB2", "ERBB3", "ERBB4", "PDGFA", "PDGFB",
-        "PDGFRA", "PDGFRB", "KIT", "FGF1", "FGFR1", "IGF1",
-        "IGF1R", "VEGFA", "VEGFB", "KDR"],
-        'pi3k_signaling':
-        ["PIK3CA", "PIK3R1", "PIK3R2", "PTEN", "PDPK1", "AKT1",
-        "AKT2", "FOXO1", "FOXO3", "MTOR", "RICTOR", "TSC1", "TSC2",
-        "RHEB", "AKT1S1", "RPTOR", "MLST8"],
-        'mapk_signaling':
-        ["KRAS", "HRAS", "BRAF", "RAF1", "MAP3K1", "MAP3K2", "MAP3K3", 
-        "MAP3K4", "MAP3K5", "MAP2K1", "MAP2K2", "MAP2K3", "MAP2K4", 
-        "MAP2K5", "MAPK1", "MAPK3", "MAPK4", "MAPK6", "MAPK7", "MAPK8", 
-        "MAPK9", "MAPK12", "MAPK14", "DAB2", "RASSF1", "RAB25"]
-        }
+        for network_descriptor in self.reference_networks:
+            query_result = {}
+            network_name = network_descriptor["name"]
+            cx = self.loaded_networks[network_descriptor["id"]]
+            # --------------------------
+            # Get Directed Paths
+            path_query_result = self.get_directed_paths_by_names(query["source_names"], query["target_names"], cx)
+            path_node_names = self.get_path_node_names(path_query_result)
+            query_result["forward_paths"] = path_query_result["forward_paths"]
+            query_result["reverse_paths"] = path_query_result["reverse_paths"]
+
+            # --------------------------
+            # Get Cell Line Context for Nodes
+            context_result = self.get_mutation_context(path_node_names, list(query["cell_line"]))
+            mutation_node_names = []
+
+            # --------------------------
+            # Get Directed Paths from Path Nodes to Mutation Nodes
+            # (just use edges to adjacent mutations for now)
+            # (skip mutation nodes already in paths)
+            mutation_node_names_not_in_paths = list(set(mutation_node_names).difference(set(path_node_names)))
+            mutation_query_result = self.get_directed_paths_by_names(path_node_names, mutation_node_names_not_in_paths, cx)
+            query_result["forward_mutation_paths"] = mutation_query_result["forward_paths"]
+            query_result["reverse_mutation_paths"] = mutation_query_result["reverse_paths"]
+
+            # --------------------------
+            # Annotate path nodes based on mutation proximity, compute ranks.
+
+
+            # --------------------------
+            # Build, Format, Save Merged Network
+            merged_network = None
+
+            # --------------------------
+            # Contrast and Annotate Canonical vs Novel Paths
+            # Cannonical Paths
+            # Novel Paths
+            # Cannonical Paths not in general networks
+            # Add summary to result
+
+            query_results[network_name] = query_result
+
+        # --------------------------
+        # Save Query Results (except for network)
+        self.save_query_results(query_results)
+
+        return None
+
+
+    # --------------------------
+    #  Load Reference Networks
+
+
+
+    # --------------------------
+    #  Run Queries
+    #
+    # for query in queries:
+    #     run_query(query)
+
+
+
+
+
+
+
+
+
 
 class DirectedPaths:
 
@@ -310,3 +390,5 @@ class Disease(object):
 
     def __str__(self):
         return self.__repr__()
+
+

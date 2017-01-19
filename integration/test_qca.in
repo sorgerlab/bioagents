@@ -1,5 +1,4 @@
-(FIND-QCA-PATH : TARGET ("EGFR") : SOURCE ("MAP2K1" "MAP2K2"))
+(FIND-QCA-PATH : TARGET ("SHC1") : SOURCE ("IRS1"))
 (SUCCESS :paths ("MAP2K1" Activation MAPK1 Phosphorylation EGFR" MAP2K1 Phosphorylation MAPK3 Phosphorylation EGFR ~ MAP2K2 Activation MAPK1 Phosphorylation EGFR ~ MAP2K2 Phosphorylation MAPK3 Phosphorylation EGFR ~ MAP2K1 Activation MAPK1 Phosphorylation SOS1 Complex EGFR))
 (HELLO-WORLD : "MESSAGE")
 (SUCCESS : TRUE)
-(FIND-QCA-PATH : TARGET "EGFR" : SOURCE "MAP2K1 MAP2K2")

@@ -6,6 +6,7 @@ from indra.trips.processor import TripsProcessor
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from qca import QCA, Disease, \
     DirectedPaths, DiseaseNotFoundException
+from lispify_helper import Lispify
 
 logger = logging.getLogger('QCA')
 
@@ -74,6 +75,38 @@ class QCA_Module(KQMLModule):
         Response content to find-qca-path request
         '''
 
+        target_arg = content_list.get_keyword_arg('TARGET')
+        targets = []
+        source_arg = content_list.get_keyword_arg('SOURCE')
+        sources = []
+
+        if len(target_arg.data) < 1:
+            raise ValueError("Target list is empty")
+        else:
+            targets = [str(k.data) for k in target_arg.data]
+
+        if len(source_arg.data) < 1:
+            raise ValueError("Source list is empty")
+        else:
+            sources = [str(k.data) for k in source_arg.data]
+
+
+        qca = QCA()
+        #source_names = ["IRS1"]
+        #target_names = ["SHC1"]
+        results_list = qca.find_causal_path(sources, targets)
+
+        lispify_helper = Lispify(results_list)
+
+
+        path_statements = lispify_helper.to_lisp()
+
+        reply_content = KQMLList.from_string(
+            '(SUCCESS :paths (' + path_statements + '))')
+
+        return reply_content
+
+    def respond_find_qca_path_local(self, content_list):
         target_arg = content_list.get_keyword_arg('TARGET')
         targets = []
         source_arg = content_list.get_keyword_arg('SOURCE')

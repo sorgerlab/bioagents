@@ -1,6 +1,6 @@
 (FIND-QCA-PATH : TARGET ("SHC1") : SOURCE ("IRS1") : RELTYPE ("controls-state-change-of"))
 (SUCCESS :paths (((IRS1 (:93584034 (:directed True :interaction controls-state-change-of)) HRAS (:93581981 (:directed True :interaction controls-state-change-of)) RHOA (:93594410 (:directed True :interaction controls-state-change-of)) SHC1) (IRS1 (:93584046 (:directed True :interaction controls-state-change-of)) PIK3CA (:93590756 (:directed True :interaction controls-state-change-of)) RHOA (:93594410 (:directed True :interaction controls-state-change-of)) SHC1))))
+(HAS-QCA-PATH : TARGET ("SHC1") : SOURCE ("IRS1"))
+(SUCCESS :haspath (True))
 (FIND-QCA-PATH : TARGET ("SHC1") : SOURCE ("IRS1"))
 (SUCCESS :paths (((IRS1 (:108 (:interaction in-complex-with)) SHC1) (IRS1 (:93584068 (:interaction in-complex-with)) SHC1))))
-(HELLO-WORLD : "MESSAGE")
-(SUCCESS : TRUE)

@@ -20,7 +20,7 @@ class QCA_Module(KQMLModule):
     def __init__(self, argv):
         # Call the constructor of TripsModule
         super(QCA_Module, self).__init__(argv)
-        self.tasks = ['FIND-QCA-PATH', 'HELLO-WORLD']
+        self.tasks = ['FIND-QCA-PATH', 'HAS-QCA-PATH']
         # Send subscribe messages
         for task in self.tasks:
             msg_txt =\
@@ -42,10 +42,8 @@ class QCA_Module(KQMLModule):
         task_str = content_list[0].to_string().upper()
         if task_str == 'FIND-QCA-PATH':
             reply_content = self.respond_find_qca_path(content_list)
-        if task_str == 'HAS-QCA-PATH':
-            reply_content = self.respond_find_qca_path(content_list)
-        elif task_str == 'HELLO-WORLD':
-            reply_content = self.respond_hello_world('msg', 'content string')
+        elif task_str == 'HAS-QCA-PATH':
+            reply_content = self.has_qca_path(content_list)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -61,16 +59,6 @@ class QCA_Module(KQMLModule):
         reply_msg = KQMLPerformative('reply')
         reply_msg.set_parameter(':content', resp_list)
         self.reply(msg, reply_msg)
-
-    def respond_hello_world(self, msg, content_string):
-        print 'Hello world'
-
-        reply_content =\
-            KQMLList.from_string(
-                '(SUCCESS ' +
-                ':speak-message hello_world ')
-
-        return reply_content
 
     def respond_find_qca_path(self, content_list):
         '''
@@ -145,10 +133,12 @@ class QCA_Module(KQMLModule):
         #qca = QCA()
         #source_names = ["IRS1"]
         #target_names = ["SHC1"]
-        has_list = self.qca.has_path(sources, targets)
+
+        print "in has path"
+        has_path = self.qca.has_path(sources, targets)
 
         reply_content = KQMLList.from_string(
-            '(SUCCESS :haspath (' + has_list + '))')
+            '(SUCCESS :haspath (' + str(has_path) + '))')
 
         return reply_content
 

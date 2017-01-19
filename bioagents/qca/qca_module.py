@@ -42,6 +42,8 @@ class QCA_Module(KQMLModule):
         task_str = content_list[0].to_string().upper()
         if task_str == 'FIND-QCA-PATH':
             reply_content = self.respond_find_qca_path(content_list)
+        if task_str == 'HAS-QCA-PATH':
+            reply_content = self.respond_find_qca_path(content_list)
         elif task_str == 'HELLO-WORLD':
             reply_content = self.respond_hello_world('msg', 'content string')
         else:
@@ -110,6 +112,43 @@ class QCA_Module(KQMLModule):
 
         reply_content = KQMLList.from_string(
             '(SUCCESS :paths (' + path_statements + '))')
+
+        return reply_content
+
+    def has_qca_path(self, content_list):
+        '''
+        Response content to find-qca-path request
+        '''
+
+        target_arg = content_list.get_keyword_arg('TARGET')
+        targets = []
+        source_arg = content_list.get_keyword_arg('SOURCE')
+        sources = []
+        reltype_arg = content_list.get_keyword_arg('RELTYPE')
+        relation_types = []
+
+        if len(target_arg.data) < 1:
+            raise ValueError("Target list is empty")
+        else:
+            targets = [str(k.data) for k in target_arg.data]
+
+        if len(source_arg.data) < 1:
+            raise ValueError("Source list is empty")
+        else:
+            sources = [str(k.data) for k in source_arg.data]
+
+        if reltype_arg is None or len(reltype_arg.data) < 1:
+            relation_types = None
+        else:
+            relation_types = [str(k.data) for k in reltype_arg.data]
+
+        #qca = QCA()
+        #source_names = ["IRS1"]
+        #target_names = ["SHC1"]
+        has_list = self.qca.has_path(sources, targets)
+
+        reply_content = KQMLList.from_string(
+            '(SUCCESS :haspath (' + has_list + '))')
 
         return reply_content
 

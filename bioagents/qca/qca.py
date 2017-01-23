@@ -96,7 +96,7 @@ class QCA:
 
         return len(found_path) > 0
 
-    #TODO reorganize code
+    #TODO reorg code
     # --------------------------
     # NDEx and Services
 

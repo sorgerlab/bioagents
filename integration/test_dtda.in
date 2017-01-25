@@ -8,8 +8,18 @@
 (FAILURE :reason DRUG_NOT_FOUND)
 (FIND-DISEASE-TARGETS :disease NIL)
 (FAILURE :reason INVALID_DISEASE)
+
+
 (FIND-DISEASE-TARGETS :disease (CANCER :dbname "colorectal carcinoma" :dbid "EFO:1"))
+
+
+
 (SUCCESS :protein (:name KRAS :hgnc KRAS) :prevalence 0.37 :functional-effect ACTIVE)
+
+
+
+
+
 (FIND-DISEASE-TARGETS :disease (CANCER :dbname "lung carcinoma" :dbid "EFO:1"))
 (SUCCESS :protein (:name KRAS :hgnc KRAS) :prevalence 0.19 :functional-effect ACTIVE)
 (FIND-DISEASE-TARGETS :disease (CANCER :dbname "breast carcinoma" :dbid "EFO:1"))

@@ -4,8 +4,7 @@ import json
 import xml.etree.ElementTree as ET
 from indra.trips.processor import TripsProcessor
 from kqml import KQMLModule, KQMLPerformative, KQMLList
-from qca import QCA, Disease, \
-    DirectedPaths, DiseaseNotFoundException
+from qca import QCA
 from lispify_helper import Lispify
 
 logger = logging.getLogger('QCA')

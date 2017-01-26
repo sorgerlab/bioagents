@@ -22,8 +22,6 @@ class QCA:
     def __init__(self):
         logger.debug('Starting QCA')
         self.host = "http://www.ndexbio.org"
-        self.username = "drh"
-        self.password = "drh"
 
         self.results_directory = "qca_results"
 
@@ -112,7 +110,7 @@ class QCA:
         # list of query dicts
         self.queries = []
 
-        self.ndex = nc.Ndex(host=self.host, username=self.username, password=self.password)
+        self.ndex = nc.Ndex(host=self.host)
 
         self.load_reference_networks()
 

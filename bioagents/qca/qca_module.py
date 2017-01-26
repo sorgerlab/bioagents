@@ -64,11 +64,11 @@ class QCA_Module(KQMLModule):
         Response content to find-qca-path request
         '''
 
-        target_arg = content_list.get_keyword_arg('TARGET')
+        target_arg = content_list.get_keyword_arg(':TARGET')
         targets = []
-        source_arg = content_list.get_keyword_arg('SOURCE')
+        source_arg = content_list.get_keyword_arg(':SOURCE')
         sources = []
-        reltype_arg = content_list.get_keyword_arg('RELTYPE')
+        reltype_arg = content_list.get_keyword_arg(':RELTYPE')
         relation_types = []
 
         if len(target_arg.data) < 1:
@@ -107,11 +107,11 @@ class QCA_Module(KQMLModule):
         Response content to find-qca-path request
         '''
 
-        target_arg = content_list.get_keyword_arg('TARGET')
+        target_arg = content_list.get_keyword_arg(':TARGET')
         targets = []
-        source_arg = content_list.get_keyword_arg('SOURCE')
+        source_arg = content_list.get_keyword_arg(':SOURCE')
         sources = []
-        reltype_arg = content_list.get_keyword_arg('RELTYPE')
+        reltype_arg = content_list.get_keyword_arg(':RELTYPE')
         relation_types = []
 
         if len(target_arg.data) < 1:

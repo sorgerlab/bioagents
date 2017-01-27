@@ -7,6 +7,7 @@ import indra.statements as ist
 import indra.assemblers.pysb_assembler as pa
 from pysb.export.kappa import KappaExporter
 from pysb import Observable
+from pysb.integrate import Solver
 import model_checker as mc
 from copy import deepcopy
 
@@ -15,13 +16,20 @@ import matplotlib.pyplot as plt
 
 class TRA(object):
     def __init__(self, kappa):
-        self.kappa = kappa
-        kappa_ver = kappa.version()
-        if kappa_ver is None or kappa_ver.get('version_id') is None:
-            raise SimulatorError('Invalid Kappa client.')
-        logger.info('Using kappa version %s / build %s' %
-                     (kappa_ver.get('version_id'),
-                      kappa_ver.get('version_build')))
+        if kappa is None:
+            self.ode_mode = True
+        else:
+            self.ode_mode = False
+        if not self.ode_mode:
+            self.kappa = kappa
+            kappa_ver = kappa.version()
+            if kappa_ver is None or kappa_ver.get('version_id') is None:
+                raise SimulatorError('Invalid Kappa client.')
+            logger.info('Using kappa version %s / build %s' %
+                         (kappa_ver.get('version_id'),
+                          kappa_ver.get('version_build')))
+        else:
+            logger.info('Using ODE mode in TRA.')
 
     def check_property(self, model, pattern, conditions=None):
         if pattern.time_limit is None:
@@ -97,6 +105,7 @@ class TRA(object):
         truths = []
         plt.figure()
         plt.ion()
+        self.sol = None
         for i in range(num_sim):
             try:
                 model_sim = self.condition_model(model, conditions)
@@ -105,12 +114,16 @@ class TRA(object):
                 msg = 'Applying molecular condition failed.'
                 raise InvalidMolecularConditionError(msg)
             logger.info('Starting simulation %d' % (i+1))
-            try:
-                tspan, yobs = self.simulate_model(model_sim, max_time,
-                                                  plot_period)
-            except Exception as e:
-                logger.error(e)
-                raise SimulatorError('Kappa simulation failed.')
+            if not self.ode_mode:
+                try:
+                    tspan, yobs = self.simulate_model(model_sim, max_time,
+                                                      plot_period)
+                except Exception as e:
+                    logger.error(e)
+                    raise SimulatorError('Kappa simulation failed.')
+            else:
+                tspan, yobs = self.simulate_odes(model_sim, max_time,
+                                                 plot_period)
             plt.plot(tspan, yobs)
             self.discretize_obs(yobs, obs.name)
             yobs_from_min = yobs[min_time_idx:]
@@ -158,6 +171,13 @@ class TRA(object):
         tspan, yobs = get_sim_result(status.get('plot'))
         return tspan, yobs
 
+    def simulate_odes(self, model_sim, max_time, plot_period):
+        ts = numpy.linspace(0, max_time, int(1.0*max_time/plot_period))
+        if self.sol is None:
+            self.sol = Solver(model_sim, ts)
+        self.sol.run()
+        return ts, self.sol.yobs
+
 def apply_condition(model, condition):
     agent = condition.quantity.entity
     monomer = model.monomers[agent.name]
@@ -189,7 +209,7 @@ def get_create_observable(model, agent):
     site_pattern = pa.get_site_pattern(agent)
     obs_name = pa.get_agent_rule_str(agent) + '_obs'
     monomer = model.monomers[agent.name]
-    obs = Observable(obs_name, monomer(site_pattern))
+    obs = Observable(obs_name.encode('utf-8'), monomer(site_pattern))
     model.add_component(obs)
     return obs
 

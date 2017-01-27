@@ -26,7 +26,7 @@ class TRA_Module(KQMLModule):
             self.kappa_url = args.kappa_url
         else:
             logger.error('No Kappa URL given.')
-            sys.exit()
+            self.ode_mode = True
         # Generate a basic model as placeholder (for testing)
         #model_text = 'MAPK1 binds MAP2K1.'
         #pa = PysbAssembler()
@@ -44,7 +44,8 @@ class TRA_Module(KQMLModule):
             self.tra = TRA(kappa)
         except Exception as e:
             logger.error('Could not instantiate TRA with Kappa service.')
-            self.tra = None
+            self.ode_mode = True
+            self.tra = TRA(None)
         self.ready()
         super(TRA_Module, self).start()
 

@@ -16,6 +16,7 @@ class MRA:
         # This is a list of lists of Statements
         self.statements = []
         self.default_policy = 'two_step'
+        self.default_initial_amount = 100.0
 
     def stmt_exists(self, stmts, stmt):
         for st1 in stmts:
@@ -43,6 +44,7 @@ class MRA:
         pa = PysbAssembler(policies=self.default_policy)
         pa.add_statements(tp.statements)
         model = pa.make_model()
+        pa.add_default_initial_conditions(self.default_initial_amount)
         return model
 
     def build_model_from_ekb(self, model_ekb):
@@ -56,6 +58,7 @@ class MRA:
         pa = PysbAssembler(policies=self.default_policy)
         pa.add_statements(tp.statements)
         model = pa.make_model()
+        pa.add_default_initial_conditions(self.default_initial_amount)
         return model
 
     def has_mechanism(self, mech_ekb, model_id):
@@ -79,6 +82,7 @@ class MRA:
         pa = PysbAssembler(policies=self.default_policy)
         pa.add_statements(self.statements[model_id-1])
         model = pa.make_model()
+        pa.add_default_initial_conditions(self.default_initial_amount)
         return model
 
     def expand_model_from_ekb(self, model_ekb, model_id):
@@ -90,6 +94,7 @@ class MRA:
         pa = PysbAssembler(policies=self.default_policy)
         pa.add_statements(self.statements[model_id-1])
         model = pa.make_model()
+        pa.add_default_initial_conditions(self.default_initial_amount)
         return model
 
     def find_family_members(self, family_name, family_id=None):
@@ -132,6 +137,7 @@ class MRA:
         pa = PysbAssembler()
         pa.add_statements(self.statements[model_id-1])
         model = pa.make_model()
+        pa.add_default_initial_conditions(self.default_initial_amount)
         return model
 
 if __name__ == '__main__':

@@ -86,14 +86,9 @@ class QCA_Module(KQMLModule):
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
 
-
-        #qca = QCA()
-        #source_names = ["IRS1"]
-        #target_names = ["SHC1"]
         results_list = self.qca.find_causal_path(sources, targets, relation_types=relation_types)
 
         lispify_helper = Lispify(results_list)
-
 
         path_statements = lispify_helper.to_lisp()
 
@@ -128,10 +123,6 @@ class QCA_Module(KQMLModule):
             relation_types = None
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
-
-        #qca = QCA()
-        #source_names = ["IRS1"]
-        #target_names = ["SHC1"]
 
         has_path = self.qca.has_path(sources, targets)
 

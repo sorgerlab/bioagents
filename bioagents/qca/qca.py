@@ -9,6 +9,8 @@ import json
 import ndex.client as nc
 import requests
 import io
+from enum import Enum
+from ndex.beta.path_scoring import PathScoring
 
 logger = logging.getLogger('QCA')
 
@@ -26,21 +28,22 @@ class QCA:
         self.results_directory = "qca_results"
 
         self.directed_path_query_url = 'http://general.bigmech.ndexbio.org:5603/directedpath/query'
+        #self.directed_path_query_url = 'http://localhost:5603/directedpath/query'
 
         self.context_expression_query_url = 'http://general.bigmech.ndexbio.org:8081/context/expression/cell_line'
 
         self.context_mutation_query_url = 'http://general.bigmech.ndexbio.org:8081/context/mutation/cell_line'
 
         # dict of reference network descriptors by network name
-        self.reference_networks = [
+        self.reference_networks_full = [
             {
-                "id": "09f3c90a-121a-11e6-a039-06603eb7f303",
-                "name": "NCI Pathway Interaction Database - Final Revision - Extended Binary SIF",
+                "id": "84f321c6-dade-11e6-86b1-0ac135e8bacf",  # "84f321c6-dade-11e6-86b1-0ac135e8bacf",
+                "name": "Calcium signaling in the CD4 TCR pathway",
                 "type": "cannonical"
             }
         ]
 
-        self.reference_networks_full = [
+        self.reference_networks_ful = [
             {
                 "id": "5294f70b-618f-11e5-8ac5-06603eb7f303",
                 "name": "Calcium signaling in the CD4 TCR pathway",
@@ -70,6 +73,11 @@ class QCA:
                 "id": "09f3c90a-121a-11e6-a039-06603eb7f303",
                 "name": "NCI Pathway Interaction Database - Final Revision - Extended Binary SIF",
                 "type": "cannonical"
+            },
+            {
+                "id": "50e3dff7-133e-11e6-a039-06603eb7f303",
+                "name": "The Ras machine",
+                "type": "non-cannonical"
             }
         ]
 
@@ -138,7 +146,7 @@ class QCA:
         # Find paths in all available networks
         #==========================================
         for key in self.loaded_networks.keys():
-            pr = self.get_directed_paths_by_names(source_names, target_names, self.loaded_networks[key], relation_types=relation_types)
+            pr = self.get_directed_paths_by_names(source_names, target_names, self.loaded_networks[key], relation_types=relation_types, max_number_of_paths=50)
             prc = pr.content
             #==========================================
             # Process the data from this network
@@ -157,10 +165,40 @@ class QCA:
                             return results_list
                 except ValueError as ve:
                     print "value is not json.  html 500?"
+        path_scoring = PathScoring()
+        #results_list_sorted = sorted(results_list, lambda x,y: self.path_length_ranking(x, y))  # 1 if len(x) > len(y) else -1 if len(x) < len(y) else 0)
+        results_list_sorted = sorted(results_list, lambda x,y: path_scoring.cross_country_scoring(x, y))
 
-        results_list_sorted = sorted(results_list, lambda x,y: 1 if len(x)>len(y) else -1 if len(x)<len(y) else 0)
+        return results_list_sorted[:50]
 
-        return results_list_sorted[:2]
+
+    def cross_country_ranking(self, x, y):
+        edge_ranking = EdgeRanking()
+
+        possible_placement = {}
+        for i in range(1, EdgeEnum.edge_count()):
+            possible_placement[i] = []
+
+        for index, xi in enumerate(x):
+            if(type(xi) is list):
+                if(len(xi) > 0 and "interaction" in xi[0]):
+                    edge_type = xi[0]["interaction"]
+                    position = edge_ranking.edge_type_rank[edge_type]
+                    possible_placement[position].append("x")
+            elif(type(xi) is str):
+                s = ""
+            else:
+                s = ""
+
+        return 0
+
+    def path_length_ranking(self, x, y):
+        if len(x) > len(y):
+            return 1
+        elif len(x) < len(y):
+            return -1
+        else:
+            return 0
 
     def has_path(self, source_names, target_names):
         '''
@@ -181,6 +219,7 @@ class QCA:
             if "id" in rn and "name" in rn:
                 result = self.ndex.get_network_as_cx_stream(rn["id"])
                 self.loaded_networks[rn["name"]] = result.content #json.loads(result.content)
+
             else:
                 raise Exception("reference network descriptors require both name and id")
 
@@ -188,8 +227,8 @@ class QCA:
         #====================
         # Assemble REST url
         #====================
-        target = " ".join(target_names)
-        source = " ".join(source_names)
+        target = ",".join(target_names)
+        source = ",".join(source_names)
         if relation_types is not None:
             rts = " ".join(relation_types)
             url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths) + '&relationtypes=' + rts
@@ -288,3 +327,84 @@ class QCA:
     # for query in queries:
     #     run_query(query)
 
+class EdgeRanking:
+    def __init__(self):
+        self.edge_types = []
+
+        self.edge_class_rank = {
+            EdgeEnum.specific_protein_protein: [  # 1
+                "controls-transport-of",
+                "controls-phosphorylation-of",
+                "Phosphorylation",
+                "Dephosphorylation",
+                "controls-transport-of-chemical",
+                "consumption-controled-by",
+                "controls-production-of"
+            ],
+            EdgeEnum.unspecified_activation_inhibition: [  # 2
+                "Activation",
+                "Inhibition"
+            ],
+            EdgeEnum.unspecified_state_control: [  # 3
+                "controls-state-change-of",
+                "chemical-affects"
+            ],
+            EdgeEnum.unspecified_direct: [  # 4
+                "reacts-with",
+                "used-to-produce"
+            ],
+            EdgeEnum.transcriptional_control: [  # 5
+                "controls-expression-of"
+            ],
+            EdgeEnum.proteins_catalysis_lsmr: [  # 6
+                "catalysis-precedes"
+            ],
+            EdgeEnum.specific_protein_protein_undirected: [  # 7
+                "in-complex-with",
+                "Complex"
+            ],
+            EdgeEnum.non_specific_protein_protein_undirected: [  # 8
+                "interacts-with"
+            ],
+            EdgeEnum.unspecified_topological:[  # 9
+                "neighbor-of"
+            ]
+        }
+
+        #===============================================
+        # Generates a dict based on edge_class_rank
+        # with edge types as key and rank int as value
+        #===============================================
+        self.edge_type_rank = {}
+
+        for key in self.edge_class_rank.keys():
+            for et in self.edge_class_rank[key]:
+                self.edge_type_rank[et] = key.value
+
+    def build_edge_type_list(self, edge_class_type_array):
+        for ect in edge_class_type_array:
+            if(type(ect) is EdgeEnum):
+                for et in self.edge_class_rank[ect]:
+                    if(et not in self.edge_types):
+                        self.edge_types.append(et)
+
+    def print_edge_types(self):
+        for et in self.edge_types:
+            print et
+
+#==================================
+# Enum Classes
+#==================================
+class EdgeEnum(Enum):
+    specific_protein_protein = 1
+    unspecified_activation_inhibition = 2
+    unspecified_state_control = 3
+    unspecified_direct = 4
+    transcriptional_control = 5
+    proteins_catalysis_lsmr = 6  # linked small molecule reactions
+    specific_protein_protein_undirected = 7
+    non_specific_protein_protein_undirected = 8
+    unspecified_topological = 9
+
+    def edge_count(self):
+        return 9

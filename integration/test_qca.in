@@ -1,4 +1,4 @@
-(FIND-QCA-PATH :SOURCE ("IRS1") :TARGET ("SHC1") :RELTYPE ("controls-state-change-of"))
+(FIND-QCA-PATH :SOURCE ("E2F1") :TARGET ("PTEN"))
 (SUCCESS :paths (((IRS1 ((:directed True :interaction controls-state-change-of)) HRAS ((:directed True :interaction controls-state-change-of)) RHOA ((:directed True :interaction controls-state-change-of)) SHC1) (IRS1 ((:directed True :interaction controls-state-change-of)) PIK3CA ((:directed True :interaction controls-state-change-of)) RHOA ((:directed True :interaction controls-state-change-of)) SHC1))))
 (HAS-QCA-PATH :SOURCE ("IRS1") :TARGET ("SHC1"))
 (SUCCESS :haspath (True))

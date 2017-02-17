@@ -8,15 +8,33 @@ import ndex.client as nc
 import requests
 from ndex.beta.path_scoring import PathScoring
 import json
+from qca import QCA
 
 class MyTestCase(unittest.TestCase):
-    def test_something(self):
+    def test_improved_path_ranking(self):
+        qca = QCA()
+        #sources = ["YES1"]
+        #targets = ["BCL2L1"]
+        #qca_results = qca.find_causal_path(targets, sources)
+
+        #print qca_results
+
+        sources = ["E2F1"]
+        targets = ["PTEN"]
+        qca_results2 = qca.find_causal_path(targets, sources)
+
+        print qca_results2
+
+        self.assertTrue(len(qca_results2) > 0)
+
+    @unittest.skip("skip 1")
+    def test_scratch(self):
         #qca = QCA()
         #  source_names = ["CALM3"]
         #  target_names = ["NFATC2"]
 
         source_names = ["AKT1", "AKT2", "AKT3"]
-        target_names = ["CCND1","CDKN1A","FOXO3","GSK3B","MAP2K1","MAPK3","MTOR","PARP1","PIK3CA","RICTOR","TP53"]
+        target_names = ["CCND1"]  # ,"CDKN1A","FOXO3","GSK3B","MAP2K1","MAPK3","MTOR","PARP1","PIK3CA","RICTOR","TP53"]
 
         #AKT1
         #AKT1S1
@@ -27,8 +45,8 @@ class MyTestCase(unittest.TestCase):
         print "results_list:"
         print results_list
         host = "http://www.ndexbio.org"
-        directed_path_query_url = 'http://general.bigmech.ndexbio.org/directedpath/query'
-        #directed_path_query_url = 'http://localhost:5603/directedpath/query'
+        #directed_path_query_url = 'http://general.bigmech.ndexbio.org/directedpath/query'
+        directed_path_query_url = 'http://localhost:5603/directedpath/query'
 
         ndex = nc.Ndex(host=host)
 
@@ -41,7 +59,7 @@ class MyTestCase(unittest.TestCase):
         uuid_high_confidence = "b04e406b-dc88-11e6-86b1-0ac135e8bacf"
         target = ",".join(target_names)
         source = ",".join(source_names)
-        max_number_of_paths = 50
+        max_number_of_paths = 200
         url = directed_path_query_url + '?source=' + source + '&target=' + target + '&uuid=' + uuid_prior + '&server=www.ndexbio.org' + '&pathnum=' + str(max_number_of_paths)
 
         #f = io.BytesIO()
@@ -110,6 +128,7 @@ class MyTestCase(unittest.TestCase):
 
         self.assertEqual(True, True)
 
+    @unittest.skip("skip 2")
     def test_cross_country_scoring(self):
         paths = [
           [
@@ -186,18 +205,17 @@ class MyTestCase(unittest.TestCase):
 
         scores = [
         ('A1', 1),
-        ('B1', 1),
         ('A2', 3),
-        ('B2', 3),
         ('A3', 4),
-        ('B3', 4),
         ('A4', 4),
-        ('B4', 3),
         ('A5', 4),
-        ('B5', 4),
         ('A6', 5)
         ]
 
+        score_b = [
+        ('B1', 1),
+        ('B2', 1),
+        ]
         A = [
             "PRH1",
             [
@@ -305,18 +323,6 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(res.get("A5"), 6)
         self.assertEqual(res.get("B5"), 6)
         '''
-        self.assertTrue(True)
-
-    def test_edge_type_classes(self):
-        #edge_ranking = EdgeRanking()
-        #et = [
-        #    EdgeEnum.specific_protein_protein,
-        #    EdgeEnum.proteins_catalysis_lsmr
-        #]
-        #edge_ranking.build_edge_type_list(et)
-        #edge_ranking.print_edge_types()
-        #self.assertEqual(res.get("A1"), )
-
         self.assertTrue(True)
 
 

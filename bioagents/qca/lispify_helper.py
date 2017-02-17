@@ -39,7 +39,7 @@ class Lispify():
                 if not tmp_key.isalnum():
                     tmp_key = '"%s"' % tmp_key
                 if key == "INDRA statement":
-                    s += [":{0} {1}".format(tmp_key, self.lispify(L[key], True))]
+                    s += [":{0} {1}".format("INDRA_statement", self.lispify(L[key], True))]# tmp_key, self.lispify(L[key], True))]
                 else:
                     s += [":{0} {1}".format(tmp_key, self.lispify(L[key], False))]
             return '(' + ' '.join(s) + ')'

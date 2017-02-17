@@ -28,56 +28,18 @@ class QCA:
         self.results_directory = "qca_results"
 
         self.directed_path_query_url = 'http://general.bigmech.ndexbio.org:5603/directedpath/query'
-        #self.directed_path_query_url = 'http://localhost:5603/directedpath/query'
 
         self.context_expression_query_url = 'http://general.bigmech.ndexbio.org:8081/context/expression/cell_line'
 
         self.context_mutation_query_url = 'http://general.bigmech.ndexbio.org:8081/context/mutation/cell_line'
 
         # dict of reference network descriptors by network name
-        self.reference_networks_full = [
+        self.reference_networks = [
             {
-                "id": "84f321c6-dade-11e6-86b1-0ac135e8bacf",  # "84f321c6-dade-11e6-86b1-0ac135e8bacf",
-                "name": "Calcium signaling in the CD4 TCR pathway",
-                "type": "cannonical"
-            }
-        ]
-
-        self.reference_networks_ful = [
-            {
-                "id": "5294f70b-618f-11e5-8ac5-06603eb7f303",
-                "name": "Calcium signaling in the CD4 TCR pathway",
-                "type": "cannonical"
-            },
-            {
-                "id": "5e904cd6-6193-11e5-8ac5-06603eb7f303",
-                "name": "IGF1 pathway",
-                "type": "cannonical"
-            },
-            {
-                "id": "20ef2b81-6193-11e5-8ac5-06603eb7f303",
-                "name": "HIF-1-alpha transcription factor network ",
-                "type": "cannonical"
-            },
-            {
-                "id": "ac39d2b9-6195-11e5-8ac5-06603eb7f303",
-                "name": "Signaling events mediated by Hepatocyte Growth Factor Receptor (c-Met)",
-                "type": "cannonical"
-            },
-            {
-                "id": "d3747df2-6190-11e5-8ac5-06603eb7f303",
-                "name": "Ceramide signaling pathway",
-                "type": "cannonical"
-            },
-            {
-                "id": "09f3c90a-121a-11e6-a039-06603eb7f303",
-                "name": "NCI Pathway Interaction Database - Final Revision - Extended Binary SIF",
-                "type": "cannonical"
-            },
-            {
-                "id": "50e3dff7-133e-11e6-a039-06603eb7f303",
-                "name": "The Ras machine",
-                "type": "non-cannonical"
+                "id": "84f321c6-dade-11e6-86b1-0ac135e8bacf",
+                "name": "prior",
+                "type": "cannonical",
+                "server": "public.ndexbio.org"
             }
         ]
 
@@ -104,9 +66,6 @@ class QCA:
             "cell_line": ""
         }
 
-        # dict of available network CX data by name
-        self.loaded_networks = {}
-
         # --------------------------
         #  Cell Lines
 
@@ -120,11 +79,8 @@ class QCA:
 
         self.ndex = nc.Ndex(host=self.host)
 
-        self.load_reference_networks()
-
     def __del__(self):
         print "deleting class"
-        #self.drug_db.close()
 
     def find_causal_path(self, source_names, target_names, exit_on_found_path=False, relation_types=None):
         '''
@@ -145,8 +101,8 @@ class QCA:
         #==========================================
         # Find paths in all available networks
         #==========================================
-        for key in self.loaded_networks.keys():
-            pr = self.get_directed_paths_by_names(source_names, target_names, self.loaded_networks[key], relation_types=relation_types, max_number_of_paths=50)
+        for network in self.reference_networks:
+            pr = self.get_directed_paths_by_names(source_names, target_names, network.get("id"), network.get("server"), relation_types=relation_types, max_number_of_paths=50)
             prc = pr.content
             #==========================================
             # Process the data from this network
@@ -163,42 +119,15 @@ class QCA:
                         #============================================
                         if len(results_list) > 0 and exit_on_found_path:
                             return results_list
+
                 except ValueError as ve:
                     print "value is not json.  html 500?"
+
         path_scoring = PathScoring()
-        #results_list_sorted = sorted(results_list, lambda x,y: self.path_length_ranking(x, y))  # 1 if len(x) > len(y) else -1 if len(x) < len(y) else 0)
+
         results_list_sorted = sorted(results_list, lambda x,y: path_scoring.cross_country_scoring(x, y))
 
-        return results_list_sorted[:50]
-
-
-    def cross_country_ranking(self, x, y):
-        edge_ranking = EdgeRanking()
-
-        possible_placement = {}
-        for i in range(1, EdgeEnum.edge_count()):
-            possible_placement[i] = []
-
-        for index, xi in enumerate(x):
-            if(type(xi) is list):
-                if(len(xi) > 0 and "interaction" in xi[0]):
-                    edge_type = xi[0]["interaction"]
-                    position = edge_ranking.edge_type_rank[edge_type]
-                    possible_placement[position].append("x")
-            elif(type(xi) is str):
-                s = ""
-            else:
-                s = ""
-
-        return 0
-
-    def path_length_ranking(self, x, y):
-        if len(x) > len(y):
-            return 1
-        elif len(x) < len(y):
-            return -1
-        else:
-            return 0
+        return results_list_sorted[:10]
 
     def has_path(self, source_names, target_names):
         '''
@@ -214,31 +143,20 @@ class QCA:
 
         return len(found_path) > 0
 
-    def load_reference_networks(self):
-        for rn in self.reference_networks_full:
-            if "id" in rn and "name" in rn:
-                result = self.ndex.get_network_as_cx_stream(rn["id"])
-                self.loaded_networks[rn["name"]] = result.content #json.loads(result.content)
-
-            else:
-                raise Exception("reference network descriptors require both name and id")
-
-    def get_directed_paths_by_names(self, source_names, target_names, reference_network_cx, max_number_of_paths=5, relation_types=None):
+    def get_directed_paths_by_names(self, source_names, target_names, uuid, server, max_number_of_paths=5, relation_types=None):
         #====================
         # Assemble REST url
         #====================
         target = ",".join(target_names)
         source = ",".join(source_names)
+
         if relation_types is not None:
             rts = " ".join(relation_types)
-            url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths) + '&relationtypes=' + rts
+            url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths) + '&relationtypes=' + rts + '&uuid=' + uuid + '&server=' + server
         else:
-            url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths)
+            url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths) + '&uuid=' + uuid + '&server=' + server
 
-        f = io.BytesIO()
-        f.write(reference_network_cx)
-        f.seek(0)
-        r = requests.post(url, files={'network_cx': f})
+        r = requests.post(url)
         return r
 
     def get_path_node_names(self, query_result):

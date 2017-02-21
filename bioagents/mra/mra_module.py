@@ -1,14 +1,8 @@
-import os
 import sys
 import logging
-import subprocess
-
 import pysb.export
-from pysb.tools import render_reactions
-from indra.assemblers import pysb_assembler
-
-from mra import MRA
 from kqml import KQMLModule, KQMLPerformative, KQMLList
+from mra import MRA
 
 logger = logging.getLogger('MRA')
 
@@ -18,7 +12,6 @@ class MRA_Module(KQMLModule):
         self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
                       'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
                       'MODEL-UNDO']
-        self.models = []
         for task in self.tasks:
             msg_txt =\
                 '(subscribe :content (request &key :content (%s . *)))' % task
@@ -74,16 +67,13 @@ class MRA_Module(KQMLModule):
 
     def respond_build_model(self, content_list):
         """Return response content to build-model request."""
-        descr = self._get_model_descr(content_list, ':description')
+        ekb = self._get_model_descr(content_list, ':description')
         try:
-            model = self.mra.build_model_from_ekb(descr)
+            model = self.mra.build_model_from_ekb(ekb)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
         if model is None:
             raise InvalidModelDescriptionError
-        self.get_context(model)
-        self.models.append(model)
-        new_model_id = len(self.models)
         model_enc = self.encode_model(model)
         model_diagram = self.make_model_diagram(model, new_model_id)
         msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
@@ -99,9 +89,6 @@ class MRA_Module(KQMLModule):
             model = self.mra.expand_model_from_ekb(descr, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError
-        self.get_context(model)
-        self.models.append(model)
-        new_model_id = len(self.models)
         model_enc = self.encode_model(model)
         model_diagram = self.make_model_diagram(model, new_model_id)
         msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
@@ -132,9 +119,6 @@ class MRA_Module(KQMLModule):
             model = self.mra.remove_mechanism(descr, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
-        self.get_context(model)
-        self.models.append(model)
-        new_model_id = len(self.models)
         model_enc = self.encode_model(model)
         model_diagram = self.make_model_diagram(model, new_model_id)
         msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
@@ -167,43 +151,10 @@ class MRA_Module(KQMLModule):
         except Exception as e:
             logger.error('Could not get model ID as integer.')
             raise InvalidModelIdError(e)
-        if model_id < 1 or model_id > len(self.models):
+        if not self.mra.has_id(model_id):
             logger.error('Model ID does not refer to an existing model.')
             raise InvalidModelIdError
         return model_id
-
-    @staticmethod
-    def make_model_diagram(model, model_id=None):
-        """Generate a PySB/BNG reaction network as a PNG file."""
-        try:
-            for m in model.monomers:
-                pysb_assembler.set_extended_initial_condition(model, m, 0)
-            fname = 'model%d' % ('' if model_id is None else model_id)
-            diagram_dot = render_reactions.run(model)
-        # TODO: use specific PySB/BNG exceptions and handle them
-        # here to show meaningful error messages
-        except Exception as e:
-            logger.error('Could not generate model diagram.')
-            logger.error(e)
-            return ''
-        try:
-            with open(fname + '.dot', 'wt') as fh:
-                fh.write(diagram_dot)
-            subprocess.call(('dot -T png -o %s.png %s.dot' %
-                             (fname, fname)).split(' '))
-            abs_path = os.path.abspath(os.getcwd())
-            full_path = os.path.join(abs_path, fname + '.png')
-        except Exception as e:
-            logger.error('Could not save model diagram.')
-            logger.error(e)
-            return ''
-        return full_path
-
-    @staticmethod
-    def get_context(model):
-        # TODO: Here we will have to query the context
-        # for now it is not used
-        pass
 
     @staticmethod
     def encode_model(model):
@@ -219,6 +170,12 @@ class InvalidModelDescriptionError(Exception):
 
 class InvalidModelIdError(Exception):
     pass
+
+
+def _stmts_to_json_str(stmts):
+    stmts_json = [json.loads(st.to_json()) for st in stmts]
+    json_str = json.dumps(stmts_json)
+    return json_str
 
 
 if __name__ == "__main__":

@@ -3,30 +3,72 @@
 # biochemical systems from natural language, publications
 # and databases.
 
+import os
 import copy
-from indra.assemblers import PysbAssembler
-from indra.statements import Complex
+import json
+import logging
+import subprocess
 from indra import trips
+from indra.statements import Complex
 from indra.databases import uniprot_client
-from bioagents.databases import nextprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
+from indra.assemblers import pysb_assembler, PysbAssembler, EnglishAssembler
+from pysb.tools import render_reactions
+from bioagents.databases import nextprot_client
 
+logger = logging.getLogger('MRA')
 
 class MRA(object):
     def __init__(self):
-        # This is a list of lists of Statements
-        self.statements = []
+        self.models = {}
+        self.id_counter = 0
         self.default_policy = 'two_step'
         self.default_initial_amount = 100.0
+
+    def get_new_id(self):
+        self.id_counter += 1
+        return self.id_counter
+
+    def has_id(self, model_id):
+        if model_id in self.models:
+            return True
+        return False
+
+    def assemble_pysb(self, stmts):
+        pa = PysbAssembler(policies=self.default_policy)
+        pa.add_statements(stmts)
+        pa.make_model()
+        pa.add_default_initial_conditions(self.default_initial_amount)
+        return pa.model
+
+    def assemble_english(self, stmts):
+        ea = EnglishAssembler(stmts)
+        txt = ea.make_model()
+        return txt
 
     def build_model_from_ekb(self, model_ekb):
         """Build a model using DRUM extraction knowledge base."""
         tp = trips.process_xml(model_ekb)
         if tp is None:
-            return None
-        self.new_statements(tp.statements)
+            return {'error': 'Failed to process EKB.'}
+        elif not tp.statements:
+            return {'error': 'Failed to extract Statements from EKB.'}
+        stmts = tp.statements
+        model_id = self.new_model(stmts)
+        model_nl = self.assemble_english(stmts)
+        model_exec = self.assemble_pysb(stmts)
+        res = {'model_id': model_id,
+               'model': stmts,
+               'model_nl': model_nl,
+               'model_exec': model_exec}
+        return res
+
+    def expand_model_from_ekb(self, model_ekb, model_id):
+        """Expand a model using DRUM extraction knowledge base."""
+        tp = trips.process_xml(model_ekb)
+        self.extend_statements(tp.statements, model_id)
         pa = PysbAssembler(policies=self.default_policy)
-        pa.add_statements(tp.statements)
+        pa.add_statements(self.models[model_id-1])
         model = pa.make_model()
         pa.add_default_initial_conditions(self.default_initial_amount)
         return model
@@ -74,30 +116,17 @@ class MRA(object):
             model = None
         return model
 
-    def expand_model_from_ekb(self, model_ekb, model_id):
-        """Expand a model using DRUM extraction knowledge base."""
-        tp = trips.process_xml(model_ekb)
-        self.extend_statements(tp.statements, model_id)
-        pa = PysbAssembler(policies=self.default_policy)
-        pa.add_statements(self.statements[model_id-1])
-        model = pa.make_model()
-        pa.add_default_initial_conditions(self.default_initial_amount)
-        return model
+    def new_model(self, stmts):
+        model_id = self.get_new_id()
+        self.models[model_id] = stmts
+        return model_id
 
-    @staticmethod
-    def stmt_exists(stmts, stmt):
-        for st1 in stmts:
-            if st1.matches(stmt):
-                return True
-        return False
-
-    def new_statements(self, stmts):
-        self.statements.append(stmts)
-
-    def extend_statements(self, stmts, model_id):
-        self.statements.append(self.statements[model_id-1])
+    def extend_statements(self, stmts, to_model_id):
+        old_stmts = self.models[to_model_id]
+        new_model_id = self.get_new_id()
+        self.statements[new_model_id] = (self.statements[old_model_id])
         for st in stmts:
-            if not self.stmt_exists(self.statements[model_id], st):
+            if not stmt_exists(self.statements[model_id], st):
                 self.statements[model_id].append(st)
 
     @staticmethod
@@ -140,3 +169,37 @@ class MRA(object):
         model = pa.make_model()
         pa.add_default_initial_conditions(self.default_initial_amount)
         return model
+
+
+def make_model_diagram(pysb_model, model_id):
+    """Generate a PySB/BNG reaction network as a PNG file."""
+    try:
+        for m in model.monomers:
+            pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
+        fname = 'model%d' % model_id
+        diagram_dot = render_reactions.run(pysb_model)
+    # TODO: use specific PySB/BNG exceptions and handle them
+    # here to show meaningful error messages
+    except Exception as e:
+        logger.error('Could not generate model diagram.')
+        logger.error(e)
+        return ''
+    try:
+        with open(fname + '.dot', 'wt') as fh:
+            fh.write(diagram_dot)
+        subprocess.call(('dot -T png -o %s.png %s.dot' %
+                         (fname, fname)).split(' '))
+        abs_path = os.path.abspath(os.getcwd())
+        full_path = os.path.join(abs_path, fname + '.png')
+    except Exception as e:
+        logger.error('Could not save model diagram.')
+        logger.error(e)
+        return ''
+    return full_path
+
+
+def stmt_exists(stmts, stmt):
+    for st1 in stmts:
+        if st1.matches(stmt):
+            return True
+    return False

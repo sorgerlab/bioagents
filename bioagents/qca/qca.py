@@ -126,7 +126,7 @@ class QCA:
 
         results_list_sorted = sorted(results_list, lambda x,y: path_scoring.cross_country_scoring(x, y))
 
-        return results_list_sorted[:10]
+        return results_list_sorted[:3]
 
     def has_path(self, source_names, target_names):
         '''

@@ -19,18 +19,6 @@ class MRA(object):
         self.default_policy = 'two_step'
         self.default_initial_amount = 100.0
 
-    def build_model_from_text(self, model_txt):
-        """Build a model using INDRA from natural language."""
-        tp = trips.process_text(model_txt)
-        if tp is None:
-            return None
-        self.new_statements(tp.statements)
-        pa = PysbAssembler(policies=self.default_policy)
-        pa.add_statements(tp.statements)
-        model = pa.make_model()
-        pa.add_default_initial_conditions(self.default_initial_amount)
-        return model
-
     def build_model_from_ekb(self, model_ekb):
         """Build a model using DRUM extraction knowledge base."""
         tp = trips.process_xml(model_ekb)
@@ -84,16 +72,6 @@ class MRA(object):
             self.statements.append(model)
         else:
             model = None
-        return model
-
-    def expand_model_from_text(self, model_txt, model_id):
-        """Expand a model using INDRA from natural language."""
-        tp = trips.process_text(model_txt)
-        self.extend_statements(tp.statements, model_id)
-        pa = PysbAssembler(policies=self.default_policy)
-        pa.add_statements(self.statements[model_id-1])
-        model = pa.make_model()
-        pa.add_default_initial_conditions(self.default_initial_amount)
         return model
 
     def expand_model_from_ekb(self, model_ekb, model_id):

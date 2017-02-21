@@ -33,13 +33,11 @@ class Lispify():
         elif isinstance(L, dict):
             s = []
             for key in L:
-                #print "key: " + key
-                #print L[key]
                 tmp_key = str(key)
-                if not tmp_key.isalnum():
-                    tmp_key = '"%s"' % tmp_key
-                if key == "INDRA statement":
-                    s += [":{0} {1}".format("INDRA_statement", self.lispify(L[key], True))]# tmp_key, self.lispify(L[key], True))]
+                if " " in tmp_key:
+                    tmp_key = "_".join(tmp_key.split())
+                if key == "INDRA statement":  # Indra statements need to be quoted
+                    s += [":{0} {1}".format("INDRA_statement", self.lispify(L[key], True))]
                 else:
                     s += [":{0} {1}".format(tmp_key, self.lispify(L[key], False))]
             return '(' + ' '.join(s) + ')'

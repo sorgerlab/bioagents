@@ -45,7 +45,6 @@ class Lispify():
             return '(' + ' '.join(s) + ')'
         elif isinstance(L, unicode):
             if indra_statement or not L.isalnum():
-                print L
                 return '"%s"' % str(L)
             else:
                 return str(L)

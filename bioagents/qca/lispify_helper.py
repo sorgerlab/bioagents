@@ -44,7 +44,8 @@ class Lispify():
                     s += [":{0} {1}".format(tmp_key, self.lispify(L[key], False))]
             return '(' + ' '.join(s) + ')'
         elif isinstance(L, unicode):
-            if indra_statement:
+            if indra_statement or not L.isalnum():
+                print L
                 return '"%s"' % str(L)
             else:
                 return str(L)

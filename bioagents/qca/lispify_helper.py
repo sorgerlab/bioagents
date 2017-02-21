@@ -21,6 +21,8 @@ class Lispify():
 
             if indra_statement:
                 return '"%s"' % L
+            elif not L.isalnum():
+                return '"%s"' % L
             else:
                 return L
 

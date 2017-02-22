@@ -77,19 +77,28 @@ class MRA_Module(KQMLModule):
         model_id = res.get('model_id')
         if model_id is None:
             raise InvalidModelDescriptionError()
+        # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
-        model = res.get('model')
+        # Add the model id
         msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        # Add the INDRA model json
+        model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model', KQMLString('%s' % model_msg))
+        msg.set_parameter(':model', KQMLString(model_msg))
+        # Add the executable model
         model_exec = res.get('model_exec')
         if model_exec:
             model_exec_msg = encode_pysb_model(model_exec)
             msg.set_parameter(':model_exec',
-                              KQMLString('%s' % model_exec_msg))
+                              KQMLString(model_exec_msg))
+        # Add the natural language model
+        model_nl = res.get('model_nl')
+        if model_nl:
+            msg.set_parameter(':model_nl', KQMLString(model_nl))
+        # Add the diagram
         diagram = res.get('diagram')
         if diagram:
-            msg.set_parameter(':diagram', KQMLString('%s' % diagram))
+            msg.set_parameter(':diagram', KQMLString(diagram))
         else:
             msg.set_parameter(':diagram', KQMLString(''))
         return msg
@@ -181,14 +190,12 @@ class InvalidModelIdError(Exception):
 def encode_pysb_model(pysb_model):
     model_str = pysb.export.export(pysb_model, 'pysb_flat')
     model_str = str(model_str.strip())
-    model_str = model_str.replace('"', '\\"')
     return model_str
 
 
 def encode_indra_stmts(stmts):
     stmts_json = [json.loads(st.to_json()) for st in stmts]
     json_str = json.dumps(stmts_json)
-    json_str = json_str.replace('"', '\\"')
     return json_str
 
 if __name__ == "__main__":

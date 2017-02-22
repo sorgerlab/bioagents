@@ -5,13 +5,12 @@
 
 import re
 import os
-import logging
-import rdflib
-import sqlite3
 import numpy
+import pickle
+import logging
+import sqlite3
 import operator
 from indra.statements import ActiveForm
-from indra.bel.processor import BelProcessor
 from bioagents.databases import chebi_client
 from bioagents.databases import cbio_client
 
@@ -42,23 +41,18 @@ cbio_efo_map = _make_cbio_efo_map()
 
 class DTDA:
     def __init__(self):
-        logger.debug('Using resource folder: %s' % _resource_dir)
         # Build an initial set of substitution statements
-        bel_corpus = _resource_dir + 'large_corpus_direct_subs.rdf'
-        if os.path.isfile(bel_corpus):
-            g = rdflib.Graph()
-            g.parse(bel_corpus, format='nt')
-            bp = BelProcessor(g)
-            bp.get_activating_subs()
-            self.sub_statements = bp.statements
-        else:
-            self.sub_statements = []
-            logger.error('DTDA could not load mutation effect data.')
+        bel_corpus = _resource_dir + 'large_corpus_direct_subs.pkl'
+        with open(bel_corpus, 'r') as fh:
+            self.sub_statements = pickle.load(fh)
+        logger.info('Loaded %d mutation effect statements' %
+                    len(self.sub_statements))
         # Load a database of drug targets
         drug_db_file = _resource_dir + 'drug_targets.db'
         if os.path.isfile(drug_db_file):
             self.drug_db = sqlite3.connect(drug_db_file,
                                            check_same_thread=False)
+            logger.info('Loaded drug-target database')
         else:
             logger.error('DTDA could not load drug-target database.')
             self.drug_db = None

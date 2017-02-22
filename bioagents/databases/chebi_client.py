@@ -1,4 +1,4 @@
-import suds
+import suds.client
 import re
 import logging
 

@@ -50,7 +50,6 @@ class MRA(object):
         tp = trips.process_xml(model_ekb)
         if tp is None:
             return {'error': 'Failed to process EKB.'}
-
         stmts = tp.statements
         model_id = self.new_model(stmts)
         res = {'model_id': model_id,
@@ -69,12 +68,26 @@ class MRA(object):
     def expand_model_from_ekb(self, model_ekb, model_id):
         """Expand a model using DRUM extraction knowledge base."""
         tp = trips.process_xml(model_ekb)
-        self.extend_statements(tp.statements, model_id)
-        pa = PysbAssembler(policies=self.default_policy)
-        pa.add_statements(self.models[model_id-1])
-        model = pa.make_model()
-        pa.add_default_initial_conditions(self.default_initial_amount)
-        return model
+        if tp is None:
+            return {'error': 'Failed to process EKB.'}
+        stmts = tp.statements
+        new_model_id, new_stmts = self.extend_model(stmts, model_id)
+        model_stmts = self.models[new_model_id]
+        res = {'model_id': new_model_id,
+               'model': model_stmts}
+        if not model_stmts:
+            return res
+        res['model_new'] = new_stmts
+        model_nl = self.assemble_english(model_stmts)
+        res['model_nl'] = model_nl
+        model_nl = self.assemble_english(new_stmts)
+        res['model_nl_new'] = model_nl
+        model_exec = self.assemble_pysb(model_stmts)
+        res['model_exec'] = model_exec
+        diagram = make_model_diagram(model_exec, model_id)
+        if diagram:
+            res['diagram'] = diagram
+        return res
 
     def has_mechanism(self, mech_ekb, model_id):
         """Return True if the given model contains the given mechanism."""
@@ -124,13 +137,16 @@ class MRA(object):
         self.models[model_id] = stmts
         return model_id
 
-    def extend_statements(self, stmts, to_model_id):
-        old_stmts = self.models[to_model_id]
+    def extend_model(self, stmts, model_id):
+        old_stmts = self.models[model_id]
         new_model_id = self.get_new_id()
-        self.statements[new_model_id] = (self.statements[old_model_id])
+        self.models[new_model_id] = self.models[model_id]
+        new_stmts = []
         for st in stmts:
-            if not stmt_exists(self.statements[model_id], st):
-                self.statements[model_id].append(st)
+            if not stmt_exists(self.models[model_id], st):
+                self.models[model_id].append(st)
+                new_stmts.append(st)
+        return new_model_id, new_stmts
 
     @staticmethod
     def find_family_members(family_name, family_id=None):

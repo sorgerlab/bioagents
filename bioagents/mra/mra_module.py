@@ -103,20 +103,51 @@ class MRA_Module(KQMLModule):
             msg.set_parameter(':diagram', KQMLString(''))
         return msg
 
-    def respond_expand_model(self, content_list):
+    def respond_expand_model(self, content):
         """Return response content to expand-model request."""
-        descr = self._get_model_descr(content_list, ':description')
-        model_id = self._get_model_id(content_list)
+        ekb = self._get_model_descr(content, ':description')
+        model_id = self._get_model_id(content)
         try:
-            model = self.mra.expand_model_from_ekb(descr, model_id)
+            res = self.mra.expand_model_from_ekb(ekb, model_id)
         except Exception as e:
-            raise InvalidModelDescriptionError
-        model_enc = self.encode_model(model)
-        model_diagram = self.make_model_diagram(model, new_model_id)
-        msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
-              (new_model_id, model_enc, model_diagram)
-        reply_content = KQMLList.from_string(msg)
-        return reply_content
+            raise InvalidModelDescriptionError(e)
+        new_model_id = res.get('model_id')
+        if new_model_id is None:
+            raise InvalidModelDescriptionError()
+        # Start a SUCCESS message
+        msg = KQMLPerformative('SUCCESS')
+        # Add the model id
+        msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        # Add the INDRA model json
+        model = res.get('model')
+        model_msg = encode_indra_stmts(model)
+        msg.set_parameter(':model', KQMLString(model_msg))
+        # Add the INDRA model new json
+        model_new = res.get('model_new')
+        if model_new:
+            model_new_msg = encode_indra_stmts(model_new)
+            msg.set_parameter(':model_new', KQMLString(model_new_msg))
+        # Add the executable model
+        model_exec = res.get('model_exec')
+        if model_exec:
+            model_exec_msg = encode_pysb_model(model_exec)
+            msg.set_parameter(':model_exec',
+                              KQMLString(model_exec_msg))
+        # Add the natural language model
+        model_nl = res.get('model_nl')
+        if model_nl:
+            msg.set_parameter(':model_nl', KQMLString(model_nl))
+        # Add the natural language new model
+        model_nl_new = res.get('model_nl_new')
+        if model_nl_new:
+            msg.set_parameter(':model_nl_new', KQMLString(model_nl_new))
+        # Add the diagram
+        diagram = res.get('diagram')
+        if diagram:
+            msg.set_parameter(':diagram', KQMLString(diagram))
+        else:
+            msg.set_parameter(':diagram', KQMLString(''))
+        return msg
 
     def respond_has_mechanism(self, content_list):
         """Return response content to model-has-mechanism request."""
@@ -162,8 +193,8 @@ class MRA_Module(KQMLModule):
             raise InvalidModelDescriptionError(e)
         return descr
 
-    def _get_model_id(self, content_list):
-        model_id_arg = content_list.get_keyword_arg(':model-id')
+    def _get_model_id(self, content):
+        model_id_arg = content.get_parameter(':model-id')
         if model_id_arg is None:
             logger.error('Model ID missing.')
             raise InvalidModelIdError

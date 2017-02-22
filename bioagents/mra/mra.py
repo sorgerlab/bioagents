@@ -111,20 +111,33 @@ class MRA(object):
     def remove_mechanism(self, mech_ekb, model_id):
         """Return a new model with the given mechanism having been removed."""
         tp = trips.process_xml(mech_ekb)
-        model_stmts = self.statements[model_id-1]
+        rem_stmts = tp.statements
         new_stmts = []
+        model_stmts = self.models[model_id]
         for model_st in model_stmts:
             found = False
-            for rem_st in tp.statements:
+            for rem_st in rem_stmts:
                 if model_st.refinement_of(rem_st, hierarchies):
                     found = True
                     break
             if not found:
                 new_stmts.append(model_st)
-        self.new_statements(new_stmts)
-        pa = PysbAssembler(policies=self.default_policy)
-        pa.add_statements(new_stmts)
-        model = pa.make_model()
+            else:
+                removed_stmts.append(model_st)
+        res = {'model_id': model_id,
+               'model': new_stmts}
+        model_nl = self.assemble_english(new_stmts)
+        res['model_nl'] = model_nl
+        model_exec = self.assemble_pysb(new_stmts)
+        res['model_exec'] = model_exec
+        if removed_stmts:
+            res['removed'] = removed_stmts
+            removed_nl = self.assemble_english(removed_stmts)
+            res['removed_nl'] = removed_nl
+        diagram = make_model_diagram(model_exec, model_id)
+        if diagram:
+            res['diagram'] = diagram
+        self.new_model(new_stmts)
         return model
 
     def model_undo(self):

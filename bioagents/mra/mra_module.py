@@ -84,12 +84,12 @@ class MRA_Module(KQMLModule):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model', KQMLString(model_msg))
+        msg.set_parameter(':model_indra', KQMLString(model_msg))
         # Add the executable model
         model_exec = res.get('model_exec')
         if model_exec:
             model_exec_msg = encode_pysb_model(model_exec)
-            msg.set_parameter(':model_exec',
+            msg.set_parameter(':model',
                               KQMLString(model_exec_msg))
         # Add the natural language model
         model_nl = res.get('model_nl')
@@ -121,7 +121,7 @@ class MRA_Module(KQMLModule):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model', KQMLString(model_msg))
+        msg.set_parameter(':model_indra', KQMLString(model_msg))
         # Add the INDRA model new json
         model_new = res.get('model_new')
         if model_new:
@@ -131,7 +131,7 @@ class MRA_Module(KQMLModule):
         model_exec = res.get('model_exec')
         if model_exec:
             model_exec_msg = encode_pysb_model(model_exec)
-            msg.set_parameter(':model_exec',
+            msg.set_parameter(':model',
                               KQMLString(model_exec_msg))
         # Add the natural language model
         model_nl = res.get('model_nl')
@@ -173,21 +173,51 @@ class MRA_Module(KQMLModule):
             msg.set_parameter(':query_nl', KQMLString(query_nl))
         return msg
 
-    def respond_remove_mechanism(self, content_list):
+    def respond_remove_mechanism(self, content):
         """Return response content to model-remove-mechanism request."""
-        descr = self._get_model_descr(content_list, ':description')
-        model_id = self._get_model_id(content_list)
-
+        ekb = self._get_model_descr(content, ':description')
+        model_id = self._get_model_id(content)
         try:
-            model = self.mra.remove_mechanism(descr, model_id)
+            res = self.mra.remove_mechanism(ekb, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
-        model_enc = self.encode_model(model)
-        model_diagram = self.make_model_diagram(model, new_model_id)
-        msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
-              (new_model_id, model_enc, model_diagram)
-        reply_content = KQMLList.from_string(msg)
-        return reply_content
+        model_id = res.get('model_id')
+        if model_id is None:
+            raise InvalidModelDescriptionError()
+        # Start a SUCCESS message
+        msg = KQMLPerformative('SUCCESS')
+        # Add the model id
+        msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        # Add the INDRA model json
+        model = res.get('model')
+        model_msg = encode_indra_stmts(model)
+        msg.set_parameter(':model_indra', KQMLString(model_msg))
+        # Add the executable model
+        model_exec = res.get('model_exec')
+        if model_exec:
+            model_exec_msg = encode_pysb_model(model_exec)
+            msg.set_parameter(':model',
+                              KQMLString(model_exec_msg))
+        # Add the natural language model
+        model_nl = res.get('model_nl')
+        if model_nl:
+            msg.set_parameter(':model_nl', KQMLString(model_nl))
+        # Add the removed statements
+        removed = res.get('removed')
+        if removed:
+            removed_msg = encode_indra_stmts(removed)
+            msg.set_parameter(':removed', KQMLString(removed_msg))
+        # Add the removed natural language statements
+        removed_nl = res.get('removed_nl')
+        if removed_nl:
+            msg.set_parameter(':removed_nl', KQMLString(removed_nl))
+        # Add the diagram
+        diagram = res.get('diagram')
+        if diagram:
+            msg.set_parameter(':diagram', KQMLString(diagram))
+        else:
+            msg.set_parameter(':diagram', KQMLString(''))
+        return msg
 
     @staticmethod
     def _get_model_descr(content, arg_name):

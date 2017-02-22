@@ -149,19 +149,29 @@ class MRA_Module(KQMLModule):
             msg.set_parameter(':diagram', KQMLString(''))
         return msg
 
-    def respond_has_mechanism(self, content_list):
+    def respond_has_mechanism(self, content):
         """Return response content to model-has-mechanism request."""
-        descr = self._get_model_descr(content_list, ':description')
-        model_id = self._get_model_id(content_list)
-
+        ekb = self._get_model_descr(content, ':description')
+        model_id = self._get_model_id(content)
         try:
-            has_mechanism = self.mra.has_mechanism(descr, model_id)
+            res = self.mra.has_mechanism(ekb, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
-        msg = '(SUCCESS :model-id %s :has-mechanism %s)' % \
-              (model_id, has_mechanism)
-        reply_content = KQMLList.from_string(msg)
-        return reply_content
+        # Start a SUCCESS message
+        msg = KQMLPerformative('SUCCESS')
+        # Add the model id
+        msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        # Add TRUE or FALSE for has-mechanism
+        has_mechanism_msg = KQMLToken('TRUE' if res['has_mechanism'] else 'FALSE')
+        msg.set_parameter(':has-mechanism', has_mechanism_msg)
+        query = res.get('query')
+        if query:
+            query_msg = encode_indra_stmts([query])
+            msg.set_parameter(':query', KQMLString(query_msg))
+        query_nl = res.get('query_nl')
+        if query_nl:
+            msg.set_parameter(':query_nl', KQMLString(query_nl))
+        return msg
 
     def respond_remove_mechanism(self, content_list):
         """Return response content to model-remove-mechanism request."""

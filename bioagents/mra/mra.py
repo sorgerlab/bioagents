@@ -92,14 +92,21 @@ class MRA(object):
     def has_mechanism(self, mech_ekb, model_id):
         """Return True if the given model contains the given mechanism."""
         tp = trips.process_xml(mech_ekb)
+        res = {}
         if not tp.statements:
-            return False
+            res['has_mechanism'] = False
+            return res
         query_st = tp.statements[0]
-        model_stmts = self.statements[model_id-1]
+        res['query'] = query_st
+        query_nl = self.assemble_english([query_st])
+        res['query_nl'] = query_nl
+        model_stmts = self.models[model_id]
         for model_st in model_stmts:
             if model_st.refinement_of(query_st, hierarchies):
-                return True
-        return False
+                res['has_mechanism'] = True
+                return res
+        res['has_mechanism'] = False
+        return res
 
     def remove_mechanism(self, mech_ekb, model_id):
         """Return a new model with the given mechanism having been removed."""

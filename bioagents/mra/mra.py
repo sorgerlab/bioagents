@@ -5,7 +5,6 @@
 
 import os
 import copy
-import json
 import logging
 import subprocess
 from indra import trips
@@ -51,16 +50,20 @@ class MRA(object):
         tp = trips.process_xml(model_ekb)
         if tp is None:
             return {'error': 'Failed to process EKB.'}
-        elif not tp.statements:
-            return {'error': 'Failed to extract Statements from EKB.'}
+
         stmts = tp.statements
         model_id = self.new_model(stmts)
-        model_nl = self.assemble_english(stmts)
-        model_exec = self.assemble_pysb(stmts)
         res = {'model_id': model_id,
-               'model': stmts,
-               'model_nl': model_nl,
-               'model_exec': model_exec}
+               'model': stmts}
+        if not stmts:
+            return res
+        model_nl = self.assemble_english(stmts)
+        res['model_nl'] = model_nl
+        model_exec = self.assemble_pysb(stmts)
+        res['model_exec'] = model_exec
+        diagram = make_model_diagram(model_exec, model_id)
+        if diagram:
+            res['diagram'] = diagram
         return res
 
     def expand_model_from_ekb(self, model_ekb, model_id):
@@ -174,7 +177,7 @@ class MRA(object):
 def make_model_diagram(pysb_model, model_id):
     """Generate a PySB/BNG reaction network as a PNG file."""
     try:
-        for m in model.monomers:
+        for m in pysb_model.monomers:
             pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
         fname = 'model%d' % model_id
         diagram_dot = render_reactions.run(pysb_model)
@@ -183,7 +186,7 @@ def make_model_diagram(pysb_model, model_id):
     except Exception as e:
         logger.error('Could not generate model diagram.')
         logger.error(e)
-        return ''
+        return None
     try:
         with open(fname + '.dot', 'wt') as fh:
             fh.write(diagram_dot)
@@ -194,7 +197,7 @@ def make_model_diagram(pysb_model, model_id):
     except Exception as e:
         logger.error('Could not save model diagram.')
         logger.error(e)
-        return ''
+        return None
     return full_path
 
 

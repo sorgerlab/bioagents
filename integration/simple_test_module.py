@@ -1,10 +1,11 @@
 import sys
+import time
 import argparse
 import operator
 import threading
-import time
 
 from kqml import KQMLModule, KQMLPerformative, KQMLList
+
 
 class TestModule(KQMLModule):
     """The Test module is a TRIPS module built to run unit tests.
@@ -21,7 +22,7 @@ class TestModule(KQMLModule):
         self.msg_counter = 1
         # Send ready message
         self.ready()
-        self.run_tests(self.test_file)
+        self.initialize_tests(self.test_file)
         return None
 
     def get_perf(self, msg_id, msg_txt):
@@ -30,7 +31,7 @@ class TestModule(KQMLModule):
             '(request :reply-with IO-%d :content %s)' % (msg_id, msg_txt))
         return perf
 
-    def run_tests(self, test_file):
+    def initialize_tests(self, test_file):
         fh = open(test_file, 'rt')
         messages = fh.readlines()
         send_msg = messages[0::2]
@@ -39,19 +40,20 @@ class TestModule(KQMLModule):
             # TODO: allow non-request messages?
             self.sent.push(sm)
             self.expected.push(em)
+        print('Collected %s test messages from %s' % \
+              (len(self.sent.lst), test_file))
+        # Send off the first test
         sm = self.sent.pop()
         self.send(self.get_perf(self.msg_counter, sm))
         self.msg_counter += 1
 
     def receive_reply(self, msg, content):
-        '''
-        Handle a "reply" message being received.
-        '''
+        """Handle a "reply" message being received."""
         expected_content = self.expected.pop().strip()
         actual_content = content.__repr__().strip()
-        print 'expected: ', expected_content
-        print 'actual:   ', actual_content
-        print '---'
+        print('expected: %s' % expected_content)
+        print('actual:   %s' % actual_content)
+        print('---')
         assert(expected_content == actual_content)
         if not self.sent.is_empty():
             sm = self.sent.pop()

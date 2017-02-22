@@ -1,7 +1,8 @@
 import sys
+import json
 import logging
 import pysb.export
-from kqml import KQMLModule, KQMLPerformative, KQMLList
+from kqml import *
 from mra import MRA
 
 logger = logging.getLogger('MRA')
@@ -34,7 +35,8 @@ class MRA_Module(KQMLModule):
         message is then sent back.
         """
         try:
-            task_str = content[0].to_string().upper()
+            content = KQMLPerformative(msg.get_parameter(':content'))
+            task_str = content.get_verb()
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)
@@ -65,21 +67,32 @@ class MRA_Module(KQMLModule):
         reply_msg.set_parameter(':content', reply_content)
         self.reply(msg, reply_msg)
 
-    def respond_build_model(self, content_list):
+    def respond_build_model(self, content):
         """Return response content to build-model request."""
-        ekb = self._get_model_descr(content_list, ':description')
+        ekb = self._get_model_descr(content, ':description')
         try:
-            model = self.mra.build_model_from_ekb(ekb)
+            res = self.mra.build_model_from_ekb(ekb)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
-        if model is None:
-            raise InvalidModelDescriptionError
-        model_enc = self.encode_model(model)
-        model_diagram = self.make_model_diagram(model, new_model_id)
-        msg = '(SUCCESS :model-id %s :model "%s" :diagram "%s")' % \
-              (new_model_id, model_enc, model_diagram)
-        reply_content = KQMLList.from_string(msg)
-        return reply_content
+        model_id = res.get('model_id')
+        if model_id is None:
+            raise InvalidModelDescriptionError()
+        msg = KQMLPerformative('SUCCESS')
+        model = res.get('model')
+        msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        model_msg = encode_indra_stmts(model)
+        msg.set_parameter(':model', KQMLString('%s' % model_msg))
+        model_exec = res.get('model_exec')
+        if model_exec:
+            model_exec_msg = encode_pysb_model(model_exec)
+            msg.set_parameter(':model_exec',
+                              KQMLString('%s' % model_exec_msg))
+        diagram = res.get('diagram')
+        if diagram:
+            msg.set_parameter(':diagram', KQMLString('%s' % diagram))
+        else:
+            msg.set_parameter(':diagram', KQMLString(''))
+        return msg
 
     def respond_expand_model(self, content_list):
         """Return response content to expand-model request."""
@@ -127,9 +140,9 @@ class MRA_Module(KQMLModule):
         return reply_content
 
     @staticmethod
-    def _get_model_descr(content_list, arg_name):
+    def _get_model_descr(content, arg_name):
         try:
-            descr_arg = content_list.get_keyword_arg(arg_name)
+            descr_arg = content.get_parameter(arg_name)
             descr = descr_arg[0].to_string()
             if descr[0] == '"':
                 descr = descr[1:]
@@ -156,13 +169,6 @@ class MRA_Module(KQMLModule):
             raise InvalidModelIdError
         return model_id
 
-    @staticmethod
-    def encode_model(model):
-        model_str = pysb.export.export(model, 'pysb_flat')
-        model_str = str(model_str.strip())
-        model_str = model_str.replace('"', '\\"')
-        return model_str
-
 
 class InvalidModelDescriptionError(Exception):
     pass
@@ -172,11 +178,18 @@ class InvalidModelIdError(Exception):
     pass
 
 
-def _stmts_to_json_str(stmts):
+def encode_pysb_model(pysb_model):
+    model_str = pysb.export.export(pysb_model, 'pysb_flat')
+    model_str = str(model_str.strip())
+    model_str = model_str.replace('"', '\\"')
+    return model_str
+
+
+def encode_indra_stmts(stmts):
     stmts_json = [json.loads(st.to_json()) for st in stmts]
     json_str = json.dumps(stmts_json)
+    json_str = json_str.replace('"', '\\"')
     return json_str
-
 
 if __name__ == "__main__":
     MRA_Module(['-name', 'MRA'] + sys.argv[1:])

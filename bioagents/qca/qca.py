@@ -3,8 +3,6 @@
 
 import os
 import logging
-#from indra.statements import ActiveForm
-#from indra.bel.processor import BelProcessor
 import json
 import ndex.client as nc
 import requests
@@ -12,8 +10,6 @@ import io
 from enum import Enum
 
 logger = logging.getLogger('QCA')
-
-_resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
 
 class PathNotFoundException(Exception):
     def __init__(self, *args, **kwargs):
@@ -26,11 +22,16 @@ class QCA:
 
         self.results_directory = "qca_results"
 
-        self.directed_path_query_url = 'http://general.bigmech.ndexbio.org:5603/directedpath/query'
+        self.directed_path_query_url = \
+            'http://general.bigmech.ndexbio.org:5603/directedpath/query'
 
-        self.context_expression_query_url = 'http://general.bigmech.ndexbio.org:8081/context/expression/cell_line'
+        self.context_expression_query_url = \
+            'http://general.bigmech.ndexbio.org:8081' + \
+            '/context/expression/cell_line'
 
-        self.context_mutation_query_url = 'http://general.bigmech.ndexbio.org:8081/context/mutation/cell_line'
+        self.context_mutation_query_url = \
+            'http://general.bigmech.ndexbio.org:8081/' + \
+            'context/mutation/cell_line'
 
         # dict of reference network descriptors by network name
         self.reference_networks = [
@@ -81,9 +82,11 @@ class QCA:
     def __del__(self):
         print "deleting class"
 
-    def find_causal_path(self, source_names, target_names, exit_on_found_path=False, relation_types=None):
+    def find_causal_path(self, source_names, target_names,
+                         exit_on_found_path=False, relation_types=None):
         '''
-        Uses the source and target parameters to search for paths within predetermined directed networks.
+        Uses the source and target parameters to search for paths within
+        predetermined directed networks.
         :param source_names: Source nodes
         :type source_names: Array of strings
         :param target_names: Target nodes
@@ -101,7 +104,11 @@ class QCA:
         # Find paths in all available networks
         #==========================================
         for network in self.reference_networks:
-            pr = self.get_directed_paths_by_names(source_names, target_names, network.get("id"), network.get("server"), relation_types=relation_types, max_number_of_paths=50)
+            pr = self.get_directed_paths_by_names(source_names, target_names,
+                                                  network.get("id"),
+                                                  network.get("server"),
+                                                  relation_types=relation_types,
+                                                  max_number_of_paths=50)
             prc = pr.content
             #==========================================
             # Process the data from this network
@@ -109,7 +116,8 @@ class QCA:
             if prc is not None and len(prc.strip()) > 0:
                 try:
                     result_json = json.loads(prc)
-                    if result_json.get('data') is not None and result_json.get("data").get("forward_english") is not None:
+                    if result_json.get('data') is not None and \
+                        result_json.get("data").get("forward_english") is not None:
                         f_e = result_json.get("data").get("forward_english")
 
                         results_list += [f_e_i for f_e_i in f_e if len(f_e) > 0]
@@ -118,19 +126,20 @@ class QCA:
                         #============================================
                         if len(results_list) > 0 and exit_on_found_path:
                             return results_list
-
                 except ValueError as ve:
                     print "value is not json.  html 500?"
 
         path_scoring = PathScoring()
 
-        results_list_sorted = sorted(results_list, lambda x,y: path_scoring.cross_country_scoring(x, y))
+        results_list_sorted = sorted(results_list,
+            lambda x,y: path_scoring.cross_country_scoring(x, y))
 
         return results_list_sorted[:3]
 
     def has_path(self, source_names, target_names):
         '''
-        determine if there is a path between nodes within predetermined directed networks
+        determine if there is a path between nodes within predetermined
+        directed networks
         :param source_names: Source nodes
         :type source_names: Array of strings
         :param target_names: Target nodes
@@ -138,25 +147,29 @@ class QCA:
         :return: Path exists
         :rtype: Boolean
         '''
-        found_path = self.find_causal_path(source_names, target_names, exit_on_found_path=True)
-
+        found_path = self.find_causal_path(source_names, target_names,
+                                           exit_on_found_path=True)
         return len(found_path) > 0
 
-    def get_directed_paths_by_names(self, source_names, target_names, uuid, server, max_number_of_paths=5, relation_types=None):
+    def get_directed_paths_by_names(self, source_names, target_names, uuid,
+                                    server, max_number_of_paths=5,
+                                    relation_types=None):
         #====================
         # Assemble REST url
         #====================
         target = ",".join(target_names)
         source = ",".join(source_names)
-
+        pathnum = str(max_number_of_paths)
+        url = self.directed_path_query_url + '?source=' + source + \
+            '&target=' + target + '&pathnum=' + pathnum + \
+            '&uuid=' + uuid + '&server=' + server
         if relation_types is not None:
             rts = " ".join(relation_types)
-            url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths) + '&relationtypes=' + rts + '&uuid=' + uuid + '&server=' + server
-        else:
-            url = self.directed_path_query_url + '?source=' + source + '&target=' + target + '&pathnum=' + str(max_number_of_paths) + '&uuid=' + uuid + '&server=' + server
+            url += '&relationtypes=' + rts
 
         r = requests.post(url)
         return r
+
 
     def get_path_node_names(self, query_result):
         return None
@@ -179,7 +192,8 @@ class QCA:
         json.dump(query_results,outfile, indent=4)
         outfile.close()
 
-    def get_mutation_paths(self, query_result, mutated_nodes, reference_network):
+    def get_mutation_paths(self, query_result, mutated_nodes,
+                           reference_network):
         return None
 
     def create_merged_network(self, query_result):
@@ -194,24 +208,34 @@ class QCA:
             cx = self.loaded_networks[network_descriptor["id"]]
             # --------------------------
             # Get Directed Paths
-            path_query_result = self.get_directed_paths_by_names(query["source_names"], query["target_names"], cx)
+            path_query_result = \
+                self.get_directed_paths_by_names(query["source_names"],
+                query["target_names"], cx)
             path_node_names = self.get_path_node_names(path_query_result)
             query_result["forward_paths"] = path_query_result["forward_paths"]
             query_result["reverse_paths"] = path_query_result["reverse_paths"]
 
             # --------------------------
             # Get Cell Line Context for Nodes
-            context_result = self.get_mutation_context(path_node_names, list(query["cell_line"]))
+            context_result = \
+                self.get_mutation_context(path_node_names,
+                                          list(query["cell_line"]))
             mutation_node_names = []
 
             # --------------------------
             # Get Directed Paths from Path Nodes to Mutation Nodes
             # (just use edges to adjacent mutations for now)
             # (skip mutation nodes already in paths)
-            mutation_node_names_not_in_paths = list(set(mutation_node_names).difference(set(path_node_names)))
-            mutation_query_result = self.get_directed_paths_by_names(path_node_names, mutation_node_names_not_in_paths, cx)
-            query_result["forward_mutation_paths"] = mutation_query_result["forward_paths"]
-            query_result["reverse_mutation_paths"] = mutation_query_result["reverse_paths"]
+            mutation_node_names_not_in_paths = \
+                list(set(mutation_node_names).difference(set(path_node_names)))
+            mutation_query_result = \
+                self.get_directed_paths_by_names(path_node_names,
+                                                 mutation_node_names_not_in_paths,
+                                                 cx)
+            query_result["forward_mutation_paths"] = \
+                mutation_query_result["forward_paths"]
+            query_result["reverse_mutation_paths"] = \
+                mutation_query_result["reverse_paths"]
 
             # --------------------------
             # Annotate path nodes based on mutation proximity, compute ranks.
@@ -279,7 +303,6 @@ class PathScoring():
 
     def calculate_average_position(self, A_scores, B_scores):
         '''
-
         Calculates the finish positions based on edge types
 
         :param A: Alternating nodes and edges i.e. [N1, E1, N2, E2, N3]
@@ -291,13 +314,14 @@ class PathScoring():
         '''
         scores = A_scores + B_scores
 
-        sorted_scores = sorted(scores, lambda x,y: 1 if x[1] > y[1] else -1 if x[1] < y[1] else 0)
-
+        sorted_scores = sorted(scores, lambda x,y: 1 if x[1] > y[1]
+                                                   else -1 if x[1] < y[1]
+                                                   else 0)
         res = {}
         prev = None
         for i,(k,v) in enumerate(sorted_scores):
-            if v!=prev:  # NEXT PLACE
-                place,prev = i+1,v
+            if v != prev:  # NEXT PLACE
+                place, prev = i+1,v
             res[k] = place
 
         simple_finish_results = {}
@@ -312,15 +336,16 @@ class PathScoring():
         # COMPUTE THE AVERAGE FINISH POSITION FOR TIES
         #==============================================
         for k in simple_finish_results.keys():
-            position_average = float(sum(range(k, k + len(simple_finish_results[k])))) / float(len(simple_finish_results[k]))
+            finres = len(simple_finish_results[k])
+            position_average = sum(range(k, k + finres)) / float(finres)
             average_finish[position_average] = simple_finish_results[k]
 
         return average_finish
 
     def cx_edges_to_tuples(self, p, prefix):
         '''
-
-        Converts edge types to integer value.  Edge types are ranked by the EdgeRanking class
+        Converts edge types to integer value.
+        Edge types are ranked by the EdgeRanking class
         :param p:
         :type p:
         :param prefix:
@@ -336,7 +361,8 @@ class PathScoring():
                     top_edge = None
                     tmp_multi_edges = None
                     if type(multi_edges) is dict:
-                        tmp_multi_edges = self.convert_edge_dict_to_array(multi_edges)
+                        tmp_multi_edges = \
+                            self.convert_edge_dict_to_array(multi_edges)
                     else:
                         tmp_multi_edges = multi_edges
 
@@ -344,15 +370,13 @@ class PathScoring():
                         if top_edge is None:
                             top_edge = edge
                         else:
-                            if edge_ranking.edge_type_rank[edge.get("interaction")] < edge_ranking.edge_type_rank[top_edge.get("interaction")]:
+                            if edge_ranking.edge_type_rank[edge.get("interaction")] < \
+                                edge_ranking.edge_type_rank[top_edge.get("interaction")]:
                                 top_edge = edge
 
-                    path_tuples.append((prefix + str(i), edge_ranking.edge_type_rank[top_edge.get("interaction")]))
+                    path_tuples.append((prefix + str(i),
+                        edge_ranking.edge_type_rank[top_edge.get("interaction")]))
 
-                    #print multi_edges
-                    #print edge_ranking.edge_type_rank[top_edge.get("interaction")]
-
-        #print path_tuples
         return path_tuples
 
     #==============================================

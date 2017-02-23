@@ -117,7 +117,7 @@ class MRA_Module(KQMLModule):
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
         # Add the model id
-        msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        msg.set_parameter(':model-id', KQMLToken(str(new_model_id)))
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)

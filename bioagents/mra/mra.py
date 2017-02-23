@@ -72,6 +72,7 @@ class MRA(object):
             return {'error': 'Failed to process EKB.'}
         stmts = tp.statements
         new_model_id, new_stmts = self.extend_model(stmts, model_id)
+        print(model_id, new_model_id)
         model_stmts = self.models[new_model_id]
         res = {'model_id': new_model_id,
                'model': model_stmts}
@@ -84,7 +85,7 @@ class MRA(object):
         res['model_nl_new'] = model_nl
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
-        diagram = make_model_diagram(model_exec, model_id)
+        diagram = make_model_diagram(model_exec, new_model_id)
         if diagram:
             res['diagram'] = diagram
         return res

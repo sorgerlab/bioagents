@@ -29,7 +29,6 @@ class TRA_Module(KQMLModule):
         else:
             logger.error('No Kappa URL given.')
             self.ode_mode = True
-        self.default_initial_amount = 100.0
         # Generate a basic model as placeholder (for testing)
         #model_text = 'MAPK1 binds MAP2K1.'
         #pa = PysbAssembler()
@@ -155,7 +154,7 @@ def assemble_model(model_indra_str):
     pa = PysbAssembler(policies='two_step')
     pa.add_statements(stmts)
     model = pa.make_model()
-    pa.add_default_initial_conditions(self.default_initial_amount)
+    pa.add_default_initial_conditions(100.0)
     for m in model.monomers:
         pysb_assembler.set_extended_initial_condition(model, m, 0)
     return model

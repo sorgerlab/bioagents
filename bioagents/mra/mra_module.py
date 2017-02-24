@@ -84,17 +84,11 @@ class MRA_Module(KQMLModule):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model_indra', KQMLString(model_msg))
-        # Add the executable model
-        model_exec = res.get('model_exec')
-        if model_exec:
-            model_exec_msg = encode_pysb_model(model_exec)
-            msg.set_parameter(':model',
-                              KQMLString(model_exec_msg))
+        msg.set_parameter(':model', KQMLString(model_msg))
         # Add the natural language model
         model_nl = res.get('model_nl')
         if model_nl:
-            msg.set_parameter(':model_nl', KQMLString(model_nl))
+            msg.set_parameter(':model-nl', KQMLString(model_nl))
         # Add the diagram
         diagram = res.get('diagram')
         if diagram:
@@ -121,26 +115,20 @@ class MRA_Module(KQMLModule):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model_indra', KQMLString(model_msg))
+        msg.set_parameter(':model', KQMLString(model_msg))
         # Add the INDRA model new json
         model_new = res.get('model_new')
         if model_new:
             model_new_msg = encode_indra_stmts(model_new)
-            msg.set_parameter(':model_new', KQMLString(model_new_msg))
-        # Add the executable model
-        model_exec = res.get('model_exec')
-        if model_exec:
-            model_exec_msg = encode_pysb_model(model_exec)
-            msg.set_parameter(':model',
-                              KQMLString(model_exec_msg))
+            msg.set_parameter(':model-new', KQMLString(model_new_msg))
         # Add the natural language model
         model_nl = res.get('model_nl')
         if model_nl:
-            msg.set_parameter(':model_nl', KQMLString(model_nl))
+            msg.set_parameter(':model-nl', KQMLString(model_nl))
         # Add the natural language new model
         model_nl_new = res.get('model_nl_new')
         if model_nl_new:
-            msg.set_parameter(':model_nl_new', KQMLString(model_nl_new))
+            msg.set_parameter(':model-nl-new', KQMLString(model_nl_new))
         # Add the diagram
         diagram = res.get('diagram')
         if diagram:
@@ -170,7 +158,7 @@ class MRA_Module(KQMLModule):
             msg.set_parameter(':query', KQMLString(query_msg))
         query_nl = res.get('query_nl')
         if query_nl:
-            msg.set_parameter(':query_nl', KQMLString(query_nl))
+            msg.set_parameter(':query-nl', KQMLString(query_nl))
         return msg
 
     def respond_remove_mechanism(self, content):
@@ -191,17 +179,11 @@ class MRA_Module(KQMLModule):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model_indra', KQMLString(model_msg))
-        # Add the executable model
-        model_exec = res.get('model_exec')
-        if model_exec:
-            model_exec_msg = encode_pysb_model(model_exec)
-            msg.set_parameter(':model',
-                              KQMLString(model_exec_msg))
+        msg.set_parameter(':model', KQMLString(model_msg))
         # Add the natural language model
         model_nl = res.get('model_nl')
         if model_nl:
-            msg.set_parameter(':model_nl', KQMLString(model_nl))
+            msg.set_parameter(':model-nl', KQMLString(model_nl))
         # Add the removed statements
         removed = res.get('removed')
         if removed:
@@ -210,7 +192,7 @@ class MRA_Module(KQMLModule):
         # Add the removed natural language statements
         removed_nl = res.get('removed_nl')
         if removed_nl:
-            msg.set_parameter(':removed_nl', KQMLString(removed_nl))
+            msg.set_parameter(':removed-nl', KQMLString(removed_nl))
         # Add the diagram
         diagram = res.get('diagram')
         if diagram:

@@ -2,6 +2,7 @@ import sys
 import json
 import logging
 import pysb.export
+from indra.statements import stmts_to_json
 from kqml import *
 from mra import MRA
 
@@ -247,7 +248,7 @@ def encode_pysb_model(pysb_model):
 
 
 def encode_indra_stmts(stmts):
-    stmts_json = [json.loads(st.to_json()) for st in stmts]
+    stmts_json = stmts_to_json(stmts)
     json_str = json.dumps(stmts_json)
     return json_str
 

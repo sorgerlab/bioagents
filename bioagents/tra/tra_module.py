@@ -1,10 +1,12 @@
 import sys
-import argparse
+import json
 import logging
+import argparse
 import tempfile
 
 from indra import trips
-from indra.assemblers import PysbAssembler
+from indra.assemblers import pysb_assembler, PysbAssembler
+from indra.statements import Statement, stmts_from_json
 from indra.trips import processor as trips_processor
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \
                  SelfExporter
@@ -27,6 +29,7 @@ class TRA_Module(KQMLModule):
         else:
             logger.error('No Kappa URL given.')
             self.ode_mode = True
+        self.default_initial_amount = 100.0
         # Generate a basic model as placeholder (for testing)
         #model_text = 'MAPK1 binds MAP2K1.'
         #pa = PysbAssembler()
@@ -84,13 +87,13 @@ class TRA_Module(KQMLModule):
         '''
         Response content to satisfies-pattern request
         '''
-        model_token = content_list.get_keyword_arg(':model')
+        model_indra = content_list.get_keyword_arg(':model')
         pattern_lst = content_list.get_keyword_arg(':pattern')
         conditions_lst = content_list.get_keyword_arg(':conditions')
 
         try:
-            model_str = str(model_token)
-            model = decode_model(model_str)
+            model_indra_str = get_string_arg(model_indra)
+            model = assemble_model(model_indra_str)
         except Exception as e:
             logger.error(e)
             reply_content =\
@@ -142,15 +145,20 @@ class TRA_Module(KQMLModule):
         reply_content.add('SUCCESS :content %s' % msg_str)
         return reply_content
 
-def decode_model(model_str):
-    try:
-        s = model_str[1:-1].replace('\\"', '"')
-        SelfExporter.do_export = True
-        exec s
-        SelfExporter.do_export = False
-        return model
-    except Exception as e:
-        raise InvalidModelDescriptionError(e)
+def decode_indra_stmts(stmts_json_str):
+    stmts_json = json.loads(stmts_json_str)
+    stmts = stmts_from_json(stmts_json)
+    return stmts
+
+def assemble_model(model_indra_str):
+    stmts = decode_indra_stmts(model_indra_str)
+    pa = PysbAssembler(policies='two_step')
+    pa.add_statements(stmts)
+    model = pa.make_model()
+    pa.add_default_initial_conditions(self.default_initial_amount)
+    for m in model.monomers:
+        pysb_assembler.set_extended_initial_condition(model, m, 0)
+    return model
 
 def get_string_arg(kqml_str):
     if kqml_str is None:

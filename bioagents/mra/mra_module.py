@@ -96,6 +96,21 @@ class MRA_Module(KQMLModule):
             msg.set_parameter(':diagram', KQMLString(diagram))
         else:
             msg.set_parameter(':diagram', KQMLString(''))
+        ambiguities = res.get('ambiguities')
+        if ambiguities:
+            print(ambiguities)
+            sa = []
+            for term_id, ambiguity in ambiguities.items():
+                s1 = '(TERM :ID %s :NAME %s :SCORE %s)' % \
+                    (1, 2, 3)
+                s2 = '(TERM :ID %s :NAME %s :SCORE %s)' % \
+                    (1, 2, 3)
+                s = '(%s :PREFERRED %s :ALTERNATIVE %s)' % \
+                    (term_id, s1, s2)
+                sa.append(s)
+            ambiguities_msg = '(:AMBIGUITIES (' + ' '.join(sa) + '))'
+            print(ambiguities_msg)
+            msg.set_parameter(':diagram', KQMLList.from_string(ambiguities_msg))
         return msg
 
     def respond_expand_model(self, content):

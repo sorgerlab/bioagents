@@ -56,6 +56,8 @@ class MRA(object):
                'model': stmts}
         if not stmts:
             return res
+        ambiguities = get_ambiguities(tp)
+        res['ambiguities'] = ambiguities
         model_nl = self.assemble_english(stmts)
         res['model_nl'] = model_nl
         model_exec = self.assemble_pysb(stmts)
@@ -78,6 +80,8 @@ class MRA(object):
                'model': model_stmts}
         if not model_stmts:
             return res
+        ambiguities = get_ambiguities(tp)
+        res['ambiguities'] = ambiguities
         res['model_new'] = new_stmts
         model_nl = self.assemble_english(model_stmts)
         res['model_nl'] = model_nl
@@ -209,6 +213,17 @@ class MRA(object):
         model = pa.make_model()
         pa.add_default_initial_conditions(self.default_initial_amount)
         return model
+
+
+def get_ambiguities(tp):
+    terms = tp.tree.findall('TERM')
+    all_ambiguities = {}
+    for term in terms:
+        term_id = term.attrib.get('id')
+        _, ambiguities = trips.processor._get_db_refs(term)
+        if ambiguities:
+            all_ambiguities[term_id] = ambiguities
+    return all_ambiguities
 
 
 def make_model_diagram(pysb_model, model_id):

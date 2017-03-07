@@ -30,7 +30,6 @@ class BioNLGModule(KQMLModule):
         and call the appropriate function to prepare the response. A reply
         message is then sent back.
         """
-        print(msg)
         try:
             content = KQMLPerformative(msg.get_parameter(':content'))
             task_str = content.get_verb()
@@ -41,7 +40,7 @@ class BioNLGModule(KQMLModule):
             self.error_reply(msg, 'Invalid task')
         try:
             if task_str == 'INDRA-TO-NL':
-                reply_content = self.respond_build_model(content)
+                reply = self.respond_build_model(content)
             else:
                 self.error_reply(msg, 'Unknown task ' + task_str)
                 return
@@ -51,22 +50,16 @@ class BioNLGModule(KQMLModule):
             self.error_reply(msg, 'Failed to perform task')
 
         reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', reply_content)
+        reply_msg.set_parameter(':content', reply)
         self.reply(msg, reply_msg)
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
         model_indra = content.get_parameter(':statements')
 
-        try:
-            stmts_json_str = get_string_arg(model_indra)
-            stmts = decode_indra_stmts(stmts_json_str)
-            txt = assemble_english(stmts)
-        except Exception as e:
-            logger.error(e)
-            reply_content =\
-                KQMLList.from_string('(FAILURE :reason INVALID_DESCRIPTION)')
-            return reply_content
+        stmts_json_str = get_string_arg(model_indra)
+        stmts = decode_indra_stmts(stmts_json_str)
+        txt = assemble_english(stmts)
 
         msg = KQMLPerformative('OK')
         msg.set_parameter(':NL', KQMLString(txt))

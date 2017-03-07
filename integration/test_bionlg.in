@@ -1,0 +1,2 @@
+(INDRA-TO-NL :statements "[{\"obj\": {\"db_refs\": {\"TEXT\": \"BRAF\", \"HGNC\": \"1097\", \"UP\": \"P15056\", \"NCIT\": \"C17476\"}, \"name\": \"BRAF\"}, \"type\": \"Activation\", \"obj_activity\": \"activity\", \"evidence\": [{\"epistemics\": {\"section_type\": null}, \"source_api\": \"trips\"}], \"subj\": {\"db_refs\": {\"TEXT\": \"KRAS\", \"HGNC\": \"6407\", \"UP\": \"P01116\", \"NCIT\": \"C17383\"}, \"name\": \"KRAS\"}, \"id\": \"79aeeaac-1864-4c3c-afe4-f638927921f9\"}]")
+(OK :NL "KRAS activates BRAF.")

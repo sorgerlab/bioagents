@@ -105,14 +105,14 @@ class MRA_Module(KQMLModule):
                                      k, v in pr['refs'].items()])
                 # TODO: once available, replace with real ont type
                 pr_type = 'ONT::PROTEIN'
-                s1 = '(term :ont-type %s :dbids "%s" :name "%s")' % \
+                s1 = '(term :ont-type %s :ids "%s" :name "%s")' % \
                     (pr_type, pr_dbids, pr['name'])
                 alt = ambiguity[0]['alternative']
                 alt_dbids = '|'.join(['::'.join((k, v)) for
                                       k, v in alt['refs'].items()])
                 # TODO: once available, replace with real ont type
                 alt_type = 'ONT::PROTEIN-FAMILY'
-                s2 = '(term :ont-type %s :dbids "%s" :name "%s")' % \
+                s2 = '(term :ont-type %s :ids "%s" :name "%s")' % \
                     (alt_type, alt_dbids, alt['name'])
                 s = '(%s :preferred %s :alternative %s)' % \
                     (term_id, s1, s2)

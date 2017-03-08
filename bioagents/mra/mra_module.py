@@ -98,26 +98,7 @@ class MRA_Module(KQMLModule):
             msg.set_parameter(':diagram', KQMLString(''))
         ambiguities = res.get('ambiguities')
         if ambiguities:
-            sa = []
-            for term_id, ambiguity in ambiguities.items():
-                pr = ambiguity[0]['preferred']
-                pr_dbids = '|'.join(['::'.join((k, v)) for
-                                     k, v in pr['refs'].items()])
-                # TODO: once available, replace with real ont type
-                pr_type = 'ONT::PROTEIN'
-                s1 = '(term :ont-type %s :ids "%s" :name "%s")' % \
-                    (pr_type, pr_dbids, pr['name'])
-                alt = ambiguity[0]['alternative']
-                alt_dbids = '|'.join(['::'.join((k, v)) for
-                                      k, v in alt['refs'].items()])
-                # TODO: once available, replace with real ont type
-                alt_type = 'ONT::PROTEIN-FAMILY'
-                s2 = '(term :ont-type %s :ids "%s" :name "%s")' % \
-                    (alt_type, alt_dbids, alt['name'])
-                s = '(%s :preferred %s :alternative %s)' % \
-                    (term_id, s1, s2)
-                sa.append(s)
-            ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
+            ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set_parameter(':ambiguities', ambiguities_msg)
         return msg
 
@@ -159,6 +140,10 @@ class MRA_Module(KQMLModule):
             msg.set_parameter(':diagram', KQMLString(diagram))
         else:
             msg.set_parameter(':diagram', KQMLString(''))
+        ambiguities = res.get('ambiguities')
+        if ambiguities:
+            ambiguities_msg = get_ambiguities_msg(ambiguities)
+            msg.set_parameter(':ambiguities', ambiguities_msg)
         return msg
 
     def respond_has_mechanism(self, content):
@@ -274,6 +259,29 @@ def encode_indra_stmts(stmts):
     stmts_json = stmts_to_json(stmts)
     json_str = json.dumps(stmts_json)
     return json_str
+
+def get_ambiguities_msg(ambiguities):
+    sa = []
+    for term_id, ambiguity in ambiguities.items():
+        pr = ambiguity[0]['preferred']
+        pr_dbids = '|'.join(['::'.join((k, v)) for
+                             k, v in pr['refs'].items()])
+        # TODO: once available, replace with real ont type
+        pr_type = 'ONT::PROTEIN'
+        s1 = '(term :ont-type %s :ids "%s" :name "%s")' % \
+            (pr_type, pr_dbids, pr['name'])
+        alt = ambiguity[0]['alternative']
+        alt_dbids = '|'.join(['::'.join((k, v)) for
+                              k, v in alt['refs'].items()])
+        # TODO: once available, replace with real ont type
+        alt_type = 'ONT::PROTEIN-FAMILY'
+        s2 = '(term :ont-type %s :ids "%s" :name "%s")' % \
+            (alt_type, alt_dbids, alt['name'])
+        s = '(%s :preferred %s :alternative %s)' % \
+            (term_id, s1, s2)
+        sa.append(s)
+    ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
+    return ambiguities_msg
 
 if __name__ == "__main__":
     MRA_Module(['-name', 'MRA'] + sys.argv[1:])

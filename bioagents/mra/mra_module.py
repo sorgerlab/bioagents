@@ -96,6 +96,29 @@ class MRA_Module(KQMLModule):
             msg.set_parameter(':diagram', KQMLString(diagram))
         else:
             msg.set_parameter(':diagram', KQMLString(''))
+        ambiguities = res.get('ambiguities')
+        if ambiguities:
+            sa = []
+            for term_id, ambiguity in ambiguities.items():
+                pr = ambiguity[0]['preferred']
+                pr_dbids = '|'.join(['::'.join((k, v)) for
+                                     k, v in pr['refs'].items()])
+                # TODO: once available, replace with real ont type
+                pr_type = 'ONT::PROTEIN'
+                s1 = '(term :ont-type %s :ids "%s" :name "%s")' % \
+                    (pr_type, pr_dbids, pr['name'])
+                alt = ambiguity[0]['alternative']
+                alt_dbids = '|'.join(['::'.join((k, v)) for
+                                      k, v in alt['refs'].items()])
+                # TODO: once available, replace with real ont type
+                alt_type = 'ONT::PROTEIN-FAMILY'
+                s2 = '(term :ont-type %s :ids "%s" :name "%s")' % \
+                    (alt_type, alt_dbids, alt['name'])
+                s = '(%s :preferred %s :alternative %s)' % \
+                    (term_id, s1, s2)
+                sa.append(s)
+            ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
+            msg.set_parameter(':ambiguities', ambiguities_msg)
         return msg
 
     def respond_expand_model(self, content):

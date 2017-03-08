@@ -101,15 +101,19 @@ class MRA_Module(KQMLModule):
             sa = []
             for term_id, ambiguity in ambiguities.items():
                 pr = ambiguity[0]['preferred']
-                pr_dbids = '|'.join([':'.join((k, v)) for
+                pr_dbids = '|'.join(['::'.join((k, v)) for
                                      k, v in pr['refs'].items()])
-                s1 = '(term :type "%s" :dbids "%s" :dbname "%s")' % \
-                    (pr['type'], pr_dbids, pr['name'])
+                # TODO: once available, replace with real ont type
+                pr_type = 'ONT::PROTEIN'
+                s1 = '(term :ont-type %s :dbids "%s" :name "%s")' % \
+                    (pr_type, pr_dbids, pr['name'])
                 alt = ambiguity[0]['alternative']
-                alt_dbids = '|'.join([':'.join((k, v)) for
+                alt_dbids = '|'.join(['::'.join((k, v)) for
                                       k, v in alt['refs'].items()])
-                s2 = '(term :type "%s" :dbids "%s" :dbname "%s")' % \
-                    (alt['type'], alt_dbids, alt['name'])
+                # TODO: once available, replace with real ont type
+                alt_type = 'ONT::PROTEIN-FAMILY'
+                s2 = '(term :ont-type %s :dbids "%s" :name "%s")' % \
+                    (alt_type, alt_dbids, alt['name'])
                 s = '(%s :preferred %s :alternative %s)' % \
                     (term_id, s1, s2)
                 sa.append(s)

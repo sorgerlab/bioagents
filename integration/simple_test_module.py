@@ -19,6 +19,8 @@ class TestModule(KQMLModule):
         self.expected = FIFO()
         self.sent = FIFO()
         self.test_file = file_in
+        self.total_tests = 0
+        self.passed_tests = 0
         self.msg_counter = 1
         # Send ready message
         self.ready()
@@ -40,8 +42,9 @@ class TestModule(KQMLModule):
             # TODO: allow non-request messages?
             self.sent.push(sm)
             self.expected.push(em)
+        self.total_tests = len(self.sent.lst)
         print('Collected %s test messages from %s' % \
-              (len(self.sent.lst), test_file))
+              (self.total_tests, test_file))
         # Send off the first test
         sm = self.sent.pop()
         self.send(self.get_perf(self.msg_counter, sm))
@@ -53,13 +56,20 @@ class TestModule(KQMLModule):
         actual_content = content.__repr__().strip()
         print('expected: %s' % expected_content)
         print('actual:   %s' % actual_content)
+        if expected_content == actual_content:
+            self.passed_tests += 1
+            print('PASS')
+        else:
+            print('FAIL')
         print('---')
-        assert(expected_content == actual_content)
+
         if not self.sent.is_empty():
             sm = self.sent.pop()
             self.send(self.get_perf(self.msg_counter, sm))
             self.msg_counter += 1
         if self.expected.is_empty():
+            print('%d PASSED / %d FAILED' % \
+                  (self.passed_tests, self.total_tests-self.passed_tests))
             sys.exit(0)
 
 class FIFO(object):

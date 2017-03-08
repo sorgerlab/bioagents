@@ -74,7 +74,8 @@ class MRA(object):
             return {'error': 'Failed to process EKB.'}
         stmts = tp.statements
         new_model_id, new_stmts = self.extend_model(stmts, model_id)
-        print(model_id, new_model_id)
+        logging.info('Old model id: %s, New model id: %s' %
+                     (model_id, new_model_id))
         model_stmts = self.models[new_model_id]
         res = {'model_id': new_model_id,
                'model': model_stmts}

@@ -8,6 +8,14 @@ import socket
 
 from kqml import *
 
+user_name = 'BOB'
+_id_symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+def generate_id(length=32, symbols=_id_symbols):
+    symbol_gen = (symbols[random.randrange(0, len(symbols))]
+                  for i in range(length))
+    return ''.join(symbol_gen)
+
+user_id = generate_id()
 
 def on_message(data):
     print(data)
@@ -24,24 +32,44 @@ def bob_startup(sock):
     sock.sendall(msg)
 
 def sbgn_startup(sock, room_id):
-    _id_symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    def generate_id(length=32, symbols=_id_symbols):
-        symbol_gen = (symbols[random.randrange(0, len(symbols))]
-                      for i in range(length))
-        return ''.join(symbol_gen)
-
-    user_name = 'BOB'
-    user_id = generate_id()
     event = 'subscribeAgent'
     user_info = {'userName': user_name,
                  'room': room_id,
                  'userId': user_id}
-    sock.on('message', dummy)
+    sock.on('message', on_sbgnviz_message)
     sock.on('userList', dummy)
     sock.emit(event, user_info, dummy)
 
+def send_to_bob(msg):
+    socket_b.sendall(msg)
+
 def dummy(arg1):
     print(arg1)
+
+def on_sbgnviz_message(data):
+    if not isinstance(data, dict):
+        return
+    comment = data.get('comment')
+    if comment and comment.startswith('bob:'):
+        text = comment[4:].strip()
+        msg = '(tell :content (started-speaking :mode text :uttnum 1 ' + \
+                ':channel Desktop :direction input))'
+        send_to_bob(msg)
+        msg = '(tell :content (stopped-speaking :mode text :uttnum 1 ' + \
+                ':channel Desktop :direction input))'
+        send_to_bob(msg)
+        msg = '(tell :content (word "%s" :uttnum 1 :index 1 ' % text + \
+                ':channel Desktop :direction input))'
+        send_to_bob(msg)
+        msg = '(tell :content (utterance :mode text :uttnum 1 ' + \
+                ':text "%s" ' % text + \
+                ':channel Desktop :direction input))'
+        send_to_bob(msg)
+
+def on_bob_message(data):
+    msg = {'room': room_id, 'comment': data, 'userName': user_name,
+            'userId': user_id, 'time': 1}
+    socket_s.emit('agentMesage', msg, lambda: None)
 
 if __name__ == '__main__':
     room_id = sys.argv[1]
@@ -65,8 +93,8 @@ if __name__ == '__main__':
                     socket_s.wait(seconds=0.1)
                 else:
                     data, addr = sock.recvfrom(4086)
-                    if not data:
-                        continue
+                    if data:
+                        on_bob_message(data)
         except KeyboardInterrupt:
             break
     socket_s.emit('disconnect')

@@ -71,7 +71,6 @@ class BSB(object):
 
     def on_user_list(self, user_list):
         self.current_users = user_list
-        print 'Users: %s' % user_list
 
     def send_to_bob(self, msg):
         self.socket_b.sendall(msg)
@@ -97,12 +96,23 @@ class BSB(object):
             self.send_to_bob(msg)
 
     def on_bob_message(self, data):
+        target_users = [{'id': user['userId'] for user in self.current_users}]
+        spoken_phrase = get_spoken_phrase(data)
         msg = {'room': self.room_id,
-               'comment': data,
+               'comment': spoken_phrase,
                'userName': self.user_name,
                'userId': self.user_id,
+               'targets': target_users,
                'time': 1}
+        print(json.dumps(msg, indent=1))
         self.socket_s.emit('agentMesage', msg, lambda: None)
+
+def get_spoken_phrase(data):
+    kl = KQMLList.from_string(data)
+    content = kl.get_keyword_arg(':content')
+    say_what = content.get_keyword_arg(':what')
+    say_what = say_what.string_value()
+    return say_what
 
 if __name__ == '__main__':
     room_id = sys.argv[1]

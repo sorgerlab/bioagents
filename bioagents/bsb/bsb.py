@@ -1,6 +1,7 @@
 import sys
 import time
 import json
+import uuid
 import random
 import select
 import socket
@@ -57,13 +58,7 @@ class BSB(object):
 
     def sbgn_startup(self):
         logger.info('Initializing SBGNViz connection...')
-        _id_symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        def generate_id(length=32, symbols=_id_symbols):
-            symbol_gen = (symbols[random.randrange(0, len(symbols))]
-                          for i in range(length))
-            return ''.join(symbol_gen)
-
-        self.user_id = generate_id()
+        self.user_id = '%s' % uuid.uuid4()
         # Initialize sockets
         self.socket_s = SocketIO('localhost', self.sbgnviz_port)
         event = 'subscribeAgent'
@@ -71,11 +66,12 @@ class BSB(object):
                      'room': self.room_id,
                      'userId': self.user_id}
         self.socket_s.on('message', self.on_sbgnviz_message)
-        self.socket_s.on('userList', dummy)
+        self.socket_s.on('userList', self.on_user_list)
         self.socket_s.emit(event, user_info, dummy)
 
-    def on_user_list(self, data):
-        print(data)
+    def on_user_list(self, user_list):
+        self.current_users = user_list
+        print 'Users: %s' % user_list
 
     def send_to_bob(self, msg):
         self.socket_b.sendall(msg)

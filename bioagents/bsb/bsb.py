@@ -67,7 +67,7 @@ class BSB(object):
                      'userId': self.user_id}
         self.socket_s.on('message', self.on_sbgnviz_message)
         self.socket_s.on('userList', self.on_user_list)
-        self.socket_s.emit(event, user_info, dummy)
+        self.socket_s.emit(event, user_info, self.on_user_list)
 
     def on_user_list(self, user_list):
         self.current_users = user_list
@@ -96,7 +96,7 @@ class BSB(object):
             self.send_to_bob(msg)
 
     def on_bob_message(self, data):
-        target_users = [{'id': user['userId'] for user in self.current_users}]
+        target_users = [{'id': user['userId']} for user in self.current_users]
         spoken_phrase = get_spoken_phrase(data)
         msg = {'room': self.room_id,
                'comment': spoken_phrase,
@@ -104,8 +104,12 @@ class BSB(object):
                'userId': self.user_id,
                'targets': target_users,
                'time': 1}
-        print(json.dumps(msg, indent=1))
-        self.socket_s.emit('agentMesage', msg, lambda: None)
+        print_json(msg)
+        self.socket_s.emit('agentMessage', msg, lambda: None)
+
+def print_json(js):
+    s = json.dumps(js, indent=1)
+    print(s)
 
 def get_spoken_phrase(data):
     kl = KQMLList.from_string(data)

@@ -17,6 +17,11 @@ logger = logging.getLogger('bsb')
 def dummy(arg1):
     print(arg1)
 
+def get_example_model():
+    from indra.statements import Phosphorylation, Agent
+    st = Phosphorylation(Agent('MAP2K1'), Agent('MAPK1'), 'T', '185')
+    return [st]
+
 class BSB(object):
     def __init__(self, room_id, bob_port=6200, sbgnviz_port=3000):
         self.user_name = 'BOB'
@@ -125,13 +130,14 @@ class BSB(object):
                'time': 1}
         print_json(msg)
         self.socket_s.emit('agentMessage', msg, lambda: None)
+        self.bob_to_sbgn_display(get_example_model())
 
     def bob_to_sbgn_display(self, model):
         sa = SBGNAssembler()
         sa.add_statements(model)
         sbgn_content = sa.make_model()
-        params = {'room': room_id, 'userId': user_id}
-        socket.emit('agentNewFileRequest', params)
+        params = {'room': self.room_id, 'userId': self.user_id}
+        self.socket_s.emit('agentNewFileRequest', params)
         sbgn_params = {'graph': sbgn_content, 'type': 'sbgn'}
         sbgn_params.update(params)
         self.socket_s.emit('agentMergeGraphRequest', sbgn_params, lambda: None)

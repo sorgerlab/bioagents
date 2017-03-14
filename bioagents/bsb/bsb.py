@@ -8,6 +8,8 @@ import socket
 import logging
 from socketIO_client import SocketIO
 
+from indra.assemblers import SBGNAssembler
+
 from kqml import *
 
 logger = logging.getLogger('bsb')
@@ -47,11 +49,14 @@ class BSB(object):
 
     def bob_startup(self):
         logger.info('Initializing Bob connection...')
+        self.bob_uttnum = 1
         self.socket_b = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket_b.connect(('localhost', self.bob_port))
         msg = '(register :name bsb)'
         self.socket_b.sendall(msg)
         msg = '(subscribe :content (tell &key :content (spoken . *)))'
+        self.socket_b.sendall(msg)
+        msg = '(subscribe :content (request &key :content (display-model . *)))'
         self.socket_b.sendall(msg)
         msg = '(tell :content (module-status ready))'
         self.socket_b.sendall(msg)
@@ -87,17 +92,31 @@ class BSB(object):
             msg = '(tell :content (stopped-speaking :mode text :uttnum 1 ' + \
                     ':channel Desktop :direction input))'
             self.send_to_bob(msg)
-            msg = '(tell :content (word "%s" :uttnum 1 :index 1 ' % text + \
+            msg = '(tell :content (word "%s" :uttnum %d :index 1 ' % (text, self.bob_uttnum) + \
                     ':channel Desktop :direction input))'
             self.send_to_bob(msg)
-            msg = '(tell :content (utterance :mode text :uttnum 1 ' + \
+            msg = '(tell :content (utterance :mode text :uttnum %d ' % self.bob_uttnum + \
                     ':text "%s" ' % text + \
                     ':channel Desktop :direction input))'
             self.send_to_bob(msg)
+            self.bob_uttnum += 1
 
     def on_bob_message(self, data):
+        # Check what kind of message it is
+        kl = KQMLList.from_string(data)
+        content = kl.get_keyword_arg(':content')
+        logger.info('Got message with content: %s' % content)
+        if not content:
+            return
+        if ('%s' % content.data[0]).lower() == 'spoken':
+            spoken_phrase = get_spoken_phrase(content)
+            self.bob_to_sbgn_say(spoken_phrase)
+        elif ('%s' % content.data[0]).lower() == 'display-model':
+            model = get_model(content)
+            self.bob_to_sbgn_display(model)
+
+    def bob_to_sbgn_say(self, spoken_phrase):
         target_users = [{'id': user['userId']} for user in self.current_users]
-        spoken_phrase = get_spoken_phrase(data)
         msg = {'room': self.room_id,
                'comment': spoken_phrase,
                'userName': self.user_name,
@@ -107,16 +126,30 @@ class BSB(object):
         print_json(msg)
         self.socket_s.emit('agentMessage', msg, lambda: None)
 
+    def bob_to_sbgn_display(self, model):
+        sa = SBGNAssembler()
+        sa.add_statements(model)
+        sbgn_content = sa.make_model()
+        params = {'room': room_id, 'userId': user_id}
+        socket.emit('agentNewFileRequest', params)
+        sbgn_params = {'graph': sbgn_content, 'type': 'sbgn'}
+        sbgn_params.update(params)
+        self.socket_s.emit('agentMergeGraphRequest', sbgn_params, lambda: None)
+
+
 def print_json(js):
     s = json.dumps(js, indent=1)
     print(s)
 
-def get_spoken_phrase(data):
-    kl = KQMLList.from_string(data)
-    content = kl.get_keyword_arg(':content')
+def get_spoken_phrase(content):
     say_what = content.get_keyword_arg(':what')
     say_what = say_what.string_value()
     return say_what
+
+def get_model(content):
+    model = content.get_keyword_arg(':model')
+    mmodel = model.string_value()
+    return model
 
 if __name__ == '__main__':
     room_id = sys.argv[1]

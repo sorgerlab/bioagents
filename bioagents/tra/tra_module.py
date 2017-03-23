@@ -68,12 +68,7 @@ class TRA_Module(KQMLModule):
         content_list = content
         task_str = content_list[0].to_string().upper()
         if task_str == 'SATISFIES-PATTERN':
-            try:
-                reply_content = self.respond_satisfies_pattern(content_list)
-            except Exception as e:
-                self.error_reply(msg, 'Error in performing satisfies ' +
-                                      'pattern task.')
-                return
+            reply_content = self.respond_satisfies_pattern(content_list)
         else:
             self.error_reply(msg, 'Unknown request task ' + task_str)
             return
@@ -101,14 +96,14 @@ class TRA_Module(KQMLModule):
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
-        except InvalidTimeUnitError as e:
+        except InvalidTimeIntervalError as e:
             logger.error(e)
             reply_content =\
                 KQMLList.from_string('(FAILURE :reason INVALID_TIME_LIMIT)')
             return reply_content
-        except Exception as e:
+        except InvalidTemporalPatternError as e:
             logger.error(e)
-            reply_content =\
+            reply_content = \
                 KQMLList.from_string('(FAILURE :reason INVALID_PATTERN)')
             return reply_content
         if conditions_lst is None:
@@ -217,6 +212,8 @@ def get_temporal_pattern(lst):
     pattern_type = get_string_arg(lst.get_keyword_arg(':type'))
     entities_lst = lst.get_keyword_arg(':entities')
     entities = []
+    if entities_lst is None:
+        entities_lst = []
     for e in entities_lst:
         entity = get_molecular_entity(e)
         entities.append(entity)

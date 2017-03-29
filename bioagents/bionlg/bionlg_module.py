@@ -59,12 +59,11 @@ class BioNLGModule(KQMLModule):
 
         stmts_json_str = get_string_arg(model_indra)
         stmts = decode_indra_stmts(stmts_json_str)
-        txt = assemble_english(stmts)
-        if txt and txt[-1] == '.':
-            txt = txt[:-1]
-
+        txts = assemble_english(stmts)
+        txts_kqml = [KQMLString(txt) for txt in txts]
+        txts_list = KQMLList(txts_kqml)
         msg = KQMLPerformative('OK')
-        msg.set_parameter(':NL', KQMLString(txt))
+        msg.set_parameter(':NL', txts_list)
         return msg
 
 def decode_indra_stmts(stmts_json_str):
@@ -73,9 +72,14 @@ def decode_indra_stmts(stmts_json_str):
     return stmts
 
 def assemble_english(stmts):
-    ea = EnglishAssembler(stmts)
-    txt = ea.make_model()
-    return txt
+    txts = []
+    for stmt in stmts:
+        ea = EnglishAssembler([stmt])
+        txt = ea.make_model()
+        if txt and txt[-1] == '.':
+            txt = txt[:-1]
+            txts.append(txt)
+    return txts
 
 def get_string_arg(kqml_str):
     if kqml_str is None:

@@ -58,7 +58,7 @@ class TRA_Module(KQMLModule):
         "tell" message is then sent back.
         '''
         if self.tra is None:
-            reply_content =\
+            reply_content = \
                 KQMLList.from_string('(FAILURE :reason KAPPA_FAILURE)')
             reply_msg = KQMLPerformative('reply')
             reply_msg.set_parameter(':content', reply_content)

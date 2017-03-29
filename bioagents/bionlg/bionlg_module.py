@@ -60,6 +60,8 @@ class BioNLGModule(KQMLModule):
         stmts_json_str = get_string_arg(model_indra)
         stmts = decode_indra_stmts(stmts_json_str)
         txt = assemble_english(stmts)
+        if txt and txt[-1] == '.':
+            txt = txt[:-1]
 
         msg = KQMLPerformative('OK')
         msg.set_parameter(':NL', KQMLString(txt))

@@ -32,17 +32,18 @@ class QCA_Module(KQMLModule):
         super(QCA_Module, self).start()
 
     def receive_request(self, msg, content):
-        '''
+        """Handle request messages and respond.
+
         If a "request" message is received, decode the task and the content
         and call the appropriate function to prepare the response. A reply
         message is then sent back.
-        '''
-        content_list = content
-        task_str = content_list[0].to_string().upper()
+        """
+        content = KQMLPerformative(msg.get_parameter(':content'))
+        task_str = content.get_verb()
         if task_str == 'FIND-QCA-PATH':
-            reply_content = self.respond_find_qca_path(content_list)
+            reply_content = self.respond_find_qca_path(content)
         elif task_str == 'HAS-QCA-PATH':
-            reply_content = self.has_qca_path(content_list)
+            reply_content = self.has_qca_path(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -59,34 +60,27 @@ class QCA_Module(KQMLModule):
         reply_msg.set_parameter(':content', resp_list)
         self.reply(msg, reply_msg)
 
-    def respond_find_qca_path(self, content_list):
-        '''
-        Response content to find-qca-path request
-        '''
+    def respond_find_qca_path(self, content):
+        """Response content to find-qca-path request"""
+        source_arg = content.get_parameter(':SOURCE')
+        target_arg = content.get_parameter(':TARGET')
+        reltype_arg = content.get_parameter(':RELTYPE')
 
-        target_arg = content_list.get_keyword_arg(':TARGET')
-        targets = []
-        source_arg = content_list.get_keyword_arg(':SOURCE')
-        sources = []
-        reltype_arg = content_list.get_keyword_arg(':RELTYPE')
-        relation_types = []
-
-        if len(target_arg.data) < 1:
-            raise ValueError("Target list is empty")
-        else:
-            targets = [str(k.data) for k in target_arg.data]
-
-        if len(source_arg.data) < 1:
+        if not source_arg.data:
             raise ValueError("Source list is empty")
-        else:
-            sources = [str(k.data) for k in source_arg.data]
+        if not target_arg.data:
+            raise ValueError("Target list is empty")
 
-        if reltype_arg is None or len(reltype_arg.data) < 1:
+        targets = [self._get_term_name(t) for t in target_arg.data]
+        sources = [self._get_term_name(s) for s in source_arg.data]
+
+        if reltype_arg is None or not reltype_arg.data:
             relation_types = None
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
 
-        results_list = self.qca.find_causal_path(sources, targets, relation_types=relation_types)
+        results_list = self.qca.find_causal_path(sources, targets,
+                                                 relation_types=relation_types)
 
         lispify_helper = Lispify(results_list)
 
@@ -97,29 +91,22 @@ class QCA_Module(KQMLModule):
 
         return reply_content
 
-    def has_qca_path(self, content_list):
-        '''
-        Response content to find-qca-path request
-        '''
-
-        target_arg = content_list.get_keyword_arg(':TARGET')
-        targets = []
-        source_arg = content_list.get_keyword_arg(':SOURCE')
-        sources = []
-        reltype_arg = content_list.get_keyword_arg(':RELTYPE')
+    def has_qca_path(self, content):
+        """Response content to find-qca-path request."""
+        target_arg = content.get_parameter(':TARGET')
+        source_arg = content.get_parameter(':SOURCE')
+        reltype_arg = content.get_parameter(':RELTYPE')
         relation_types = []
 
-        if len(target_arg.data) < 1:
-            raise ValueError("Target list is empty")
-        else:
-            targets = [str(k.data) for k in target_arg.data]
-
-        if len(source_arg.data) < 1:
+        if not source_arg.data:
             raise ValueError("Source list is empty")
-        else:
-            sources = [str(k.data) for k in source_arg.data]
+        if not target_arg.data:
+            raise ValueError("Target list is empty")
 
-        if reltype_arg is None or len(reltype_arg.data) < 1:
+        targets = [self._get_term_name(t) for t in target_arg.data]
+        sources = [self._get_term_name(s) for s in source_arg.data]
+
+        if reltype_arg is None or not reltype_arg.data:
             relation_types = None
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
@@ -131,14 +118,14 @@ class QCA_Module(KQMLModule):
 
         return reply_content
 
-    def _get_target(self, target_arg):
-        target_str = str(target_arg)
-        target_str = self.decode_description('<ekb>' + target_str + '</ekb>')
-        tp = TripsProcessor(target_str)
+    def _get_term_name(self, term_arg):
+        term_str = str(term_arg)
+        term_str = self.decode_description('<ekb>' + term_str + '</ekb>')
+        tp = TripsProcessor(term_str)
         terms = tp.tree.findall('TERM')
         term_id = terms[0].attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
-        return agent
+        return agent.name
 
     @staticmethod
     def get_single_argument(arg):

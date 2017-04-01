@@ -5,7 +5,6 @@ import xml.etree.ElementTree as ET
 from indra.trips.processor import TripsProcessor
 from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString, KQMLToken
 from qca import QCA
-from lispify_helper import Lispify
 
 logger = logging.getLogger('QCA')
 
@@ -114,15 +113,15 @@ class QCA_Module(KQMLModule):
         if not target_arg.data:
             raise ValueError("Target list is empty")
 
-        targets = [self._get_term_name(t) for t in target_arg.data]
-        sources = [self._get_term_name(s) for s in source_arg.data]
+        target = self._get_term_name(target_arg.to_string())
+        source = self._get_term_name(source_arg.to_string())
 
         if reltype_arg is None or not reltype_arg.data:
             relation_types = None
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
 
-        has_path = self.qca.has_path(sources, targets)
+        has_path = self.qca.has_path([source], [target])
 
         reply_content = KQMLList.from_string(
             '(SUCCESS :haspath (' + str(has_path) + '))')

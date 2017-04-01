@@ -9,7 +9,6 @@ from lispify_helper import Lispify
 
 logger = logging.getLogger('QCA')
 
-# TODO: standardize dash/underscore
 class QCA_Module(KQMLModule):
     '''
     The QCA module is a TRIPS module built around the QCA agent.
@@ -41,9 +40,17 @@ class QCA_Module(KQMLModule):
         content = KQMLPerformative(msg.get_parameter(':content'))
         task_str = content.get_verb()
         if task_str == 'FIND-QCA-PATH':
-            reply_content = self.respond_find_qca_path(content)
+            try:
+                reply_content = self.respond_find_qca_path(content)
+            except Exception as e:
+                logger.error(e)
+                reply_content = KQMLList.from_string('(FAILURE)')
         elif task_str == 'HAS-QCA-PATH':
-            reply_content = self.has_qca_path(content)
+            try:
+                reply_content = self.has_qca_path(content)
+            except Exception as e:
+                logger.error(e)
+                reply_content = KQMLList.from_string('(FAILURE)')
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -71,15 +78,15 @@ class QCA_Module(KQMLModule):
         if not target_arg.data:
             raise ValueError("Target list is empty")
 
-        targets = [self._get_term_name(t) for t in target_arg.data]
-        sources = [self._get_term_name(s) for s in source_arg.data]
+        target = self._get_term_name(target_arg.to_string())
+        source = self._get_term_name(source_arg.to_string())
 
         if reltype_arg is None or not reltype_arg.data:
             relation_types = None
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
 
-        results_list = self.qca.find_causal_path(sources, targets,
+        results_list = self.qca.find_causal_path([source], [target],
                                                  relation_types=relation_types)
 
         lispify_helper = Lispify(results_list)

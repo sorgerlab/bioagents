@@ -35,10 +35,16 @@ class QCA:
 
         # dict of reference network descriptors by network name
         self.reference_networks = [
+            #{
+            #    "id": "84f321c6-dade-11e6-86b1-0ac135e8bacf",
+            #    "name": "prior",
+            #    "type": "canonical",
+            #    "server": "public.ndexbio.org"
+            #}
             {
-                "id": "84f321c6-dade-11e6-86b1-0ac135e8bacf",
-                "name": "prior",
-                "type": "cannonical",
+                "id": "50e3dff7-133e-11e6-a039-06603eb7f303",
+                "name": "Ras Machine",
+                "type": "canonical",
                 "server": "public.ndexbio.org"
             }
         ]
@@ -57,7 +63,7 @@ class QCA:
         self.reference_network_schema = {
             "id": "",
             "name": "",
-            "type": "cannonical"
+            "type": "canonical"
         }
 
         self.query_schema = {

@@ -1,9 +1,9 @@
 import sys
-import logging
 import json
+import logging
 import xml.etree.ElementTree as ET
 from indra.trips.processor import TripsProcessor
-from kqml import KQMLModule, KQMLPerformative, KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString, KQMLToken
 from qca import QCA
 from lispify_helper import Lispify
 
@@ -88,13 +88,13 @@ class QCA_Module(KQMLModule):
 
         results_list = self.qca.find_causal_path([source], [target],
                                                  relation_types=relation_types)
+        first_result = results_list[0]
+        first_edges = first_result[1::2]
 
-        lispify_helper = Lispify(results_list)
+        ks = KQMLString(first_edges)
 
-        path_statements = lispify_helper.to_lisp()
-
-        reply_content = KQMLList.from_string(
-            '(SUCCESS :paths (' + path_statements + '))')
+        reply_content = KQMLList([KQMLToken('SUCCESS'), KQMLToken(':paths'),
+                                  KQMLList([ks])])
 
         return reply_content
 

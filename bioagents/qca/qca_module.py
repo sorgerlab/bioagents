@@ -52,8 +52,7 @@ class QCA_Module(KQMLModule):
                 logger.error(e)
                 reply_content = KQMLList.from_string('(FAILURE)')
         else:
-            self.error_reply(msg, 'unknown request task ' + task_str)
-            return
+            reply_content = KQMLList.from_string('(FAILURE)')
 
         reply_msg = KQMLPerformative('reply')
         reply_msg.set_parameter(':content', reply_content)
@@ -88,10 +87,15 @@ class QCA_Module(KQMLModule):
 
         results_list = self.qca.find_causal_path([source], [target],
                                                  relation_types=relation_types)
+        if not results_list:
+            reply_content = KQMLList.from_string('(FAILURE NO_PATH_FOUND)')
+            return reply_content
         first_result = results_list[0]
         first_edges = first_result[1::2]
-
-        ks = KQMLString(first_edges)
+        indra_edges = [fe[0]['INDRA json'] for fe in first_edges]
+        indra_edges = [json.loads(e) for e in indra_edges]
+        indra_edges_str = json.dumps(indra_edges)
+        ks = KQMLString(indra_edges_str)
 
         reply_content = KQMLList([KQMLToken('SUCCESS'), KQMLToken(':paths'),
                                   KQMLList([ks])])

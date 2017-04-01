@@ -43,6 +43,7 @@ class QCA:
             #}
             {
                 "id": "50e3dff7-133e-11e6-a039-06603eb7f303",
+                #"id": "89274295-1730-11e7-b39e-0ac135e8bacf",
                 "name": "Ras Machine",
                 "type": "canonical",
                 "server": "public.ndexbio.org"
@@ -84,9 +85,6 @@ class QCA:
         self.queries = []
 
         self.ndex = nc.Ndex(host=self.host)
-
-    def __del__(self):
-        print "deleting class"
 
     def find_causal_path(self, source_names, target_names,
                          exit_on_found_path=False, relation_types=None):

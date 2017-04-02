@@ -42,7 +42,7 @@ class QCA:
             #    "server": "public.ndexbio.org"
             #}
             {
-                "id": "50e3dff7-133e-11e6-a039-06603eb7f303",
+                "id": "d68677b8-173d-11e7-b39e-0ac135e8bacf",
                 #"id": "89274295-1730-11e7-b39e-0ac135e8bacf",
                 "name": "Ras Machine",
                 "type": "canonical",

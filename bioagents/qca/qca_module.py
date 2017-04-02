@@ -1,15 +1,13 @@
 import sys
-import logging
 import json
+import logging
 import xml.etree.ElementTree as ET
 from indra.trips.processor import TripsProcessor
-from kqml import KQMLModule, KQMLPerformative, KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString, KQMLToken
 from qca import QCA
-from lispify_helper import Lispify
 
 logger = logging.getLogger('QCA')
 
-# TODO: standardize dash/underscore
 class QCA_Module(KQMLModule):
     '''
     The QCA module is a TRIPS module built around the QCA agent.
@@ -41,12 +39,19 @@ class QCA_Module(KQMLModule):
         content = KQMLPerformative(msg.get_parameter(':content'))
         task_str = content.get_verb()
         if task_str == 'FIND-QCA-PATH':
-            reply_content = self.respond_find_qca_path(content)
+            try:
+                reply_content = self.respond_find_qca_path(content)
+            except Exception as e:
+                logger.error(e)
+                reply_content = KQMLList.from_string('(FAILURE)')
         elif task_str == 'HAS-QCA-PATH':
-            reply_content = self.has_qca_path(content)
+            try:
+                reply_content = self.has_qca_path(content)
+            except Exception as e:
+                logger.error(e)
+                reply_content = KQMLList.from_string('(FAILURE)')
         else:
-            self.error_reply(msg, 'unknown request task ' + task_str)
-            return
+            reply_content = KQMLList.from_string('(FAILURE)')
 
         reply_msg = KQMLPerformative('reply')
         reply_msg.set_parameter(':content', reply_content)
@@ -71,23 +76,28 @@ class QCA_Module(KQMLModule):
         if not target_arg.data:
             raise ValueError("Target list is empty")
 
-        targets = [self._get_term_name(t) for t in target_arg.data]
-        sources = [self._get_term_name(s) for s in source_arg.data]
+        target = self._get_term_name(target_arg.to_string())
+        source = self._get_term_name(source_arg.to_string())
 
         if reltype_arg is None or not reltype_arg.data:
             relation_types = None
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
 
-        results_list = self.qca.find_causal_path(sources, targets,
+        results_list = self.qca.find_causal_path([source], [target],
                                                  relation_types=relation_types)
+        if not results_list:
+            reply_content = KQMLList.from_string('(FAILURE NO_PATH_FOUND)')
+            return reply_content
+        first_result = results_list[0]
+        first_edges = first_result[1::2]
+        indra_edges = [fe[0]['INDRA json'] for fe in first_edges]
+        indra_edges = [json.loads(e) for e in indra_edges]
+        indra_edges_str = json.dumps(indra_edges)
+        ks = KQMLString(indra_edges_str)
 
-        lispify_helper = Lispify(results_list)
-
-        path_statements = lispify_helper.to_lisp()
-
-        reply_content = KQMLList.from_string(
-            '(SUCCESS :paths (' + path_statements + '))')
+        reply_content = KQMLList([KQMLToken('SUCCESS'), KQMLToken(':paths'),
+                                  KQMLList([ks])])
 
         return reply_content
 
@@ -103,15 +113,15 @@ class QCA_Module(KQMLModule):
         if not target_arg.data:
             raise ValueError("Target list is empty")
 
-        targets = [self._get_term_name(t) for t in target_arg.data]
-        sources = [self._get_term_name(s) for s in source_arg.data]
+        target = self._get_term_name(target_arg.to_string())
+        source = self._get_term_name(source_arg.to_string())
 
         if reltype_arg is None or not reltype_arg.data:
             relation_types = None
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
 
-        has_path = self.qca.has_path(sources, targets)
+        has_path = self.qca.has_path([source], [target])
 
         reply_content = KQMLList.from_string(
             '(SUCCESS :haspath (' + str(has_path) + '))')

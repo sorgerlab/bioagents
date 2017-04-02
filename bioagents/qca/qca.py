@@ -35,10 +35,17 @@ class QCA:
 
         # dict of reference network descriptors by network name
         self.reference_networks = [
+            #{
+            #    "id": "84f321c6-dade-11e6-86b1-0ac135e8bacf",
+            #    "name": "prior",
+            #    "type": "canonical",
+            #    "server": "public.ndexbio.org"
+            #}
             {
-                "id": "84f321c6-dade-11e6-86b1-0ac135e8bacf",
-                "name": "prior",
-                "type": "cannonical",
+                "id": "d68677b8-173d-11e7-b39e-0ac135e8bacf",
+                #"id": "89274295-1730-11e7-b39e-0ac135e8bacf",
+                "name": "Ras Machine",
+                "type": "canonical",
                 "server": "public.ndexbio.org"
             }
         ]
@@ -57,7 +64,7 @@ class QCA:
         self.reference_network_schema = {
             "id": "",
             "name": "",
-            "type": "cannonical"
+            "type": "canonical"
         }
 
         self.query_schema = {
@@ -78,9 +85,6 @@ class QCA:
         self.queries = []
 
         self.ndex = nc.Ndex(host=self.host)
-
-    def __del__(self):
-        print "deleting class"
 
     def find_causal_path(self, source_names, target_names,
                          exit_on_found_path=False, relation_types=None):

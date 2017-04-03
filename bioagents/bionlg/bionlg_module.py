@@ -47,7 +47,7 @@ class BioNLGModule(KQMLModule):
         except Exception as e:
             logger.error('Failed to perform task.')
             logger.error(e)
-            self.error_reply(msg, 'Failed to perform task')
+            reply = KQMLList.from_string('(FAILURE NL_GENERATION_ERROR)')
 
         reply_msg = KQMLPerformative('reply')
         reply_msg.set_parameter(':content', reply)

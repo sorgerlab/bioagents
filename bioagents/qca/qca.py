@@ -396,7 +396,7 @@ class PathScoring():
 
         return tmp_edge_list
 
-class EdgeRanking:
+class EdgeRanking(object):
     def __init__(self):
         self.edge_types = []
 
@@ -445,7 +445,8 @@ class EdgeRanking:
             ],
             EdgeEnum.unspecified_topological:[  # 9
                 "neighbor-of",
-                "RasGef"
+                "RasGef",
+                "RasGap"
             ]
         }
 

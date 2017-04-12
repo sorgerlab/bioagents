@@ -23,9 +23,9 @@ def get_example_model():
     return [st]
 
 class BSB(object):
-    def __init__(self, room_id, bob_port=6200, sbgnviz_port=3000):
+    def __init__(self,  bob_port=6200, sbgnviz_port=3000):
         self.user_name = 'BOB'
-        self.room_id = room_id
+
         self.bob_port = bob_port
         self.sbgnviz_port = sbgnviz_port
 
@@ -71,13 +71,18 @@ class BSB(object):
         self.user_id = '%s' % uuid.uuid4()
         # Initialize sockets
         self.socket_s = SocketIO('localhost', self.sbgnviz_port)
+        self.socket_s.emit('agentCurrentRoomRequest', self.on_subscribe)
+
+
+    def on_subscribe(self, room):
         event = 'subscribeAgent'
+        self.room_id = room
         user_info = {'userName': self.user_name,
                      'room': self.room_id,
                      'userId': self.user_id}
         self.socket_s.on('message', self.on_sbgnviz_message)
-        self.socket_s.on('userList', self.on_user_list)
-        self.socket_s.emit(event, user_info, self.on_user_list)
+
+        self.socket_s.emit(event, user_info)
 
     def on_user_list(self, user_list):
         self.current_users = user_list
@@ -121,26 +126,27 @@ class BSB(object):
             self.bob_to_sbgn_display(model)
 
     def bob_to_sbgn_say(self, spoken_phrase):
-        target_users = [{'id': user['userId']} for user in self.current_users]
+
         msg = {'room': self.room_id,
                'comment': spoken_phrase,
                'userName': self.user_name,
                'userId': self.user_id,
-               'targets': target_users,
+               'targets': '*',
                'time': 1}
         print_json(msg)
-        self.socket_s.emit('agentMessage', msg, lambda: None)
+        self.socket_s.emit('agentMessage', msg)
         self.bob_to_sbgn_display(get_example_model())
 
     def bob_to_sbgn_display(self, model):
         sa = SBGNAssembler()
         sa.add_statements(model)
         sbgn_content = sa.make_model()
-        params = {'room': self.room_id, 'userId': self.user_id}
-        self.socket_s.emit('agentNewFileRequest', params)
-        sbgn_params = {'graph': sbgn_content, 'type': 'sbgn'}
-        sbgn_params.update(params)
-        self.socket_s.emit('agentMergeGraphRequest', sbgn_params, lambda: None)
+        self.socket_s.emit('agentNewFileRequest', {'room':self.room_id})
+        self.socket_s.wait(seconds=0.1)
+        logger.info('sbgn_content %s'  % sbgn_content)
+        sbgn_params = {'graph': sbgn_content, 'type': 'sbgn', 'room': self.room_id, 'userId': self.user_id}
+        self.socket_s.emit('agentMergeGraphRequest', sbgn_params)
+
 
 
 def print_json(js):
@@ -154,10 +160,10 @@ def get_spoken_phrase(content):
 
 def get_model(content):
     model = content.get_keyword_arg(':model')
-    mmodel = model.string_value()
+    model = model.string_value()
     return model
 
 if __name__ == '__main__':
-    room_id = sys.argv[1]
-    bsb = BSB(room_id)
+
+    bsb = BSB()
     bsb.start()

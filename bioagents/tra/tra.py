@@ -180,7 +180,7 @@ class TRA(object):
 
 def apply_condition(model, condition):
     agent = condition.quantity.entity
-    monomer = model.monomers[agent.name]
+    monomer = model.monomers[pa._n(agent.name)]
     site_pattern = pa.get_site_pattern(agent)
     # TODO: handle modified patterns
     if site_pattern:
@@ -208,7 +208,7 @@ def apply_condition(model, condition):
 def get_create_observable(model, agent):
     site_pattern = pa.get_site_pattern(agent)
     obs_name = pa.get_agent_rule_str(agent) + '_obs'
-    monomer = model.monomers[agent.name]
+    monomer = model.monomers[pa._n(agent.name)]
     obs = Observable(obs_name.encode('utf-8'), monomer(site_pattern))
     model.add_component(obs)
     return obs

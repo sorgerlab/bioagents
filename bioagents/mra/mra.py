@@ -148,15 +148,20 @@ class MRA(object):
 
     def model_undo(self):
         """Revert to the previous model version."""
-        if len(self.statements) > 1:
-            model = self.statements[model_id-2]
-            self.statements.append(model)
-        elif len(self.statements) == 1:
-            model = []
-            self.statements.append(model)
-        else:
-            model = None
-        return model
+        try:
+            stmts = self.models[self.id_counter-1]
+        except KeyError:
+            stmts = []
+        model_id = self.new_model(stmts)
+        res = {'model_id': model_id,
+               'model': stmts}
+        if not stmts:
+            return res
+        res['ambiguities'] = []
+        diagram = make_model_diagram(model_exec, model_id)
+        if diagram:
+            res['diagram'] = diagram
+        return res
 
     def new_model(self, stmts):
         model_id = self.get_new_id()

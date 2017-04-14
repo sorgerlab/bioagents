@@ -47,6 +47,8 @@ class MRA_Module(KQMLModule):
                 reply_content = self.respond_build_model(content)
             elif task_str == 'EXPAND-MODEL':
                 reply_content = self.respond_expand_model(content)
+            elif task_str == 'MODEL-UNDO':
+                reply_content = self.respond_model_undo(content)
             elif task_str == 'MODEL-HAS-MECHANISM':
                 reply_content = self.respond_has_mechanism(content)
             elif task_str == 'MODEL-REMOVE-MECHANISM':
@@ -144,6 +146,26 @@ class MRA_Module(KQMLModule):
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set_parameter(':ambiguities', ambiguities_msg)
+        return msg
+
+    def respond_model_undo(self, content):
+        """Return response content to model-undo request."""
+        res = self.mra.model_undo()
+        new_model_id = res.get('model_id')
+        # Start a SUCCESS message
+        msg = KQMLPerformative('SUCCESS')
+        # Add the model id
+        msg.set_parameter(':model-id', KQMLToken(str(new_model_id)))
+        # Add the INDRA model json
+        model = res.get('model')
+        model_msg = encode_indra_stmts(model)
+        msg.set_parameter(':model', KQMLString(model_msg))
+        # Add the diagram
+        diagram = res.get('diagram')
+        if diagram:
+            msg.set_parameter(':diagram', KQMLString(diagram))
+        else:
+            msg.set_parameter(':diagram', KQMLString(''))
         return msg
 
     def respond_has_mechanism(self, content):

@@ -1,12 +1,14 @@
 import sys
 import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('DTDA')
 import xml.etree.ElementTree as ET
 from indra.trips.processor import TripsProcessor
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException
 
-logger = logging.getLogger('DTDA')
 
 # TODO: standardize dash/underscore
 class DTDA_Module(KQMLModule):

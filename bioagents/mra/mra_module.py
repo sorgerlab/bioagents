@@ -1,12 +1,14 @@
 import sys
 import json
 import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('MRA')
 import pysb.export
 from indra.statements import stmts_to_json
 from kqml import *
 from mra import MRA
 
-logger = logging.getLogger('MRA')
 
 class MRA_Module(KQMLModule):
     def __init__(self, argv):

@@ -6,13 +6,15 @@ import random
 import select
 import socket
 import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('BSB')
 from socketIO_client import SocketIO
 
 from indra.assemblers import SBGNAssembler
 
 from kqml import *
 
-logger = logging.getLogger('bsb')
 
 def dummy(arg1):
     print(arg1)

@@ -1,10 +1,12 @@
 import sys
 import json
 import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('BIOSENSE')
 from indra import trips
 from kqml import *
 
-logger = logging.getLogger('BIOSENSE')
 
 class BioSenseModule(KQMLModule):
     def __init__(self, argv):

@@ -1,6 +1,9 @@
 import sys
 import json
 import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('TRA')
 import argparse
 import tempfile
 
@@ -15,7 +18,6 @@ from bioagents.tra.tra import *
 from bioagents.kappa import kappa_client
 from kqml import KQMLModule, KQMLList, KQMLPerformative
 
-logger = logging.getLogger('TRA')
 
 class TRA_Module(KQMLModule):
     def __init__(self, argv):

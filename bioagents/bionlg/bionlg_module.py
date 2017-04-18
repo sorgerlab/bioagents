@@ -1,11 +1,13 @@
 import sys
 import json
 import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('BIONLG')
 from indra.statements import stmts_from_json
 from indra.assemblers import EnglishAssembler
 from kqml import *
 
-logger = logging.getLogger('MRA')
 
 class BioNLGModule(KQMLModule):
     def __init__(self, argv):
@@ -33,7 +35,7 @@ class BioNLGModule(KQMLModule):
         try:
             content = KQMLPerformative(msg.get_parameter(':content'))
             task_str = content.get_verb()
-            logging.info(task_str)
+            logger.info(task_str)
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)

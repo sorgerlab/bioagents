@@ -63,7 +63,7 @@ class TRA_Module(KQMLModule):
             reply_content = \
                 KQMLList.from_string('(FAILURE :reason KAPPA_FAILURE)')
             reply_msg = KQMLPerformative('reply')
-            reply_msg.set_parameter(':content', reply_content)
+            reply_msg.set('content', reply_content)
             self.reply(msg, reply_msg)
             return
 
@@ -76,19 +76,18 @@ class TRA_Module(KQMLModule):
             return
 
         reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', reply_content)
+        reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
 
     def respond_satisfies_pattern(self, content_list):
         '''
         Response content to satisfies-pattern request
         '''
-        model_indra = content_list.get_keyword_arg(':model')
-        pattern_lst = content_list.get_keyword_arg(':pattern')
-        conditions_lst = content_list.get_keyword_arg(':conditions')
+        model_indra_str = content_list.gets('model')
+        pattern_lst = content_list.get('pattern')
+        conditions_lst = content_list.get('conditions')
 
         try:
-            model_indra_str = get_string_arg(model_indra)
             model = assemble_model(model_indra_str)
         except Exception as e:
             logger.error(e)
@@ -136,9 +135,9 @@ class TRA_Module(KQMLModule):
                 KQMLList.from_string('(FAILURE :reason INVALID_PATTERN)')
             return reply_content
 
-        reply_content = KQMLList()
         msg_str = '(:satisfies-rate %.1f :num-sim %d)' % (sat_rate, num_sim)
-        reply_content.add('SUCCESS :content %s' % msg_str)
+        msg_str = '(SUCCESS :content %s)' % msg_str
+        reply_content = KQMLList.from_string(msg_str)
         return reply_content
 
 def decode_indra_stmts(stmts_json_str):
@@ -156,21 +155,9 @@ def assemble_model(model_indra_str):
         pysb_assembler.set_extended_initial_condition(model, m, 0)
     return model
 
-def get_string_arg(kqml_str):
-    if kqml_str is None:
-        return None
-    s = kqml_str.to_string()
-    if s[0] == '"':
-        s = s[1:]
-    if s[-1] == '"':
-        s = s[:-1]
-    s = s.replace('\\"', '"')
-    return s
-
 def get_molecular_entity(lst):
     try:
-        description_ks = lst.get_keyword_arg(':description')
-        description_str = get_string_arg(description_ks)
+        description_str = lst.gets('description')
         tp = trips_processor.TripsProcessor(description_str)
         terms = tp.tree.findall('TERM')
         # TODO: handle multiple terms here
@@ -182,10 +169,10 @@ def get_molecular_entity(lst):
 
 def get_molecular_quantity(lst):
     try:
-        quant_type = get_string_arg(lst.get_keyword_arg(':type'))
-        value = get_string_arg(lst.get_keyword_arg(':value'))
+        quant_type = lst.gets('type')
+        value = lst.gets('value')
         if quant_type == 'concentration':
-            unit = get_string_arg(lst.get_keyword_arg(':unit'))
+            unit = lst.gets('unit')
         else:
             unit = None
         return MolecularQuantity(quant_type, value, unit)
@@ -194,8 +181,8 @@ def get_molecular_quantity(lst):
 
 def get_molecular_quantity_ref(lst):
     try:
-        quant_type = get_string_arg(lst.get_keyword_arg(':type'))
-        entity_lst = lst.get_keyword_arg(':entity')
+        quant_type = lst.gets('type')
+        entity_lst = lst.get('entity')
         entity = get_molecular_entity(entity_lst)
         return MolecularQuantityReference(quant_type, entity)
     except Exception as e:
@@ -203,29 +190,29 @@ def get_molecular_quantity_ref(lst):
 
 def get_time_interval(lst):
     try:
-        lb = get_string_arg(lst.get_keyword_arg(':lower-bound'))
-        ub = get_string_arg(lst.get_keyword_arg(':upper-bound'))
-        unit = get_string_arg(lst.get_keyword_arg(':unit'))
+        lb = lst.gets('lower-bound')
+        ub = lst.gets('upper-bound')
+        unit = lst.gets('unit')
         return TimeInterval(lb, ub, unit)
     except Exception as e:
         raise InvalidTimeIntervalError(e)
 
 def get_temporal_pattern(lst):
-    pattern_type = get_string_arg(lst.get_keyword_arg(':type'))
-    entities_lst = lst.get_keyword_arg(':entities')
+    pattern_type = lst.gets('type')
+    entities_lst = lst.get('entities')
     entities = []
     if entities_lst is None:
         entities_lst = []
     for e in entities_lst:
         entity = get_molecular_entity(e)
         entities.append(entity)
-    time_limit_lst = lst.get_keyword_arg('time-limit')
+    time_limit_lst = lst.get('time-limit')
     if time_limit_lst is None:
         time_limit = None
     else:
         time_limit = get_time_interval(time_limit_lst)
     # TODO: handle more pattern-specific extra arguments
-    value_lst = lst.get_keyword_arg(':value')
+    value_lst = lst.get('value')
     if value_lst is not None:
         value = get_molecular_quantity(value_lst)
     else:
@@ -235,13 +222,13 @@ def get_temporal_pattern(lst):
 
 def get_molecular_condition(lst):
     try:
-        condition_type = get_string_arg(lst.get_keyword_arg(':type'))
-        quantity_ref_lst = lst.get_keyword_arg(':quantity')
+        condition_type = lst.gets('type')
+        quantity_ref_lst = lst.get('quantity')
         quantity = get_molecular_quantity_ref(quantity_ref_lst)
         if condition_type == 'exact':
-            value = get_molecular_quantity(lst.get_keyword_arg(':value'))
+            value = get_molecular_quantity(lst.get('value'))
         elif condition_type == 'multiple':
-            value = get_string_arg(lst.get_keyword_arg(':value'))
+            value = lst.gets('value')
         else:
             value = None
         return MolecularCondition(condition_type, quantity, value)

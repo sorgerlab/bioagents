@@ -1,5 +1,5 @@
 from bioagents.mra import MRA
-import indra.statements
+from indra.statements import *
 from indra.trips import trips_client
 
 
@@ -12,9 +12,19 @@ def test_build_model_from_ekb():
     assert(res.get('model_id') == 1)
     assert(res.get('model_exec'))
     assert(len(m.models[1]) == 1)
-    assert(isinstance(m.models[1][0], indra.statements.Phosphorylation))
+    assert(isinstance(m.models[1][0], Phosphorylation))
     assert(m.models[1][0].enz.name == 'MAP2K1')
     assert(m.models[1][0].sub.name == 'MAPK1')
+
+def test_get_upstream():
+    m = MRA()
+    egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
+    kras = Agent('KRAS', db_refs = {'HGNC': '6407', 'TEXT': 'KRAS'})
+    stmts = [Activation(egfr, kras)]
+    model_id = m.new_model(stmts)
+    upstream = m.get_upstream(kras, model_id)
+    assert(len(upstream) == 1)
+    assert(upstream[0].name == 'EGFR')
 
 '''
 def test_replace_agent_one():

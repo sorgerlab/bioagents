@@ -154,8 +154,8 @@ class MRA(object):
         rel_stmts = []
         rel_stmts += ac.filter_by_type(stmts, IncreaseAmount)
         rel_stmts += ac.filter_by_type(stmts, Activation)
-        rel_stmts = [st for st in rel_stmts if rel_stmts.subj and \
-                     (rel_stmts.obj.name == target.name)]
+        rel_stmts = [st for st in rel_stmts if st.subj and \
+                     (st.obj.name == target.name)]
         upstream_agents = [st.subj for st in rel_stmts]
         return upstream_agents
 

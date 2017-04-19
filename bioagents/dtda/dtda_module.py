@@ -35,16 +35,15 @@ class DTDA_Module(KQMLModule):
         """If a "request" message is received, decode the task and the content
         and call the appropriate function to prepare the response. A reply
         message is then sent back."""
-        content_list = content
-        task_str = content_list[0].to_string().upper()
+        task_str = content.head().upper()
         if task_str == 'IS-DRUG-TARGET':
-            reply_content = self.respond_is_drug_target(content_list)
+            reply_content = self.respond_is_drug_target(content)
         elif task_str == 'FIND-TARGET-DRUG':
-            reply_content = self.respond_find_target_drug(content_list)
+            reply_content = self.respond_find_target_drug(content)
         elif task_str == 'FIND-DISEASE-TARGETS':
-            reply_content = self.respond_find_disease_targets(content_list)
+            reply_content = self.respond_find_disease_targets(content)
         elif task_str == 'FIND-TREATMENT':
-            reply_content = self.respond_find_treatment(content_list)
+            reply_content = self.respond_find_treatment(content)
             if reply_content is None:
                 self.respond_dont_know(msg,
                                        '(ONT::A X1 :instance-of ONT::DRUG)')
@@ -65,10 +64,10 @@ class DTDA_Module(KQMLModule):
         reply_msg.set('content', resp_list)
         self.reply(msg, reply_msg)
 
-    def respond_is_drug_target(self, content_list):
+    def respond_is_drug_target(self, content):
         """Response content to is-drug-target request."""
-        drug = content_list.gets('drug')
-        target_arg = content_list.gets('target')
+        drug = content.gets('drug')
+        target_arg = content.gets('target')
         target = self._get_target(target_arg)
         target_name = target.name
         try:
@@ -87,9 +86,9 @@ class DTDA_Module(KQMLModule):
         reply_content = KQMLList.from_string(msg_str)
         return reply_content
 
-    def respond_find_target_drug(self, content_list):
+    def respond_find_target_drug(self, content):
         """Response content to find-target-drug request."""
-        target_arg = content_list.gets('target')
+        target_arg = content.gets('target')
         target = self._get_target(target_arg)
         target_name = target.name
         drug_names, chebi_ids = self.dtda.find_target_drugs(target_name)
@@ -103,9 +102,9 @@ class DTDA_Module(KQMLModule):
             '(SUCCESS :drugs (' + drug_list_str + '))')
         return reply_content
 
-    def respond_find_disease_targets(self, content_list):
+    def respond_find_disease_targets(self, content):
         """Response content to find-disease-targets request."""
-        disease_arg = content_list.gets('disease')
+        disease_arg = content.gets('disease')
         try:
             disease = self.get_disease(disease_arg)
         except Exception as e:
@@ -141,10 +140,10 @@ class DTDA_Module(KQMLModule):
 
         return reply_content
 
-    def respond_find_treatment(self, content_list):
+    def respond_find_treatment(self, content):
         """Response content to find-treatment request."""
         #TODO: eliminate code duplication here
-        disease_arg = content_list.gets('disease')
+        disease_arg = content.gets('disease')
         try:
             disease = self.get_disease(disease_arg)
         except Exception as e:

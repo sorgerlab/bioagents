@@ -67,10 +67,9 @@ class TRA_Module(KQMLModule):
             self.reply(msg, reply_msg)
             return
 
-        content_list = content
-        task_str = content_list[0].to_string().upper()
+        task_str = content.head().upper()
         if task_str == 'SATISFIES-PATTERN':
-            reply_content = self.respond_satisfies_pattern(content_list)
+            reply_content = self.respond_satisfies_pattern(content)
         else:
             self.error_reply(msg, 'Unknown request task ' + task_str)
             return
@@ -79,13 +78,13 @@ class TRA_Module(KQMLModule):
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
 
-    def respond_satisfies_pattern(self, content_list):
+    def respond_satisfies_pattern(self, content):
         '''
         Response content to satisfies-pattern request
         '''
-        model_indra_str = content_list.gets('model')
-        pattern_lst = content_list.get('pattern')
-        conditions_lst = content_list.get('conditions')
+        model_indra_str = content.gets('model')
+        pattern_lst = content.get('pattern')
+        conditions_lst = content.get('conditions')
 
         try:
             model = assemble_model(model_indra_str)

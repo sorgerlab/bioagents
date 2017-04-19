@@ -10,7 +10,6 @@ def test_build_model_from_ekb():
     res = m.build_model_from_ekb(ekb_xml)
     assert(res.get('model'))
     assert(res.get('model_id') == 1)
-    assert(res.get('model_nl'))
     assert(res.get('model_exec'))
     assert(len(m.models[1]) == 1)
     assert(isinstance(m.models[1][0], indra.statements.Phosphorylation))

@@ -11,7 +11,7 @@ from indra import trips
 from indra.statements import Complex
 from indra.databases import uniprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
-from indra.assemblers import pysb_assembler, PysbAssembler, EnglishAssembler
+from indra.assemblers import pysb_assembler, PysbAssembler
 from pysb.tools import render_reactions
 from bioagents.databases import nextprot_client
 
@@ -40,11 +40,6 @@ class MRA(object):
         pa.add_default_initial_conditions(self.default_initial_amount)
         return pa.model
 
-    def assemble_english(self, stmts):
-        ea = EnglishAssembler(stmts)
-        txt = ea.make_model()
-        return txt
-
     def build_model_from_ekb(self, model_ekb):
         """Build a model using DRUM extraction knowledge base."""
         tp = trips.process_xml(model_ekb)
@@ -58,8 +53,6 @@ class MRA(object):
             return res
         ambiguities = get_ambiguities(tp)
         res['ambiguities'] = ambiguities
-        model_nl = self.assemble_english(stmts)
-        res['model_nl'] = model_nl
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
         diagram = make_model_diagram(model_exec, model_id)
@@ -84,10 +77,6 @@ class MRA(object):
         ambiguities = get_ambiguities(tp)
         res['ambiguities'] = ambiguities
         res['model_new'] = new_stmts
-        model_nl = self.assemble_english(model_stmts)
-        res['model_nl'] = model_nl
-        model_nl = self.assemble_english(new_stmts)
-        res['model_nl_new'] = model_nl
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
         diagram = make_model_diagram(model_exec, new_model_id)
@@ -104,8 +93,6 @@ class MRA(object):
             return res
         query_st = tp.statements[0]
         res['query'] = query_st
-        query_nl = self.assemble_english([query_st])
-        res['query_nl'] = query_nl
         model_stmts = self.models[model_id]
         for model_st in model_stmts:
             if model_st.refinement_of(query_st, hierarchies):
@@ -132,14 +119,10 @@ class MRA(object):
                 removed_stmts.append(model_st)
         res = {'model_id': model_id,
                'model': new_stmts}
-        model_nl = self.assemble_english(new_stmts)
-        res['model_nl'] = model_nl
         model_exec = self.assemble_pysb(new_stmts)
         res['model_exec'] = model_exec
         if removed_stmts:
             res['removed'] = removed_stmts
-            removed_nl = self.assemble_english(removed_stmts)
-            res['removed_nl'] = removed_nl
         diagram = make_model_diagram(model_exec, model_id)
         if diagram:
             res['diagram'] = diagram

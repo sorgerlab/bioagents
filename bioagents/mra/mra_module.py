@@ -75,7 +75,6 @@ class MRA_Module(KQMLModule):
     def respond_build_model(self, content):
         """Return response content to build-model request."""
         ekb = content.gets('description')
-        import ipdb; ipdb.set_trace()
         try:
             res = self.mra.build_model_from_ekb(ekb)
         except Exception as e:

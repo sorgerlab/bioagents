@@ -32,8 +32,8 @@ class BioSenseModule(KQMLModule):
         message is then sent back.
         """
         try:
-            content = KQMLPerformative(msg.get_parameter(':content'))
-            task_str = content.get_verb()
+            content = msg.get('content')
+            task_str = content.head()
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)
@@ -50,29 +50,19 @@ class BioSenseModule(KQMLModule):
         #    reply = KQMLList.from_string('(FAILURE INTERNAL_ERROR)')
 
         reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', reply)
+        reply_msg.set('content', reply)
         self.reply(msg, reply_msg)
 
     def respond_choose_sense(self, content):
         """Return response content to build-model request."""
-        ekb = _get_model_descr(content, ':ekb-term')
+        ekb = content.gets('ekb-term')
         tp = trips.process_xml(ekb)
         ambiguities = get_ambiguities(tp)
         msg = KQMLPerformative('OK')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
-            msg.set_parameter(':ambiguities', ambiguities_msg)
+            msg.set('ambiguities', ambiguities_msg)
         return msg
-
-def _get_model_descr(content, arg_name):
-    descr_arg = content.get_parameter(arg_name)
-    descr = descr_arg.to_string()
-    if descr[0] == '"':
-        descr = descr[1:]
-    if descr[-1] == '"':
-        descr = descr[:-1]
-    descr = descr.replace('\\"', '"')
-    return descr
 
 def get_ambiguities(tp):
     terms = tp.tree.findall('TERM')

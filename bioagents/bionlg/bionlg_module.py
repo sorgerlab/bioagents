@@ -33,8 +33,8 @@ class BioNLGModule(KQMLModule):
         message is then sent back.
         """
         try:
-            content = KQMLPerformative(msg.get_parameter(':content'))
-            task_str = content.get_verb()
+            content = msg.get('content')
+            task_str = content.head()
             logger.info(task_str)
         except Exception as e:
             logger.error('Could not get task string from request.')
@@ -52,20 +52,18 @@ class BioNLGModule(KQMLModule):
             reply = KQMLList.from_string('(FAILURE NL_GENERATION_ERROR)')
 
         reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', reply)
+        reply_msg.set('content', reply)
         self.reply(msg, reply_msg)
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
-        model_indra = content.get_parameter(':statements')
-
-        stmts_json_str = get_string_arg(model_indra)
+        stmts_json_str = content.gets('statements')
         stmts = decode_indra_stmts(stmts_json_str)
         txts = assemble_english(stmts)
         txts_kqml = [KQMLString(txt) for txt in txts]
         txts_list = KQMLList(txts_kqml)
         msg = KQMLPerformative('OK')
-        msg.set_parameter(':NL', txts_list)
+        msg.set('NL', txts_list)
         return msg
 
 def decode_indra_stmts(stmts_json_str):

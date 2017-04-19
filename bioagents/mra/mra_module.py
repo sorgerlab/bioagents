@@ -38,8 +38,8 @@ class MRA_Module(KQMLModule):
         message is then sent back.
         """
         try:
-            content = KQMLPerformative(msg.get_parameter(':content'))
-            task_str = content.get_verb()
+            content = msg.get('content')
+            task_str = content.head()
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)
@@ -69,12 +69,13 @@ class MRA_Module(KQMLModule):
             fail_msg = '(FAILURE :reason INVALID_MODEL_ID)'
             reply_content = KQMLList.from_string(fail_msg)
         reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', reply_content)
+        reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
-        ekb = self._get_model_descr(content, ':description')
+        ekb = content.gets('description')
+        import ipdb; ipdb.set_trace()
         try:
             res = self.mra.build_model_from_ekb(ekb)
         except Exception as e:
@@ -85,30 +86,26 @@ class MRA_Module(KQMLModule):
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
         # Add the model id
-        msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        msg.set('model-id', str(model_id))
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model', KQMLString(model_msg))
-        # Add the natural language model
-        model_nl = res.get('model_nl')
-        if model_nl:
-            msg.set_parameter(':model-nl', KQMLString(model_nl))
+        msg.sets('model', model_msg)
         # Add the diagram
         diagram = res.get('diagram')
         if diagram:
-            msg.set_parameter(':diagram', KQMLString(diagram))
+            msg.sets('diagram', diagram)
         else:
-            msg.set_parameter(':diagram', KQMLString(''))
+            msg.sets('diagram', '')
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
-            msg.set_parameter(':ambiguities', ambiguities_msg)
+            msg.set('ambiguities', ambiguities_msg)
         return msg
 
     def respond_expand_model(self, content):
         """Return response content to expand-model request."""
-        ekb = self._get_model_descr(content, ':description')
+        ekb = content.gets('description')
         model_id = self._get_model_id(content)
         try:
             res = self.mra.expand_model_from_ekb(ekb, model_id)
@@ -120,34 +117,26 @@ class MRA_Module(KQMLModule):
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
         # Add the model id
-        msg.set_parameter(':model-id', KQMLToken(str(new_model_id)))
+        msg.set('model-id', str(new_model_id))
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model', KQMLString(model_msg))
+        msg.sets('model', model_msg)
         # Add the INDRA model new json
         model_new = res.get('model_new')
         if model_new:
             model_new_msg = encode_indra_stmts(model_new)
-            msg.set_parameter(':model-new', KQMLString(model_new_msg))
-        # Add the natural language model
-        model_nl = res.get('model_nl')
-        if model_nl:
-            msg.set_parameter(':model-nl', KQMLString(model_nl))
-        # Add the natural language new model
-        model_nl_new = res.get('model_nl_new')
-        if model_nl_new:
-            msg.set_parameter(':model-nl-new', KQMLString(model_nl_new))
+            msg.sets('model-new', model_new_msg)
         # Add the diagram
         diagram = res.get('diagram')
         if diagram:
-            msg.set_parameter(':diagram', KQMLString(diagram))
+            msg.sets('diagram', diagram)
         else:
-            msg.set_parameter(':diagram', KQMLString(''))
+            msg.sets('diagram', '')
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
-            msg.set_parameter(':ambiguities', ambiguities_msg)
+            msg.set('ambiguities', ambiguities_msg)
         return msg
 
     def respond_model_undo(self, content):
@@ -157,22 +146,22 @@ class MRA_Module(KQMLModule):
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
         # Add the model id
-        msg.set_parameter(':model-id', KQMLToken(str(new_model_id)))
+        msg.set('model-id', str(new_model_id))
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model', KQMLString(model_msg))
+        msg.sets('model', model_msg)
         # Add the diagram
         diagram = res.get('diagram')
         if diagram:
-            msg.set_parameter(':diagram', KQMLString(diagram))
+            msg.sets('diagram', diagram)
         else:
-            msg.set_parameter(':diagram', KQMLString(''))
+            msg.sets('diagram', '')
         return msg
 
     def respond_has_mechanism(self, content):
         """Return response content to model-has-mechanism request."""
-        ekb = self._get_model_descr(content, ':description')
+        ekb = content.gets('description')
         model_id = self._get_model_id(content)
         try:
             res = self.mra.has_mechanism(ekb, model_id)
@@ -181,22 +170,19 @@ class MRA_Module(KQMLModule):
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
         # Add the model id
-        msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        msg.set('model-id', str(model_id))
         # Add TRUE or FALSE for has-mechanism
-        has_mechanism_msg = KQMLToken('TRUE' if res['has_mechanism'] else 'FALSE')
-        msg.set_parameter(':has-mechanism', has_mechanism_msg)
+        has_mechanism_msg = 'TRUE' if res['has_mechanism'] else 'FALSE'
+        msg.set('has-mechanism', has_mechanism_msg)
         query = res.get('query')
         if query:
             query_msg = encode_indra_stmts([query])
-            msg.set_parameter(':query', KQMLString(query_msg))
-        query_nl = res.get('query_nl')
-        if query_nl:
-            msg.set_parameter(':query-nl', KQMLString(query_nl))
+            msg.sets('query', query_msg)
         return msg
 
     def respond_remove_mechanism(self, content):
         """Return response content to model-remove-mechanism request."""
-        ekb = self._get_model_descr(content, ':description')
+        ekb = content.gets('description')
         model_id = self._get_model_id(content)
         try:
             res = self.mra.remove_mechanism(ekb, model_id)
@@ -208,48 +194,26 @@ class MRA_Module(KQMLModule):
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
         # Add the model id
-        msg.set_parameter(':model-id', KQMLToken(str(model_id)))
+        msg.set('model-id', str(model_id))
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.set_parameter(':model', KQMLString(model_msg))
-        # Add the natural language model
-        model_nl = res.get('model_nl')
-        if model_nl:
-            msg.set_parameter(':model-nl', KQMLString(model_nl))
+        msg.sets('model', model_msg)
         # Add the removed statements
         removed = res.get('removed')
         if removed:
             removed_msg = encode_indra_stmts(removed)
-            msg.set_parameter(':removed', KQMLString(removed_msg))
-        # Add the removed natural language statements
-        removed_nl = res.get('removed_nl')
-        if removed_nl:
-            msg.set_parameter(':removed-nl', KQMLString(removed_nl))
+            msg.sets('removed', removed_msg)
         # Add the diagram
         diagram = res.get('diagram')
         if diagram:
-            msg.set_parameter(':diagram', KQMLString(diagram))
+            msg.sets('diagram', diagram)
         else:
-            msg.set_parameter(':diagram', KQMLString(''))
+            msg.sets('diagram', '')
         return msg
 
-    @staticmethod
-    def _get_model_descr(content, arg_name):
-        try:
-            descr_arg = content.get_parameter(arg_name)
-            descr = descr_arg[0].to_string()
-            if descr[0] == '"':
-                descr = descr[1:]
-            if descr[-1] == '"':
-                descr = descr[:-1]
-            descr = descr.replace('\\"', '"')
-        except Exception as e:
-            raise InvalidModelDescriptionError(e)
-        return descr
-
     def _get_model_id(self, content):
-        model_id_arg = content.get_parameter(':model-id')
+        model_id_arg = content.get('model-id')
         if model_id_arg is None:
             logger.error('Model ID missing.')
             raise InvalidModelIdError

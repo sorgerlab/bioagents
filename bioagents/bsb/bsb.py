@@ -116,14 +116,14 @@ class BSB(object):
     def on_bob_message(self, data):
         # Check what kind of message it is
         kl = KQMLList.from_string(data)
-        content = kl.get_keyword_arg(':content')
+        content = kl.get('content')
         logger.info('Got message with content: %s' % content)
         if not content:
             return
-        if ('%s' % content.data[0]).lower() == 'spoken':
+        if content.head().lower() == 'spoken':
             spoken_phrase = get_spoken_phrase(content)
             self.bob_to_sbgn_say(spoken_phrase)
-        elif ('%s' % content.data[0]).lower() == 'display-model':
+        elif content.head().lower() == 'display-model':
             model = get_model(content)
             self.bob_to_sbgn_display(model)
 
@@ -156,13 +156,11 @@ def print_json(js):
     print(s)
 
 def get_spoken_phrase(content):
-    say_what = content.get_keyword_arg(':what')
-    say_what = say_what.string_value()
+    say_what = content.gets('what')
     return say_what
 
 def get_model(content):
-    model = content.get_keyword_arg(':model')
-    model = model.string_value()
+    model = content.gets('model')
     return model
 
 if __name__ == '__main__':

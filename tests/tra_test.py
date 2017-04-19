@@ -1,5 +1,5 @@
 import sympy.physics.units as units
-from bioagents.trips.kqml_list import KQMLList
+from kqml import KQMLList
 from bioagents.tra import tra_module
 from bioagents.tra.tra import *
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
@@ -254,11 +254,6 @@ def test_get_temporal_pattern_eventual():
     assert pattern.value is not None
     assert pattern.value.quant_type == 'qualitative'
     assert pattern.value.value == 'high'
-
-def test_decode_model():
-    model_str = '"from pysb import *\nModel()\nMonomer(\\"M\\")"'
-    model = tra_module.decode_model(model_str)
-    assert(model.monomers[0].name == 'M')
 
 def _get_gk_model():
     SelfExporter.do_export = True

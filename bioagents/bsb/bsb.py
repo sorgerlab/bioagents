@@ -2,6 +2,7 @@ import sys
 import time
 import json
 import uuid
+import base64
 import random
 import select
 import socket
@@ -15,9 +16,6 @@ from indra.assemblers import SBGNAssembler
 
 from kqml import *
 
-
-def dummy(arg1):
-    print(arg1)
 
 def get_example_model():
     from indra.statements import Phosphorylation, Agent
@@ -64,6 +62,8 @@ class BSB(object):
         msg = '(subscribe :content (tell &key :content (spoken . *)))'
         self.socket_b.sendall(msg)
         msg = '(subscribe :content (request &key :content (display-model . *)))'
+        self.socket_b.sendall(msg)
+        msg = '(subscribe :content (request &key :content (display-image . *)))'
         self.socket_b.sendall(msg)
         msg = '(tell :content (module-status ready))'
         self.socket_b.sendall(msg)
@@ -138,17 +138,29 @@ class BSB(object):
         print_json(msg)
         self.socket_s.emit('agentMessage', msg)
         self.bob_to_sbgn_display(get_example_model())
+        self.bob_show_image('/home/bmg16/src/cwc-integ/test.png', 2)
+
 
     def bob_to_sbgn_display(self, model):
         sa = SBGNAssembler()
         sa.add_statements(model)
         sbgn_content = sa.make_model()
-        self.socket_s.emit('agentNewFileRequest', {'room':self.room_id})
+        self.socket_s.emit('agentNewFileRequest', {'room': self.room_id})
         self.socket_s.wait(seconds=0.1)
         logger.info('sbgn_content %s'  % sbgn_content)
-        sbgn_params = {'graph': sbgn_content, 'type': 'sbgn', 'room': self.room_id, 'userId': self.user_id}
+        sbgn_params = {'graph': sbgn_content, 'type': 'sbgn',
+                       'room': self.room_id, 'userId': self.user_id}
         self.socket_s.emit('agentMergeGraphRequest', sbgn_params)
 
+    def bob_show_image(self, file_name, tab_id):
+        logger.info('showing image')
+        with open(file_name, 'rb') as fh:
+            img_content = fh.read()
+        img = base64.b64encode(img_content)
+        image_params = {'img': img, 'fileName': file_name,
+                        'tabIndex': tab_id,
+                        'room': self.room_id, 'userId': self.user_id}
+        self.socket_s.emit('agentSendImageRequest', image_params)
 
 
 def print_json(js):

@@ -31,7 +31,9 @@ class BSB(object):
 
         # Startup sequences
         self.bob_startup()
-        self.sbgn_startup()
+        self.sbgn_startup() 
+        msg = '(tell :content (start-conversation))'
+        self.socket_b.sendall(msg)
 
     def start(self):
         logger.info('Starting...')
@@ -138,7 +140,7 @@ class BSB(object):
         print_json(msg)
         self.socket_s.emit('agentMessage', msg)
         self.bob_to_sbgn_display(get_example_model())
-        self.bob_show_image('/home/bmg16/src/cwc-integ/test.png', 2)
+        self.bob_show_image('/Users/ben/src/cwc-integ/test.png', 1)
 
 
     def bob_to_sbgn_display(self, model):
@@ -147,7 +149,7 @@ class BSB(object):
         sbgn_content = sa.make_model()
         self.socket_s.emit('agentNewFileRequest', {'room': self.room_id})
         self.socket_s.wait(seconds=0.1)
-        logger.info('sbgn_content %s'  % sbgn_content)
+        logger.info('sbgn_content generated')
         sbgn_params = {'graph': sbgn_content, 'type': 'sbgn',
                        'room': self.room_id, 'userId': self.user_id}
         self.socket_s.emit('agentMergeGraphRequest', sbgn_params)
@@ -157,6 +159,7 @@ class BSB(object):
         with open(file_name, 'rb') as fh:
             img_content = fh.read()
         img = base64.b64encode(img_content)
+        img = 'data:image/png;base64,%s' % img
         image_params = {'img': img, 'fileName': file_name,
                         'tabIndex': tab_id,
                         'room': self.room_id, 'userId': self.user_id}

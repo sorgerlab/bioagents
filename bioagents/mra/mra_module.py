@@ -14,20 +14,20 @@ from mra import MRA
 
 class MRA_Module(KQMLModule):
     def __init__(self, argv, testing=False):
-        if not testing:
-            super(MRA_Module, self).__init__(argv)
-            self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
-                          'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
-                          'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
-            for task in self.tasks:
-                msg_txt =\
-                    '(subscribe :content (request &key :content (%s . *)))' % task
-                self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton MRA agent
         self.mra = MRA()
-        if not testing:
-            self.ready()
-            super(MRA_Module, self).start()
+        if testing:
+            return
+        super(MRA_Module, self).__init__(argv)
+        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
+                      'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
+                      'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
+        for task in self.tasks:
+            msg_txt =\
+                '(subscribe :content (request &key :content (%s . *)))' % task
+            self.send(KQMLPerformative.from_string(msg_txt))
+        self.ready()
+        super(MRA_Module, self).start()
 
     def receive_tell(self, msg, content):
         tell_content = content.head().upper()

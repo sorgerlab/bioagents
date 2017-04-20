@@ -20,9 +20,7 @@ from kqml import KQMLModule, KQMLList, KQMLPerformative
 
 
 class TRA_Module(KQMLModule):
-    def __init__(self, argv):
-        super(TRA_Module, self).__init__(argv)
-        self.tasks = ['SATISFIES-PATTERN']
+    def __init__(self, argv, testing=False):
         parser = argparse.ArgumentParser()
         parser.add_argument("--kappa_url", help="kappa endpoint")
         args = parser.parse_args()
@@ -31,17 +29,6 @@ class TRA_Module(KQMLModule):
         else:
             logger.error('No Kappa URL given.')
             self.ode_mode = True
-        # Generate a basic model as placeholder (for testing)
-        #model_text = 'MAPK1 binds MAP2K1.'
-        #pa = PysbAssembler()
-        #pa.add_statements(trips.process_text(model_text).statements)
-        #self.model = pa.make_model()
-
-        # Send subscribe messages
-        for task in self.tasks:
-            msg_txt =\
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton TRA agent
         try:
             kappa = kappa_client.KappaRuntime(self.kappa_url)
@@ -50,6 +37,18 @@ class TRA_Module(KQMLModule):
             logger.error('Could not instantiate TRA with Kappa service.')
             self.ode_mode = True
             self.tra = TRA(None)
+
+        if testing:
+            return
+
+        super(TRA_Module, self).__init__(argv)
+        self.tasks = ['SATISFIES-PATTERN']
+
+        # Send subscribe messages
+        for task in self.tasks:
+            msg_txt =\
+                '(subscribe :content (request &key :content (%s . *)))' % task
+            self.send(KQMLPerformative.from_string(msg_txt))
         self.ready()
         super(TRA_Module, self).start()
 

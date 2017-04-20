@@ -9,13 +9,15 @@ from kqml import KQMLModule, KQMLPerformative, KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException
 
-
-# TODO: standardize dash/underscore
 class DTDA_Module(KQMLModule):
     """The DTDA module is a TRIPS module built around the DTDA agent.
     Its role is to receive and decode messages and send responses from and
     to other agents in the system."""
-    def __init__(self, argv):
+    def __init__(self, argv, testing=False):
+        # Instantiate a singleton DTDA agent
+        self.dtda = DTDA()
+        if testing:
+            return
         # Call the constructor of TripsModule
         super(DTDA_Module, self).__init__(argv)
         self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
@@ -25,8 +27,6 @@ class DTDA_Module(KQMLModule):
             msg_txt =\
                 '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.from_string(msg_txt))
-        # Instantiate a singleton DTDA agent
-        self.dtda = DTDA()
         # Send ready message
         self.ready()
         super(DTDA_Module, self).start()

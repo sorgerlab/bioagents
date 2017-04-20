@@ -10,7 +10,9 @@ from kqml import *
 
 
 class BioNLGModule(KQMLModule):
-    def __init__(self, argv):
+    def __init__(self, argv, testing=False):
+        if testing:
+            return
         super(BioNLGModule, self).__init__(argv)
         self.tasks = ['INDRA-TO-NL']
         for task in self.tasks:

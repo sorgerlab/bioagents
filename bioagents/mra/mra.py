@@ -166,11 +166,11 @@ class MRA(object):
     def extend_model(self, stmts, model_id):
         old_stmts = self.models[model_id]
         new_model_id = self.get_new_id()
-        self.models[new_model_id] = self.models[model_id]
+        self.models[new_model_id] = [st for st in self.models[model_id]]
         new_stmts = []
         for st in stmts:
             if not stmt_exists(self.models[model_id], st):
-                self.models[model_id].append(st)
+                self.models[new_model_id].append(st)
                 new_stmts.append(st)
         return new_model_id, new_stmts
 

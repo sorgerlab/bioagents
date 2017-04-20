@@ -295,6 +295,10 @@ def _get_gk_model():
     SelfExporter.do_export = False
     return model
 
+def test_get_all_patterns():
+    patterns = get_all_patterns('MAPK1')
+    print(patterns)
+
 ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
 
 ekb_braf = '<ekb><TERM dbid=\\"UP:P15056|HGNC:1097\\" id=\\"V34744\\"><type>ONT::GENE</type><name>BRAF</name><text>BRAF</text></TERM></ekb>'

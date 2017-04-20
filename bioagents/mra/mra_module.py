@@ -225,9 +225,9 @@ class MRA_Module(KQMLModule):
         upstream = self.mra.get_upstream(target, model_id)
         terms = []
         for agent in upstream:
-            term = ekb_from_agent(ups)
+            term = ekb_from_agent(agent)
             if term is not None:
-                terms.append(term)
+                terms.append(KQMLString(term))
         reply = KQMLList('SUCCESS')
         reply.set('upstream', KQMLList(terms))
         return reply

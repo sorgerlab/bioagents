@@ -36,11 +36,15 @@ def test_get_upstream():
     assert(upstream[0].name == 'EGFR')
     mm = MRA_Module(None, True)
     mm.mra = m
-    egfr_term = ekb_from_agent(egfr)
+    kras_term = ekb_from_agent(kras)
     msg = KQMLList('MODEL-GET-UPSTREAM')
-    msg.sets('target', egfr_term)
+    msg.sets('target', kras_term)
     msg.set('model-id', str(model_id))
+    print(msg)
     reply = mm.respond_model_get_upstream(msg)
+    ups = reply.get('upstream')
+    assert(len(ups) == 1)
+    print(reply)
 
 '''
 def test_replace_agent_one():

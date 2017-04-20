@@ -7,24 +7,27 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('MRA')
 import pysb.export
 from indra.statements import stmts_to_json
+from indra.trips.processor import TripsProcessor
 from kqml import *
 from mra import MRA
 
 
 class MRA_Module(KQMLModule):
-    def __init__(self, argv):
-        super(MRA_Module, self).__init__(argv)
-        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
-                      'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
-                      'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
-        for task in self.tasks:
-            msg_txt =\
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
+    def __init__(self, argv, testing=False):
+        if not testing:
+            super(MRA_Module, self).__init__(argv)
+            self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
+                          'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
+                          'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
+            for task in self.tasks:
+                msg_txt =\
+                    '(subscribe :content (request &key :content (%s . *)))' % task
+                self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton MRA agent
         self.mra = MRA()
-        self.ready()
-        super(MRA_Module, self).start()
+        if not testing:
+            self.ready()
+            super(MRA_Module, self).start()
 
     def receive_tell(self, msg, content):
         tell_content = content.head().upper()
@@ -267,7 +270,7 @@ def ekb_from_agent(agent):
         return None
     drum_terms = '<drum-terms><drum-term dbid="HGNC:%s" ' % hgnc_id + \
         'match-score="1.0" matched-name="%s" ' % agent.name + \
-        'name="%s"><drum-term><drum-terms>' % agent.name
+        'name="%s"></drum-term></drum-terms>' % agent.name
     text_tag = '<text>%s</text>' % agent.db_refs.get('TEXT')
     close_tag = '</TERM>'
     ekb = ' '.join([open_tag, type_tag, name_tag, drum_terms,

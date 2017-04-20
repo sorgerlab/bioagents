@@ -12,6 +12,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('BSB')
 from socketIO_client import SocketIO
 
+from indra.statements import stmts_from_json
 from indra.assemblers import SBGNAssembler
 
 from kqml import *
@@ -63,9 +64,9 @@ class BSB(object):
         self.socket_b.sendall(msg)
         msg = '(subscribe :content (tell &key :content (spoken . *)))'
         self.socket_b.sendall(msg)
-        msg = '(subscribe :content (request &key :content (display-model . *)))'
+        msg = '(subscribe :content (tell &key :content (display-model . *)))'
         self.socket_b.sendall(msg)
-        msg = '(subscribe :content (request &key :content (display-image . *)))'
+        msg = '(subscribe :content (tell &key :content (display-image . *)))'
         self.socket_b.sendall(msg)
         msg = '(tell :content (module-status ready))'
         self.socket_b.sendall(msg)
@@ -117,8 +118,10 @@ class BSB(object):
 
     def on_bob_message(self, data):
         # Check what kind of message it is
-        kl = KQMLList.from_string(data)
+        kl = KQMLPerformative.from_string(data)
+        head = kl.get('head')
         content = kl.get('content')
+        logger.info('Got message with head: %s' % head)
         logger.info('Got message with content: %s' % content)
         if not content:
             return
@@ -126,26 +129,29 @@ class BSB(object):
             spoken_phrase = get_spoken_phrase(content)
             self.bob_to_sbgn_say(spoken_phrase)
         elif content.head().lower() == 'display-model':
-            model = get_model(content)
-            self.bob_to_sbgn_display(model)
+            stmts_json = content.gets('model')
+            stmts = decode_indra_stmts(stmts_json)
+            self.bob_to_sbgn_display(stmts)
+        elif content.head().lower() == 'display-image':
+            path = content.gets('path')
+            self.bob_show_image(path, 1)
 
     def bob_to_sbgn_say(self, spoken_phrase):
-
         msg = {'room': self.room_id,
                'comment': spoken_phrase,
                'userName': self.user_name,
                'userId': self.user_id,
                'targets': '*',
                'time': 1}
-        print_json(msg)
+        #print_json(msg)
         self.socket_s.emit('agentMessage', msg)
-        self.bob_to_sbgn_display(get_example_model())
-        self.bob_show_image('/Users/ben/src/cwc-integ/test.png', 1)
+        #self.bob_to_sbgn_display(get_example_model())
+        #self.bob_show_image('/Users/ben/src/cwc-integ/test.png', 1)
 
 
-    def bob_to_sbgn_display(self, model):
+    def bob_to_sbgn_display(self, stmts):
         sa = SBGNAssembler()
-        sa.add_statements(model)
+        sa.add_statements(stmts)
         sbgn_content = sa.make_model()
         self.socket_s.emit('agentNewFileRequest', {'room': self.room_id})
         self.socket_s.wait(seconds=0.1)
@@ -165,6 +171,10 @@ class BSB(object):
                         'room': self.room_id, 'userId': self.user_id}
         self.socket_s.emit('agentSendImageRequest', image_params)
 
+def decode_indra_stmts(stmts_json_str):
+    stmts_json = json.loads(stmts_json_str)
+    stmts = stmts_from_json(stmts_json)
+    return stmts
 
 def print_json(js):
     s = json.dumps(js, indent=1)
@@ -173,10 +183,6 @@ def print_json(js):
 def get_spoken_phrase(content):
     say_what = content.gets('what')
     return say_what
-
-def get_model(content):
-    model = content.gets('model')
-    return model
 
 if __name__ == '__main__':
 

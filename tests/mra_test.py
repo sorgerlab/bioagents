@@ -46,6 +46,15 @@ def test_get_upstream():
     assert(len(ups) == 1)
     print(reply)
 
+def test_undo():
+    mm = MRA_Module(None, True)
+    kl = KQMLList.from_string('(BUILD-MODEL :DESCRIPTION "<ekb><EVENT id=\\"V34357\\"><type>ONT::ACTIVATE</type><arg1 id=\\"V34353\\" role=\\":AGENT\\" /><arg2 id=\\"V34364\\" role=\\":AFFECTED\\" /></EVENT><TERM id=\\"V34364\\" dbid=\\"FA:03114|BE:RAF|NCIT:C51274|UP:Q06891\\"><features></features><type>ONT::GENE-PROTEIN</type><name>RAF</name><drum-terms><drum-term dbid=\\"FA:03114\\" match-score=\\"1.0\\" name=\\"RAF subfamily\\" /><drum-term dbid=\\"BE:RAF\\" match-score=\\"1.0\\" name=\\"RAF\\" /><drum-term dbid=\\"NCIT:C51274\\" match-score=\\"0.82857\\" name=\\"RAF1\\" /><drum-term dbid=\\"UP:Q06891\\" match-score=\\"0.65714\\" name=\\"Trans-acting factor D\\" /></drum-terms></TERM><TERM id=\\"V34353\\" dbid=\\"NCIT:C52545|HGNC:5173|NCIT:C16659|NCIT:C17382\\"><features></features><type>ONT::GENE-PROTEIN</type><name>HRAS</name><drum-terms><drum-term dbid=\\"NCIT:C52545\\" match-score=\\"1.0\\" name=\\"HRAS\\" /><drum-term dbid=\\"HGNC:5173\\" match-score=\\"1.0\\" name=\\"Harvey rat sarcoma viral oncogene homolog\\" /><drum-term dbid=\\"NCIT:C16659\\" match-score=\\"0.82857\\" name=\\"oncogene H-ras\\" /><drum-term dbid=\\"NCIT:C17382\\" match-score=\\"0.82857\\" name=\\"p21 H-ras protein\\" /></drum-terms></TERM></ekb>")')
+    mm.respond_build_model(kl)
+    kl = KQMLList.from_string('(EXPAND-MODEL :MODEL-ID 1 :DESCRIPTION "<ekb><EVENT id=\\"V34455\\"><type>ONT::ACTIVATE</type><arg1 id=\\"V34451\\" role=\\":AGENT\\" /><arg2 id=\\"V34462\\" role=\\":AFFECTED\\" /></EVENT><TERM id=\\"V34462\\" dbid=\\"FA:03114|BE:RAF|NCIT:C51274|UP:Q06891\\"><features></features><type>ONT::GENE-PROTEIN</type><name>RAF</name><drum-terms><drum-term dbid=\\"FA:03114\\" match-score=\\"1.0\\" name=\\"RAF subfamily\\" /><drum-term dbid=\\"BE:RAF\\" match-score=\\"1.0\\" name=\\"RAF\\" /><drum-term dbid=\\"NCIT:C51274\\" match-score=\\"0.82857\\" name=\\"RAF1\\" /><drum-term dbid=\\"UP:Q06891\\" match-score=\\"0.65714\\" name=\\"Trans-acting factor D\\" /></drum-terms></TERM><TERM id=\\"V34451\\" dbid=\\"NCIT:C52549|HGNC:7989|NCIT:C16889|NCIT:C17384\\"><features></features><type>ONT::GENE-PROTEIN</type><name>NRAS</name><drum-terms><drum-term dbid=\\"NCIT:C52549\\" match-score=\\"1.0\\" name=\\"NRAS\\" /><drum-term dbid=\\"HGNC:7989\\" match-score=\\"1.0\\" name=\\"neuroblastoma RAS viral oncogene homolog\\" /><drum-term dbid=\\"NCIT:C16889\\" match-score=\\"0.82857\\" name=\\"oncogene N-RAS\\" /><drum-term dbid=\\"NCIT:C17384\\" match-score=\\"0.82857\\" name=\\"p21 N-ras protein\\" /></drum-terms></TERM></ekb>")')
+    mm.respond_expand_model(kl)
+    kl = KQMLList.from_string('(MODEL-UNDO)')
+    mm.respond_model_undo(kl)
+
 '''
 def test_replace_agent_one():
     m = MRA()

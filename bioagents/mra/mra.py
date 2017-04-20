@@ -139,6 +139,7 @@ class MRA(object):
         model_id = self.new_model(stmts)
         res = {'model_id': model_id,
                'model': stmts}
+        model_exec = self.assemble_pysb(stmts)
         if not stmts:
             return res
         res['ambiguities'] = []

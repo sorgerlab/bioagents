@@ -44,7 +44,10 @@ class BSB(object):
                     else:
                         data, addr = sock.recvfrom(4086)
                         if data:
-                            self.on_bob_message(data)
+                            parts = data.split('\n')
+                            for part in parts:
+                                if part:
+                                    self.on_bob_message(part)
             except KeyboardInterrupt:
                 break
         self.socket_s.emit('disconnect')
@@ -118,7 +121,7 @@ class BSB(object):
 
 
     def on_bob_message(self, data):
-        print('data: ' + data)
+        logger.debug('data: ' + data)
         # Check what kind of message it is
         kl = KQMLPerformative.from_string(data)
         head = kl.head()
@@ -126,8 +129,9 @@ class BSB(object):
         if head == 'tell' and content.head().lower() == 'display-model':
             parts = data.split('\n')
             if len(parts) > 1:
-                print('!!!!!!!!!!!!\nMessage with multiple parts\n!!!!!!!!!!!')
-                print(parts)
+                logger.error('!!!!!!!!!!!!\nMessage with multiple parts\n ' +
+                             '!!!!!!!!!!!')
+                logger.error(parts)
         logger.info('Got message with head: %s' % head)
         logger.info('Got message with content: %s' % content)
         if not content:

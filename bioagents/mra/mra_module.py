@@ -16,6 +16,7 @@ class MRA_Module(KQMLModule):
     def __init__(self, argv, testing=False):
         # Instantiate a singleton MRA agent
         self.mra = MRA()
+        self.testing = testing
         if testing:
             return
         super(MRA_Module, self).__init__(argv)
@@ -67,13 +68,11 @@ class MRA_Module(KQMLModule):
         except InvalidModelDescriptionError as e:
             logger.error('Invalid model description.')
             logger.error(e)
-            fail_msg = '(FAILURE :reason INVALID_DESCRIPTION)'
-            reply_content = KQMLList.from_string(fail_msg)
+            reply_content = make_failure('INVALID_DESCRIPTION')
         except InvalidModelIdError as e:
             logger.error('Invalid model ID.')
             logger.error(e)
-            fail_msg = '(FAILURE :reason INVALID_MODEL_ID)'
-            reply_content = KQMLList.from_string(fail_msg)
+            reply_content = make_failure('INVALID_MODEL_ID')
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
@@ -106,6 +105,8 @@ class MRA_Module(KQMLModule):
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set('ambiguities', ambiguities_msg)
+        if not self.testing:
+            self.send_display_model(model_msg, diagram)
         return msg
 
     def respond_expand_model(self, content):
@@ -232,6 +233,24 @@ class MRA_Module(KQMLModule):
         reply.set('upstream', KQMLList(terms))
         return reply
 
+    def send_display_model(self, model, diagram):
+        msg = KQMLPerformative('tell')
+        content = KQMLList('display-model')
+        content.set('type', 'indra')
+        content.sets('model', model)
+        msg.set('content', content)
+        self.send(msg)
+        if not diagram:
+            return
+        msg = KQMLPerformative('tell')
+        content = KQMLList('display-image')
+        content.set('type', 'reactionnetwork')
+        content.sets('path', diagram)
+        msg.set('content', content)
+        self.send(msg)
+
+
+
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')
         if model_id_arg is None:
@@ -319,6 +338,11 @@ def get_ambiguities_msg(ambiguities):
         sa.append(s)
     ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
     return ambiguities_msg
+
+def make_failure(reason):
+    msg = KQMLList('FAILURE')
+    msg.set('reason', reason)
+    return msg
 
 if __name__ == "__main__":
     MRA_Module(['-name', 'MRA'] + sys.argv[1:])

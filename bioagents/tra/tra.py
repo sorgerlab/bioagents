@@ -1,15 +1,16 @@
 import numpy
-import sympy.physics.units as units
 import logging
 import itertools
 from time import sleep
+from copy import deepcopy
+from collections import defaultdict
+import sympy.physics.units as units
 import indra.statements as ist
 import indra.assemblers.pysb_assembler as pa
-from pysb.export.kappa import KappaExporter
 from pysb import Observable
 from pysb.integrate import Solver
+from pysb.export.kappa import KappaExporter
 import model_checker as mc
-from copy import deepcopy
 
 logger = logging.getLogger('TRA')
 import matplotlib.pyplot as plt
@@ -39,57 +40,8 @@ class TRA(object):
             max_time = time_limit.get_ub_seconds()
         # TODO: handle multiple entities
         obs = get_create_observable(model, pattern.entities[0])
-        if pattern.pattern_type == 'transient':
-            fstr = mc.transient_formula(obs.name)
-        elif pattern.pattern_type == 'sustained':
-            fstr = mc.sustained_formula(obs.name)
-        elif pattern.pattern_type == 'no_change':
-            fstr = mc.noact_formula(obs.name)
-        elif pattern.pattern_type == 'always_value':
-            if not pattern.value.quant_type == 'qualitative':
-                msg = 'Cannot handle always value of "%s" type.' % \
-                    pattern.value.quant_type
-                raise InvalidTemporalPatternError(msg)
-            if pattern.value.value == 'low':
-                val = 0
-            elif pattern.value.value == 'high':
-                val = 1
-            else:
-                msg = 'Cannot handle always value of "%s".' % \
-                    pattern.value.value
-                raise InvalidTemporalPatternError(msg)
-            fstr = mc.always_formula(obs.name, val)
-        elif pattern.pattern_type == 'eventual_value':
-            if not pattern.value.quant_type == 'qualitative':
-                msg = 'Cannot handle eventual value of "%s" type.' % \
-                    pattern.value.quant_type
-                raise InvalidTemporalPatternError(msg)
-            if pattern.value.value == 'low':
-                val = 0
-            elif pattern.value.value == 'high':
-                val = 1
-            else:
-                msg = 'Cannot handle eventual value of "%s".' % \
-                    pattern.value.value
-                raise InvalidTemporalPatternError(msg)
-            fstr = mc.eventual_formula(obs.name, val)
-        elif pattern.pattern_type == 'sometime_value':
-            if not pattern.value.quant_type == 'qualitative':
-                msg = 'Cannot handle sometime value of "%s" type.' % \
-                    pattern.value.quant_type
-                raise InvalidTemporalPatternError(msg)
-            if pattern.value.value == 'low':
-                val = 0
-            elif pattern.value.value == 'high':
-                val = 1
-            else:
-                msg = 'Cannot handle sometime value of "%s".' % \
-                    pattern.value.value
-                raise InvalidTemporalPatternError(msg)
-            fstr = mc.sometime_formula(obs.name, val)
-        else:
-            msg = 'Unknown pattern %s' % pattern.pattern_type
-            raise InvalidTemporalPatternError(msg)
+        fstr = get_ltl_from_pattern(pattern, obs)
+        all_patterns = get_all_patterns(obs.name)
         # TODO: make this adaptive
         # The number of independent simulations to perform
         num_sim = 10
@@ -102,6 +54,8 @@ class TRA(object):
             min_time_idx = int(num_times * (1.0*min_time / max_time))
         else:
             min_time_idx = 0
+
+        all_pattern_truths = defaultdict(list)
         truths = []
         plt.figure()
         plt.ion()
@@ -127,13 +81,25 @@ class TRA(object):
             plt.plot(tspan, yobs)
             self.discretize_obs(yobs, obs.name)
             yobs_from_min = yobs[min_time_idx:]
+
             MC = mc.ModelChecker(fstr, yobs_from_min)
             tf = MC.truth
             logger.info('Property %s' % tf)
             truths.append(tf)
-        plt.savefig('%s.png' % fstr)
+
+            for fs, pat in all_patterns:
+                MC = mc.ModelChecker(fs, yobs_from_min)
+                logger.info('Property %s' % MC.truth)
+                all_pattern_truths[pat].append(MC.truth)
+
         sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
-        return sat_rate, num_sim
+        if sat_rate < 0.3:
+            suggestion_pattern = get_suggestion_pattern(all_pattern_truths)
+        else:
+            suggestion_pattern = None
+
+        plt.savefig('%s.png' % fstr)
+        return sat_rate, num_sim, suggestion_pattern
 
     def discretize_obs(self, yobs, obs_name):
         # TODO: This needs to be done in a model/observable-dependent way
@@ -177,6 +143,72 @@ class TRA(object):
             self.sol = Solver(model_sim, ts)
         self.sol.run()
         return ts, self.sol.yobs
+
+def get_suggestion_pattern(all_pattern_truths):
+    sat_rates = {}
+    for pattern, truths in all_pattern_truths.items():
+        sat_rate = numpy.count_nonzero(truths) / (1.0*len(truths))
+        sat_rates[pattern] = sat_rate
+    suggested = [pattern for pattern, sat_rate in sat_rates.items() if
+                 sat_rate > 0.9]
+    if suggested:
+        return suggested[0]
+    else:
+        return []
+
+def get_ltl_from_pattern(pattern, obs):
+    if pattern.pattern_type == 'transient':
+        fstr = mc.transient_formula(obs.name)
+    elif pattern.pattern_type == 'sustained':
+        fstr = mc.sustained_formula(obs.name)
+    elif pattern.pattern_type == 'no_change':
+        fstr = mc.noact_formula(obs.name)
+    elif pattern.pattern_type == 'always_value':
+        if not pattern.value.quant_type == 'qualitative':
+            msg = 'Cannot handle always value of "%s" type.' % \
+                pattern.value.quant_type
+            raise InvalidTemporalPatternError(msg)
+        if pattern.value.value == 'low':
+            val = 0
+        elif pattern.value.value == 'high':
+            val = 1
+        else:
+            msg = 'Cannot handle always value of "%s".' % \
+                pattern.value.value
+            raise InvalidTemporalPatternError(msg)
+        fstr = mc.always_formula(obs.name, val)
+    elif pattern.pattern_type == 'eventual_value':
+        if not pattern.value.quant_type == 'qualitative':
+            msg = 'Cannot handle eventual value of "%s" type.' % \
+                pattern.value.quant_type
+            raise InvalidTemporalPatternError(msg)
+        if pattern.value.value == 'low':
+            val = 0
+        elif pattern.value.value == 'high':
+            val = 1
+        else:
+            msg = 'Cannot handle eventual value of "%s".' % \
+                pattern.value.value
+            raise InvalidTemporalPatternError(msg)
+        fstr = mc.eventual_formula(obs.name, val)
+    elif pattern.pattern_type == 'sometime_value':
+        if not pattern.value.quant_type == 'qualitative':
+            msg = 'Cannot handle sometime value of "%s" type.' % \
+                pattern.value.quant_type
+            raise InvalidTemporalPatternError(msg)
+        if pattern.value.value == 'low':
+            val = 0
+        elif pattern.value.value == 'high':
+            val = 1
+        else:
+            msg = 'Cannot handle sometime value of "%s".' % \
+                pattern.value.value
+            raise InvalidTemporalPatternError(msg)
+        fstr = mc.sometime_formula(obs.name, val)
+    else:
+        msg = 'Unknown pattern %s' % pattern.pattern_type
+        raise InvalidTemporalPatternError(msg)
+    return fstr
 
 def apply_condition(model, condition):
     agent = condition.quantity.entity
@@ -231,6 +263,32 @@ def get_sim_result(kappa_plot):
         for i, obs in enumerate(obs_list):
             yobs[obs][t] = value['observation_values'][i]
     return (tspan, yobs)
+
+def get_all_patterns(obs_name):
+    patterns = []
+    fstr = mc.transient_formula(obs_name)
+    pattern = '(:type "transient")'
+    patterns.append((fstr, pattern))
+    fstr = mc.sustained_formula(obs_name)
+    pattern = '(:type "sustained")'
+    patterns.append((fstr, pattern))
+    fstr = mc.noact_formula(obs_name)
+    pattern = '(:type "no_change")'
+    patterns.append((fstr, pattern))
+    for val_num, val_str in zip((0, 1), ('low', 'high')):
+        fstr = mc.always_formula(obs_name, val_num)
+        pattern = \
+            '(:type "always_value" :value (:type "qualitative" :value "%s"))' % val_str
+        patterns.append((fstr, pattern))
+        fstr = mc.eventual_formula(obs_name, val_num)
+        pattern = \
+            '(:type "eventual_value" :value (:type "qualitative" :value "%s"))' % val_str
+        patterns.append((fstr, pattern))
+        fstr = mc.sometime_formula(obs_name, val_num)
+        pattern = \
+            '(:type "sometime_value" :value (:type "qualitative" :value "%s"))' % val_str
+        patterns.append((fstr, pattern))
+    return patterns
 
 class TemporalPattern(object):
     def __init__(self, pattern_type, entities, time_limit, *args, **kwargs):

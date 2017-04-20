@@ -143,6 +143,8 @@ class MRA_Module(KQMLModule):
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set('ambiguities', ambiguities_msg)
+        if not self.testing:
+            self.send_display_model(model_msg, diagram)
         return msg
 
     def respond_model_undo(self, content):
@@ -163,6 +165,8 @@ class MRA_Module(KQMLModule):
             msg.sets('diagram', diagram)
         else:
             msg.sets('diagram', '')
+        if not self.testing:
+            self.send_display_model(model_msg, diagram)
         return msg
 
     def respond_has_mechanism(self, content):
@@ -216,6 +220,8 @@ class MRA_Module(KQMLModule):
             msg.sets('diagram', diagram)
         else:
             msg.sets('diagram', '')
+        if not self.testing:
+            self.send_display_model(model_msg, diagram)
         return msg
 
     def respond_model_get_upstream(self, content):
@@ -248,8 +254,6 @@ class MRA_Module(KQMLModule):
         content.sets('path', diagram)
         msg.set('content', content)
         self.send(msg)
-
-
 
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')

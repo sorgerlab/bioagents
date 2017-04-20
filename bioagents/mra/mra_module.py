@@ -1,29 +1,33 @@
 import sys
 import json
+import random
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MRA')
 import pysb.export
 from indra.statements import stmts_to_json
+from indra.trips.processor import TripsProcessor
 from kqml import *
 from mra import MRA
 
 
 class MRA_Module(KQMLModule):
-    def __init__(self, argv):
-        super(MRA_Module, self).__init__(argv)
-        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
-                      'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
-                      'MODEL-UNDO']
-        for task in self.tasks:
-            msg_txt =\
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
+    def __init__(self, argv, testing=False):
+        if not testing:
+            super(MRA_Module, self).__init__(argv)
+            self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
+                          'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
+                          'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
+            for task in self.tasks:
+                msg_txt =\
+                    '(subscribe :content (request &key :content (%s . *)))' % task
+                self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton MRA agent
         self.mra = MRA()
-        self.ready()
-        super(MRA_Module, self).start()
+        if not testing:
+            self.ready()
+            super(MRA_Module, self).start()
 
     def receive_tell(self, msg, content):
         tell_content = content.head().upper()
@@ -55,6 +59,8 @@ class MRA_Module(KQMLModule):
                 reply_content = self.respond_has_mechanism(content)
             elif task_str == 'MODEL-REMOVE-MECHANISM':
                 reply_content = self.respond_remove_mechanism(content)
+            elif task_str == 'MODEL-GET-UPSTREAM':
+                reply_content = self.respond_model_get_upstream(content)
             else:
                 self.error_reply(msg, 'Unknown task ' + task_str)
                 return
@@ -189,7 +195,7 @@ class MRA_Module(KQMLModule):
             raise InvalidModelDescriptionError(e)
         model_id = res.get('model_id')
         if model_id is None:
-            raise InvalidModelDescriptionError()
+            raise InvalidModelDescriptionError('Could not find model id.')
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
         # Add the model id
@@ -210,6 +216,21 @@ class MRA_Module(KQMLModule):
         else:
             msg.sets('diagram', '')
         return msg
+
+    def respond_model_get_upstream(self, content):
+        """Return response content to model-upstream request."""
+        target_arg = content.gets('target')
+        target = get_target(target_arg)
+        model_id = self._get_model_id(content)
+        upstream = self.mra.get_upstream(target, model_id)
+        terms = []
+        for agent in upstream:
+            term = ekb_from_agent(agent)
+            if term is not None:
+                terms.append(KQMLString(term))
+        reply = KQMLList('SUCCESS')
+        reply.set('upstream', KQMLList(terms))
+        return reply
 
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')
@@ -234,6 +255,35 @@ class InvalidModelDescriptionError(Exception):
 
 class InvalidModelIdError(Exception):
     pass
+
+
+def ekb_from_agent(agent):
+    dbids = ['%s:%s' % (k, v) for k, v in agent.db_refs.items()]
+    dbids_str = '|'.join(dbids)
+    termid = 'MRAGEN%d' % random.randint(1000001,10000000-1)
+    open_tag = '<TERM dbid="%s" id="%s">' % (dbids_str, termid)
+    type_tag = '<type>ONT::GENE-PROTEIN</type>'
+    name_tag = '<name>%s</name>' % agent.name
+    hgnc_id = agent.db_refs.get('HGNC')
+    # TODO: handle non-genes here
+    if not hgnc_id:
+        return None
+    drum_terms = '<drum-terms><drum-term dbid="HGNC:%s" ' % hgnc_id + \
+        'match-score="1.0" matched-name="%s" ' % agent.name + \
+        'name="%s"></drum-term></drum-terms>' % agent.name
+    text_tag = '<text>%s</text>' % agent.db_refs.get('TEXT')
+    close_tag = '</TERM>'
+    ekb = ' '.join([open_tag, type_tag, name_tag, drum_terms,
+                    text_tag, close_tag])
+    return ekb
+
+def get_target(target_str):
+    target_str = '<ekb>' + target_str + '</ekb>'
+    tp = TripsProcessor(target_str)
+    terms = tp.tree.findall('TERM')
+    term_id = terms[0].attrib['id']
+    agent = tp._get_agent_by_id(term_id, None)
+    return agent
 
 
 def encode_pysb_model(pysb_model):

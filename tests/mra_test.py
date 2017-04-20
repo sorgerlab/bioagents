@@ -1,6 +1,8 @@
-from bioagents.mra import MRA
-import indra.statements
+from kqml import *
+from indra.statements import *
 from indra.trips import trips_client
+from bioagents.mra import MRA, MRA_Module
+from bioagents.mra.mra_module import ekb_from_agent, get_target
 
 
 def test_build_model_from_ekb():
@@ -12,9 +14,37 @@ def test_build_model_from_ekb():
     assert(res.get('model_id') == 1)
     assert(res.get('model_exec'))
     assert(len(m.models[1]) == 1)
-    assert(isinstance(m.models[1][0], indra.statements.Phosphorylation))
+    assert(isinstance(m.models[1][0], Phosphorylation))
     assert(m.models[1][0].enz.name == 'MAP2K1')
     assert(m.models[1][0].sub.name == 'MAPK1')
+
+def test_agent_to_ekb():
+    egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
+    term = ekb_from_agent(egfr)
+    egfr_out = get_target(term)
+    assert(isinstance(egfr_out, Agent))
+    assert(egfr_out.name == 'EGFR')
+
+def test_get_upstream():
+    m = MRA()
+    egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
+    kras = Agent('KRAS', db_refs = {'HGNC': '6407', 'TEXT': 'KRAS'})
+    stmts = [Activation(egfr, kras)]
+    model_id = m.new_model(stmts)
+    upstream = m.get_upstream(kras, model_id)
+    assert(len(upstream) == 1)
+    assert(upstream[0].name == 'EGFR')
+    mm = MRA_Module(None, True)
+    mm.mra = m
+    kras_term = ekb_from_agent(kras)
+    msg = KQMLList('MODEL-GET-UPSTREAM')
+    msg.sets('target', kras_term)
+    msg.set('model-id', str(model_id))
+    print(msg)
+    reply = mm.respond_model_get_upstream(msg)
+    ups = reply.get('upstream')
+    assert(len(ups) == 1)
+    print(reply)
 
 '''
 def test_replace_agent_one():

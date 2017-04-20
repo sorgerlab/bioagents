@@ -115,6 +115,10 @@ class BSB(object):
                     ':channel Desktop :direction input))'
             self.send_to_bob(msg)
             self.bob_uttnum += 1
+        elif comment and comment == 'reset bob':
+            msg = '(tell :content (start-conversation))'
+            self.send_to_bob(msg)
+
 
     def on_bob_message(self, data):
         # Check what kind of message it is

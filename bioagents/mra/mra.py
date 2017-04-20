@@ -13,7 +13,6 @@ from indra.statements import Complex, Activation, IncreaseAmount, \
 from indra.databases import uniprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.assemblers import pysb_assembler, PysbAssembler
-import indra.tools.assemble_corpus as ac
 from pysb.tools import render_reactions
 from bioagents.databases import nextprot_client
 
@@ -151,9 +150,8 @@ class MRA(object):
     def get_upstream(self, target, model_id):
         """Get upstream agents in model."""
         stmts = self.models[model_id]
-        rel_stmts = []
-        rel_stmts += ac.filter_by_type(stmts, IncreaseAmount)
-        rel_stmts += ac.filter_by_type(stmts, Activation)
+        rel_stmts = [st for st in stmts if isinstance(st, IncreaseAmount) or
+                                           isinstance(st, Activation)]
         rel_stmts = [st for st in rel_stmts if st.subj and \
                      (st.obj.name == target.name)]
         upstream_agents = [st.subj for st in rel_stmts]

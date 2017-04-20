@@ -81,8 +81,10 @@ class BSB(object):
                      'room': self.room_id,
                      'userId': self.user_id}
         self.socket_s.on('message', self.on_sbgnviz_message)
-
         self.socket_s.emit(event, user_info)
+        self.socket_s.emit('agentNewFileRequest', {'room': self.room_id})
+        self.bob_to_sbgn_say('Hi there! Give me a minute to get started ' + 
+                             'and then tell me what you want to do.')
 
     def on_user_list(self, user_list):
         self.current_users = user_list
@@ -116,10 +118,16 @@ class BSB(object):
 
 
     def on_bob_message(self, data):
+        print('data: ' + data)
         # Check what kind of message it is
         kl = KQMLPerformative.from_string(data)
-        head = kl.get('head')
+        head = kl.head()
         content = kl.get('content')
+        if head == 'tell' and content.head().lower() == 'display-model':
+            parts = data.split('\n')
+            if len(parts) > 1:
+                print('!!!!!!!!!!!!\nMessage with multiple parts\n!!!!!!!!!!!')
+                print(parts)
         logger.info('Got message with head: %s' % head)
         logger.info('Got message with content: %s' % content)
         if not content:

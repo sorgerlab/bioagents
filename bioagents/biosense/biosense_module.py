@@ -9,7 +9,9 @@ from kqml import *
 
 
 class BioSenseModule(KQMLModule):
-    def __init__(self, argv):
+    def __init__(self, argv, testing=False):
+        if testing:
+            return
         super(BioSenseModule, self).__init__(argv)
         self.tasks = ['CHOOSE-SENSE']
         for task in self.tasks:

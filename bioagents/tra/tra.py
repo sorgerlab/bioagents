@@ -1,3 +1,4 @@
+import os
 import numpy
 import logging
 import itertools
@@ -14,7 +15,10 @@ import model_checker as mc
 
 logger = logging.getLogger('TRA')
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+logger = logging.getLogger('TRA')
 
 class TRA(object):
     def __init__(self, kappa):
@@ -67,7 +71,7 @@ class TRA(object):
                                               min_time_idx, max_time,
                                               plot_period)
 
-        self.plot_results(tspan, results, obs.name)
+        fig_path = self.plot_results(tspan, results, obs.name)
 
         # Discretize observations
         [self.discretize_obs(yobs, obs.name) for yobs in results]
@@ -86,7 +90,7 @@ class TRA(object):
 
         # If no suggestion is to be made, we return
         if not make_suggestion:
-            return sat_rate, num_sim, None
+            return sat_rate, num_sim, None, fig_path
 
         # Run model checker on all patterns
         all_patterns = get_all_patterns(obs.name)
@@ -98,9 +102,9 @@ class TRA(object):
                 truths.append(MC.truth)
             if all(truths):
                 if not given_pattern:
-                    return 1.0, num_sim, pat
+                    return 1.0, num_sim, pat, fig_path
                 else:
-                    return sat_rate, num_sim, pat
+                    return sat_rate, num_sim, pat, fig_path
 
     def plot_results(self, tspan, results, obs_name):
         plt.figure()
@@ -118,7 +122,10 @@ class TRA(object):
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
         plt.title('Simulation results')
-        plt.savefig('%s.png' % obs_name)
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        fig_path = os.path.join(dir_path, '%s.png' % obs_name)
+        plt.savefig(fig_path)
+        return fig_path
 
     def run_simulations(self, model, conditions, num_sim, min_time_idx,
                         max_time, plot_period):
@@ -146,7 +153,7 @@ class TRA(object):
                                                  plot_period)
             # Get and plot observable
             yobs_from_min = yobs[min_time_idx:]
-            results.append(yobs)
+            results.append(yobs_from_min)
         return tspan, results
 
     def discretize_obs(self, yobs, obs_name):

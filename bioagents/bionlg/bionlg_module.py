@@ -36,7 +36,7 @@ class BioNLGModule(KQMLModule):
         """
         try:
             content = msg.get('content')
-            task_str = content.head()
+            task_str = content.head().upper()
             logger.info(task_str)
         except Exception as e:
             logger.error('Could not get task string from request.')

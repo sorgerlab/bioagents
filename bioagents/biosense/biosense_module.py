@@ -35,7 +35,7 @@ class BioSenseModule(KQMLModule):
         """
         try:
             content = msg.get('content')
-            task_str = content.head()
+            task_str = content.head().upper()
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)

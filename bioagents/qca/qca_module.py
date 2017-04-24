@@ -41,7 +41,7 @@ class QCA_Module(KQMLModule):
         message is then sent back.
         """
         content = msg.get('content')
-        task_str = content.head()
+        task_str = content.head().upper()
         if task_str == 'FIND-QCA-PATH':
             try:
                 reply_content = self.respond_find_qca_path(content)

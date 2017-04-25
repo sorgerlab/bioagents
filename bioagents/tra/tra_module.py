@@ -46,21 +46,16 @@ class TRA_Module(KQMLModule):
 
         # Send subscribe messages
         for task in self.tasks:
-            msg_txt =\
+            msg_txt = \
                 '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.from_string(msg_txt))
         self.ready()
         super(TRA_Module, self).start()
 
     def receive_request(self, msg, content):
-        '''
-        If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply
-        "tell" message is then sent back.
-        '''
+        """Respond to an incoming request by handling different tasks."""
         if self.tra is None:
-            reply_content = \
-                KQMLList.from_string('(FAILURE :reason KAPPA_FAILURE)')
+            reply_content = make_failure('KAPPA_FAILURE')
             reply_msg = KQMLPerformative('reply')
             reply_msg.set('content', reply_content)
             self.reply(msg, reply_msg)
@@ -78,9 +73,7 @@ class TRA_Module(KQMLModule):
         self.reply(msg, reply_msg)
 
     def respond_satisfies_pattern(self, content):
-        '''
-        Response content to satisfies-pattern request
-        '''
+        """Return response content to satisfies-pattern request."""
         model_indra_str = content.gets('model')
         pattern_lst = content.get('pattern')
         conditions_lst = content.get('conditions')
@@ -89,22 +82,20 @@ class TRA_Module(KQMLModule):
             model = assemble_model(model_indra_str)
         except Exception as e:
             logger.error(e)
-            reply_content =\
-                KQMLList.from_string('(FAILURE :reason INVALID_MODEL)')
+            reply_content = make_failure('INVALID_MODEL')
             return reply_content
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
         except InvalidTimeIntervalError as e:
             logger.error(e)
-            reply_content =\
-                KQMLList.from_string('(FAILURE :reason INVALID_TIME_LIMIT)')
+            reply_content = make_failure('INVALID_TIME_LIMIT')
             return reply_content
         except InvalidTemporalPatternError as e:
             logger.error(e)
-            reply_content = \
-                KQMLList.from_string('(FAILURE :reason INVALID_PATTERN)')
+            reply_content = make_failure('INVALID_PATTERN')
             return reply_content
+
         if conditions_lst is None:
             conditions = None
         else:
@@ -115,8 +106,7 @@ class TRA_Module(KQMLModule):
                     conditions.append(condition)
             except Exception as e:
                 logger.error(e)
-                msg_str = '(FAILURE :reason INVALID_CONDITIONS)'
-                reply_content = KQMLList.from_string(msg_str)
+                reply_content = make_failure('INVALID_CONDITIONS')
                 return reply_content
 
         try:
@@ -124,13 +114,11 @@ class TRA_Module(KQMLModule):
                 self.tra.check_property(model, pattern, conditions)
         except SimulatorError as e:
             logger.error(e)
-            reply_content =\
-                KQMLList.from_string('(FAILURE :reason KAPPA_FAILURE)')
+            reply_content = make_failure('KAPPA_FAILURE')
             return reply_content
         except Exception as e:
             logger.error(e)
-            reply_content =\
-                KQMLList.from_string('(FAILURE :reason INVALID_PATTERN)')
+            reply_content = make_failure('INVALID_PATTERN')
             return reply_content
 
         reply = KQMLList('SUCCESS')
@@ -237,6 +225,11 @@ def get_molecular_condition(lst):
         return MolecularCondition(condition_type, quantity, value)
     except Exception as e:
         raise InvalidMolecularConditionError(e)
+
+def make_failure(reason):
+    msg = KQMLList('FAILURE')
+    msg.set('reason', reason)
+    return msg
 
 class InvalidModelDescriptionError(Exception):
     pass

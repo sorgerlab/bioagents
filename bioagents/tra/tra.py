@@ -41,6 +41,10 @@ class TRA(object):
         # TODO: handle multiple entities
         obs = get_create_observable(model, pattern.entities[0])
         fstr = get_ltl_from_pattern(pattern, obs)
+        if fstr is None:
+            given_pattern = False
+        else:
+            given_pattern = True
         all_patterns = get_all_patterns(obs.name)
         # TODO: make this adaptive
         # The number of independent simulations to perform
@@ -82,21 +86,26 @@ class TRA(object):
             self.discretize_obs(yobs, obs.name)
             yobs_from_min = yobs[min_time_idx:]
 
-            MC = mc.ModelChecker(fstr, yobs_from_min)
-            tf = MC.truth
-            logger.info('Property %s' % tf)
-            truths.append(tf)
+            if given_pattern:
+                MC = mc.ModelChecker(fstr, yobs_from_min)
+                tf = MC.truth
+                logger.info('Property %s' % tf)
+                truths.append(tf)
 
             for fs, pat in all_patterns:
                 MC = mc.ModelChecker(fs, yobs_from_min)
                 logger.info('Property %s' % MC.truth)
                 all_pattern_truths[pat].append(MC.truth)
 
-        sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
-        if sat_rate < 0.3:
-            suggestion_pattern = get_suggestion_pattern(all_pattern_truths)
+        if given_pattern:
+            sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
+            if sat_rate < 0.3:
+                suggestion_pattern = get_suggestion_pattern(all_pattern_truths)
+            else:
+                suggestion_pattern = None
         else:
-            suggestion_pattern = None
+            sat_rate = 1.0
+            suggestion_pattern = get_suggestion_pattern(all_pattern_truths)
 
         plt.savefig('%s.png' % fstr)
         return sat_rate, num_sim, suggestion_pattern
@@ -157,6 +166,8 @@ def get_suggestion_pattern(all_pattern_truths):
         return []
 
 def get_ltl_from_pattern(pattern, obs):
+    if not pattern.pattern_type:
+        return None
     if pattern.pattern_type == 'transient':
         fstr = mc.transient_formula(obs.name)
     elif pattern.pattern_type == 'sustained':

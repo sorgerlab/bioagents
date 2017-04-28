@@ -234,12 +234,15 @@ class MRA_Module(KQMLModule):
             model_id = 1
         upstream = self.mra.get_upstream(target, model_id)
         terms = []
+        names = []
         for agent in upstream:
             term = ekb_from_agent(agent)
             if term is not None:
+                names.append(KQMLString(name))
                 terms.append(KQMLString(term))
         reply = KQMLList('SUCCESS')
         reply.set('upstream', KQMLList(terms))
+        reply.set('upstream-names', KQMLList(names))
         return reply
 
     def send_display_model(self, model, diagram):

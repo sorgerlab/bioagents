@@ -99,6 +99,8 @@ class BSB(object):
         if not isinstance(data, dict):
             return
         comment = data.get('comment')
+        if isinstance(comment, dict):
+            comment = comment.get('text')
         if comment and comment.startswith('bob:'):
             text = comment[4:].strip()
             msg = '(tell :content (started-speaking :mode text :uttnum 1 ' + \
@@ -150,7 +152,7 @@ class BSB(object):
 
     def bob_to_sbgn_say(self, spoken_phrase):
         msg = {'room': self.room_id,
-               'comment': spoken_phrase,
+               'comment': {'text': spoken_phrase},
                'userName': self.user_name,
                'userId': self.user_id,
                'targets': '*',

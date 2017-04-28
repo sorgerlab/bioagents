@@ -228,7 +228,10 @@ class MRA_Module(KQMLModule):
         """Return response content to model-upstream request."""
         target_arg = content.gets('target')
         target = get_target(target_arg)
-        model_id = self._get_model_id(content)
+        try:
+            model_id = self._get_model_id(content)
+        except Exception as e:
+            model_id = 1
         upstream = self.mra.get_upstream(target, model_id)
         terms = []
         for agent in upstream:

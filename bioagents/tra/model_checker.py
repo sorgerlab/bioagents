@@ -6,6 +6,9 @@ class ModelChecker(object):
         self.roots = []
         self.time = 0
 
+        # Downsample here for speed
+        states = states[::5]
+
         root = build_tree(self.formula_str)
         self.roots.append(root)
 

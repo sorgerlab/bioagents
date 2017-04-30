@@ -13,6 +13,7 @@ from pysb.export.kappa import KappaExporter
 import model_checker as mc
 
 logger = logging.getLogger('TRA')
+import matplotlib
 import matplotlib.pyplot as plt
 
 class TRA(object):
@@ -65,6 +66,9 @@ class TRA(object):
         tspan, results = self.run_simulations(model, conditions, num_sim,
                                               min_time_idx, max_time,
                                               plot_period)
+
+        self.plot_results(tspan, results, obs.name)
+
         # Discretize observations
         [self.discretize_obs(yobs, obs.name) for yobs in results]
         # We check for the given pattern
@@ -84,7 +88,6 @@ class TRA(object):
         if not make_suggestion:
             return sat_rate, num_sim, None
 
-
         # Run model checker on all patterns
         all_patterns = get_all_patterns(obs.name)
         for fs, pat in all_patterns:
@@ -99,12 +102,23 @@ class TRA(object):
                 else:
                     return sat_rate, num_sim, pat
 
-    def plot_results(self, tspan, results):
+    def plot_results(self, tspan, results, obs_name):
         plt.figure()
         plt.ion()
-        for result in results:
-            plt.plot(tspan, yobs)
-        plt.savefig('%s.png' % fstr)
+        lr = matplotlib.patches.Rectangle((0,0), tspan[-1], 50, color='red',
+                                           alpha=0.1)
+        hr = matplotlib.patches.Rectangle((0,50), tspan[-1], 50, color='green',
+                                           alpha=0.1)
+        ax = plt.gca()
+        ax.add_patch(lr)
+        ax.add_patch(hr)
+        for yobs in results:
+            plt.plot(tspan, yobs[obs_name])
+        plt.ylim(0, max(numpy.max(yobs[obs_name]), 100.0))
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amount (molecules)')
+        plt.title('Simulation results')
+        plt.savefig('%s.png' % obs_name)
 
     def run_simulations(self, model, conditions, num_sim, min_time_idx,
                         max_time, plot_period):

@@ -1,9 +1,12 @@
-import sympy.physics.units as units
-from kqml import KQMLList
-from bioagents.tra import tra_module
-from bioagents.tra.tra import *
-from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
+import json
 from nose.tools import raises
+import sympy.physics.units as units
+from bioagents.tra import tra_module
+from bioagents.tra.tra_module import TRA_Module
+from bioagents.tra.tra import *
+from kqml import KQMLList
+from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
+from indra.statements import *
 
 def test_time_interval():
     TimeInterval(2.0, 4.0, 'second')
@@ -255,6 +258,29 @@ def test_get_temporal_pattern_eventual():
     assert pattern.value.quant_type == 'qualitative'
     assert pattern.value.value == 'high'
 
+def test_get_all_patterns():
+    patterns = get_all_patterns('MAPK1')
+    print(patterns)
+
+def test_module():
+    tra = TRA_Module(['-name', 'TRA'], testing=True)
+    content = KQMLList()
+    pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
+                    '"%s")) :value (:type "qualitative" :value "high"))' % \
+                    ekb_complex
+    pattern = KQMLList.from_string(pattern_msg)
+    content.set('pattern', pattern)
+    model_json = _get_gk_model_indra()
+    content.sets('model', model_json)
+    res = tra.respond_satisfies_pattern(content)
+    assert(res[2] is not None)
+
+ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
+
+ekb_braf = '<ekb><TERM dbid=\\"UP:P15056|HGNC:1097\\" id=\\"V34744\\"><type>ONT::GENE</type><name>BRAF</name><text>BRAF</text></TERM></ekb>'
+
+ekb_complex = '<ekb><TERM id=\\"V34770\\"><type>ONT::MACROMOLECULAR-COMPLEX</type><components><component id=\\"V34744\\"/><component id=\\"V34752\\"/></components><text normalization=\\"\\">The BRAF-KRAS complex</text></TERM> <TERM dbid=\\"UP:P15056|HGNC:1097\\" id=\\"V34744\\"><type>ONT::GENE</type><name>BRAF</name><text>The BRAF-KRAS complex</text></TERM> <TERM dbid=\\"UP:P79800|HGNC:6407|UP:Q5EFX7|UP:O42277|UP:P01116|UP:Q05147|XFAM:PF00071|UP:Q9YH38\\" id=\\"V34752\\"><type>ONT::GENE-PROTEIN</type><name>KRAS</name><text>KRAS</text></TERM></ekb>'
+
 def _get_gk_model():
     SelfExporter.do_export = True
     Model()
@@ -295,12 +321,12 @@ def _get_gk_model():
     SelfExporter.do_export = False
     return model
 
-def test_get_all_patterns():
-    patterns = get_all_patterns('MAPK1')
-    print(patterns)
-
-ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
-
-ekb_braf = '<ekb><TERM dbid=\\"UP:P15056|HGNC:1097\\" id=\\"V34744\\"><type>ONT::GENE</type><name>BRAF</name><text>BRAF</text></TERM></ekb>'
-
-ekb_complex = '<ekb><TERM id=\\"V34770\\"><type>ONT::MACROMOLECULAR-COMPLEX</type><components><component id=\\"V34744\\"/><component id=\\"V34752\\"/></components><text normalization=\\"\\">The BRAF-KRAS complex</text></TERM> <TERM dbid=\\"UP:P15056|HGNC:1097\\" id=\\"V34744\\"><type>ONT::GENE</type><name>BRAF</name><text>The BRAF-KRAS complex</text></TERM> <TERM dbid=\\"UP:P79800|HGNC:6407|UP:Q5EFX7|UP:O42277|UP:P01116|UP:Q05147|XFAM:PF00071|UP:Q9YH38\\" id=\\"V34752\\"><type>ONT::GENE-PROTEIN</type><name>KRAS</name><text>KRAS</text></TERM></ekb>'
+def _get_gk_model_indra():
+    kras = Agent('KRAS', db_refs={'HGNC': '6407', 'UP': 'P01116'})
+    braf = Agent('BRAF', db_refs={'HGNC': '1097', 'UP': 'P15056'})
+    pp2a = Agent('PPP2CA')
+    st1 = Phosphorylation(kras, braf)
+    st2 = Dephosphorylation(pp2a, braf)
+    stmts = [st1, st2]
+    stmts_json = json.dumps(stmts_to_json(stmts))
+    return stmts_json

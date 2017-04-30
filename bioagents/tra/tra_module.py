@@ -24,18 +24,25 @@ class TRA_Module(KQMLModule):
         parser = argparse.ArgumentParser()
         parser.add_argument("--kappa_url", help="kappa endpoint")
         args = parser.parse_args()
+        self.kappa_url = None
         if args.kappa_url:
             self.kappa_url = args.kappa_url
         else:
             logger.error('No Kappa URL given.')
+            self.kappa_url = None
             self.ode_mode = True
         # Instantiate a singleton TRA agent
-        try:
-            kappa = kappa_client.KappaRuntime(self.kappa_url)
+        if self.kappa_url:
+            try:
+                kappa = kappa_client.KappaRuntime(self.kappa_url)
+                self.ode_mode = False
+            except Exception as e:
+                logger.error('Could not instantiate TRA with Kappa service.')
+                self.ode_mode = True
+
+        if not self.ode_mode:
             self.tra = TRA(kappa)
-        except Exception as e:
-            logger.error('Could not instantiate TRA with Kappa service.')
-            self.ode_mode = True
+        else:
             self.tra = TRA(None)
 
         if testing:

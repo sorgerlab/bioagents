@@ -33,22 +33,22 @@ class TRA(object):
             logger.info('Using ODE mode in TRA.')
 
     def check_property(self, model, pattern, conditions=None):
+        # TODO: handle multiple entities (observables) in pattern
+        # TODO: set max_time based on some model property if not given
+        # TODO: make number of simulations and number of time points adaptive
+
+        # Make an observable for the simulations
+        obs = get_create_observable(model, pattern.entities[0])
+
+        # Make pattern
+        fstr = get_ltl_from_pattern(pattern, obs)
+        given_pattern = (fstr is not None)
+
+        # Set the time limit for the simulations
         if pattern.time_limit is None:
-            #TODO: set this based on some model property
             max_time = 20000.0
         elif pattern.time_limit.ub > 0:
             max_time = time_limit.get_ub_seconds()
-        # TODO: handle multiple entities
-        obs = get_create_observable(model, pattern.entities[0])
-        fstr = get_ltl_from_pattern(pattern, obs)
-        if fstr is None:
-            given_pattern = False
-        else:
-            given_pattern = True
-        all_patterns = get_all_patterns(obs.name)
-        # TODO: make this adaptive
-        # The number of independent simulations to perform
-        num_sim = 10
         # The numer of time points to get output at
         num_times = 100
         # The periof at which the output is sampled
@@ -59,22 +59,70 @@ class TRA(object):
         else:
             min_time_idx = 0
 
-        all_pattern_truths = defaultdict(list)
-        truths = []
+        # The number of independent simulations to perform
+        num_sim = 10
+        # Run simulations
+        tspan, results = self.run_simulations(model, conditions, num_sim,
+                                              min_time_idx, max_time,
+                                              plot_period)
+        # Discretize observations
+        [self.discretize_obs(yobs, obs.name) for yobs in results]
+        # We check for the given pattern
+        if given_pattern:
+            truths = []
+            for yobs in results:
+                # Run model checker on the given pattern
+                MC = mc.ModelChecker(fstr, yobs)
+                logger.info('Property %s' % MC.truth)
+                truths.append(MC.truth)
+            sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
+            make_suggestion = (sat_rate < 0.3)
+        else:
+            make_suggestion = True
+
+        # If no suggestion is to be made, we return
+        if not make_suggestion:
+            return sat_rate, num_sim, None
+
+
+        # Run model checker on all patterns
+        all_patterns = get_all_patterns(obs.name)
+        for fs, pat in all_patterns:
+            truths = []
+            for yobs in results:
+                MC = mc.ModelChecker(fs, yobs)
+                logger.info('Property %s' % MC.truth)
+                truths.append(MC.truth)
+            if all(truths):
+                if not given_pattern:
+                    return 1.0, num_sim, pat
+                else:
+                    return sat_rate, num_sim, pat
+
+    def plot_results(self, tspan, results):
         plt.figure()
         plt.ion()
+        for result in results:
+            plt.plot(tspan, yobs)
+        plt.savefig('%s.png' % fstr)
+
+    def run_simulations(self, model, conditions, num_sim, min_time_idx,
+                        max_time, plot_period):
         self.sol = None
+        results = []
         for i in range(num_sim):
+            # Apply molecular condition to model
             try:
                 model_sim = self.condition_model(model, conditions)
             except Exception as e:
                 logger.error(e)
                 msg = 'Applying molecular condition failed.'
                 raise InvalidMolecularConditionError(msg)
+            # Run a simulation
             logger.info('Starting simulation %d' % (i+1))
             if not self.ode_mode:
                 try:
-                    tspan, yobs = self.simulate_model(model_sim, max_time,
+                    tspan, yobs = self.simulate_kappa(model_sim, max_time,
                                                       plot_period)
                 except Exception as e:
                     logger.error(e)
@@ -82,33 +130,10 @@ class TRA(object):
             else:
                 tspan, yobs = self.simulate_odes(model_sim, max_time,
                                                  plot_period)
-            plt.plot(tspan, yobs)
-            self.discretize_obs(yobs, obs.name)
+            # Get and plot observable
             yobs_from_min = yobs[min_time_idx:]
-
-            if given_pattern:
-                MC = mc.ModelChecker(fstr, yobs_from_min)
-                tf = MC.truth
-                logger.info('Property %s' % tf)
-                truths.append(tf)
-
-            for fs, pat in all_patterns:
-                MC = mc.ModelChecker(fs, yobs_from_min)
-                logger.info('Property %s' % MC.truth)
-                all_pattern_truths[pat].append(MC.truth)
-
-        if given_pattern:
-            sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
-            if sat_rate < 0.3:
-                suggestion_pattern = get_suggestion_pattern(all_pattern_truths)
-            else:
-                suggestion_pattern = None
-        else:
-            sat_rate = 1.0
-            suggestion_pattern = get_suggestion_pattern(all_pattern_truths)
-
-        plt.savefig('%s.png' % fstr)
-        return sat_rate, num_sim, suggestion_pattern
+            results.append(yobs)
+        return tspan, results
 
     def discretize_obs(self, yobs, obs_name):
         # TODO: This needs to be done in a model/observable-dependent way
@@ -125,7 +150,7 @@ class TRA(object):
             model_sim = model
         return model_sim
 
-    def simulate_model(self, model_sim, max_time, plot_period):
+    def simulate_kappa(self, model_sim, max_time, plot_period):
         # Export kappa model
         kappa_model = pysb_to_kappa(model_sim)
         # Start simulation
@@ -152,18 +177,6 @@ class TRA(object):
             self.sol = Solver(model_sim, ts)
         self.sol.run()
         return ts, self.sol.yobs
-
-def get_suggestion_pattern(all_pattern_truths):
-    sat_rates = {}
-    for pattern, truths in all_pattern_truths.items():
-        sat_rate = numpy.count_nonzero(truths) / (1.0*len(truths))
-        sat_rates[pattern] = sat_rate
-    suggested = [pattern for pattern, sat_rate in sat_rates.items() if
-                 sat_rate > 0.9]
-    if suggested:
-        return suggested[0]
-    else:
-        return []
 
 def get_ltl_from_pattern(pattern, obs):
     if not pattern.pattern_type:
@@ -277,28 +290,30 @@ def get_sim_result(kappa_plot):
 
 def get_all_patterns(obs_name):
     patterns = []
+    for val_num, val_str in zip((0, 1), ('low', 'high')):
+        fstr = mc.always_formula(obs_name, val_num)
+        pattern = \
+            '(:type "always_value" :value (:type "qualitative" :value "%s"))' % val_str
+        patterns.append((fstr, pattern))
     fstr = mc.transient_formula(obs_name)
     pattern = '(:type "transient")'
     patterns.append((fstr, pattern))
     fstr = mc.sustained_formula(obs_name)
     pattern = '(:type "sustained")'
     patterns.append((fstr, pattern))
-    fstr = mc.noact_formula(obs_name)
-    pattern = '(:type "no_change")'
-    patterns.append((fstr, pattern))
     for val_num, val_str in zip((0, 1), ('low', 'high')):
-        fstr = mc.always_formula(obs_name, val_num)
-        pattern = \
-            '(:type "always_value" :value (:type "qualitative" :value "%s"))' % val_str
-        patterns.append((fstr, pattern))
         fstr = mc.eventual_formula(obs_name, val_num)
         pattern = \
             '(:type "eventual_value" :value (:type "qualitative" :value "%s"))' % val_str
         patterns.append((fstr, pattern))
+    for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.sometime_formula(obs_name, val_num)
         pattern = \
             '(:type "sometime_value" :value (:type "qualitative" :value "%s"))' % val_str
         patterns.append((fstr, pattern))
+    fstr = mc.noact_formula(obs_name)
+    pattern = '(:type "no_change")'
+    patterns.append((fstr, pattern))
     return patterns
 
 class TemporalPattern(object):

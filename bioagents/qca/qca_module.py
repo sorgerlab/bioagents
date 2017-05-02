@@ -40,33 +40,24 @@ class QCA_Module(KQMLModule):
         and call the appropriate function to prepare the response. A reply
         message is then sent back.
         """
-        content = msg.get('content')
         task_str = content.head().upper()
         if task_str == 'FIND-QCA-PATH':
             try:
                 reply_content = self.respond_find_qca_path(content)
             except Exception as e:
                 logger.error(e)
-                reply_content = KQMLList.from_string('(FAILURE)')
+                reply_content = make_failure()
         elif task_str == 'HAS-QCA-PATH':
             try:
                 reply_content = self.has_qca_path(content)
             except Exception as e:
                 logger.error(e)
-                reply_content = KQMLList.from_string('(FAILURE)')
+                reply_content = make_failure()
         else:
-            reply_content = KQMLList.from_string('(FAILURE)')
+            reply_content = make_failure()
 
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
-
-    def respond_dont_know(self, msg, content_string):
-        resp = '(ONT::TELL :content (ONT::DONT-KNOW :content %s))' %\
-            content_string
-        resp_list = KQMLList.from_string(resp)
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', resp_list)
         self.reply(msg, reply_msg)
 
     def respond_find_qca_path(self, content):
@@ -91,8 +82,8 @@ class QCA_Module(KQMLModule):
         results_list = self.qca.find_causal_path([source], [target],
                                                  relation_types=relation_types)
         if not results_list:
-            reply_content = KQMLList.from_string('(FAILURE NO_PATH_FOUND)')
-            return reply_content
+            reply = make_failure('NO_PATH_FOUND')
+            return reply
         first_result = results_list[0]
         first_edges = first_result[1::2]
         indra_edges = [fe[0]['INDRA json'] for fe in first_edges]
@@ -100,9 +91,10 @@ class QCA_Module(KQMLModule):
         indra_edges_str = json.dumps(indra_edges)
         ks = KQMLString(indra_edges_str)
 
-        reply_content = KQMLList(['SUCCESS', ':paths', KQMLList([ks])])
+        reply = KQMLList('SUCCESS')
+        reply.set('paths', KQMLList([ks]))
 
-        return reply_content
+        return reply
 
     def has_qca_path(self, content):
         """Response content to find-qca-path request."""
@@ -126,10 +118,10 @@ class QCA_Module(KQMLModule):
 
         has_path = self.qca.has_path([source], [target])
 
-        reply_content = KQMLList.from_string(
-            '(SUCCESS :haspath (' + str(has_path) + '))')
+        reply = KQMLList('SUCCESS')
+        reply.set('haspath', 'TRUE' if has_path else 'FALSE')
 
-        return reply_content
+        return reply
 
     def _get_term_name(self, term_str):
         term_str = '<ekb>' + term_str + '</ekb>'
@@ -138,6 +130,12 @@ class QCA_Module(KQMLModule):
         term_id = terms[0].attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
         return agent.name
+
+def make_failure(reason=None):
+    msg = KQMLList('FAILURE')
+    if reason:
+        msg.set('reason', reason)
+    return msg
 
 if __name__ == "__main__":
     QCA_Module(['-name', 'QCA'] + sys.argv[1:])

@@ -65,7 +65,7 @@ class DTDA_Module(KQMLModule):
             return reply
         reply = KQMLList('SUCCESS')
         reply.set('is-target', 'TRUE' if is_target else 'FALSE')
-        return reply_content
+        return reply
 
     def respond_find_target_drug(self, content):
         """Response content to find-target-drug request."""

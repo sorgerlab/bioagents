@@ -44,29 +44,30 @@ class BioNLGModule(KQMLModule):
             self.error_reply(msg, 'Invalid task')
         try:
             if task_str == 'INDRA-TO-NL':
-                reply = self.respond_build_model(content)
+                reply = self.respond_indra_to_nl(content)
             else:
                 self.error_reply(msg, 'Unknown task ' + task_str)
                 return
         except Exception as e:
             logger.error('Failed to perform task.')
             logger.error(e)
-            reply = KQMLList.from_string('(FAILURE NL_GENERATION_ERROR)')
+            reply = KQMLList('FAILURE')
+            reply.set('reason', 'NL_GENERATION_ERROR')
 
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply)
         self.reply(msg, reply_msg)
 
-    def respond_build_model(self, content):
+    def respond_indra_to_nl(self, content):
         """Return response content to build-model request."""
         stmts_json_str = content.gets('statements')
         stmts = decode_indra_stmts(stmts_json_str)
         txts = assemble_english(stmts)
         txts_kqml = [KQMLString(txt) for txt in txts]
         txts_list = KQMLList(txts_kqml)
-        msg = KQMLPerformative('OK')
-        msg.set('NL', txts_list)
-        return msg
+        reply = KQMLList('OK')
+        reply.set('NL', txts_list)
+        return reply
 
 def decode_indra_stmts(stmts_json_str):
     stmts_json = json.loads(stmts_json_str)
@@ -82,18 +83,6 @@ def assemble_english(stmts):
             txt = txt[:-1]
             txts.append(txt)
     return txts
-
-def get_string_arg(kqml_str):
-    if kqml_str is None:
-        return None
-    s = kqml_str.to_string()
-    if s[0] == '"':
-        s = s[1:]
-    if s[-1] == '"':
-        s = s[:-1]
-    s = s.replace('\\"', '"')
-    return s
-
 
 if __name__ == "__main__":
     BioNLGModule(['-name', 'BIONLG'] + sys.argv[1:])

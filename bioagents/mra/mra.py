@@ -13,6 +13,7 @@ from indra.statements import Complex, Activation, IncreaseAmount, \
 from indra.databases import uniprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.assemblers import pysb_assembler, PysbAssembler
+from pysb import kappa
 from pysb.tools import render_reactions
 from bioagents.databases import nextprot_client
 
@@ -56,9 +57,7 @@ class MRA(object):
         res['ambiguities'] = ambiguities
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
-        diagram = make_model_diagram(model_exec, model_id)
-        if diagram:
-            res['diagram'] = diagram
+        res['diagrams'] = make_diagrams(model_exec, model_id)
         return res
 
     def expand_model_from_ekb(self, model_ekb, model_id):
@@ -80,9 +79,7 @@ class MRA(object):
         res['model_new'] = new_stmts
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
-        diagram = make_model_diagram(model_exec, new_model_id)
-        if diagram:
-            res['diagram'] = diagram
+        res['diagrams'] = make_diagrams(model_exec, model_id)
         return res
 
     def has_mechanism(self, mech_ekb, model_id):
@@ -124,11 +121,9 @@ class MRA(object):
         res['model_exec'] = model_exec
         if removed_stmts:
             res['removed'] = removed_stmts
-        diagram = make_model_diagram(model_exec, model_id)
-        if diagram:
-            res['diagram'] = diagram
+        res['diagrams'] = make_diagrams(model_exec, model_id)
         self.new_model(new_stmts)
-        return model
+        return res
 
     def model_undo(self):
         """Revert to the previous model version."""
@@ -143,9 +138,7 @@ class MRA(object):
         if not stmts:
             return res
         res['ambiguities'] = []
-        diagram = make_model_diagram(model_exec, model_id)
-        if diagram:
-            res['diagram'] = diagram
+        res['diagrams'] = make_diagrams(model_exec, model_id)
         return res
 
     def get_upstream(self, target, model_id):
@@ -227,12 +220,31 @@ def get_ambiguities(tp):
     return all_ambiguities
 
 
-def make_model_diagram(pysb_model, model_id):
+def make_diagrams(pysb_model, model_id):
+    rxn = make_reaction_network(pysb_model, model_id)
+    cm = make_contact_map(pysb_model, model_id)
+    diagrams = {'reactionnetwork': rxn, 'contactmap': cm}
+    return diagrams
+
+
+def make_contact_map(pysb_model, model_id):
+    """Generate a Kappa contact map."""
+    try:
+        cm = kappa.contact_map(pysb_model)
+        fname = 'model%d_cm' % model_id
+        abs_path = os.path.abspath(os.getcwd())
+        full_path = os.path.join(abs_path, fname + '.png')
+        cm.draw(full_path, prog='dot')
+    except Exception:
+        return None
+    return full_path
+
+def make_reaction_network(pysb_model, model_id):
     """Generate a PySB/BNG reaction network as a PNG file."""
     try:
         for m in pysb_model.monomers:
             pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
-        fname = 'model%d' % model_id
+        fname = 'model%d_rxn' % model_id
         diagram_dot = render_reactions.run(pysb_model)
     # TODO: use specific PySB/BNG exceptions and handle them
     # here to show meaningful error messages

@@ -24,7 +24,7 @@ class DTDA_Module(KQMLModule):
                       'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
         # Send subscribe messages
         for task in self.tasks:
-            msg_txt =\
+            msg_txt = \
                 '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.from_string(msg_txt))
         # Send ready message
@@ -44,24 +44,12 @@ class DTDA_Module(KQMLModule):
             reply_content = self.respond_find_disease_targets(content)
         elif task_str == 'FIND-TREATMENT':
             reply_content = self.respond_find_treatment(content)
-            if reply_content is None:
-                self.respond_dont_know(msg,
-                                       '(ONT::A X1 :instance-of ONT::DRUG)')
-                return
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
 
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
-
-    def respond_dont_know(self, msg, content_string):
-        resp = '(ONT::TELL :content (ONT::DONT-KNOW :content %s))' %\
-            content_string
-        resp_list = KQMLList.from_string(resp)
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', resp_list)
         self.reply(msg, reply_msg)
 
     def respond_is_drug_target(self, content):
@@ -73,17 +61,10 @@ class DTDA_Module(KQMLModule):
         try:
             is_target = self.dtda.is_nominal_drug_target(drug, target_name)
         except DrugNotFoundException:
-            reply_content = \
-                KQMLList.from_string('(FAILURE :reason DRUG_NOT_FOUND)')
-            return reply_content
-        status = 'SUCCESS'
-        if is_target:
-            is_target_str = 'TRUE'
-        else:
-            is_target_str = 'FALSE'
-        msg_str = '%s :is-target %s' %\
-                  (status, is_target_str)
-        reply_content = KQMLList.from_string(msg_str)
+            reply = make_failure('DRUG_NOT_FOUND')
+            return reply
+        reply = KQMLList('SUCCESS')
+        reply.set('is-target', 'TRUE' if is_target else 'FALSE')
         return reply_content
 
     def respond_find_target_drug(self, content):
@@ -92,15 +73,16 @@ class DTDA_Module(KQMLModule):
         target = self._get_target(target_arg)
         target_name = target.name
         drug_names, chebi_ids = self.dtda.find_target_drugs(target_name)
-        drug_list_str = ''
+        reply = KQMLList('SUCCESS')
+        drugs = KQMLList()
         for dn, ci in zip(drug_names, chebi_ids):
-            if ci is None:
-                drug_list_str += '(:name %s) ' % dn.encode('ascii', 'ignore')
-            else:
-                drug_list_str += '(:name %s :chebi_id %s) ' % (dn, ci)
-        reply_content = KQMLList.from_string(
-            '(SUCCESS :drugs (' + drug_list_str + '))')
-        return reply_content
+            drug = KQMLList()
+            drug.sets('name', dn)
+            if ci:
+                drug.set('chebi_id', ci)
+            drugs.append(drug)
+        reply.set('drugs', drugs)
+        return reply
 
     def respond_find_disease_targets(self, content):
         """Response content to find-disease-targets request."""
@@ -109,53 +91,12 @@ class DTDA_Module(KQMLModule):
             disease = self.get_disease(disease_arg)
         except Exception as e:
             logger.error(e)
-            msg_str = '(FAILURE :reason INVALID_DISEASE)'
-            reply_content = KQMLList.from_string(msg_str)
-            return reply_content
+            reply = make_failure('INVALID_DISEASE')
+            return reply
 
         if disease.disease_type != 'cancer':
-            msg_str = '(FAILURE :reason DISEASE_NOT_FOUND)'
-            reply_content = KQMLList.from_string(msg_str)
-            return reply_content
-
-        logger.debug('Disease: %s' % disease.name)
-
-        try:
-            mut_protein, mut_percent =\
-                self.dtda.get_top_mutation(disease.name)
-        except DiseaseNotFoundException:
-            msg_str = '(FAILURE :reason DISEASE_NOT_FOUND)'
-            reply_content = KQMLList.from_string(msg_str)
-            return reply_content
-
-        # TODO: get functional effect from actual mutations
-        # TODO: add list of actual mutations to response
-        # TODO: get fraction not percentage from DTDA
-        reply_content =\
-            KQMLList.from_string(
-                '(SUCCESS ' +
-                ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +
-                ':prevalence %.2f ' % (mut_percent/100.0) +
-                ':functional-effect ACTIVE)')
-
-        return reply_content
-
-    def respond_find_treatment(self, content):
-        """Response content to find-treatment request."""
-        #TODO: eliminate code duplication here
-        disease_arg = content.gets('disease')
-        try:
-            disease = self.get_disease(disease_arg)
-        except Exception as e:
-            logger.error(e)
-            msg_str = '(FAILURE :reason INVALID_DISEASE)'
-            reply_content = KQMLList.from_string(msg_str)
-            return reply_content
-
-        if disease.disease_type != 'cancer':
-            msg_str = '(FAILURE :reason DISEASE_NOT_FOUND)'
-            reply_content = KQMLList.from_string(msg_str)
-            return reply_content
+            reply = make_failure('DISEASE_NOT_FOUND')
+            return reply
 
         logger.debug('Disease: %s' % disease.name)
 
@@ -163,31 +104,71 @@ class DTDA_Module(KQMLModule):
             mut_protein, mut_percent = \
                 self.dtda.get_top_mutation(disease.name)
         except DiseaseNotFoundException:
-            msg_str = '(FAILURE :reason DISEASE_NOT_FOUND)'
-            reply_content = KQMLList.from_string(msg_str)
-            return reply_content
+            reply = make_failure('DISEASE_NOT_FOUND')
+            return reply
 
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
-        reply_content = KQMLList.from_string(
-                '(SUCCESS ' +
-                ':protein (:name %s :hgnc %s) ' % (mut_protein, mut_protein) +
-                ':prevalence %.2f ' % (mut_percent/100.0) +
-                ':functional-effect ACTIVE)')
+        reply = KQMLList('SUCCESS')
+        protein = KQMLList()
+        protein.set('name', mut_protein)
+        protein.set('hgnc', mut_protein)
+        reply.set('protein', protein)
+        reply.set('prevalence', '%.2f' % (mut_percent/100.0))
+        reply.set('functional-effect', 'ACTIVE')
+        return reply
 
-        # Try to find a drug
+    def respond_find_treatment(self, content):
+        """Response content to find-treatment request."""
+        disease_arg = content.gets('disease')
+        try:
+            disease = self.get_disease(disease_arg)
+        except Exception as e:
+            logger.error(e)
+            reply = make_failure('INVALID_DISEASE')
+            return reply
+
+        if disease.disease_type != 'cancer':
+            reply = make_failure('DISEASE_NOT_FOUND')
+            return reply
+
+        logger.debug('Disease: %s' % disease.name)
+
+        try:
+            mut_protein, mut_percent = \
+                self.dtda.get_top_mutation(disease.name)
+        except DiseaseNotFoundException:
+            reply = make_failure('DISEASE_NOT_FOUND')
+            return reply
+
+        reply = KQMLList()
+
+        # TODO: get functional effect from actual mutations
+        # TODO: add list of actual mutations to response
+        # TODO: get fraction not percentage from DTDA
+        reply1 = KQMLList('SUCCESS')
+        protein = KQMLList()
+        protein.set('name', mut_protein)
+        protein.set('hgnc', mut_protein)
+        reply1.set('protein', protein)
+        reply1.set('prevalence', '%.2f' % (mut_percent/100.0))
+        reply1.set('functional-effect', 'ACTIVE')
+        reply.append(reply1)
+
+        reply2 = KQMLList('SUCCESS')
         drug_names, chebi_ids = self.dtda.find_target_drugs(mut_protein)
-        drug_list_str = ''
+        drugs = KQMLList()
         for dn, ci in zip(drug_names, chebi_ids):
-            if ci is None:
-                drug_list_str += '(:name %s) ' % dn.encode('ascii', 'ignore')
-            else:
-                drug_list_str += '(:name %s :chebi_id %s) ' % (dn, ci)
-        reply_content = KQMLList.from_string(
-            '(SUCCESS :drugs (' + drug_list_str + '))')
+            drug = KQMLList()
+            drug.sets('name', dn)
+            if ci:
+                drug.set('chebi_id', ci)
+            drugs.append(drug)
+        reply2.set('drugs', drugs)
 
-        return reply_content
+        reply.append(reply2)
+        return reply
 
     def _get_target(self, target_str):
         target_str = '<ekb>' + target_str + '</ekb>'
@@ -209,6 +190,12 @@ class DTDA_Module(KQMLModule):
         dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
         disease = Disease(disease_type, dbname, dbid_dict)
         return disease
+
+def make_failure(reason):
+    msg = KQMLList('FAILURE')
+    msg.set('reason', reason)
+    return msg
+
 
 if __name__ == "__main__":
     DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])

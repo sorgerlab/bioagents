@@ -77,7 +77,7 @@ class DTDA_Module(KQMLModule):
         drugs = KQMLList()
         for dn, ci in zip(drug_names, chebi_ids):
             drug = KQMLList()
-            drug.sets('name', dn)
+            drug.set('name', dn.replace(' ', '-'))
             if ci:
                 drug.set('chebi_id', ci)
             drugs.append(drug)
@@ -161,7 +161,7 @@ class DTDA_Module(KQMLModule):
         drugs = KQMLList()
         for dn, ci in zip(drug_names, chebi_ids):
             drug = KQMLList()
-            drug.sets('name', dn)
+            drug.sets('name', dn.replace(' ', '-'))
             if ci:
                 drug.set('chebi_id', ci)
             drugs.append(drug)

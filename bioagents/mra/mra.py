@@ -223,8 +223,21 @@ def get_ambiguities(tp):
 def make_diagrams(pysb_model, model_id):
     rxn = make_reaction_network(pysb_model, model_id)
     cm = make_contact_map(pysb_model, model_id)
-    diagrams = {'reactionnetwork': rxn, 'contactmap': cm}
+    im = make_influence_map(pysb_model, model_id)
+    diagrams = {'reactionnetwork': rxn, 'contactmap': cm, 'influencemap': im}
     return diagrams
+
+def make_influence_map(pysb_model, model_id):
+    """Generate a Kappa influence map."""
+    try:
+        im = kappa.influence_map(pysb_model)
+        fname = 'model%d_im' % model_id
+        abs_path = os.path.abspath(os.getcwd())
+        full_path = os.path.join(abs_path, fname + '.png')
+        im.draw(full_path, prog='dot')
+    except Exception:
+        return None
+    return full_path
 
 
 def make_contact_map(pysb_model, model_id):

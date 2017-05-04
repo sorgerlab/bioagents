@@ -42,7 +42,7 @@ class BSB(object):
                     if sock == self.socket_s._transport._connection.sock:
                         self.socket_s.wait(seconds=0.1)
                     else:
-                        data, addr = sock.recvfrom(4086)
+                        data, addr = sock.recvfrom(1000000)
                         if data:
                             parts = data.split('\n')
                             for part in parts:
@@ -98,13 +98,21 @@ class BSB(object):
     def on_sbgnviz_message(self, data):
         if not isinstance(data, dict):
             return
+        # Check to see if the message is from BOB himself
+        # and don't relay if it is
+        user = data.get('userName')
+        if user.lower() == 'bob':
+            return
         comment = data.get('comment')
         if isinstance(comment, list):
             comment = comment[0]
         if isinstance(comment, dict):
             comment = comment.get('text')
-        if comment and comment.startswith('bob:'):
-            text = comment[4:].strip()
+        if comment and comment == 'reset bob':
+            msg = '(tell :content (start-conversation))'
+            self.send_to_bob(msg)
+        elif comment:
+            text = comment
             msg = '(tell :content (started-speaking :mode text :uttnum 1 ' + \
                     ':channel Desktop :direction input))'
             self.send_to_bob(msg)
@@ -119,9 +127,6 @@ class BSB(object):
                     ':channel Desktop :direction input))'
             self.send_to_bob(msg)
             self.bob_uttnum += 1
-        elif comment and comment == 'reset bob':
-            msg = '(tell :content (start-conversation))'
-            self.send_to_bob(msg)
 
 
     def on_bob_message(self, data):
@@ -154,7 +159,7 @@ class BSB(object):
 
     def bob_to_sbgn_say(self, spoken_phrase):
         msg = {'room': self.room_id,
-               'comment': [{'text': spoken_phrase}],
+               'comment': spoken_phrase,
                'userName': self.user_name,
                'userId': self.user_id,
                'targets': '*',

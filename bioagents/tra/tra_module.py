@@ -72,8 +72,9 @@ class TRA_Module(KQMLModule):
         if task_str == 'SATISFIES-PATTERN':
             try:
                 reply_content = self.respond_satisfies_pattern(content)
-            except Exception:
-                reply_content = make_failure('TRA_FAILURE')
+            except Exception as e:
+                logger.error(e)
+                reply_content = make_failure('INVALID_PATTERN')
         else:
             self.error_reply(msg, 'Unknown request task ' + task_str)
             return

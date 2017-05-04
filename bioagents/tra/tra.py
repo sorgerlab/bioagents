@@ -77,10 +77,12 @@ class TRA(object):
             for yobs in results:
                 # Run model checker on the given pattern
                 MC = mc.ModelChecker(fstr, yobs)
-                logger.info('Property %s' % MC.truth)
+                logger.info('Main property %s' % MC.truth)
                 truths.append(MC.truth)
             sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
             make_suggestion = (sat_rate < 0.3)
+            if make_suggestion:
+                logger.info('MAKING SUGGESTION with sat rate %.2f.' % sat_rate)
         else:
             make_suggestion = True
 
@@ -91,14 +93,16 @@ class TRA(object):
         # Run model checker on all patterns
         all_patterns = get_all_patterns(obs.name)
         for fs, pat in all_patterns:
+            logger.info('Testing pattern: %s' % pat)
             truths = []
             for yobs in results:
                 MC = mc.ModelChecker(fs, yobs)
                 logger.info('Property %s' % MC.truth)
                 truths.append(MC.truth)
-            if all(truths):
+            sat_rate_new = numpy.count_nonzero(truths) / (1.0*num_sim)
+            if sat_rate_new > 0.5:
                 if not given_pattern:
-                    return 1.0, num_sim, pat
+                    return sat_rate_new, num_sim, pat
                 else:
                     return sat_rate, num_sim, pat
 
@@ -309,17 +313,17 @@ def get_all_patterns(obs_name):
         pattern = \
             '(:type "always_value" :value (:type "qualitative" :value "%s"))' % val_str
         patterns.append((fstr, pattern))
+    for val_num, val_str in zip((0, 1), ('low', 'high')):
+        fstr = mc.eventual_formula(obs_name, val_num)
+        pattern = \
+            '(:type "eventual_value" :value (:type "qualitative" :value "%s"))' % val_str
+        patterns.append((fstr, pattern))
     fstr = mc.transient_formula(obs_name)
     pattern = '(:type "transient")'
     patterns.append((fstr, pattern))
     fstr = mc.sustained_formula(obs_name)
     pattern = '(:type "sustained")'
     patterns.append((fstr, pattern))
-    for val_num, val_str in zip((0, 1), ('low', 'high')):
-        fstr = mc.eventual_formula(obs_name, val_num)
-        pattern = \
-            '(:type "eventual_value" :value (:type "qualitative" :value "%s"))' % val_str
-        patterns.append((fstr, pattern))
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.sometime_formula(obs_name, val_num)
         pattern = \

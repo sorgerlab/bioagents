@@ -79,24 +79,33 @@ def get_ambiguities(tp):
 def get_ambiguities_msg(ambiguities):
     sa = []
     for term_id, ambiguity in ambiguities.items():
+        msg = KQMLList(term_id)
+
         pr = ambiguity[0]['preferred']
         pr_dbids = '|'.join(['::'.join((k, v)) for
                              k, v in pr['refs'].items()])
         # TODO: once available, replace with real ont type
         pr_type = 'ONT::PROTEIN'
-        s1 = '(term :ont-type %s :ids "%s" :name "%s")' % \
-            (pr_type, pr_dbids, pr['name'])
+        term = KQMLList('term')
+        term.set('ont-type', pr_type)
+        term.sets('ids', pr_dbids)
+        term.sets('name', pr['name'])
+        msg.set('preferred', term)
+
+        # TODO: once available, replace with real ont type
+        alt_type = 'ONT::PROTEIN-FAMILY'
         alt = ambiguity[0]['alternative']
         alt_dbids = '|'.join(['::'.join((k, v)) for
                               k, v in alt['refs'].items()])
-        # TODO: once available, replace with real ont type
-        alt_type = 'ONT::PROTEIN-FAMILY'
-        s2 = '(term :ont-type %s :ids "%s" :name "%s")' % \
-            (alt_type, alt_dbids, alt['name'])
-        s = '(%s :preferred %s :alternative %s)' % \
-            (term_id, s1, s2)
-        sa.append(s)
-    ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
+        term = KQMLList('term')
+        term.set('ont-type', alt_type)
+        term.sets('ids', alt_dbids)
+        term.sets('name', alt['name'])
+        msg.set('alternative', term)
+
+        sa.append(msg)
+
+    ambiguities_msg = KQMLList(sa)
     return ambiguities_msg
 
 

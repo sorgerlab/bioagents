@@ -24,7 +24,7 @@ class MRA_Module(KQMLModule):
                       'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
                       'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
         for task in self.tasks:
-            msg_txt =\
+            msg_txt = \
                 '(subscribe :content (request &key :content (%s . *)))' % task
             self.send(KQMLPerformative.from_string(msg_txt))
         self.ready()
@@ -95,10 +95,11 @@ class MRA_Module(KQMLModule):
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
-        # Add the diagram
-        diagram = res.get('diagram')
-        if diagram:
-            msg.sets('diagram', diagram)
+        # Add the diagrams
+        diagrams = res.get('diagrams')
+        rxn_diagram = diagrams.get('rxn')
+        if rxn_diagram:
+            msg.sets('diagram', rxn_diagram)
         else:
             msg.sets('diagram', '')
         ambiguities = res.get('ambiguities')
@@ -106,7 +107,7 @@ class MRA_Module(KQMLModule):
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set('ambiguities', ambiguities_msg)
         if not self.testing:
-            self.send_display_model(model_msg, diagram)
+            self.send_display_model(model_msg, diagrams)
         return msg
 
     def respond_expand_model(self, content):
@@ -134,9 +135,10 @@ class MRA_Module(KQMLModule):
             model_new_msg = encode_indra_stmts(model_new)
             msg.sets('model-new', model_new_msg)
         # Add the diagram
-        diagram = res.get('diagram')
-        if diagram:
-            msg.sets('diagram', diagram)
+        diagrams = res.get('diagrams')
+        rxn_diagram = diagrams.get('rxn')
+        if rxn_diagram:
+            msg.sets('diagram', rxn_diagram)
         else:
             msg.sets('diagram', '')
         ambiguities = res.get('ambiguities')
@@ -144,7 +146,7 @@ class MRA_Module(KQMLModule):
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set('ambiguities', ambiguities_msg)
         if not self.testing:
-            self.send_display_model(model_msg, diagram)
+            self.send_display_model(model_msg, diagrams)
         return msg
 
     def respond_model_undo(self, content):
@@ -160,13 +162,14 @@ class MRA_Module(KQMLModule):
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
         # Add the diagram
-        diagram = res.get('diagram')
-        if diagram:
-            msg.sets('diagram', diagram)
+        diagrams = res.get('diagrams')
+        rxn_diagram = diagrams.get('rxn')
+        if rxn_diagram:
+            msg.sets('diagram', rxn_diagram)
         else:
             msg.sets('diagram', '')
         if not self.testing:
-            self.send_display_model(model_msg, diagram)
+            self.send_display_model(model_msg, diagrams)
         return msg
 
     def respond_has_mechanism(self, content):
@@ -215,9 +218,10 @@ class MRA_Module(KQMLModule):
             removed_msg = encode_indra_stmts(removed)
             msg.sets('removed', removed_msg)
         # Add the diagram
-        diagram = res.get('diagram')
-        if diagram:
-            msg.sets('diagram', diagram)
+        diagrams = res.get('diagrams')
+        rxn_diagram = diagrams.get('rxn')
+        if rxn_diagrams:
+            msg.sets('diagram', rxn_diagram)
         else:
             msg.sets('diagram', '')
         if not self.testing:
@@ -245,21 +249,22 @@ class MRA_Module(KQMLModule):
         reply.set('upstream-names', KQMLList(names))
         return reply
 
-    def send_display_model(self, model, diagram):
+    def send_display_model(self, model, diagrams):
         msg = KQMLPerformative('tell')
         content = KQMLList('display-model')
         content.set('type', 'indra')
         content.sets('model', model)
         msg.set('content', content)
         self.send(msg)
-        if not diagram:
-            return
-        msg = KQMLPerformative('tell')
-        content = KQMLList('display-image')
-        content.set('type', 'reactionnetwork')
-        content.sets('path', diagram)
-        msg.set('content', content)
-        self.send(msg)
+        for diagram_type, path in diagrams.items():
+            if not path:
+                continue
+            msg = KQMLPerformative('tell')
+            content = KQMLList('display-image')
+            content.set('type', diagram_type)
+            content.sets('path', path)
+            msg.set('content', content)
+            self.send(msg)
 
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')

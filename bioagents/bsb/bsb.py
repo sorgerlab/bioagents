@@ -18,11 +18,6 @@ from indra.assemblers import SBGNAssembler
 from kqml import *
 
 
-def get_example_model():
-    from indra.statements import Phosphorylation, Agent
-    st = Phosphorylation(Agent('MAP2K1'), Agent('MAPK1'), 'T', '185')
-    return [st]
-
 class BSB(object):
     def __init__(self,  bob_port=6200, sbgnviz_port=3000):
         self.user_name = 'BOB'
@@ -47,9 +42,12 @@ class BSB(object):
                     if sock == self.socket_s._transport._connection.sock:
                         self.socket_s.wait(seconds=0.1)
                     else:
-                        data, addr = sock.recvfrom(4086)
+                        data, addr = sock.recvfrom(1000000)
                         if data:
-                            self.on_bob_message(data)
+                            parts = data.split('\n')
+                            for part in parts:
+                                if part:
+                                    self.on_bob_message(part)
             except KeyboardInterrupt:
                 break
         self.socket_s.emit('disconnect')
@@ -86,8 +84,10 @@ class BSB(object):
                      'room': self.room_id,
                      'userId': self.user_id}
         self.socket_s.on('message', self.on_sbgnviz_message)
-
         self.socket_s.emit(event, user_info)
+        self.socket_s.emit('agentNewFileRequest', {'room': self.room_id})
+        self.bob_to_sbgn_say('Hi there! Give me a minute to get started ' + 
+                             'and then tell me what you want to do.')
 
     def on_user_list(self, user_list):
         self.current_users = user_list
@@ -98,9 +98,21 @@ class BSB(object):
     def on_sbgnviz_message(self, data):
         if not isinstance(data, dict):
             return
+        # Check to see if the message is from BOB himself
+        # and don't relay if it is
+        user = data.get('userName')
+        if user.lower() == 'bob':
+            return
         comment = data.get('comment')
-        if comment and comment.startswith('bob:'):
-            text = comment[4:].strip()
+        if isinstance(comment, list):
+            comment = comment[0]
+        if isinstance(comment, dict):
+            comment = comment.get('text')
+        if comment and comment == 'reset bob':
+            msg = '(tell :content (start-conversation))'
+            self.send_to_bob(msg)
+        elif comment:
+            text = comment
             msg = '(tell :content (started-speaking :mode text :uttnum 1 ' + \
                     ':channel Desktop :direction input))'
             self.send_to_bob(msg)
@@ -116,11 +128,19 @@ class BSB(object):
             self.send_to_bob(msg)
             self.bob_uttnum += 1
 
+
     def on_bob_message(self, data):
+        logger.debug('data: ' + data)
         # Check what kind of message it is
         kl = KQMLPerformative.from_string(data)
-        head = kl.get('head')
+        head = kl.head()
         content = kl.get('content')
+        if head == 'tell' and content.head().lower() == 'display-model':
+            parts = data.split('\n')
+            if len(parts) > 1:
+                logger.error('!!!!!!!!!!!!\nMessage with multiple parts\n ' +
+                             '!!!!!!!!!!!')
+                logger.error(parts)
         logger.info('Got message with head: %s' % head)
         logger.info('Got message with content: %s' % content)
         if not content:
@@ -133,8 +153,9 @@ class BSB(object):
             stmts = decode_indra_stmts(stmts_json)
             self.bob_to_sbgn_display(stmts)
         elif content.head().lower() == 'display-image':
+            image_type = content.gets('type')
             path = content.gets('path')
-            self.bob_show_image(path, 1)
+            self.bob_show_image(path, image_type)
 
     def bob_to_sbgn_say(self, spoken_phrase):
         msg = {'room': self.room_id,
@@ -145,9 +166,6 @@ class BSB(object):
                'time': 1}
         #print_json(msg)
         self.socket_s.emit('agentMessage', msg)
-        #self.bob_to_sbgn_display(get_example_model())
-        #self.bob_show_image('/Users/ben/src/cwc-integ/test.png', 1)
-
 
     def bob_to_sbgn_display(self, stmts):
         sa = SBGNAssembler()
@@ -160,14 +178,20 @@ class BSB(object):
                        'room': self.room_id, 'userId': self.user_id}
         self.socket_s.emit('agentMergeGraphRequest', sbgn_params)
 
-    def bob_show_image(self, file_name, tab_id):
+    def bob_show_image(self, file_name, image_type):
         logger.info('showing image')
         with open(file_name, 'rb') as fh:
             img_content = fh.read()
+        try:
+            tab_id, tab_label = image_tab_map[image_type]
+        except KeyError:
+            logger.error('Unknown image type: %s' % image_type)
+            tab_id = 99
+            tab_label = 'Other'
         img = base64.b64encode(img_content)
         img = 'data:image/png;base64,%s' % img
         image_params = {'img': img, 'fileName': file_name,
-                        'tabIndex': tab_id,
+                        'tabIndex': tab_id, 'tabLabel': tab_label,
                         'room': self.room_id, 'userId': self.user_id}
         self.socket_s.emit('agentSendImageRequest', image_params)
 
@@ -184,7 +208,13 @@ def get_spoken_phrase(content):
     say_what = content.gets('what')
     return say_what
 
-if __name__ == '__main__':
+image_tab_map = {
+    'reactionnetwork': (1, 'RXN'),
+    'contactmap': (2, 'CM'),
+    'influencemap': (3, 'IM'),
+    'simulation': (4, 'SIM')
+    }
 
+if __name__ == '__main__':
     bsb = BSB()
     bsb.start()

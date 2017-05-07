@@ -120,7 +120,7 @@ class TRA_Module(KQMLModule):
                 return reply_content
 
         try:
-            sat_rate, num_sim, suggestion = \
+            sat_rate, num_sim, suggestion, fig_path = \
                 self.tra.check_property(model, pattern, conditions)
         except SimulatorError as e:
             logger.error(e)
@@ -131,6 +131,8 @@ class TRA_Module(KQMLModule):
             reply_content = make_failure('INVALID_PATTERN')
             return reply_content
 
+        self.send_display_figure(fig_path)
+
         reply = KQMLList('SUCCESS')
         content = KQMLList()
         content.set('satisfies-rate', '%.1f' % sat_rate)
@@ -140,6 +142,14 @@ class TRA_Module(KQMLModule):
             content.set('suggestion', sugg)
         reply.set('content', content)
         return reply
+
+    def send_display_figure(self, path):
+        msg = KQMLPerformative('tell')
+        content = KQMLList('display-image')
+        content.set('type', 'simulation')
+        content.sets('path', path)
+        msg.set('content', content)
+        self.send(msg)
 
 def decode_indra_stmts(stmts_json_str):
     stmts_json = json.loads(stmts_json_str)

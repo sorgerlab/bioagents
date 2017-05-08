@@ -4,12 +4,8 @@ import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('TRA')
-import argparse
-import tempfile
 
 from indra import trips
-from indra.assemblers import pysb_assembler, PysbAssembler
-from indra.statements import Statement, stmts_from_json
 from indra.trips import processor as trips_processor
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \
                  SelfExporter
@@ -20,13 +16,11 @@ from kqml import KQMLModule, KQMLList, KQMLPerformative
 
 
 class TRA_Module(KQMLModule):
-    def __init__(self, argv, testing=False):
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--kappa_url", help="kappa endpoint")
-        args = parser.parse_args()
-        self.kappa_url = None
-        if args.kappa_url:
-            self.kappa_url = args.kappa_url
+    def __init__(self, argv):
+        super(TRA_Module, self).__init__(argv)
+        kappa_url = self.get_parameter('--kappa_url')
+        if kappa_url:
+            self.kappa_url = kappa_url
         else:
             logger.error('No Kappa URL given.')
             self.kappa_url = None
@@ -45,19 +39,12 @@ class TRA_Module(KQMLModule):
         else:
             self.tra = TRA(None)
 
-        if testing:
-            return
-
-        super(TRA_Module, self).__init__(argv)
         self.tasks = ['SATISFIES-PATTERN']
-
         # Send subscribe messages
         for task in self.tasks:
-            msg_txt = \
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
+            self.subscribe_request(task)
         self.ready()
-        super(TRA_Module, self).start()
+        self.start()
 
     def receive_request(self, msg, content):
         """Respond to an incoming request by handling different tasks."""

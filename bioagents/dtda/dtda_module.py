@@ -13,23 +13,19 @@ class DTDA_Module(KQMLModule):
     """The DTDA module is a TRIPS module built around the DTDA agent.
     Its role is to receive and decode messages and send responses from and
     to other agents in the system."""
-    def __init__(self, argv, testing=False):
+    def __init__(self, argv):
+        # Call the constructor of KQMLModule
+        super(DTDA_Module, self).__init__(argv)
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
-        if testing:
-            return
-        # Call the constructor of TripsModule
-        super(DTDA_Module, self).__init__(argv)
         self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
                       'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
         # Send subscribe messages
         for task in self.tasks:
-            msg_txt = \
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
+            self.subscribe_request(task)
         # Send ready message
         self.ready()
-        super(DTDA_Module, self).start()
+        self.start()
 
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and the content

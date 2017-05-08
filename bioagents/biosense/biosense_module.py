@@ -9,17 +9,13 @@ from kqml import *
 
 
 class BioSenseModule(KQMLModule):
-    def __init__(self, argv, testing=False):
-        if testing:
-            return
+    def __init__(self, argv):
         super(BioSenseModule, self).__init__(argv)
         self.tasks = ['CHOOSE-SENSE']
         for task in self.tasks:
-            msg_txt =\
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
+            self.subscribe_request(task)
         self.ready()
-        super(BioSenseModule, self).start()
+        self.start()
 
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()

@@ -16,22 +16,18 @@ class QCA_Module(KQMLModule):
     Its role is to receive and decode messages and send responses from and
     to other agents in the system.
     '''
-    def __init__(self, argv, testing=False):
+    def __init__(self, argv):
+        # Call the constructor of KQMLModule
+        super(QCA_Module, self).__init__(argv)
         # Instantiate a singleton QCA agent
         self.qca = QCA()
-        if testing:
-            return
-        # Call the constructor of TripsModule
-        super(QCA_Module, self).__init__(argv)
         self.tasks = ['FIND-QCA-PATH', 'HAS-QCA-PATH']
         # Send subscribe messages
         for task in self.tasks:
-            msg_txt =\
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
+            self.subscribe_request(task)
         # Send ready message
         self.ready()
-        super(QCA_Module, self).start()
+        self.start()
 
     def receive_request(self, msg, content):
         """Handle request messages and respond.

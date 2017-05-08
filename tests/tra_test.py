@@ -263,7 +263,7 @@ def test_get_all_patterns():
     print(patterns)
 
 def test_module():
-    tra = TRA_Module(['-name', 'TRA'], testing=True)
+    tra = TRA_Module(['-name', 'TRA', 'testing', 'true'])
     content = KQMLList()
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
                     '"%s")) :value (:type "qualitative" :value "high"))' % \

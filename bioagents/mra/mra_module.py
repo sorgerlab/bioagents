@@ -92,17 +92,16 @@ class MRA_Module(KQMLModule):
         msg.sets('model', model_msg)
         # Add the diagrams
         diagrams = res.get('diagrams')
-        rxn_diagram = diagrams.get('rxn')
-        if rxn_diagram:
-            msg.sets('diagram', rxn_diagram)
-        else:
-            msg.sets('diagram', '')
+        if diagrams:
+            rxn_diagram = diagrams.get('rxn')
+            if rxn_diagram:
+                msg.sets('diagram', rxn_diagram)
+            if not self.testing:
+                self.send_display_model(model_msg, diagrams)
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set('ambiguities', ambiguities_msg)
-        if not self.testing:
-            self.send_display_model(model_msg, diagrams)
         return msg
 
     def respond_expand_model(self, content):
@@ -131,17 +130,16 @@ class MRA_Module(KQMLModule):
             msg.sets('model-new', model_new_msg)
         # Add the diagram
         diagrams = res.get('diagrams')
-        rxn_diagram = diagrams.get('rxn')
-        if rxn_diagram:
-            msg.sets('diagram', rxn_diagram)
-        else:
-            msg.sets('diagram', '')
+        if diagrams:
+            rxn_diagram = diagrams.get('rxn')
+            if rxn_diagram:
+                msg.sets('diagram', rxn_diagram)
+            if not self.testing:
+                self.send_display_model(model_msg, diagrams)
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set('ambiguities', ambiguities_msg)
-        if not self.testing:
-            self.send_display_model(model_msg, diagrams)
         return msg
 
     def respond_model_undo(self, content):
@@ -158,13 +156,12 @@ class MRA_Module(KQMLModule):
         msg.sets('model', model_msg)
         # Add the diagram
         diagrams = res.get('diagrams')
-        rxn_diagram = diagrams.get('rxn')
-        if rxn_diagram:
-            msg.sets('diagram', rxn_diagram)
-        else:
-            msg.sets('diagram', '')
-        if not self.testing:
-            self.send_display_model(model_msg, diagrams)
+        if diagrams:
+            rxn_diagram = diagrams.get('rxn')
+            if rxn_diagram:
+                msg.sets('diagram', rxn_diagram)
+            if not self.testing:
+                self.send_display_model(model_msg, diagrams)
         return msg
 
     def respond_has_mechanism(self, content):
@@ -214,13 +211,12 @@ class MRA_Module(KQMLModule):
             msg.sets('removed', removed_msg)
         # Add the diagram
         diagrams = res.get('diagrams')
-        rxn_diagram = diagrams.get('rxn')
-        if rxn_diagrams:
-            msg.sets('diagram', rxn_diagram)
-        else:
-            msg.sets('diagram', '')
-        if not self.testing:
-            self.send_display_model(model_msg, diagram)
+        if diagrams:
+            rxn_diagram = diagrams.get('rxn')
+            if rxn_diagrams:
+                msg.sets('diagram', rxn_diagram)
+            if not self.testing:
+                self.send_display_model(model_msg, diagram)
         return msg
 
     def respond_model_get_upstream(self, content):

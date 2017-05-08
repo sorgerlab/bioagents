@@ -79,7 +79,7 @@ class MRA(object):
         res['model_new'] = new_stmts
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id)
         return res
 
     def has_mechanism(self, mech_ekb, model_id):

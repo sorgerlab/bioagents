@@ -93,7 +93,7 @@ class MRA_Module(KQMLModule):
         # Add the diagrams
         diagrams = res.get('diagrams')
         if diagrams:
-            rxn_diagram = diagrams.get('rxn')
+            rxn_diagram = diagrams.get('reactionnetwork')
             if rxn_diagram:
                 msg.sets('diagram', rxn_diagram)
             if not self.testing:
@@ -131,7 +131,7 @@ class MRA_Module(KQMLModule):
         # Add the diagram
         diagrams = res.get('diagrams')
         if diagrams:
-            rxn_diagram = diagrams.get('rxn')
+            rxn_diagram = diagrams.get('reactionnetwork')
             if rxn_diagram:
                 msg.sets('diagram', rxn_diagram)
             if not self.testing:
@@ -157,7 +157,7 @@ class MRA_Module(KQMLModule):
         # Add the diagram
         diagrams = res.get('diagrams')
         if diagrams:
-            rxn_diagram = diagrams.get('rxn')
+            rxn_diagram = diagrams.get('reactionnetwork')
             if rxn_diagram:
                 msg.sets('diagram', rxn_diagram)
             if not self.testing:
@@ -212,7 +212,7 @@ class MRA_Module(KQMLModule):
         # Add the diagram
         diagrams = res.get('diagrams')
         if diagrams:
-            rxn_diagram = diagrams.get('rxn')
+            rxn_diagram = diagrams.get('reactionnetwork')
             if rxn_diagrams:
                 msg.sets('diagram', rxn_diagram)
             if not self.testing:

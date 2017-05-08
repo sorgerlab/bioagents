@@ -1,5 +1,9 @@
 import sys
 import time
+import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('TestModule')
 import argparse
 import operator
 import threading
@@ -91,5 +95,5 @@ class FIFO(object):
         return False
 
 if __name__ == "__main__":
-    m = TestModule(['-name', 'Test'] + sys.argv[2:], sys.argv[1])
+    m = TestModule(['-name', 'TestModule'] + sys.argv[2:], sys.argv[1])
     m.start()

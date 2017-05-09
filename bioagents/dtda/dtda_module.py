@@ -50,12 +50,14 @@ class DTDA_Module(KQMLModule):
 
     def respond_is_drug_target(self, content):
         """Response content to is-drug-target request."""
-        drug = content.gets('drug')
+        drug_arg = content.gets('drug')
+        drug = self._get_target(drug_arg)
+        drug_name = drug.name
         target_arg = content.gets('target')
         target = self._get_target(target_arg)
         target_name = target.name
         try:
-            is_target = self.dtda.is_nominal_drug_target(drug, target_name)
+            is_target = self.dtda.is_nominal_drug_target(drug_name, target_name)
         except DrugNotFoundException:
             reply = make_failure('DRUG_NOT_FOUND')
             return reply

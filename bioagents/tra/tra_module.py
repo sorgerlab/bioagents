@@ -6,6 +6,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('TRA')
 
 from indra import trips
+from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
 from indra.trips import processor as trips_processor
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \

@@ -106,7 +106,7 @@ class TRA(object):
             sat_rate_new = numpy.count_nonzero(truths) / (1.0*num_sim)
             if sat_rate_new > 0.5:
                 if not given_pattern:
-                    return sat_rate_new, num_sim, pat
+                    return sat_rate_new, num_sim, pat, fig_path
                 else:
                     return sat_rate, num_sim, pat, fig_path
 

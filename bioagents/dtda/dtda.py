@@ -11,7 +11,6 @@ import logging
 import sqlite3
 import operator
 from indra.statements import ActiveForm
-from bioagents.databases import chebi_client
 from bioagents.databases import cbio_client
 
 logger = logging.getLogger('DTDA')
@@ -82,18 +81,15 @@ class DTDA:
         Find all the drugs that nominally target the target.
         '''
         if self.drug_db is not None:
-            res = self.drug_db.execute('SELECT name, synonyms FROM agent '
+            res = self.drug_db.execute('SELECT name, primary_cid FROM agent '
                                        'WHERE source_id LIKE "HMSL%%" '
                                        'AND nominal_target LIKE "%%%s%%" ' %
                                        target_name).fetchall()
-            drug_names = [r[0] for r in res]
+            drug_names, pubchem_ids = map(list, zip(*x))
         else:
             drug_names = []
-        chebi_ids = []
-        for dn in drug_names:
-            chebi_id = chebi_client.get_id(dn)
-            chebi_ids.append(chebi_id)
-        return drug_names, chebi_ids
+            pubchem_ids = []
+        return drug_names, pubchem_ids
 
     def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)

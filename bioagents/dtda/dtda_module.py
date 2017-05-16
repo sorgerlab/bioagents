@@ -70,14 +70,14 @@ class DTDA_Module(KQMLModule):
         target_arg = content.gets('target')
         target = self._get_target(target_arg)
         target_name = target.name
-        drug_names, chebi_ids = self.dtda.find_target_drugs(target_name)
+        drug_names, pubchem_ids = self.dtda.find_target_drugs(target_name)
         reply = KQMLList('SUCCESS')
         drugs = KQMLList()
-        for dn, ci in zip(drug_names, chebi_ids):
+        for dn, pci in zip(drug_names, pubchem_ids):
             drug = KQMLList()
             drug.set('name', dn.replace(' ', '-'))
-            if ci:
-                drug.set('chebi_id', ci)
+            if pci:
+                drug.set('pubchem_id', pci)
             drugs.append(drug)
         reply.set('drugs', drugs)
         return reply
@@ -155,13 +155,13 @@ class DTDA_Module(KQMLModule):
         reply.append(reply1)
 
         reply2 = KQMLList('SUCCESS')
-        drug_names, chebi_ids = self.dtda.find_target_drugs(mut_protein)
+        drug_names, pubchem_ids = self.dtda.find_target_drugs(mut_protein)
         drugs = KQMLList()
-        for dn, ci in zip(drug_names, chebi_ids):
+        for dn, pci in zip(drug_names, pubchem_ids):
             drug = KQMLList()
             drug.sets('name', dn.replace(' ', '-'))
-            if ci:
-                drug.set('chebi_id', ci)
+            if pci:
+                drug.set('pubchem_id', pci)
             drugs.append(drug)
         reply2.set('drugs', drugs)
 

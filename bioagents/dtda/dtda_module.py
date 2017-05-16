@@ -51,7 +51,11 @@ class DTDA_Module(KQMLModule):
     def respond_is_drug_target(self, content):
         """Response content to is-drug-target request."""
         drug_arg = content.gets('drug')
-        drug = self._get_target(drug_arg)
+        try:
+            drug = self._get_target(drug_arg)
+        except Exception as e:
+            reply = make_failure('DRUG_NOT_FOUND')
+            return reply
         drug_name = drug.name
         target_arg = content.gets('target')
         target = self._get_target(target_arg)
@@ -84,8 +88,8 @@ class DTDA_Module(KQMLModule):
 
     def respond_find_disease_targets(self, content):
         """Response content to find-disease-targets request."""
-        disease_arg = content.gets('disease')
         try:
+            disease_arg = content.gets('disease')
             disease = self.get_disease(disease_arg)
         except Exception as e:
             logger.error(e)
@@ -119,8 +123,8 @@ class DTDA_Module(KQMLModule):
 
     def respond_find_treatment(self, content):
         """Response content to find-treatment request."""
-        disease_arg = content.gets('disease')
         try:
+            disease_arg = content.gets('disease')
             disease = self.get_disease(disease_arg)
         except Exception as e:
             logger.error(e)

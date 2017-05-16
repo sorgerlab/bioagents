@@ -85,7 +85,11 @@ class DTDA:
                                        'WHERE source_id LIKE "HMSL%%" '
                                        'AND nominal_target LIKE "%%%s%%" ' %
                                        target_name).fetchall()
-            drug_names, pubchem_ids = map(list, zip(*x))
+            if not res:
+                drug_names = []
+                pubchem_ids = []
+            else:
+                drug_names, pubchem_ids = map(list, zip(*res))
         else:
             drug_names = []
             pubchem_ids = []

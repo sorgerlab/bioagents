@@ -1,5 +1,4 @@
 import sys
-import json
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -55,12 +54,33 @@ class BioSenseModule(KQMLModule):
         """Return response content to build-model request."""
         ekb = content.gets('ekb-term')
         tp = trips.process_xml(ekb)
+        agents = get_agents(tp)
         ambiguities = get_ambiguities(tp)
         msg = KQMLPerformative('OK')
+        if agents:
+            kagents = []
+            for agent in agents:
+                db_refs = '|'.join('%s:%s' % (k, v) for k, v in
+                                   agent.db_refs.items())
+                name = agent.name
+                kagent = KQMLList()
+                kagent.sets('name', agent.name)
+                kagent.sets('ids', db_refs)
+                kagents.append(kagent)
+            msg.set('agents', KQMLList(kagents))
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set('ambiguities', ambiguities_msg)
         return msg
+
+def get_agents(tp):
+    terms = tp.tree.findall('TERM')
+    all_agents = []
+    for term in terms:
+        term_id = term.attrib['id']
+        agent = tp._get_agent_by_id(term_id, None)
+        all_agents.append(agent)
+    return all_agents
 
 def get_ambiguities(tp):
     terms = tp.tree.findall('TERM')
@@ -78,7 +98,7 @@ def get_ambiguities_msg(ambiguities):
         msg = KQMLList(term_id)
 
         pr = ambiguity[0]['preferred']
-        pr_dbids = '|'.join(['::'.join((k, v)) for
+        pr_dbids = '|'.join([':'.join((k, v)) for
                              k, v in pr['refs'].items()])
         # TODO: once available, replace with real ont type
         pr_type = 'ONT::PROTEIN'
@@ -91,7 +111,7 @@ def get_ambiguities_msg(ambiguities):
         # TODO: once available, replace with real ont type
         alt_type = 'ONT::PROTEIN-FAMILY'
         alt = ambiguity[0]['alternative']
-        alt_dbids = '|'.join(['::'.join((k, v)) for
+        alt_dbids = '|'.join([':'.join((k, v)) for
                               k, v in alt['refs'].items()])
         term = KQMLList('term')
         term.set('ont-type', alt_type)

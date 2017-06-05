@@ -59,11 +59,11 @@ class BioSenseModule(KQMLModule):
         msg = KQMLPerformative('OK')
         if agents:
             kagents = []
-            for agent in agents:
+            for term_id, agent in agents.items():
                 db_refs = '|'.join('%s:%s' % (k, v) for k, v in
                                    agent.db_refs.items())
                 name = agent.name
-                kagent = KQMLList()
+                kagent = KQMLList(term_id)
                 kagent.sets('name', agent.name)
                 kagent.sets('ids', db_refs)
                 kagents.append(kagent)
@@ -75,11 +75,11 @@ class BioSenseModule(KQMLModule):
 
 def get_agents(tp):
     terms = tp.tree.findall('TERM')
-    all_agents = []
+    all_agents = {}
     for term in terms:
         term_id = term.attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
-        all_agents.append(agent)
+        all_agents[term_id] = agent
     return all_agents
 
 def get_ambiguities(tp):
@@ -109,7 +109,7 @@ def get_ambiguities_msg(ambiguities):
         msg.set('preferred', term)
 
         # TODO: once available, replace with real ont type
-        alt_type = 'ONT::PROTEIN-FAMILY'
+        alt_type = 'ONT::PROTEIN'
         alt = ambiguity[0]['alternative']
         alt_dbids = '|'.join([':'.join((k, v)) for
                               k, v in alt['refs'].items()])

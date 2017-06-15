@@ -56,6 +56,20 @@ def test_build_from_json():
     print(msg)
     reply = mm.respond_build_model(msg)
 
+def test_expand_from_json():
+    mm = MRA_Module(['-name', 'MRA', '-testing', 'true'])
+    st = Phosphorylation(Agent('MEK'), Agent('ERK'))
+    msg = KQMLList('BUILD-MODEL')
+    msg.sets('description', json.dumps(stmts_to_json([st])))
+    msg.sets('format', 'indra_json')
+    reply = mm.respond_build_model(msg)
+    st = Phosphorylation(Agent('RAF'), Agent('MEK'))
+    msg = KQMLList('EXPAND-MODEL')
+    msg.sets('description', json.dumps(stmts_to_json([st])))
+    msg.sets('format', 'indra_json')
+    msg.set('model-id', '1')
+    print(msg)
+    reply = mm.respond_expand_model(msg)
 
 def test_undo():
     mm = MRA_Module(['-name', 'MRA', '-testing', 'true'])

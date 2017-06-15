@@ -96,6 +96,24 @@ class MRA(object):
         res['diagrams'] = make_diagrams(model_exec, new_model_id)
         return res
 
+    def expand_model_from_json(self, model_json, model_id):
+        """Expand a model using INDRA JSON."""
+        stmts = stmts_from_json(json.loads(model_json))
+        new_model_id, new_stmts = self.extend_model(stmts, model_id)
+        logger.info('Old model id: %s, New model id: %s' %
+                     (model_id, new_model_id))
+        model_stmts = self.models[new_model_id]
+        res = {'model_id': new_model_id,
+               'model': model_stmts}
+        if not model_stmts:
+            return res
+        res['model_new'] = new_stmts
+        model_exec = self.assemble_pysb(model_stmts)
+        res['model_exec'] = model_exec
+        res['diagrams'] = make_diagrams(model_exec, new_model_id)
+        return res
+
+
     def has_mechanism(self, mech_ekb, model_id):
         """Return True if the given model contains the given mechanism."""
         tp = trips.process_xml(mech_ekb)

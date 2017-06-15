@@ -113,10 +113,17 @@ class MRA_Module(KQMLModule):
 
     def respond_expand_model(self, content):
         """Return response content to expand-model request."""
-        ekb = content.gets('description')
+        descr = content.gets('description')
         model_id = self._get_model_id(content)
+        descr_format = content.gets('format')
         try:
-            res = self.mra.expand_model_from_ekb(ekb, model_id)
+            if not descr_format or descr_format == 'ekb':
+                res = self.mra.expand_model_from_ekb(descr, model_id)
+            elif descr_format == 'indra_json':
+                res = self.mra.expand_model_from_json(descr, model_id)
+            else:
+                err_msg = 'Invalid description format: %s' % descr_format
+                raise InvalidModelDescriptionError(err_msg)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
         new_model_id = res.get('model_id')

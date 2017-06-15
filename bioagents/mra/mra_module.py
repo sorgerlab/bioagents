@@ -74,9 +74,16 @@ class MRA_Module(KQMLModule):
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
-        ekb = content.gets('description')
+        descr = content.gets('description')
+        descr_format = content.gets('format')
         try:
-            res = self.mra.build_model_from_ekb(ekb)
+            if not descr_format or descr_format == 'ekb':
+                res = self.mra.build_model_from_ekb(descr)
+            elif descr_format == 'indra_json':
+                res = self.mra.build_model_from_json(descr)
+            else:
+                err_msg = 'Invalid description format: %s' % descr_format
+                raise InvalidModelDescriptionError(err_msg)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
         model_id = res.get('model_id')

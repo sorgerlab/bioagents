@@ -5,11 +5,12 @@
 
 import os
 import copy
+import json
 import logging
 import subprocess
 from indra import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
-                            AddModification
+                            AddModification, stmts_from_json
 from indra.databases import uniprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.assemblers import pysb_assembler, PysbAssembler
@@ -55,6 +56,19 @@ class MRA(object):
             return res
         ambiguities = get_ambiguities(tp)
         res['ambiguities'] = ambiguities
+        model_exec = self.assemble_pysb(stmts)
+        res['model_exec'] = model_exec
+        res['diagrams'] = make_diagrams(model_exec, model_id)
+        return res
+
+    def build_model_from_json(self, model_json):
+        """Build a model using INDRA JSON."""
+        stmts = stmts_from_json(json.loads(model_json))
+        model_id = self.new_model(stmts)
+        res = {'model_id': model_id,
+               'model': stmts}
+        if not stmts:
+            return res
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, model_id)

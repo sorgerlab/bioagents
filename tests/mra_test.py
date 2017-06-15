@@ -1,3 +1,4 @@
+import json
 from kqml import *
 from indra.statements import *
 from indra.trips import trips_client
@@ -45,6 +46,16 @@ def test_get_upstream():
     ups = reply.get('upstream')
     assert(len(ups) == 1)
     print(reply)
+
+def test_build_from_json():
+    mm = MRA_Module(['-name', 'MRA', '-testing', 'true'])
+    st = Phosphorylation(Agent('MEK'), Agent('ERK'))
+    msg = KQMLList('BUILD-MODEL')
+    msg.sets('description', json.dumps(stmts_to_json([st])))
+    msg.sets('format', 'indra_json')
+    print(msg)
+    reply = mm.respond_build_model(msg)
+
 
 def test_undo():
     mm = MRA_Module(['-name', 'MRA', '-testing', 'true'])

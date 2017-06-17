@@ -120,7 +120,6 @@ class QCA_Module(KQMLModule):
         return reply
 
     def _get_term_name(self, term_str):
-        term_str = '<ekb>' + term_str + '</ekb>'
         tp = TripsProcessor(term_str)
         terms = tp.tree.findall('TERM')
         term_id = terms[0].attrib['id']

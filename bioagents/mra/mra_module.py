@@ -76,6 +76,7 @@ class MRA_Module(KQMLModule):
         """Return response content to build-model request."""
         descr = content.gets('description')
         descr_format = content.gets('format')
+        no_display = content.get('no-display')
         try:
             if not descr_format or descr_format == 'ekb':
                 res = self.mra.build_model_from_ekb(descr)
@@ -99,12 +100,13 @@ class MRA_Module(KQMLModule):
         msg.sets('model', model_msg)
         # Add the diagrams
         diagrams = res.get('diagrams')
-        if diagrams:
-            rxn_diagram = diagrams.get('reactionnetwork')
-            if rxn_diagram:
-                msg.sets('diagram', rxn_diagram)
-            if not self.testing:
-                self.send_display_model(model_msg, diagrams)
+        if not no_display:
+            if diagrams:
+                rxn_diagram = diagrams.get('reactionnetwork')
+                if rxn_diagram:
+                    msg.sets('diagram', rxn_diagram)
+                if not self.testing:
+                    self.send_display_model(model_msg, diagrams)
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
@@ -116,6 +118,7 @@ class MRA_Module(KQMLModule):
         descr = content.gets('description')
         model_id = self._get_model_id(content)
         descr_format = content.gets('format')
+        no_display = content.get('no-display')
         try:
             if not descr_format or descr_format == 'ekb':
                 res = self.mra.expand_model_from_ekb(descr, model_id)
@@ -143,13 +146,14 @@ class MRA_Module(KQMLModule):
             model_new_msg = encode_indra_stmts(model_new)
             msg.sets('model-new', model_new_msg)
         # Add the diagram
-        diagrams = res.get('diagrams')
-        if diagrams:
-            rxn_diagram = diagrams.get('reactionnetwork')
-            if rxn_diagram:
-                msg.sets('diagram', rxn_diagram)
-            if not self.testing:
-                self.send_display_model(model_msg, diagrams)
+        if not no_display:
+            diagrams = res.get('diagrams')
+            if diagrams:
+                rxn_diagram = diagrams.get('reactionnetwork')
+                if rxn_diagram:
+                    msg.sets('diagram', rxn_diagram)
+                if not self.testing:
+                    self.send_display_model(model_msg, diagrams)
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
@@ -159,6 +163,7 @@ class MRA_Module(KQMLModule):
     def respond_model_undo(self, content):
         """Return response content to model-undo request."""
         res = self.mra.model_undo()
+        no_display = content.get('no-display')
         new_model_id = res.get('model_id')
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
@@ -170,12 +175,13 @@ class MRA_Module(KQMLModule):
         msg.sets('model', model_msg)
         # Add the diagram
         diagrams = res.get('diagrams')
-        if diagrams:
-            rxn_diagram = diagrams.get('reactionnetwork')
-            if rxn_diagram:
-                msg.sets('diagram', rxn_diagram)
-            if not self.testing:
-                self.send_display_model(model_msg, diagrams)
+        if not no_display:
+            if diagrams:
+                rxn_diagram = diagrams.get('reactionnetwork')
+                if rxn_diagram:
+                    msg.sets('diagram', rxn_diagram)
+                if not self.testing:
+                    self.send_display_model(model_msg, diagrams)
         return msg
 
     def respond_has_mechanism(self, content):
@@ -203,6 +209,7 @@ class MRA_Module(KQMLModule):
         """Return response content to model-remove-mechanism request."""
         ekb = content.gets('description')
         model_id = self._get_model_id(content)
+        no_display = content.get('no-display')
         try:
             res = self.mra.remove_mechanism(ekb, model_id)
         except Exception as e:
@@ -225,12 +232,13 @@ class MRA_Module(KQMLModule):
             msg.sets('removed', removed_msg)
         # Add the diagram
         diagrams = res.get('diagrams')
-        if diagrams:
-            rxn_diagram = diagrams.get('reactionnetwork')
-            if rxn_diagrams:
-                msg.sets('diagram', rxn_diagram)
-            if not self.testing:
-                self.send_display_model(model_msg, diagram)
+        if not no_display:
+            if diagrams:
+                rxn_diagram = diagrams.get('reactionnetwork')
+                if rxn_diagrams:
+                    msg.sets('diagram', rxn_diagram)
+                if not self.testing:
+                    self.send_display_model(model_msg, diagram)
         return msg
 
     def respond_model_get_upstream(self, content):

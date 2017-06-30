@@ -173,7 +173,6 @@ class DTDA_Module(KQMLModule):
         return reply
 
     def _get_target(self, target_str):
-        target_str = '<ekb>' + target_str + '</ekb>'
         tp = TripsProcessor(target_str)
         terms = tp.tree.findall('TERM')
         term_id = terms[0].attrib['id']

@@ -180,7 +180,7 @@ class DTDA_Module(KQMLModule):
         return agent
 
     def get_disease(self, disease_str):
-        term = ET.fromstring(disease_str)
+        term = ET.fromstring(disease_str).find('TERM')
         disease_type = term.find('type').text
         if disease_type.startswith('ONT::'):
             disease_type = disease_type[5:].lower()

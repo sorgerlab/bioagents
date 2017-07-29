@@ -3,7 +3,7 @@ import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('BIOSENSE')
-from indra import trips
+from indra.processors import trips
 from kqml import *
 
 

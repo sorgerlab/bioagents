@@ -1,7 +1,7 @@
 import json
 from kqml import *
 from indra.statements import *
-from indra.trips import trips_client
+from indra.processors.trips import trips_client
 from bioagents.mra import MRA, MRA_Module
 from bioagents.mra.mra_module import ekb_from_agent, get_target
 

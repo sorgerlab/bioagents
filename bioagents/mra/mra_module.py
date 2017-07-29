@@ -7,7 +7,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('MRA')
 import pysb.export
 from indra.statements import stmts_to_json
-from indra.trips.processor import TripsProcessor
+from indra.processors.trips.processor import TripsProcessor
 from kqml import *
 from mra import MRA
 

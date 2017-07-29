@@ -5,7 +5,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('QCA')
 import xml.etree.ElementTree as ET
-from indra.trips.processor import TripsProcessor
+from indra.processors.trips.processor import TripsProcessor
 from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString, KQMLToken
 from qca import QCA
 

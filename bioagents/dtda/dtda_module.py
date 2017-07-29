@@ -4,7 +4,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('DTDA')
 import xml.etree.ElementTree as ET
-from indra.trips.processor import TripsProcessor
+from indra.processors.trips.processor import TripsProcessor
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException

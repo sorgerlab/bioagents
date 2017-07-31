@@ -5,10 +5,10 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('TRA')
 
-from indra.processors import trips
+from indra.sources import trips
 from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
-from indra.processors.trips import processor as trips_processor
+from indra.sources.trips import processor as trips_processor
 from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \
                  SelfExporter
 

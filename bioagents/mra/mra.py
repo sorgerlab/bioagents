@@ -8,7 +8,7 @@ import copy
 import json
 import logging
 import subprocess
-from indra.processors import trips
+from indra.sources import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
                             AddModification, stmts_from_json
 from indra.databases import uniprot_client

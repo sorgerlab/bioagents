@@ -16,7 +16,6 @@ from indra.preassembler.hierarchy_manager import hierarchies
 from indra.assemblers import pysb_assembler, PysbAssembler
 from pysb import kappa
 from pysb.tools import render_reactions
-from bioagents.databases import nextprot_client
 
 logger = logging.getLogger('MRA')
 
@@ -198,23 +197,6 @@ class MRA(object):
                 self.models[new_model_id].append(st)
                 new_stmts.append(st)
         return new_model_id, new_stmts
-
-    @staticmethod
-    def find_family_members(family_name, family_id=None):
-        """Find specific members of a protein family.
-
-        If only family_name is given then a Uniprot query is
-        performed, if family_id is given then the information is taken
-        from the corresponding database.
-        """
-        if family_id is None:
-            family_members = uniprot_client.get_family_members(family_name)
-        elif family_id.startswith('FA'):
-            nextprot_id = family_id[3:]
-            family_members = nextprot_client.get_family_members(nextprot_id)
-        else:
-            return None
-        return family_members
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):
         """Replace an agent in a model with other agents.

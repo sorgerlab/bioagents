@@ -2,7 +2,7 @@ import unittest
 #from qca_module import QCA_Module
 #from qca import QCA
 #from qca import EdgeRanking, EdgeEnum
-from lispify_helper import Lispify
+#from lispify_helper import Lispify
 import ndex.client as nc
 #import io
 import requests

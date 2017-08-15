@@ -135,6 +135,7 @@ class MRA(object):
         tp = trips.process_xml(mech_ekb)
         rem_stmts = tp.statements
         new_stmts = []
+        removed_stmts = []
         model_stmts = self.models[model_id]
         for model_st in model_stmts:
             found = False

@@ -53,13 +53,13 @@ class TRA(object):
         if pattern.time_limit is None:
             max_time = 20000.0
         elif pattern.time_limit.ub > 0:
-            max_time = time_limit.get_ub_seconds()
+            max_time = pattern.time_limit.get_ub_seconds()
         # The numer of time points to get output at
         num_times = 100
         # The periof at which the output is sampled
         plot_period = int(1.0*max_time / num_times)
         if pattern.time_limit and pattern.time_limit.lb > 0:
-            min_time = time_limit.get_lb_seconds()
+            min_time = pattern.time_limit.get_lb_seconds()
             min_time_idx = int(num_times * (1.0*min_time / max_time))
         else:
             min_time_idx = 0

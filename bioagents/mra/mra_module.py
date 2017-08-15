@@ -235,10 +235,10 @@ class MRA_Module(KQMLModule):
         if not no_display:
             if diagrams:
                 rxn_diagram = diagrams.get('reactionnetwork')
-                if rxn_diagrams:
+                if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 if not self.testing:
-                    self.send_display_model(model_msg, diagram)
+                    self.send_display_model(model_msg, rxn_diagram)
         return msg
 
     def respond_model_get_upstream(self, content):

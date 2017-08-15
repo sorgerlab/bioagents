@@ -5,6 +5,7 @@ import urllib, urllib2
 import json
 import subprocess
 from time import sleep
+from bioagents.kappa.kappa_module import render_status
 
 class RuntimeError(Exception):
     def __init__(self, errors):

@@ -471,10 +471,10 @@ class TimeInterval(object):
         return None
     
     def get_lb_seconds(self):
-        return self._convert_to_sec(self.lb)
+        return self._convert_to_sec(self.lb).args[0]
 
     def get_ub_seconds(self):
-        return self._convert_to_sec(self.ub)
+        return self._convert_to_sec(self.ub).args[0]
 
 class InvalidMolecularQuantityError(Exception):
     pass

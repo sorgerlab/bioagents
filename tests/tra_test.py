@@ -6,7 +6,8 @@ from bioagents.tra.tra_module import TRA_Module
 from bioagents.tra.tra import *
 from kqml import KQMLList
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
-from indra.statements import *
+from indra.statements import stmts_to_json, Agent, Phosphorylation,\
+    Dephosphorylation
 
 def test_time_interval():
     TimeInterval(2.0, 4.0, 'second')
@@ -17,8 +18,8 @@ def test_get_time_interval_full():
     ti = tra_module.get_time_interval(lst)
     assert ti.lb == 2*units.hour
     assert ti.ub == 4*units.hour
-    assert ti.get_lb_seconds() == 7200*units.second
-    assert ti.get_ub_seconds() == 14400*units.second
+    assert ti.get_lb_seconds() == 7200
+    assert ti.get_ub_seconds() == 14400
 
 def test_get_time_interval_ub():
     ts = '(:upper-bound 4 :unit "hour")'
@@ -26,7 +27,7 @@ def test_get_time_interval_ub():
     ti = tra_module.get_time_interval(lst)
     assert ti.lb is None
     assert ti.ub == 4*units.hours
-    assert ti.get_ub_seconds() == 14400*units.second
+    assert ti.get_ub_seconds() == 14400
 
 def test_get_time_interval_lb():
     ts = '(:lower-bound 4 :unit "hour")'
@@ -34,7 +35,7 @@ def test_get_time_interval_lb():
     ti = tra_module.get_time_interval(lst)
     assert ti.lb == 4*units.hours
     assert ti.ub is None
-    assert ti.get_lb_seconds() == 14400*units.second
+    assert ti.get_lb_seconds() == 14400
 
 @raises(InvalidTimeIntervalError)
 def test_get_time_interval_nounit():

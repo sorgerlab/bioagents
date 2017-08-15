@@ -308,7 +308,7 @@ def ekb_from_agent(agent):
     dbids = ['%s:%s' % (k, v) for k, v in agent.db_refs.items()]
     dbids_str = '|'.join(dbids)
     termid = 'MRAGEN%d' % random.randint(1000001,10000000-1)
-    open_tag = '<TERM dbid="%s" id="%s">' % (dbids_str, termid)
+    open_tag = '<ekb><TERM dbid="%s" id="%s">' % (dbids_str, termid)
     type_tag = '<type>ONT::GENE-PROTEIN</type>'
     name_tag = '<name>%s</name>' % agent.name
     hgnc_id = agent.db_refs.get('HGNC')
@@ -319,7 +319,7 @@ def ekb_from_agent(agent):
         'match-score="1.0" matched-name="%s" ' % agent.name + \
         'name="%s"></drum-term></drum-terms>' % agent.name
     text_tag = '<text>%s</text>' % agent.db_refs.get('TEXT')
-    close_tag = '</TERM>'
+    close_tag = '</TERM></ekb>'
     ekb = ' '.join([open_tag, type_tag, name_tag, drum_terms,
                     text_tag, close_tag])
     return ekb
@@ -327,6 +327,7 @@ def ekb_from_agent(agent):
 def get_target(target_str):
     tp = TripsProcessor(target_str)
     terms = tp.tree.findall('TERM')
+    assert len(terms) > 0, "No terms found."
     term_id = terms[0].attrib['id']
     agent = tp._get_agent_by_id(term_id, None)
     return agent

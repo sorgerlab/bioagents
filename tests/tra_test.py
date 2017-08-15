@@ -17,8 +17,8 @@ def test_get_time_interval_full():
     ti = tra_module.get_time_interval(lst)
     assert ti.lb == 2*units.hour
     assert ti.ub == 4*units.hour
-    assert ti.get_lb_seconds() == 7200
-    assert ti.get_ub_seconds() == 14400
+    assert ti.get_lb_seconds() == 7200*units.second
+    assert ti.get_ub_seconds() == 14400*units.second
 
 def test_get_time_interval_ub():
     ts = '(:upper-bound 4 :unit "hour")'
@@ -26,7 +26,7 @@ def test_get_time_interval_ub():
     ti = tra_module.get_time_interval(lst)
     assert ti.lb is None
     assert ti.ub == 4*units.hours
-    assert ti.get_ub_seconds() == 14400
+    assert ti.get_ub_seconds() == 14400*units.second
 
 def test_get_time_interval_lb():
     ts = '(:lower-bound 4 :unit "hour")'
@@ -34,7 +34,7 @@ def test_get_time_interval_lb():
     ti = tra_module.get_time_interval(lst)
     assert ti.lb == 4*units.hours
     assert ti.ub is None
-    assert ti.get_lb_seconds() == 14400
+    assert ti.get_lb_seconds() == 14400*units.second
 
 @raises(InvalidTimeIntervalError)
 def test_get_time_interval_nounit():
@@ -263,7 +263,7 @@ def test_get_all_patterns():
     print(patterns)
 
 def test_module():
-    tra = TRA_Module(['-name', 'TRA', 'testing', 'true'])
+    tra = TRA_Module(['-name', 'TRA', '-testing', 'true'])
     content = KQMLList()
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
                     '"%s")) :value (:type "qualitative" :value "high"))' % \
@@ -273,7 +273,7 @@ def test_module():
     model_json = _get_gk_model_indra()
     content.sets('model', model_json)
     res = tra.respond_satisfies_pattern(content)
-    assert(res[2] is not None)
+    assert res[2] is not None
 
 ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
 

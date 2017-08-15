@@ -57,7 +57,8 @@ class DTDA:
             self.drug_db = None
 
     def __del__(self):
-        self.drug_db.close()
+        if self.drug_db is not None:
+            self.drug_db.close()
 
     def is_nominal_drug_target(self, drug_name, target_name):
         '''

@@ -26,7 +26,6 @@ def test_improved_path_ranking():
 
     assert len(qca_results2) > 0
 
-@unittest.skip("skip 1")
 def test_scratch():
     #qca = QCA()
     #  source_names = ["CALM3"]
@@ -44,8 +43,7 @@ def test_scratch():
     print "results_list:"
     print results_list
     host = "http://www.ndexbio.org"
-    #directed_path_query_url = 'http://general.bigmech.ndexbio.org/directedpath/query'
-    directed_path_query_url = 'http://localhost:5603/directedpath/query'
+    directed_path_query_url = 'http://general.bigmech.ndexbio.org/directedpath/query'
 
     ndex = nc.Ndex(host=host)
 
@@ -125,7 +123,6 @@ def test_scratch():
 
     print results_list
 
-@unittest.skip("skip 2")
 def test_cross_country_scoring():
     paths = [
       [

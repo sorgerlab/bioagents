@@ -464,17 +464,22 @@ class TimeInterval(object):
             self.ub = ub_num * sym_unit
         else:
             self.ub = None
-    
+
     def _convert_to_sec(self, val):
         if val is not None:
-            return units.convert_to(val, units.seconds)
+            try:
+                # sympy >= 1.1
+                return units.convert_to(val, units.seconds).args[0]
+            except:
+                # sympy < 1.1
+                return val / units.seconds
         return None
-    
+
     def get_lb_seconds(self):
-        return self._convert_to_sec(self.lb).args[0]
+        return self._convert_to_sec(self.lb)
 
     def get_ub_seconds(self):
-        return self._convert_to_sec(self.ub).args[0]
+        return self._convert_to_sec(self.ub)
 
 class InvalidMolecularQuantityError(Exception):
     pass

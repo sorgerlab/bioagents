@@ -13,9 +13,9 @@ class DTDA_Module(KQMLModule):
     """The DTDA module is a TRIPS module built around the DTDA agent.
     Its role is to receive and decode messages and send responses from and
     to other agents in the system."""
-    def __init__(self, argv):
-        # Call the constructor of KQMLModule
-        super(DTDA_Module, self).__init__(argv)
+    def __init__(self, **kwargs):
+        super(DTDA_Module, self).__init__(**kwargs)
+        
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
         self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
@@ -199,4 +199,4 @@ def make_failure(reason):
 
 
 if __name__ == "__main__":
-    DTDA_Module(['-name', 'DTDA'] + sys.argv[1:])
+    DTDA_Module(argv=sys.argv[1:], name='DTDA')

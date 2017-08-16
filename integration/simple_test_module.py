@@ -1,9 +1,10 @@
 import sys
 import time
 import logging
+from kqml.kqml_module import kwargs
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
-logger = logging.getLogger('TestModule')
+logger = logging.getLogger('Test_Module')
 import argparse
 import operator
 import threading
@@ -11,15 +12,15 @@ import threading
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 
-class TestModule(KQMLModule):
+class Test_Module(KQMLModule):
     """The Test module is a TRIPS module built to run unit tests.
 
     Its role is to receive and decode messages and send responses to
     other agents in the system.
     """
-    def __init__(self, argv, file_in):
+    def __init__(self, file_in, **kwargs):
         # Call the constructor of TripsModule
-        super(TestModule, self).__init__(argv)
+        super(Test_Module, self).__init__(**kwargs)
         self.expected = FIFO()
         self.sent = FIFO()
         self.test_file = file_in
@@ -95,5 +96,5 @@ class FIFO(object):
         return False
 
 if __name__ == "__main__":
-    m = TestModule(['-name', 'TestModule'] + sys.argv[2:], sys.argv[1])
+    m = Test_Module(sys.argv[1], argv=sys.argv[2:], name='Test')
     m.start()

@@ -93,9 +93,9 @@ class Kappa_Module(KQMLModule):
     is to receive and decode messages and send responses from and to other
     agents in the system.
     '''
-    def __init__(self, argv):
+    def __init__(self, **kwargs):
         # Call the constructor of TripsModule
-        super(Kappa_Module, self).__init__(argv)
+        super(Kappa_Module, self).__init__(**kwargs)
         self.tasks = ['KAPPA-VERSION', 'KAPPA-PARSE', 'KAPPA-START',
                       'KAPPA-STATUS', 'KAPPA-STOP']
         parser = argparse.ArgumentParser()
@@ -116,6 +116,7 @@ class Kappa_Module(KQMLModule):
         # Send ready message
         self.ready()
         super(Kappa_Module, self).start()
+        return
 
     def receive_request(self, msg, content):
         '''
@@ -289,4 +290,4 @@ class Kappa_Module(KQMLModule):
         return response_content
 
 if __name__ == "__main__":
-    km = Kappa_Module(['-name', 'Kappa'] + sys.argv[1:])
+    km = Kappa_Module(argv=sys.argv[1:], name='Kappa')

@@ -2,7 +2,6 @@ import json
 from nose.tools import raises
 import sympy.physics.units as units
 from bioagents.tra import tra_module
-from bioagents.tra.tra_module import TRA_Module
 from bioagents.tra.tra import *
 from kqml import KQMLList
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
@@ -264,7 +263,7 @@ def test_get_all_patterns():
     print(patterns)
 
 def test_module():
-    tra = TRA_Module(['-name', 'TRA', '-testing', 'true'])
+    tra = tra_module.TRA_Module(name='TRA', testing=True)
     content = KQMLList()
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
                     '"%s")) :value (:type "qualitative" :value "high"))' % \

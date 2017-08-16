@@ -8,13 +8,13 @@ logger = logging.getLogger('MRA')
 import pysb.export
 from indra.statements import stmts_to_json
 from indra.sources.trips.processor import TripsProcessor
-from kqml import *
+from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
 from mra import MRA
 
 
 class MRA_Module(KQMLModule):
-    def __init__(self, argv):
-        super(MRA_Module, self).__init__(argv)
+    def __init__(self, **kwargs):
+        super(MRA_Module, self).__init__(**kwargs)
         # Instantiate a singleton MRA agent
         self.mra = MRA()
         self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
@@ -373,4 +373,5 @@ def make_failure(reason):
     return msg
 
 if __name__ == "__main__":
-    MRA_Module(['-name', 'MRA'] + sys.argv[1:])
+    MRA_Module(argv=sys.argv[1:], name = 'MRA')
+    

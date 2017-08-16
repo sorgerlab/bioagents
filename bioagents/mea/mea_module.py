@@ -9,8 +9,8 @@ from kqml import KQMLModule, KQMLPerformative, KQMLList
 logger = logging.getLogger('MEA')
 
 class MEA_Module(KQMLModule):
-    def __init__(self, argv):
-        super(MEA_Module, self).__init__(argv)
+    def __init__(self, **kwargs):
+        super(MEA_Module, self).__init__(**kwargs)
         self.tasks = ['SIMULATE-MODEL']
         parser = argparse.ArgumentParser()
         parser.add_argument("--kappa_url", help="kappa endpoint")
@@ -150,4 +150,4 @@ class InvalidModelDescriptionError(Exception):
     pass
 
 if __name__ == "__main__":
-    MEA_Module(['-name', 'MEA'] + sys.argv[1:])
+    MEA_Module(argv=sys.argv[1:], name='MEA')

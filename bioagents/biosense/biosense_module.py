@@ -4,17 +4,18 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('BIOSENSE')
 from indra.sources import trips
-from kqml import *
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 
-class BioSenseModule(KQMLModule):
-    def __init__(self, argv):
-        super(BioSenseModule, self).__init__(argv)
+class BioSense_Module(KQMLModule):
+    def __init__(self, **kwargs):
+        super(BioSense_Module, self).__init__(**kwargs)
         self.tasks = ['CHOOSE-SENSE']
         for task in self.tasks:
             self.subscribe_request(task)
         self.ready()
         self.start()
+        return
 
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()
@@ -126,4 +127,4 @@ def get_ambiguities_msg(ambiguities):
 
 
 if __name__ == "__main__":
-    BioSenseModule(['-name', 'BIOSENSE'] + sys.argv[1:])
+    BioSense_Module(argv=sys.argv[1:], name='BIOSENSE')

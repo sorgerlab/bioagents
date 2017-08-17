@@ -15,7 +15,7 @@ class DTDA_Module(KQMLModule):
     to other agents in the system."""
     def __init__(self, **kwargs):
         super(DTDA_Module, self).__init__(**kwargs)
-        
+
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
         self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',

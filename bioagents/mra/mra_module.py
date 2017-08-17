@@ -374,4 +374,4 @@ def make_failure(reason):
 
 if __name__ == "__main__":
     MRA_Module(argv=sys.argv[1:], name = 'MRA')
-    
+

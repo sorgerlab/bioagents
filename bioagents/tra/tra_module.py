@@ -5,12 +5,9 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('TRA')
 
-#from indra.sources import trips
 from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
 from indra.sources.trips import processor as trips_processor
-#from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \
-#                 SelfExporter
 
 from bioagents.tra.tra import *
 from bioagents.kappa import kappa_client

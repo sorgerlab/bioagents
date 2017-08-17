@@ -81,4 +81,4 @@ def assemble_english(stmts):
     return txts
 
 if __name__ == "__main__":
-    BioNLG_Module(argv = sys.argv[1:], name='BIONLG')
+    BioNLG_Module(argv=sys.argv[1:], name='BIONLG')

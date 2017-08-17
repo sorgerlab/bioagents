@@ -5,12 +5,12 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('TRA')
 
-from indra.sources import trips
+#from indra.sources import trips
 from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
 from indra.sources.trips import processor as trips_processor
-from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \
-                 SelfExporter
+#from pysb import bng, Initial, Parameter, ComponentDuplicateNameError, \
+#                 SelfExporter
 
 from bioagents.tra.tra import *
 from bioagents.kappa import kappa_client
@@ -18,15 +18,22 @@ from kqml import KQMLModule, KQMLList, KQMLPerformative
 
 
 class TRA_Module(KQMLModule):
-    def __init__(self, argv):
-        super(TRA_Module, self).__init__(argv)
-        kappa_url = self.get_parameter('--kappa_url')
-        if kappa_url:
+    def __init__(self, **kwargs):
+        kappa_url = None
+        if 'argv' in kwargs.keys():
+            argv = kwargs['argv']
+            opt_str = '--kappa_url'
+            if opt_str in argv:
+                idx = argv.index(opt_str)
+                argv.pop(idx)
+                kappa_url = argv.pop(idx)
+        if kappa_url is not None:
             self.kappa_url = kappa_url
         else:
             logger.error('No Kappa URL given.')
             self.kappa_url = None
             self.ode_mode = True
+        super(TRA_Module, self).__init__(**kwargs)
         # Instantiate a singleton TRA agent
         if self.kappa_url:
             try:
@@ -245,4 +252,4 @@ class InvalidModelDescriptionError(Exception):
     pass
 
 if __name__ == "__main__":
-    m = TRA_Module(['-name', 'TRA'] + sys.argv[1:])
+    m = TRA_Module(argv=sys.argv[1:], name = 'TRA')

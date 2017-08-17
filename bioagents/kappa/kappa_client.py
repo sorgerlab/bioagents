@@ -166,7 +166,7 @@ if __name__ == "__main__":
             sleep(10)
             status = runtime.status(token)
             print status
-            print render_status(status).toString()
+            #print render_status(status).toString()
             print runtime.shutdown('6666')
         except RuntimeError as e:
             print e.errors

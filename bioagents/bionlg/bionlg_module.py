@@ -6,12 +6,12 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('BIONLG')
 from indra.statements import stmts_from_json
 from indra.assemblers import EnglishAssembler
-from kqml import *
+from kqml import KQMLModule, KQMLList, KQMLPerformative, KQMLString
 
 
-class BioNLGModule(KQMLModule):
-    def __init__(self, argv):
-        super(BioNLGModule, self).__init__(argv)
+class BioNLG_Module(KQMLModule):
+    def __init__(self, **kwargs):
+        super(BioNLG_Module, self).__init__(**kwargs)
         self.tasks = ['INDRA-TO-NL']
         for task in self.tasks:
             self.subscribe_request(task)
@@ -81,4 +81,4 @@ def assemble_english(stmts):
     return txts
 
 if __name__ == "__main__":
-    BioNLGModule(['-name', 'BIONLG'] + sys.argv[1:])
+    BioNLG_Module(argv = sys.argv[1:], name='BIONLG')

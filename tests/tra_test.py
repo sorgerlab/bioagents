@@ -2,11 +2,11 @@ import json
 from nose.tools import raises
 import sympy.physics.units as units
 from bioagents.tra import tra_module
-from bioagents.tra.tra_module import TRA_Module
 from bioagents.tra.tra import *
 from kqml import KQMLList
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
-from indra.statements import *
+from indra.statements import stmts_to_json, Agent, Phosphorylation,\
+    Dephosphorylation
 
 def test_time_interval():
     TimeInterval(2.0, 4.0, 'second')
@@ -263,7 +263,7 @@ def test_get_all_patterns():
     print(patterns)
 
 def test_module():
-    tra = TRA_Module(['-name', 'TRA', 'testing', 'true'])
+    tra = tra_module.TRA_Module(name='TRA', testing=True)
     content = KQMLList()
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
                     '"%s")) :value (:type "qualitative" :value "high"))' % \
@@ -273,7 +273,7 @@ def test_module():
     model_json = _get_gk_model_indra()
     content.sets('model', model_json)
     res = tra.respond_satisfies_pattern(content)
-    assert(res[2] is not None)
+    assert res[2] is not None
 
 ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
 

@@ -53,13 +53,13 @@ class TRA(object):
         if pattern.time_limit is None:
             max_time = 20000.0
         elif pattern.time_limit.ub > 0:
-            max_time = time_limit.get_ub_seconds()
+            max_time = pattern.time_limit.get_ub_seconds()
         # The numer of time points to get output at
         num_times = 100
         # The periof at which the output is sampled
         plot_period = int(1.0*max_time / num_times)
         if pattern.time_limit and pattern.time_limit.lb > 0:
-            min_time = time_limit.get_lb_seconds()
+            min_time = pattern.time_limit.get_lb_seconds()
             min_time_idx = int(num_times * (1.0*min_time / max_time))
         else:
             min_time_idx = 0
@@ -465,15 +465,21 @@ class TimeInterval(object):
         else:
             self.ub = None
 
-    def get_lb_seconds(self):
-        if self.lb is not None:
-            return self.lb / units.second
+    def _convert_to_sec(self, val):
+        if val is not None:
+            try:
+                # sympy >= 1.1
+                return units.convert_to(val, units.seconds).args[0]
+            except:
+                # sympy < 1.1
+                return val / units.seconds
         return None
 
+    def get_lb_seconds(self):
+        return self._convert_to_sec(self.lb)
+
     def get_ub_seconds(self):
-        if self.ub is not None:
-            return self.ub / units.second
-        return None
+        return self._convert_to_sec(self.ub)
 
 class InvalidMolecularQuantityError(Exception):
     pass

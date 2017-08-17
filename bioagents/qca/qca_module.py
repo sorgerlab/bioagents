@@ -16,9 +16,9 @@ class QCA_Module(KQMLModule):
     Its role is to receive and decode messages and send responses from and
     to other agents in the system.
     '''
-    def __init__(self, argv):
+    def __init__(self, **kwargs):
         # Call the constructor of KQMLModule
-        super(QCA_Module, self).__init__(argv)
+        super(QCA_Module, self).__init__(**kwargs)
         # Instantiate a singleton QCA agent
         self.qca = QCA()
         self.tasks = ['FIND-QCA-PATH', 'HAS-QCA-PATH']
@@ -97,7 +97,6 @@ class QCA_Module(KQMLModule):
         target_arg = content.gets('TARGET')
         source_arg = content.gets('SOURCE')
         reltype_arg = content.get('RELTYPE')
-        relation_types = []
 
         if not source_arg:
             raise ValueError("Source list is empty")
@@ -133,4 +132,4 @@ def make_failure(reason=None):
     return msg
 
 if __name__ == "__main__":
-    QCA_Module(['-name', 'QCA'] + sys.argv[1:])
+    QCA_Module(argv=sys.argv[1:], name='QCA')

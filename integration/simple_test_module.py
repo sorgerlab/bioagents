@@ -4,7 +4,7 @@ import logging
 import re
 from subprocess import Popen, PIPE
 from time import sleep
-from os import path, listdir
+from os import path, listdir, environ
 from docutils.io import InputError
 from threading import Thread, Event
 from bioagents.tra.tra_module import TRA_Module
@@ -21,22 +21,22 @@ logger = logging.getLogger('Test')
 
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
-BIOAGENT_DICT={
-    'tra':TRA_Module,
-    'qca':QCA_Module,
-    'mra':MRA_Module,
-    'bionlg':BioNLG_Module,
-    'biosense':BioSense_Module,
-    'dtda':DTDA_Module,
-    'mea':MEA_Module,
-    'kappa':Kappa_Module
+BIOAGENT_DICT = {
+    'tra': TRA_Module,
+    'qca': QCA_Module,
+    'mra': MRA_Module,
+    'bionlg': BioNLG_Module,
+    'biosense': BioSense_Module,
+    'dtda': DTDA_Module,
+    'mea': MEA_Module,
+    'kappa': Kappa_Module
     }
 
 class TestError(Exception):
     pass
 
 class Bioagent_Thread(Thread):
-    '''A stoppable thread designed for use with the bioagent modules.'''
+    """A stoppable thread designed for use with the bioagent modules."""
     def __init__(self, ba_name, **kwargs):
         ba_kwargs = kwargs.pop('kwargs', {})
         ba_kwargs.update(name = ba_name)
@@ -46,7 +46,7 @@ class Bioagent_Thread(Thread):
             **kwargs)
         self._stop_event = Event()
         return
-    
+
     def stop(self):
         self._stop_event.set()
 
@@ -139,9 +139,9 @@ class FIFO(object):
 
 
 class Test_Harness(object):
-    '''The master testing object that will manage the test module and inputs'''
-    facilitator = '/home/patrick/Workspace/cwc-integ/trips/bob/bin/Facilitator'
+    """The master testing object that will manage the test module and inputs"""
     def __init__(self, inputs):
+        self._find_facilitator()
         print("Looking up the available tests.")
         loc = path.dirname(path.abspath(__file__))
         patt = re.compile(r'(test_(\w+?)\.in)')
@@ -160,21 +160,33 @@ class Test_Harness(object):
                     self.run_with.append(inp)
                 else:
                     raise InputError('Unrecoqnized bioagent test: %s' % inp)
-        
+
         self.trips_handle = None
         self.bioagent_handle = None
         return
-    
+
+    def _find_facilitator(self):
+        trips_base = environ.get('TRIPS_BASE')
+        if not trips_base:
+            home = path.expanduser('~')
+            trips_base = path.join(home, 'Workspace', 'cwc-integ',
+                                   'trips', 'bob')
+        self.facilitator = path.join(trips_base, 'bin', 'Facilitator')
+        if not path.exists(self.facilitator):
+            logger.error('Could not find TRIPS Facilitator at %s' %
+                         self.facilitator)
+            sys.exit(1)
+
     def trips_is_running(self):
-        '''Check if the trips process is running'''
+        """Check if the trips process is running"""
         if self.trips_handle is None:
             return False
         if self.trips_handle.poll() is None:
             return True
         return False
-    
+
     def start_trips(self):
-        '''Begin the trips process'''
+        """Begin the trips process"""
         print("Starting trips.")
         if not self.trips_is_running():
             with open('init.trips', 'rb') as inp:
@@ -184,31 +196,31 @@ class Test_Harness(object):
                 raise TestError('Trips facilitator failed to start.')
             time.sleep(5)
         return
-    
+
     def run_bioagent_test(self, ba_name):
-        '''Run a the test for a single bioagent'''
+        """Run a the test for a single bioagent"""
         print("Running test on: %s." % ba_name)
         self.start_bioagent(ba_name)
         tm = Test_Module(self.input_files[ba_name], name='Test_' + ba_name)
         tm.start()
         self.stop_bioagent()
         return
-    
+
     def start_bioagent(self, ba_name):
-        '''Start up the process for a bioagent'''
+        """Start up the process for a bioagent"""
         print("Starting bioagent thread for: %s." % ba_name)
         if self.bioagent_handle is not None:
             raise TestError('Attempted to start a bioagent with another already running.')
-        
+
         self.bioagent_handle = Bioagent_Thread(ba_name)
         self.bioagent_handle.start()
         if not self.bioagent_handle.is_alive():
             raise TestError('Bioagent thread died unexpectedly.')
-        
+
         return
-    
+
     def stop_bioagent(self):
-        '''Stop the current bioagent'''
+        """Stop the current bioagent"""
         print("Stopping bioagent thread.")
         if self.bioagent_handle is not None:
             self.bioagent_handle.stop()
@@ -218,10 +230,10 @@ class Test_Harness(object):
             else:
                 raise TestError('Could not stop bioagent thread.')
         return
-        
-        
+
+
     def stop_trips(self):
-        '''Stop trips facilitator'''
+        """Stop trips facilitator"""
         print("Stopping trips facilitator.")
         if self.trips_is_running():
             self.trips_handle.kill()
@@ -230,9 +242,9 @@ class Test_Harness(object):
                 raise TestError('Could not kill trips.')
             self.trips_handle = None
         return
-    
+
     def run_tests(self):
-        '''Run all the tests'''
+        """Run all the tests"""
         print("Running tests.")
         self.start_trips()
         for ba_name in self.run_with:

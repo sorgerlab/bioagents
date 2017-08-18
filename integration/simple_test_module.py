@@ -89,7 +89,7 @@ class Test_Module(KQMLModule):
             self.sent.push(sm)
             self.expected.push(em)
         self.total_tests = len(self.sent.lst)
-        print('Collected %s test messages from %s' % \
+        logger.info('Collected %s test messages from %s' % \
               (self.total_tests, test_file))
         # Send off the first test
         sm = self.sent.pop()
@@ -100,23 +100,25 @@ class Test_Module(KQMLModule):
         """Handle a "reply" message being received."""
         expected_content = self.expected.pop().strip()
         actual_content = content.__repr__().strip()
-        print('expected: %s' % expected_content)
-        print('actual:   %s' % actual_content)
+        logger.info('expected: %s' % expected_content)
+        logger.info('actual:   %s' % actual_content)
         if expected_content == actual_content:
             self.passed_tests += 1
-            print('PASS')
+            logger.info('PASS')
         else:
-            print('FAIL')
-        print('---')
+            logger.info('FAIL')
+        logger.info('---')
 
         if not self.sent.is_empty():
             sm = self.sent.pop()
             self.send(self.get_perf(self.msg_counter, sm))
             self.msg_counter += 1
         if self.expected.is_empty():
-            print('%d PASSED / %d FAILED' % \
-                  (self.passed_tests, self.total_tests-self.passed_tests))
-            sys.exit(0)
+            logger.info('%d PASSED / %d FAILED' % \
+                        (self.passed_tests,
+                         self.total_tests - self.passed_tests))
+            self.dispatcher.shutdown()
+            return
 
 
 class FIFO(object):
@@ -142,7 +144,7 @@ class Test_Harness(object):
     """The master testing object that will manage the test module and inputs"""
     def __init__(self, inputs):
         self._find_facilitator()
-        print("Looking up the available tests.")
+        logger.info("Looking up the available tests.")
         loc = path.dirname(path.abspath(__file__))
         patt = re.compile(r'(test_(\w+?)\.in)')
         matches=filter(lambda x: x is not None, map(patt.match, listdir(loc)))
@@ -150,7 +152,7 @@ class Test_Harness(object):
         for m in matches:
             self.input_files[m.groups()[1]] = m.groups()[0]
 
-        print("Selecting tests to run.")
+        logger.info("Selecting tests to run.")
         self.run_with = []
         if 'all' in inputs:
             self.run_with = self.input_files.keys()
@@ -159,7 +161,7 @@ class Test_Harness(object):
                 if inp in self.input_files.keys():
                     self.run_with.append(inp)
                 else:
-                    raise InputError('Unrecoqnized bioagent test: %s' % inp)
+                    raise InputError('Unrecognized bioagent test: %s' % inp)
 
         self.trips_handle = None
         self.bioagent_handle = None
@@ -187,7 +189,7 @@ class Test_Harness(object):
 
     def start_trips(self):
         """Begin the trips process"""
-        print("Starting trips.")
+        logger.info("Starting trips.")
         if not self.trips_is_running():
             with open('init.trips', 'rb') as inp:
                 self.trips_handle = Popen([self.facilitator], stdin=inp)
@@ -199,7 +201,7 @@ class Test_Harness(object):
 
     def run_bioagent_test(self, ba_name):
         """Run a the test for a single bioagent"""
-        print("Running test on: %s." % ba_name)
+        logger.info("Running test on: %s." % ba_name)
         self.start_bioagent(ba_name)
         tm = Test_Module(self.input_files[ba_name], name='Test_' + ba_name)
         tm.start()
@@ -208,7 +210,7 @@ class Test_Harness(object):
 
     def start_bioagent(self, ba_name):
         """Start up the process for a bioagent"""
-        print("Starting bioagent thread for: %s." % ba_name)
+        logger.info("Starting bioagent thread for: %s." % ba_name)
         if self.bioagent_handle is not None:
             raise TestError('Attempted to start a bioagent with another already running.')
 
@@ -221,7 +223,7 @@ class Test_Harness(object):
 
     def stop_bioagent(self):
         """Stop the current bioagent"""
-        print("Stopping bioagent thread.")
+        logger.info("Stopping bioagent thread.")
         if self.bioagent_handle is not None:
             self.bioagent_handle.stop()
             self.bioagent_handle.join(timeout=5)
@@ -234,10 +236,10 @@ class Test_Harness(object):
 
     def stop_trips(self):
         """Stop trips facilitator"""
-        print("Stopping trips facilitator.")
+        logger.info("Stopping trips facilitator.")
         if self.trips_is_running():
             self.trips_handle.kill()
-            self.trips_handle.wait(timeout=5)
+            time.sleep(3)
             if self.trips_is_running():
                 raise TestError('Could not kill trips.')
             self.trips_handle = None
@@ -245,7 +247,7 @@ class Test_Harness(object):
 
     def run_tests(self):
         """Run all the tests"""
-        print("Running tests.")
+        logger.info("Running tests.")
         self.start_trips()
         for ba_name in self.run_with:
             self.run_bioagent_test(ba_name)

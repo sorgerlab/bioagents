@@ -50,16 +50,24 @@ class DTDA_Module(KQMLModule):
 
     def respond_is_drug_target(self, content):
         """Response content to is-drug-target request."""
-        drug_arg = content.gets('drug')
+        try:
+            drug_arg = content.gets('drug')
+        except:
+            reply = make_failure('INVALID_DRUG')
         try:
             drug = self._get_target(drug_arg)
         except Exception as e:
             reply = make_failure('DRUG_NOT_FOUND')
             return reply
         drug_name = drug.name
-        target_arg = content.gets('target')
-        target = self._get_target(target_arg)
-        target_name = target.name
+        try:
+            target_arg = content.gets('target')
+            target = self._get_target(target_arg)
+            target_name = target.name
+        except:
+            reply = make_failure('INVALID_TARGET')
+            return reply
+
         try:
             is_target = self.dtda.is_nominal_drug_target(drug_name, target_name)
         except DrugNotFoundException:
@@ -71,9 +79,13 @@ class DTDA_Module(KQMLModule):
 
     def respond_find_target_drug(self, content):
         """Response content to find-target-drug request."""
-        target_arg = content.gets('target')
-        target = self._get_target(target_arg)
-        target_name = target.name
+        try:
+            target_arg = content.gets('target')
+            target = self._get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('INVALID_TARGET')
+            return reply
         drug_names, pubchem_ids = self.dtda.find_target_drugs(target_name)
         reply = KQMLList('SUCCESS')
         drugs = KQMLList()

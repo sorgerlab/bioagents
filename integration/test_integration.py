@@ -2,7 +2,7 @@ import sys
 import time
 import logging
 import re
-from subprocess import Popen, PIPE
+from subprocess import Popen
 from time import sleep
 from os import path, listdir, environ, remove
 from docutils.io import InputError
@@ -37,7 +37,7 @@ except ImportError:
     class Fore(DummyColorer):
         pass
 
-BIOAGENT_DICT={
+BIOAGENT_DICT = {
     'tra': TRA_Module,
     'qca': QCA_Module,
     'mra': MRA_Module,
@@ -57,7 +57,7 @@ class Bioagent_Thread(Thread):
         ba_kwargs = kwargs.pop('kwargs', {})
         ba_kwargs.update(name = ba_name)
         super(Bioagent_Thread, self).__init__(
-            target = BIOAGENT_DICT[ba_name], 
+            target = BIOAGENT_DICT[ba_name],
             kwargs=ba_kwargs,
             **kwargs)
         self._stop_event = Event()
@@ -248,21 +248,29 @@ class Test_Harness(object):
 
     def _run_bioagent_test(self, ba_name):
         """Run a the test for a single bioagent"""
-        logger.info("RUNNING TEST ON: %s." % ba_name + 30*"=")
+        logger.info('=' * 30)
+        logger.info("RUNNING TEST ON: %s." % ba_name)
         try:
             self._start_bioagent(ba_name)
-            tm = Test_Module(self._input_files[ba_name], name='Test_' + ba_name)
+            # Sleep here to make sure Bioagent is started before test
+            sleep(5)
+            tm = Test_Module(self._input_files[ba_name],
+                             name=('Test_' + ba_name))
             tm.start()
             self._stop_bioagent()
+            # Sleep here to make sure Bioagent is stopped before next test
+            sleep(5)
         except:
-            logger.error('Encountered exception while running %s test.' % ba_name)
+            logger.error('Encountered exception while running %s test.' %
+                         ba_name)
         return
 
     def _start_bioagent(self, ba_name):
         """Start up the process for a bioagent"""
         logger.info("Starting bioagent thread for: %s." % ba_name)
         if self._bioagent_handle is not None:
-            raise TestError('Attempted to start a bioagent with another already running.')
+            raise TestError('Attempted to start a bioagent with another'
+                            ' already running.')
 
         self._bioagent_handle = Bioagent_Thread(ba_name)
         self._bioagent_handle.start()

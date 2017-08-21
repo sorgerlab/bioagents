@@ -60,13 +60,15 @@ class BioSense_Module(KQMLModule):
         msg = KQMLPerformative('OK')
         if agents:
             kagents = []
-            for term_id, agent in agents.items():
+            for term_id, agent_tuple in agents.items():
+                agent, ont_type = agent_tuple
                 db_refs = '|'.join('%s:%s' % (k, v) for k, v in
                                    agent.db_refs.items())
                 name = agent.name
                 kagent = KQMLList(term_id)
                 kagent.sets('name', agent.name)
                 kagent.sets('ids', db_refs)
+                kagent.set('ont-type', ont_type)
                 kagents.append(kagent)
             msg.set('agents', KQMLList(kagents))
         if ambiguities:
@@ -79,8 +81,9 @@ def get_agents(tp):
     all_agents = {}
     for term in terms:
         term_id = term.attrib['id']
+        _, ont_type, _ = trips.processor._get_db_refs(term)
         agent = tp._get_agent_by_id(term_id, None)
-        all_agents[term_id] = agent
+        all_agents[term_id] = (agent, ont_type)
     return all_agents
 
 def get_ambiguities(tp):
@@ -102,20 +105,18 @@ def get_ambiguities_msg(ambiguities):
         pr_dbids = '|'.join([':'.join((k, v)) for
                              k, v in pr['refs'].items()])
         # TODO: once available, replace with real ont type
-        pr_type = 'ONT::PROTEIN'
         term = KQMLList('term')
-        term.set('ont-type', pr_type)
+        term.set('ont-type', pr['type'])
         term.sets('ids', pr_dbids)
         term.sets('name', pr['name'])
         msg.set('preferred', term)
 
         # TODO: once available, replace with real ont type
-        alt_type = 'ONT::PROTEIN'
         alt = ambiguity[0]['alternative']
         alt_dbids = '|'.join([':'.join((k, v)) for
                               k, v in alt['refs'].items()])
         term = KQMLList('term')
-        term.set('ont-type', alt_type)
+        term.set('ont-type', alt['type'])
         term.sets('ids', alt_dbids)
         term.sets('name', alt['name'])
         msg.set('alternative', term)

@@ -51,22 +51,30 @@ BIOAGENT_DICT = {
 class TestError(Exception):
     pass
 
+def run_bioagent(stop_event, ba_name, **kwargs):
+    BA_inst = BIOAGENT_DICT[ba_name](name=ba_name, **kwargs)
+    while not stop_event.is_set():
+        sleep(1)
+    BA_inst.exit()
+    return
+
+
 class Bioagent_Thread(Thread):
     """A stoppable thread designed for use with the bioagent modules."""
     def __init__(self, ba_name, **kwargs):
         ba_kwargs = kwargs.pop('kwargs', {})
-        ba_kwargs.update(name = ba_name)
+        self._stop_event = Event()
         super(Bioagent_Thread, self).__init__(
-            target = BIOAGENT_DICT[ba_name],
+            target = run_bioagent,
+            args = (self._stop_event, ba_name),
             kwargs=ba_kwargs,
             **kwargs)
-        self._stop_event = Event()
         return
-
+    
     def stop(self):
         self._stop_event.set()
 
-    def stopped(self):
+    def stopping(self):
         return self._stop_event.is_set()
 
 
@@ -260,7 +268,8 @@ class Test_Harness(object):
             self._stop_bioagent()
             # Sleep here to make sure Bioagent is stopped before next test
             sleep(5)
-        except:
+        except Exception as e:
+            logger.error(e)
             logger.error('Encountered exception while running %s test.' %
                          ba_name)
         return
@@ -285,7 +294,7 @@ class Test_Harness(object):
         if self._bioagent_handle is not None:
             self._bioagent_handle.stop()
             self._bioagent_handle.join(timeout=5)
-            if self._bioagent_handle.stopped():
+            if self._bioagent_handle.stopped() and not self._bioagent_handle.is_alive():
                 self._bioagent_handle = None
             else:
                 raise TestError('Could not stop bioagent thread.')

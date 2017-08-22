@@ -4,8 +4,9 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('BIOSENSE')
 from indra.sources import trips
-from kqml import KQMLModule, KQMLPerformative, KQMLList
 from bioagents import Bioagent
+from indra.databases import get_identifiers_url
+from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
 
 
 class BioSense_Module(Bioagent):
@@ -52,13 +53,20 @@ class BioSense_Module(Bioagent):
         if agents:
             kagents = []
             for term_id, agent_tuple in agents.items():
-                agent, ont_type = agent_tuple
+                agent, ont_type, urls = agent_tuple
                 db_refs = '|'.join('%s:%s' % (k, v) for k, v in
                                    agent.db_refs.items())
                 name = agent.name
                 kagent = KQMLList(term_id)
                 kagent.sets('name', agent.name)
                 kagent.sets('ids', db_refs)
+                url_parts = [KQMLList([':name', KQMLString(k),
+                                       ':dblink', KQMLString(v)])
+                             for k, v in urls.items()]
+                url_list = KQMLList()
+                for url_part in url_parts:
+                    url_list.append(url_part)
+                kagent.set('id-urls', url_list)
                 kagent.set('ont-type', ont_type)
                 kagents.append(kagent)
             msg.set('agents', KQMLList(kagents))
@@ -74,7 +82,9 @@ def get_agents(tp):
         term_id = term.attrib['id']
         _, ont_type, _ = trips.processor._get_db_refs(term)
         agent = tp._get_agent_by_id(term_id, None)
-        all_agents[term_id] = (agent, ont_type)
+        urls = {k: get_identifiers_url(k, v) for k, v in agent.db_refs.items()
+                if k != 'TEXT'}
+        all_agents[term_id] = (agent, ont_type, urls)
     return all_agents
 
 def get_ambiguities(tp):
@@ -95,14 +105,12 @@ def get_ambiguities_msg(ambiguities):
         pr = ambiguity[0]['preferred']
         pr_dbids = '|'.join([':'.join((k, v)) for
                              k, v in pr['refs'].items()])
-        # TODO: once available, replace with real ont type
         term = KQMLList('term')
         term.set('ont-type', pr['type'])
         term.sets('ids', pr_dbids)
         term.sets('name', pr['name'])
         msg.set('preferred', term)
 
-        # TODO: once available, replace with real ont type
         alt = ambiguity[0]['alternative']
         alt_dbids = '|'.join([':'.join((k, v)) for
                               k, v in alt['refs'].items()])

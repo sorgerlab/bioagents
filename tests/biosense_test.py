@@ -6,6 +6,7 @@ def test_choose_sense():
     msg_content = KQMLList('CHOOSE-SENSE')
     msg_content.sets('ekb-term', mek1_ekb)
     res = bs.respond_choose_sense(msg_content)
+    print(res)
     agents = res.get('agents')
     assert agents and agents.data
     agent = agents[0]
@@ -13,7 +14,6 @@ def test_choose_sense():
     assert name == 'MAP2K1'
     ont_type = agent.get('ont-type')
     assert ont_type == 'ONT::GENE'
-    print(agent)
 
 def test_choose_sense_category():
     bs = BioSense_Module(name='biosense', testing=True)
@@ -37,6 +37,17 @@ def test_choose_sense_is_member():
     print(res.head)
     assert(res.head() == 'SUCCESS')
     assert(res.get('is-member') == 'TRUE')
+
+def test_choose_sense_what_member():
+    bs = BioSense_Module(name='biosense', testing=True)
+    msg_content = KQMLList('CHOOSE-SENSE-WHAT-MEMBER')
+    msg_content.sets('collection', mek_ekb)
+    print(msg_content)
+    res = bs.respond_choose_sense_what_member(msg_content)
+    print(res)
+    print(res.head)
+    assert(res.head() == 'SUCCESS')
+    assert(len(res.get('members')) == 2)
 
 
 mek1_ekb = '''<ekb>

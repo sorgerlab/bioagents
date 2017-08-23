@@ -17,35 +17,12 @@ _indra_path = indra.__path__[0]
 
 class BioSense_Module(Bioagent):
     name = 'BioSense'
-    tasks = ['CHOOSE-SENSE']
+    tasks = ['CHOOSE-SENSE', 'CHOOSE-SENSE-CATEGORY',
+             'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER']
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()
         if tell_content == 'START-CONVERSATION':
             logger.info('BioSense resetting')
-
-    def receive_request(self, msg, content):
-        """Handle request messages and respond.
-
-        If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply
-        message is then sent back.
-        """
-        content = msg.get('content')
-        task_str = content.head().upper()
-        if task_str not in self.tasks:
-            self.error_reply(msg, 'Unknown task ' + task_str)
-            return
-        try:
-            task_str = task_str.replace('-','_').lower()
-            fun_name = 'respond_%s' % task_str
-            fun = getattr(self, fun_name)
-            reply = fun(content)
-        except Exception as e:
-            logger.error('Failed to perform task.')
-            logger.error(e)
-            reply = KQMLList.from_string('(FAILURE INTERNAL_ERROR)')
-
-        return self.reply_with_content(msg, reply_content)
 
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""

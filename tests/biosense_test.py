@@ -16,7 +16,7 @@ def test_choose_sense():
     assert ont_type == 'ONT::GENE'
 
 def test_choose_sense_category():
-    bs = BioSense_Module(name='biosense', testing=True)
+    bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
     msg_content.sets('ekb-term', mek1_ekb)
     msg_content.sets('category', 'kinase activity')
@@ -27,7 +27,7 @@ def test_choose_sense_category():
     assert(res.get('in-category') == 'TRUE')
 
 def test_choose_sense_is_member():
-    bs = BioSense_Module(name='biosense', testing=True)
+    bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE-IS-MEMBER')
     msg_content.sets('ekb-term', mek1_ekb)
     msg_content.sets('collection', mek_ekb)
@@ -39,7 +39,7 @@ def test_choose_sense_is_member():
     assert(res.get('is-member') == 'TRUE')
 
 def test_choose_sense_what_member():
-    bs = BioSense_Module(name='biosense', testing=True)
+    bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE-WHAT-MEMBER')
     msg_content.sets('collection', mek_ekb)
     print(msg_content)

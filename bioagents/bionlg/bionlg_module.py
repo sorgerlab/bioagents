@@ -46,7 +46,7 @@ class BioNLG_Module(Bioagent):
             reply_content.set('reason', 'NL_GENERATION_ERROR')
 
         return self.reply_with_content(msg, reply_content)
-    
+
     def respond_indra_to_nl(self, content):
         """Return response content to build-model request."""
         stmts_json_str = content.gets('statements')

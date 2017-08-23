@@ -23,7 +23,7 @@ class QCA_Module(Bioagent):
         self.qca = QCA()
         # Call the constructor of Bioagent
         super(QCA_Module, self).__init__(**kwargs)
-        
+
     def respond_find_qca_path(self, content):
         """Response content to find-qca-path request"""
         source_arg = content.gets('SOURCE')
@@ -96,4 +96,4 @@ class QCA_Module(Bioagent):
 
 
 if __name__ == "__main__":
-    QCA_Module(argv=sys.argv[1:], name='QCA')
+    QCA_Module(argv=sys.argv[1:])

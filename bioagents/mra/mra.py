@@ -229,7 +229,7 @@ def get_ambiguities(tp):
     all_ambiguities = {}
     for term in terms:
         term_id = term.attrib.get('id')
-        _, ambiguities = trips.processor._get_db_refs(term)
+        _, _, ambiguities = trips.processor._get_db_refs(term)
         if ambiguities:
             all_ambiguities[term_id] = ambiguities
     return all_ambiguities

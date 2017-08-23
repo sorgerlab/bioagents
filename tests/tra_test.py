@@ -10,7 +10,7 @@ from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation,\
     Dephosphorylation
 from kqml import KQMLPerformative, KQMLString
-from integration import FirstGenIntegChecks
+from tests.integration import FirstGenIntegChecks
 
 def test_time_interval():
     TimeInterval(2.0, 4.0, 'second')
@@ -267,7 +267,7 @@ def test_get_all_patterns():
     print(patterns)
 
 def test_module():
-    tra = tra_module.TRA_Module(name='TRA', testing=True)
+    tra = tra_module.TRA_Module(testing=True)
     content = KQMLList()
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
                     '"%s")) :value (:type "qualitative" :value "high"))' % \
@@ -279,23 +279,42 @@ def test_module():
     res = tra.respond_satisfies_pattern(content)
     assert res[2] is not None
 
-class TestATest(FirstGenIntegChecks.ComparativeIntegCheck):
+
+class _TRAModelTest(FirstGenIntegChecks.ComparativeIntegCheck):
+    def __init__(self, *args, **kwargs):
+        super(_TRAModelTest, self).__init__(*args, **kwargs)
+        self.entity_str = NotImplemented
+        self.model_str = NotImplemented
+        return
+    
+    def get_entity(self):
+        "Get the entity KQMLString using trips."
+        tp = trips.process_text(self.entity_str)
+        ekb = ElementTree.tostring(tp.tree)
+        return KQMLString(ekb)
+    
+    def get_model(self):
+        "Get the model KQMLString from trips."
+        tp = trips.process_text(self.model_str)
+        return KQMLString(json.dumps(stmts_to_json(tp.statements)))
+            
+
+class TestModel(_TRAModelTest):
+    "Test that TRA can correctly run a model."
     def __init__(self, *args):
-        print(args)
-        super(TestATest, self).__init__(tra_module.TRA_Module, "TRA")
+        super(TestModel, self).__init__(tra_module.TRA_Module)
         self.expected = "(SUCCESS :content (:satisfies-rate 1.0 :num-sim 10 :suggestion (:type \\\"always_value\\\" :value (:type \\\"qualitative\\\" :value \\\"low\\\"))))\\\""
+        self.entity_str = "MAPK1-MAP2K1 complex"
+        self.model_str = "MAP2K1 binds MAPK1"
         return
 
     def get_message(self):
         "Demonstrate a stupid way of doing this. This is just a test."
         # The 3 lines below can be refactored into a reusable function
-        tp = trips.process_text('MAPK1-MAP2K1 complex')
-        ekb = ElementTree.tostring(tp.tree)
-        entity = KQMLString(ekb)
-
+        entity = self.get_entity()
+        
         # These 2 lines can be refactored into a reusable function
-        tp = trips.process_text('MAP2K1 binds MAPK1.')
-        model = KQMLString(json.dumps(stmts_to_json(tp.statements)))
+        model = self.get_model()
 
         tp = trips.process_text('MAP2K1')
         ekb = ElementTree.tostring(tp.tree)
@@ -325,7 +344,7 @@ class TestATest(FirstGenIntegChecks.ComparativeIntegCheck):
         msg = KQMLPerformative('REQUEST')
         msg.set('content', content)
         msg.set('reply-with', 'IO-1')
-        return msg
+        return (msg, content)
 
     def is_correct_response(self):
         "Demonstrate a stupid way of checking the response."

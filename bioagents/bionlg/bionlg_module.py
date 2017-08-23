@@ -1,22 +1,18 @@
 import sys
 import json
 import logging
+from bioagents import Bioagent
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('BIONLG')
 from indra.statements import stmts_from_json
 from indra.assemblers import EnglishAssembler
-from kqml import KQMLModule, KQMLList, KQMLPerformative, KQMLString
+from kqml import KQMLList, KQMLPerformative, KQMLString
 
 
-class BioNLG_Module(KQMLModule):
-    def __init__(self, **kwargs):
-        super(BioNLG_Module, self).__init__(**kwargs)
-        self.tasks = ['INDRA-TO-NL']
-        for task in self.tasks:
-            self.subscribe_request(task)
-        self.ready()
-        self.start()
+class BioNLG_Module(Bioagent):
+    name = 'BioNLG'
+    tasks = ['INDRA-TO-NL']
 
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()
@@ -27,7 +23,7 @@ class BioNLG_Module(KQMLModule):
         """Handle request messages and respond.
 
         If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply
+        and call the appropriate function to prepare the response. A reply_content
         message is then sent back.
         """
         try:
@@ -37,23 +33,20 @@ class BioNLG_Module(KQMLModule):
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)
-            self.error_reply(msg, 'Invalid task')
+            return self.error_reply(msg, 'Invalid task')
         try:
             if task_str == 'INDRA-TO-NL':
-                reply = self.respond_indra_to_nl(content)
+                reply_content = self.respond_indra_to_nl(content)
             else:
-                self.error_reply(msg, 'Unknown task ' + task_str)
-                return
+                return self.error_reply(msg, 'Unknown task ' + task_str)
         except Exception as e:
             logger.error('Failed to perform task.')
             logger.error(e)
-            reply = KQMLList('FAILURE')
-            reply.set('reason', 'NL_GENERATION_ERROR')
+            reply_content = KQMLList('FAILURE')
+            reply_content.set('reason', 'NL_GENERATION_ERROR')
 
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply)
-        self.reply(msg, reply_msg)
-
+        return self.reply_with_content(msg, reply_content)
+    
     def respond_indra_to_nl(self, content):
         """Return response content to build-model request."""
         stmts_json_str = content.gets('statements')
@@ -81,4 +74,4 @@ def assemble_english(stmts):
     return txts
 
 if __name__ == "__main__":
-    BioNLG_Module(argv=sys.argv[1:], name='BIONLG')
+    BioNLG_Module(argv=sys.argv[1:])

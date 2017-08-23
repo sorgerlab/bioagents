@@ -8,24 +8,19 @@ from indra.sources.trips.processor import TripsProcessor
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException
+from bioagents import Bioagent
 
-class DTDA_Module(KQMLModule):
+class DTDA_Module(Bioagent):
     """The DTDA module is a TRIPS module built around the DTDA agent.
     Its role is to receive and decode messages and send responses from and
     to other agents in the system."""
+    name = "DTDA"
+    tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
+             'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
     def __init__(self, **kwargs):
-        super(DTDA_Module, self).__init__(**kwargs)
-
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
-        self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
-                      'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
-        # Send subscribe messages
-        for task in self.tasks:
-            self.subscribe_request(task)
-        # Send ready message
-        self.ready()
-        self.start()
+        super(DTDA_Module, self).__init__(**kwargs)
 
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and the content
@@ -44,9 +39,7 @@ class DTDA_Module(KQMLModule):
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
 
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
+        return self.reply_with_content(msg, reply_content)
 
     def respond_is_drug_target(self, content):
         """Response content to is-drug-target request."""
@@ -211,4 +204,4 @@ def make_failure(reason):
 
 
 if __name__ == "__main__":
-    DTDA_Module(argv=sys.argv[1:], name='DTDA')
+    DTDA_Module(argv=sys.argv[1:])

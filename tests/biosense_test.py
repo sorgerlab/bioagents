@@ -2,7 +2,7 @@ from kqml import KQMLList
 from bioagents.biosense.biosense_module import BioSense_Module
 
 def test_choose_sense():
-    bs = BioSense_Module(name='biosense', testing=True)
+    bs = BioSense_Module(testing=True)
     msg_content = KQMLList.from_string(test_ekb)
     res = bs.respond_choose_sense(msg_content)
     agents = res.get('agents')

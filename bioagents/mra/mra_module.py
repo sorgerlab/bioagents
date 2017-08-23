@@ -2,6 +2,7 @@ import sys
 import json
 import random
 import logging
+from bioagents import Bioagent
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MRA')
@@ -12,18 +13,15 @@ from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
 from mra import MRA
 
 
-class MRA_Module(KQMLModule):
+class MRA_Module(Bioagent):
+    name = "MRA"
+    tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
+             'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
+             'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
     def __init__(self, **kwargs):
-        super(MRA_Module, self).__init__(**kwargs)
         # Instantiate a singleton MRA agent
         self.mra = MRA()
-        self.tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
-                      'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
-                      'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
-        for task in self.tasks:
-            self.subscribe_request(task)
-        self.ready()
-        self.start()
+        super(MRA_Module, self).__init__(**kwargs)
 
     def receive_tell(self, msg, content):
         tell_content = content.head().upper()
@@ -43,7 +41,7 @@ class MRA_Module(KQMLModule):
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)
-            self.error_reply(msg, 'Invalid task')
+            return self.error_reply(msg, 'Invalid task')
         try:
             if task_str == 'BUILD-MODEL':
                 reply_content = self.respond_build_model(content)
@@ -58,8 +56,7 @@ class MRA_Module(KQMLModule):
             elif task_str == 'MODEL-GET-UPSTREAM':
                 reply_content = self.respond_model_get_upstream(content)
             else:
-                self.error_reply(msg, 'Unknown task ' + task_str)
-                return
+                return self.error_reply(msg, 'Unknown task ' + task_str)
         except InvalidModelDescriptionError as e:
             logger.error('Invalid model description.')
             logger.error(e)
@@ -68,9 +65,8 @@ class MRA_Module(KQMLModule):
             logger.error('Invalid model ID.')
             logger.error(e)
             reply_content = make_failure('INVALID_MODEL_ID')
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
+        
+        return self.reply_with_content(msg, reply_content)
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
@@ -373,5 +369,5 @@ def make_failure(reason):
     return msg
 
 if __name__ == "__main__":
-    MRA_Module(argv=sys.argv[1:], name = 'MRA')
+    MRA_Module(argv=sys.argv[1:])
 

@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+from bioagents import Bioagent
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('TRA')
@@ -14,7 +15,9 @@ from bioagents.kappa import kappa_client
 from kqml import KQMLModule, KQMLList, KQMLPerformative
 
 
-class TRA_Module(KQMLModule):
+class TRA_Module(Bioagent):
+    name = "TRA"
+    tasks = ['SATISFIES-PATTERN']
     def __init__(self, **kwargs):
         kappa_url = None
         if 'argv' in kwargs.keys():
@@ -30,7 +33,6 @@ class TRA_Module(KQMLModule):
             logger.error('No Kappa URL given.')
             self.kappa_url = None
             self.ode_mode = True
-        super(TRA_Module, self).__init__(**kwargs)
         # Instantiate a singleton TRA agent
         if self.kappa_url:
             try:
@@ -45,36 +47,24 @@ class TRA_Module(KQMLModule):
         else:
             self.tra = TRA(None)
 
-        self.tasks = ['SATISFIES-PATTERN']
-        # Send subscribe messages
-        for task in self.tasks:
-            self.subscribe_request(task)
-        self.ready()
-        self.start()
+        super(TRA_Module, self).__init__(**kwargs)
 
     def receive_request(self, msg, content):
         """Respond to an incoming request by handling different tasks."""
         if self.tra is None:
             reply_content = make_failure('KAPPA_FAILURE')
-            reply_msg = KQMLPerformative('reply')
-            reply_msg.set('content', reply_content)
-            self.reply(msg, reply_msg)
-            return
-
-        task_str = content.head().upper()
-        if task_str == 'SATISFIES-PATTERN':
-            try:
-                reply_content = self.respond_satisfies_pattern(content)
-            except Exception as e:
-                logger.error(e)
-                reply_content = make_failure('INVALID_PATTERN')
         else:
-            self.error_reply(msg, 'Unknown request task ' + task_str)
-            return
+            task_str = content.head().upper()
+            if task_str == 'SATISFIES-PATTERN':
+                try:
+                    reply_content = self.respond_satisfies_pattern(content)
+                except Exception as e:
+                    logger.error(e)
+                    reply_content = make_failure('INVALID_PATTERN')
+            else:
+                return self.error_reply(msg, 'Unknown request task ' + task_str)
 
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
+        return self.reply_with_content(msg, reply_content)
 
     def respond_satisfies_pattern(self, content):
         """Return response content to satisfies-pattern request."""
@@ -249,4 +239,4 @@ class InvalidModelDescriptionError(Exception):
     pass
 
 if __name__ == "__main__":
-    m = TRA_Module(argv=sys.argv[1:], name = 'TRA')
+    m = TRA_Module(argv=sys.argv[1:])

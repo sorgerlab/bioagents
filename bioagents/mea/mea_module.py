@@ -5,27 +5,22 @@ from pysb import bng, Initial, Parameter, ComponentDuplicateNameError
 from mea import MEA
 
 from kqml import KQMLModule, KQMLPerformative, KQMLList
+from bioagents import Bioagent
 
 logger = logging.getLogger('MEA')
 
-class MEA_Module(KQMLModule):
+class MEA_Module(Bioagent):
+    name = 'MEA'
+    tasks = ['SIMULATE-MODEL']
     def __init__(self, **kwargs):
-        super(MEA_Module, self).__init__(**kwargs)
-        self.tasks = ['SIMULATE-MODEL']
         parser = argparse.ArgumentParser()
         parser.add_argument("--kappa_url", help="kappa endpoint")
         args = parser.parse_args()
         if args.kappa_url:
             self.kappa_url = args.kappa_url
-        # Send subscribe messages
-        for task in self.tasks:
-            msg_txt =\
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
         # Instantiate a singleton MEA agent
         self.mea = MEA()
-        self.ready()
-        super(MEA_Module, self).start()
+        super(MEA_Module, self).__init__(**kwargs)
 
     def receive_request(self, msg, content):
         '''
@@ -39,15 +34,11 @@ class MEA_Module(KQMLModule):
             try:
                 reply_content = self.respond_simulate_model(content_list)
             except Exception as e:
-                self.error_reply(msg, 'Error in performing simulation task.')
-                return
+                return self.error_reply(msg, 'Error in performing simulation task.')
         else:
-            self.error_reply(msg, 'Unknown request task ' + task_str)
-            return
+            return self.error_reply(msg, 'Unknown request task ' + task_str)
 
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', reply_content)
-        self.reply(msg, reply_msg)
+        return self.reply_with_content(msg, reply_content)
 
     def respond_simulate_model(self, content_list):
         '''
@@ -150,4 +141,4 @@ class InvalidModelDescriptionError(Exception):
     pass
 
 if __name__ == "__main__":
-    MEA_Module(argv=sys.argv[1:], name='MEA')
+    MEA_Module(argv=sys.argv[1:])

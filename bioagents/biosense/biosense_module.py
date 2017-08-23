@@ -107,6 +107,30 @@ class BioSense_Module(Bioagent):
             msg = make_failure('UNKNOWN_CATEGORY')
         return msg
 
+    def respond_choose_sense_is_member(self, content):
+        """Return response content to choose-sense-is-member request."""
+        # Get the member agent first
+        ekb = content.gets('ekb-term')
+        tp = trips.process_xml(ekb)
+        agent_dict = get_agents(tp)
+        if len(agent_dict) != 1:
+            return make_failure('INVALID_AGENT')
+        member_agent = list(agent_dict.values())[0][0]
+        # Get the collection next
+        ekb = content.gets('collection')
+        tp = trips.process_xml(ekb)
+        agent_dict = get_agents(tp)
+        if len(agent_dict) != 1:
+            return make_failure('INVALID_AGENT')
+        collection_agent = list(agent_dict.values())[0][0]
+        if member_agent.isa(collection_agent, hierarchies):
+            is_member = 'TRUE'
+        else:
+            is_member = 'FALSE'
+        msg = KQMLList('SUCCESS')
+        msg.set('is-member', is_member)
+        return msg
+
 def _read_kinases():
     path = os.path.dirname(os.path.abspath(__file__))
     kinase_table = read_unicode_csv(_indra_path + '/resources/kinases.tsv',

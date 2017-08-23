@@ -1,60 +1,28 @@
 import sys
 import json
 import logging
+from bioagents import Bioagent
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('QCA')
-import xml.etree.ElementTree as ET
 from indra.sources.trips.processor import TripsProcessor
-from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString, KQMLToken
+from kqml import KQMLList, KQMLString
 from qca import QCA
 
 
-class QCA_Module(KQMLModule):
+class QCA_Module(Bioagent):
     '''
     The QCA module is a TRIPS module built around the QCA agent.
     Its role is to receive and decode messages and send responses from and
     to other agents in the system.
     '''
+    name = 'QCA'
+    tasks = ['FIND-QCA-PATH', 'HAS-QCA-PATH']
     def __init__(self, **kwargs):
-        # Call the constructor of KQMLModule
-        super(QCA_Module, self).__init__(**kwargs)
         # Instantiate a singleton QCA agent
         self.qca = QCA()
-        self.tasks = ['FIND-QCA-PATH', 'HAS-QCA-PATH']
-        # Send subscribe messages
-        for task in self.tasks:
-            self.subscribe_request(task)
-        # Send ready message
-        self.ready()
-        self.start()
-
-    def receive_request(self, msg, content):
-        """Handle request messages and respond.
-
-        If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply
-        message is then sent back.
-        """
-        task_str = content.head().upper()
-        if task_str == 'FIND-QCA-PATH':
-            try:
-                reply_content = self.respond_find_qca_path(content)
-            except Exception as e:
-                logger.error(e)
-                reply_content = make_failure()
-        elif task_str == 'HAS-QCA-PATH':
-            try:
-                reply_content = self.has_qca_path(content)
-            except Exception as e:
-                logger.error(e)
-                reply_content = make_failure()
-        else:
-            reply_content = make_failure()
-
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
+        # Call the constructor of Bioagent
+        super(QCA_Module, self).__init__(**kwargs)
 
     def respond_find_qca_path(self, content):
         """Response content to find-qca-path request"""
@@ -78,7 +46,7 @@ class QCA_Module(KQMLModule):
         results_list = self.qca.find_causal_path([source], [target],
                                                  relation_types=relation_types)
         if not results_list:
-            reply = make_failure('NO_PATH_FOUND')
+            reply = self.make_failure('NO_PATH_FOUND')
             return reply
         first_result = results_list[0]
         first_edges = first_result[1::2]
@@ -125,11 +93,7 @@ class QCA_Module(KQMLModule):
         agent = tp._get_agent_by_id(term_id, None)
         return agent.name
 
-def make_failure(reason=None):
-    msg = KQMLList('FAILURE')
-    if reason:
-        msg.set('reason', reason)
-    return msg
+
 
 if __name__ == "__main__":
-    QCA_Module(argv=sys.argv[1:], name='QCA')
+    QCA_Module(argv=sys.argv[1:])

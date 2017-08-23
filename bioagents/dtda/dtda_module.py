@@ -8,58 +8,40 @@ from indra.sources.trips.processor import TripsProcessor
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException
+from bioagents import Bioagent
 
-class DTDA_Module(KQMLModule):
+class DTDA_Module(Bioagent):
     """The DTDA module is a TRIPS module built around the DTDA agent.
     Its role is to receive and decode messages and send responses from and
     to other agents in the system."""
+    name = "DTDA"
+    tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
+             'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
     def __init__(self, **kwargs):
-        super(DTDA_Module, self).__init__(**kwargs)
-
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
-        self.tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
-                      'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
-        # Send subscribe messages
-        for task in self.tasks:
-            self.subscribe_request(task)
-        # Send ready message
-        self.ready()
-        self.start()
-
-    def receive_request(self, msg, content):
-        """If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply
-        message is then sent back."""
-        task_str = content.head().upper()
-        if task_str == 'IS-DRUG-TARGET':
-            reply_content = self.respond_is_drug_target(content)
-        elif task_str == 'FIND-TARGET-DRUG':
-            reply_content = self.respond_find_target_drug(content)
-        elif task_str == 'FIND-DISEASE-TARGETS':
-            reply_content = self.respond_find_disease_targets(content)
-        elif task_str == 'FIND-TREATMENT':
-            reply_content = self.respond_find_treatment(content)
-        else:
-            self.error_reply(msg, 'unknown request task ' + task_str)
-            return
-
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
+        super(DTDA_Module, self).__init__(**kwargs)
 
     def respond_is_drug_target(self, content):
         """Response content to is-drug-target request."""
-        drug_arg = content.gets('drug')
+        try:
+            drug_arg = content.gets('drug')
+        except:
+            reply = make_failure('INVALID_DRUG')
         try:
             drug = self._get_target(drug_arg)
         except Exception as e:
             reply = make_failure('DRUG_NOT_FOUND')
             return reply
         drug_name = drug.name
-        target_arg = content.gets('target')
-        target = self._get_target(target_arg)
-        target_name = target.name
+        try:
+            target_arg = content.gets('target')
+            target = self._get_target(target_arg)
+            target_name = target.name
+        except:
+            reply = make_failure('INVALID_TARGET')
+            return reply
+
         try:
             is_target = self.dtda.is_nominal_drug_target(drug_name, target_name)
         except DrugNotFoundException:
@@ -71,9 +53,13 @@ class DTDA_Module(KQMLModule):
 
     def respond_find_target_drug(self, content):
         """Response content to find-target-drug request."""
-        target_arg = content.gets('target')
-        target = self._get_target(target_arg)
-        target_name = target.name
+        try:
+            target_arg = content.gets('target')
+            target = self._get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('INVALID_TARGET')
+            return reply
         drug_names, pubchem_ids = self.dtda.find_target_drugs(target_name)
         reply = KQMLList('SUCCESS')
         drugs = KQMLList()
@@ -199,4 +185,4 @@ def make_failure(reason):
 
 
 if __name__ == "__main__":
-    DTDA_Module(argv=sys.argv[1:], name='DTDA')
+    DTDA_Module(argv=sys.argv[1:])

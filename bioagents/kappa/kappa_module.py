@@ -5,8 +5,8 @@ import operator
 import json
 
 from kappa_client import KappaRuntime, RuntimeError
-
 from kqml import KQMLModule, KQMLPerformative, KQMLList
+from bioagents import Bioagent
 
 logger = logging.getLogger('Kappa')
 
@@ -87,17 +87,17 @@ def render_status(status):
     return reply_content
 
 
-class Kappa_Module(KQMLModule):
+class Kappa_Module(Bioagent):
     '''
     The Kappa module is a TRIPS module built around the Kappa client. Its role
     is to receive and decode messages and send responses from and to other
     agents in the system.
     '''
+    name = 'Kappa'
+    tasks = ['KAPPA-VERSION', 'KAPPA-PARSE', 'KAPPA-START',
+             'KAPPA-STATUS', 'KAPPA-STOP']
     def __init__(self, **kwargs):
         # Call the constructor of TripsModule
-        super(Kappa_Module, self).__init__(**kwargs)
-        self.tasks = ['KAPPA-VERSION', 'KAPPA-PARSE', 'KAPPA-START',
-                      'KAPPA-STATUS', 'KAPPA-STOP']
         parser = argparse.ArgumentParser()
         parser.add_argument("--kappa_url", help="kappa endpoint")
         args = parser.parse_args()
@@ -106,16 +106,11 @@ class Kappa_Module(KQMLModule):
         else:
             logger.error('No Kappa URL given.')
             sys.exit()
-        # Send subscribe messages
-        for task in self.tasks:
-            msg_txt =\
-                '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
+        
         # Instantiate a kappa runtime
         self.kappa = KappaRuntime(self.kappa_url)
-        # Send ready message
-        self.ready()
-        super(Kappa_Module, self).start()
+        
+        super(Kappa_Module, self).__init__(**kwargs)
         return
 
     def receive_request(self, msg, content):
@@ -132,44 +127,35 @@ class Kappa_Module(KQMLModule):
                 reply_content = self.respond_version()
             except Exception as e:
                 message = 'Could not get Kappa version: (%s)' % e
-                self.error_reply(msg, message)
-                return
+                return self.error_reply(msg, message)
         elif task_str == 'KAPPA-PARSE':
             try:
                 reply_content = self.respond_parse(arguments)
             except Exception as e:
                 message = 'Could not parse Kappa model: (%s)' % e
-                self.error_reply(msg, message)
-                return
+                return self.error_reply(msg, message)
         elif task_str == 'KAPPA-START':
             try:
                 reply_content = self.respond_start(arguments)
             except Exception as e:
                 message = 'Could not start Kappa simulation: (%s)' % e
-                self.error_reply(msg, message)
-                return
+                return self.error_reply(msg, message)
         elif task_str == 'KAPPA-STATUS':
             try:
                 reply_content = self.respond_status(arguments)
             except Exception as e:
                 message = 'Could not get Kappa status: (%s)' % e
-                self.error_reply(msg, message)
-                return
+                return self.error_reply(msg, message)
         elif task_str == 'KAPPA-STOP':
             try:
                 reply_content = self.respond_stop(arguments)
             except Exception as e:
                 message = 'Could not stop Kappa simulation: (%s)' % e
-                self.error_reply(msg, message)
-                return
+                return self.error_reply(msg, message)
         else:
             message = '"unknown request task ' + task_str + '"'
-            self.error_reply(msg, message)
-            return
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', reply_content)
-        logger.debug(reply_content.to_string())
-        self.reply(msg, reply_msg)
+            return self.error_reply(msg, message)
+        return self.reply_with_content(msg, reply_content)
 
     def respond_version(self):
         '''
@@ -290,4 +276,4 @@ class Kappa_Module(KQMLModule):
         return response_content
 
 if __name__ == "__main__":
-    km = Kappa_Module(argv=sys.argv[1:], name='Kappa')
+    km = Kappa_Module(argv=sys.argv[1:])

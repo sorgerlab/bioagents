@@ -5,18 +5,12 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('BIOSENSE')
 from indra.sources import trips
 from kqml import KQMLModule, KQMLPerformative, KQMLList
+from bioagents import Bioagent
 
 
-class BioSense_Module(KQMLModule):
-    def __init__(self, **kwargs):
-        super(BioSense_Module, self).__init__(**kwargs)
-        self.tasks = ['CHOOSE-SENSE']
-        for task in self.tasks:
-            self.subscribe_request(task)
-        self.ready()
-        self.start()
-        return
-
+class BioSense_Module(Bioagent):
+    name = 'BioSense'
+    tasks = ['CHOOSE-SENSE']
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()
         if tell_content == 'START-CONVERSATION':
@@ -33,23 +27,20 @@ class BioSense_Module(KQMLModule):
             content = msg.get('content')
             task_str = content.head().upper()
         except Exception as e:
-            logger.error('Could not get task string from request.')
-            logger.error(e)
-            self.error_reply(msg, 'Invalid task')
+            self.logger.error('Could not get task string from request.')
+            self.logger.error(e)
+            return self.error_reply(msg, 'Invalid task')
         #try:
         if task_str == 'CHOOSE-SENSE':
-            reply = self.respond_choose_sense(content)
+            reply_content = self.respond_choose_sense(content)
         else:
-            self.error_reply(msg, 'Unknown task ' + task_str)
-            return
+            return self.error_reply(msg, 'Unknown task ' + task_str)
         #except Exception as e:
         #    logger.error('Failed to perform task.')
         #    logger.error(e)
-        #    reply = KQMLList.from_string('(FAILURE INTERNAL_ERROR)')
+        #    reply_content = KQMLList.from_string('(FAILURE INTERNAL_ERROR)')
 
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply)
-        self.reply(msg, reply_msg)
+        return self.reply_with_content(msg, reply_content)
 
     def respond_choose_sense(self, content):
         """Return response content to build-model request."""
@@ -128,4 +119,4 @@ def get_ambiguities_msg(ambiguities):
 
 
 if __name__ == "__main__":
-    BioSense_Module(argv=sys.argv[1:], name='BIOSENSE')
+    BioSense_Module(argv=sys.argv[1:])

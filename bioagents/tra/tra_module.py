@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+from bioagents import Bioagent
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('TRA')
@@ -11,10 +12,12 @@ from indra.sources.trips import processor as trips_processor
 
 from bioagents.tra.tra import *
 from bioagents.kappa import kappa_client
-from kqml import KQMLModule, KQMLList, KQMLPerformative
+from kqml import KQMLList, KQMLPerformative
 
 
-class TRA_Module(KQMLModule):
+class TRA_Module(Bioagent):
+    name = "TRA"
+    tasks = ['SATISFIES-PATTERN']
     def __init__(self, **kwargs):
         kappa_url = None
         if 'argv' in kwargs.keys():
@@ -30,14 +33,14 @@ class TRA_Module(KQMLModule):
             logger.error('No Kappa URL given.')
             self.kappa_url = None
             self.ode_mode = True
-        super(TRA_Module, self).__init__(**kwargs)
         # Instantiate a singleton TRA agent
         if self.kappa_url:
             try:
                 kappa = kappa_client.KappaRuntime(self.kappa_url)
                 self.ode_mode = False
             except Exception as e:
-                logger.error('Could not instantiate TRA with Kappa service.')
+                self.logger.error('Could not instantiate TRA with Kappa service.')
+                self.logger.error(e)
                 self.ode_mode = True
 
         if not self.ode_mode:
@@ -45,36 +48,7 @@ class TRA_Module(KQMLModule):
         else:
             self.tra = TRA(None)
 
-        self.tasks = ['SATISFIES-PATTERN']
-        # Send subscribe messages
-        for task in self.tasks:
-            self.subscribe_request(task)
-        self.ready()
-        self.start()
-
-    def receive_request(self, msg, content):
-        """Respond to an incoming request by handling different tasks."""
-        if self.tra is None:
-            reply_content = make_failure('KAPPA_FAILURE')
-            reply_msg = KQMLPerformative('reply')
-            reply_msg.set('content', reply_content)
-            self.reply(msg, reply_msg)
-            return
-
-        task_str = content.head().upper()
-        if task_str == 'SATISFIES-PATTERN':
-            try:
-                reply_content = self.respond_satisfies_pattern(content)
-            except Exception as e:
-                logger.error(e)
-                reply_content = make_failure('INVALID_PATTERN')
-        else:
-            self.error_reply(msg, 'Unknown request task ' + task_str)
-            return
-
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
+        super(TRA_Module, self).__init__(**kwargs)
 
     def respond_satisfies_pattern(self, content):
         """Return response content to satisfies-pattern request."""
@@ -86,18 +60,18 @@ class TRA_Module(KQMLModule):
             model = assemble_model(model_indra_str)
         except Exception as e:
             logger.error(e)
-            reply_content = make_failure('INVALID_MODEL')
+            reply_content = self.make_failure('INVALID_MODEL')
             return reply_content
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
         except InvalidTimeIntervalError as e:
             logger.error(e)
-            reply_content = make_failure('INVALID_TIME_LIMIT')
+            reply_content = self.make_failure('INVALID_TIME_LIMIT')
             return reply_content
         except InvalidTemporalPatternError as e:
             logger.error(e)
-            reply_content = make_failure('INVALID_PATTERN')
+            reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
 
         if conditions_lst is None:
@@ -110,7 +84,7 @@ class TRA_Module(KQMLModule):
                     conditions.append(condition)
             except Exception as e:
                 logger.error(e)
-                reply_content = make_failure('INVALID_CONDITIONS')
+                reply_content = self.make_failure('INVALID_CONDITIONS')
                 return reply_content
 
         try:
@@ -118,11 +92,11 @@ class TRA_Module(KQMLModule):
                 self.tra.check_property(model, pattern, conditions)
         except SimulatorError as e:
             logger.error(e)
-            reply_content = make_failure('KAPPA_FAILURE')
+            reply_content = self.make_failure('KAPPA_FAILURE')
             return reply_content
         except Exception as e:
             logger.error(e)
-            reply_content = make_failure('INVALID_PATTERN')
+            reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
 
         self.send_display_figure(fig_path)
@@ -240,13 +214,8 @@ def get_molecular_condition(lst):
     except Exception as e:
         raise InvalidMolecularConditionError(e)
 
-def make_failure(reason):
-    msg = KQMLList('FAILURE')
-    msg.set('reason', reason)
-    return msg
-
 class InvalidModelDescriptionError(Exception):
     pass
 
 if __name__ == "__main__":
-    m = TRA_Module(argv=sys.argv[1:], name = 'TRA')
+    m = TRA_Module(argv=sys.argv[1:])

@@ -1,13 +1,18 @@
+import os
 import sys
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('BIOSENSE')
+import indra
+from indra.util import read_unicode_csv
 from indra.sources import trips
 from bioagents import Bioagent
 from indra.databases import get_identifiers_url
+from indra.preassembler.hierarchy_manager import hierarchies
 from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
 
+_indra_path = indra.__path__[0]
 
 class BioSense_Module(Bioagent):
     name = 'BioSense'
@@ -28,23 +33,25 @@ class BioSense_Module(Bioagent):
             content = msg.get('content')
             task_str = content.head().upper()
         except Exception as e:
-            self.logger.error('Could not get task string from request.')
-            self.logger.error(e)
-            return self.error_reply(msg, 'Invalid task')
-        #try:
-        if task_str == 'CHOOSE-SENSE':
-            reply_content = self.respond_choose_sense(content)
-        else:
-            return self.error_reply(msg, 'Unknown task ' + task_str)
-        #except Exception as e:
-        #    logger.error('Failed to perform task.')
-        #    logger.error(e)
-        #    reply_content = KQMLList.from_string('(FAILURE INTERNAL_ERROR)')
+            logger.error('Could not get task string from request.')
+            logger.error(e)
+            self.error_reply(msg, 'Invalid task')
+
+        try:
+            if task_str == 'CHOOSE-SENSE':
+                reply = self.respond_choose_sense(content)
+            else:
+                self.error_reply(msg, 'Unknown task ' + task_str)
+                return
+        except Exception as e:
+            logger.error('Failed to perform task.')
+            logger.error(e)
+            reply = KQMLList.from_string('(FAILURE INTERNAL_ERROR)')
 
         return self.reply_with_content(msg, reply_content)
 
     def respond_choose_sense(self, content):
-        """Return response content to build-model request."""
+        """Return response content to choose-sense request."""
         ekb = content.gets('ekb-term')
         tp = trips.process_xml(ekb)
         agents = get_agents(tp)
@@ -74,6 +81,49 @@ class BioSense_Module(Bioagent):
             ambiguities_msg = get_ambiguities_msg(ambiguities)
             msg.set('ambiguities', ambiguities_msg)
         return msg
+
+    def respond_choose_sense_category(self, content):
+        """Return response content to choose-sense-category request."""
+        ekb = content.gets('ekb-term')
+        tp = trips.process_xml(ekb)
+        agent_dict = get_agents(tp)
+        if len(agent_dict) != 1:
+            return make_failure('INVALID_AGENT')
+        agent = list(agent_dict.values())[0][0]
+        category = content.gets('category')
+        if category == 'kinase activity':
+            msg = KQMLList('SUCCESS')
+            if agent.name in kinase_list:
+                msg.set('in-category', 'TRUE')
+            else:
+                msg.set('in-category', 'FALSE')
+        elif category == 'transcription factor':
+            msg = KQMLList('SUCCESS')
+            if agent.name in tf_list:
+                msg.set('in-category', 'TRUE')
+            else:
+                msg.set('in-category', 'FALSE')
+        else:
+            msg = make_failure('UNKNOWN_CATEGORY')
+        return msg
+
+def _read_kinases():
+    path = os.path.dirname(os.path.abspath(__file__))
+    kinase_table = read_unicode_csv(_indra_path + '/resources/kinases.tsv',
+                                    delimiter='\t')
+    gene_names = [lin[1] for lin in list(kinase_table)[1:]]
+    return gene_names
+
+
+def _read_tfs():
+    path = os.path.dirname(os.path.abspath(__file__))
+    tf_table = \
+        read_unicode_csv(_indra_path + '/resources/transcription_factors.csv')
+    gene_names = [lin[1] for lin in list(tf_table)[1:]]
+    return gene_names
+
+kinase_list = _read_kinases()
+tf_list = _read_tfs()
 
 def get_agents(tp):
     terms = tp.tree.findall('TERM')
@@ -124,6 +174,11 @@ def get_ambiguities_msg(ambiguities):
 
     ambiguities_msg = KQMLList(sa)
     return ambiguities_msg
+
+def make_failure(reason):
+    msg = KQMLList('FAILURE')
+    msg.set('reason', reason)
+    return msg
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ from indra.sources.trips import processor as trips_processor
 
 from bioagents.tra.tra import *
 from bioagents.kappa import kappa_client
-from kqml import KQMLModule, KQMLList, KQMLPerformative
+from kqml import KQMLList, KQMLPerformative
 
 
 class TRA_Module(Bioagent):
@@ -39,7 +39,8 @@ class TRA_Module(Bioagent):
                 kappa = kappa_client.KappaRuntime(self.kappa_url)
                 self.ode_mode = False
             except Exception as e:
-                logger.error('Could not instantiate TRA with Kappa service.')
+                self.logger.error('Could not instantiate TRA with Kappa service.')
+                self.logger.error(e)
                 self.ode_mode = True
 
         if not self.ode_mode:
@@ -48,23 +49,6 @@ class TRA_Module(Bioagent):
             self.tra = TRA(None)
 
         super(TRA_Module, self).__init__(**kwargs)
-
-    def receive_request(self, msg, content):
-        """Respond to an incoming request by handling different tasks."""
-        if self.tra is None:
-            reply_content = make_failure('KAPPA_FAILURE')
-        else:
-            task_str = content.head().upper()
-            if task_str == 'SATISFIES-PATTERN':
-                try:
-                    reply_content = self.respond_satisfies_pattern(content)
-                except Exception as e:
-                    logger.error(e)
-                    reply_content = make_failure('INVALID_PATTERN')
-            else:
-                return self.error_reply(msg, 'Unknown request task ' + task_str)
-
-        return self.reply_with_content(msg, reply_content)
 
     def respond_satisfies_pattern(self, content):
         """Return response content to satisfies-pattern request."""
@@ -76,18 +60,18 @@ class TRA_Module(Bioagent):
             model = assemble_model(model_indra_str)
         except Exception as e:
             logger.error(e)
-            reply_content = make_failure('INVALID_MODEL')
+            reply_content = self.make_failure('INVALID_MODEL')
             return reply_content
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
         except InvalidTimeIntervalError as e:
             logger.error(e)
-            reply_content = make_failure('INVALID_TIME_LIMIT')
+            reply_content = self.make_failure('INVALID_TIME_LIMIT')
             return reply_content
         except InvalidTemporalPatternError as e:
             logger.error(e)
-            reply_content = make_failure('INVALID_PATTERN')
+            reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
 
         if conditions_lst is None:
@@ -100,7 +84,7 @@ class TRA_Module(Bioagent):
                     conditions.append(condition)
             except Exception as e:
                 logger.error(e)
-                reply_content = make_failure('INVALID_CONDITIONS')
+                reply_content = self.make_failure('INVALID_CONDITIONS')
                 return reply_content
 
         try:
@@ -108,11 +92,11 @@ class TRA_Module(Bioagent):
                 self.tra.check_property(model, pattern, conditions)
         except SimulatorError as e:
             logger.error(e)
-            reply_content = make_failure('KAPPA_FAILURE')
+            reply_content = self.make_failure('KAPPA_FAILURE')
             return reply_content
         except Exception as e:
             logger.error(e)
-            reply_content = make_failure('INVALID_PATTERN')
+            reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
 
         self.send_display_figure(fig_path)
@@ -229,11 +213,6 @@ def get_molecular_condition(lst):
         return MolecularCondition(condition_type, quantity, value)
     except Exception as e:
         raise InvalidMolecularConditionError(e)
-
-def make_failure(reason):
-    msg = KQMLList('FAILURE')
-    msg.set('reason', reason)
-    return msg
 
 class InvalidModelDescriptionError(Exception):
     pass

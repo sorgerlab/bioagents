@@ -1,6 +1,7 @@
 from unittest import TestCase
 from difflib import SequenceMatcher
 from io import BytesIO
+from kqml.kqml_performative import KQMLPerformative
 try:
     from colorama.ansi import Back, Style, Fore
 except:
@@ -103,5 +104,14 @@ class FirstGenIntegChecks:
             "Give feedback comparing the expected to the result."
             ret_fmt = 'Did not get the expected output string:\n'
             ret_fmt += 'Excpected: %s\nReceived: %s\nDiff: %s\n'
-            res = self.output.get('reply')
+            if self.output is None:
+                res = 'None'
+            elif isinstance(self.output, tuple) and len(self.output) > 1:
+                if isinstance(self.output[1], KQMLPerformative):
+                    res = self.output[1].to_string()
+                else:
+                    res = str(self.output[1])
+            else:
+                return "UNHANDLED RESULT TYPE"
+            
             return ret_fmt % (self.expected, res, color_diff(self.expected, res))

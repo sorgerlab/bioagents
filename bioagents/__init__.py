@@ -1,5 +1,5 @@
 import logging
-from kqml import KQMLModule, KQMLPerformative
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 
@@ -15,6 +15,49 @@ class Bioagent(KQMLModule):
         self.ready()
         self.start()
         return
+    
+    def receive_request(self, msg, content):
+        """Handle request messages and respond.
+
+        If a "request" message is received, decode the task and the content
+        and call the appropriate function to prepare the response. A reply
+        message is then sent back.
+        """
+        try:
+            content = msg.get('content')
+            task = content.head().upper()
+        except Exception as e:
+            self.logger.error('Could not get task string from request.')
+            self.logger.error(e)
+            reply_content = self.make_failure('Invalid task message')
+        
+        if task in self.tasks:
+            reply_content = self._respond_to(task, content)
+        else:
+            self.logger.error('Could not perform task.')
+            self.logger.debug(
+                "Task %s not found in %s." % (task, str(self.tasks))
+                )
+            reply_content = self.make_failure("Unrecognized task %s." % task)
+        
+        return self.reply_with_content(msg, reply_content)
+    
+    def _respond_to(self, task, content):
+        "Get the method to responsd to the task indicated by task."
+        resp_name = "respond_" + task.replace('-', '_').lower()
+        try:
+            resp = getattr(self, resp_name)
+        except AttributeError:
+            self.logger.error("Tried to execute unimplemented task.")
+            self.logger.error("Did not find response method %s." % resp_name)
+            raise NotImplementedError("Task %s was not implemented."%task)
+        try:
+            reply_content = resp(content)
+        except Exception as e:
+            self.logger('Could not perform response to %s' % task)
+            self.logger(e)
+            reply_content = self.make_failure("Failed response to %s." % task)
+        return reply_content
     
     def reply_with_content(self, msg, reply_content):
         "A wrapper around the reply method from KQMLModule."
@@ -32,3 +75,9 @@ class Bioagent(KQMLModule):
             return KQMLModule.error_reply(self, msg, comment)
         else:
             return (msg, comment)
+        
+    def make_failure(self, reason=None):
+        msg = KQMLList('FAILURE')
+        if reason:
+            msg.set('reason', reason)
+        return msg

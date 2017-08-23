@@ -22,25 +22,6 @@ class DTDA_Module(Bioagent):
         self.dtda = DTDA()
         super(DTDA_Module, self).__init__(**kwargs)
 
-    def receive_request(self, msg, content):
-        """If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply
-        message is then sent back."""
-        task_str = content.head().upper()
-        if task_str == 'IS-DRUG-TARGET':
-            reply_content = self.respond_is_drug_target(content)
-        elif task_str == 'FIND-TARGET-DRUG':
-            reply_content = self.respond_find_target_drug(content)
-        elif task_str == 'FIND-DISEASE-TARGETS':
-            reply_content = self.respond_find_disease_targets(content)
-        elif task_str == 'FIND-TREATMENT':
-            reply_content = self.respond_find_treatment(content)
-        else:
-            self.error_reply(msg, 'unknown request task ' + task_str)
-            return
-
-        return self.reply_with_content(msg, reply_content)
-
     def respond_is_drug_target(self, content):
         """Response content to is-drug-target request."""
         try:

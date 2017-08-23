@@ -27,8 +27,8 @@ class BioSense_Module(Bioagent):
             content = msg.get('content')
             task_str = content.head().upper()
         except Exception as e:
-            logger.error('Could not get task string from request.')
-            logger.error(e)
+            self.logger.error('Could not get task string from request.')
+            self.logger.error(e)
             return self.error_reply(msg, 'Invalid task')
         #try:
         if task_str == 'CHOOSE-SENSE':

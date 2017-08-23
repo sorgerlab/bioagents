@@ -22,24 +22,6 @@ class MEA_Module(Bioagent):
         self.mea = MEA()
         super(MEA_Module, self).__init__(**kwargs)
 
-    def receive_request(self, msg, content):
-        '''
-        If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply
-        "tell" message is then sent back.
-        '''
-        content_list = content
-        task_str = content_list[0].to_string().upper()
-        if task_str == 'SIMULATE-MODEL':
-            try:
-                reply_content = self.respond_simulate_model(content_list)
-            except Exception as e:
-                return self.error_reply(msg, 'Error in performing simulation task.')
-        else:
-            return self.error_reply(msg, 'Unknown request task ' + task_str)
-
-        return self.reply_with_content(msg, reply_content)
-
     def respond_simulate_model(self, content_list):
         '''
         Response content to simulate-model request

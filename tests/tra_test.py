@@ -5,11 +5,10 @@ import sympy.physics.units as units
 from bioagents.tra import tra_module
 from bioagents.tra.tra import *
 from indra.sources import trips
-from kqml import KQMLList
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation,\
     Dephosphorylation
-from kqml import KQMLPerformative, KQMLString
+from kqml import KQMLPerformative, KQMLString, KQMLList
 from tests.integration import FirstGenIntegChecks
 
 def test_time_interval():
@@ -303,7 +302,7 @@ class TestModel(_TRAModelTest):
     "Test that TRA can correctly run a model."
     def __init__(self, *args):
         super(TestModel, self).__init__(tra_module.TRA_Module)
-        self.expected = "(SUCCESS :content (:satisfies-rate 1.0 :num-sim 10 :suggestion (:type \\\"always_value\\\" :value (:type \\\"qualitative\\\" :value \\\"low\\\"))))\\\""
+        self.expected = "SUCCESS"
         self.entity_str = "MAPK1-MAP2K1 complex"
         self.model_str = "MAP2K1 binds MAPK1"
         return
@@ -335,7 +334,7 @@ class TestModel(_TRAModelTest):
         quantity = KQMLList()
         quantity.sets('type', 'total')
         entity = KQMLList()
-        entity.append(KQMLList([':description', condition_entity]))
+        entity.set('description', condition_entity)
         quantity.set('entity', entity)
         condition.set('quantity', quantity)
         conditions.append(condition)
@@ -348,8 +347,12 @@ class TestModel(_TRAModelTest):
 
     def is_correct_response(self):
         "Demonstrate a stupid way of checking the response."
-        return self.output.getvalue() == self.expected
-        
+        if isinstance(self.output, tuple) and len(self.output) > 1:
+            if isinstance(self.output[1], KQMLList):
+                ret = self.output[1].head() == self.expected
+        else:
+            ret = False
+        return ret
 
 ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
 

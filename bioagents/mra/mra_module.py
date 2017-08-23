@@ -9,7 +9,7 @@ logger = logging.getLogger('MRA')
 import pysb.export
 from indra.statements import stmts_to_json
 from indra.sources.trips.processor import TripsProcessor
-from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
+from kqml import KQMLPerformative, KQMLList, KQMLString
 from mra import MRA
 
 
@@ -35,38 +35,23 @@ class MRA_Module(Bioagent):
         and call the appropriate function to prepare the response. A reply
         message is then sent back.
         """
+        ret = None
+        reply_content = None
         try:
-            content = msg.get('content')
-            task_str = content.head().upper()
-        except Exception as e:
-            logger.error('Could not get task string from request.')
-            logger.error(e)
-            return self.error_reply(msg, 'Invalid task')
-        try:
-            if task_str == 'BUILD-MODEL':
-                reply_content = self.respond_build_model(content)
-            elif task_str == 'EXPAND-MODEL':
-                reply_content = self.respond_expand_model(content)
-            elif task_str == 'MODEL-UNDO':
-                reply_content = self.respond_model_undo(content)
-            elif task_str == 'MODEL-HAS-MECHANISM':
-                reply_content = self.respond_has_mechanism(content)
-            elif task_str == 'MODEL-REMOVE-MECHANISM':
-                reply_content = self.respond_remove_mechanism(content)
-            elif task_str == 'MODEL-GET-UPSTREAM':
-                reply_content = self.respond_model_get_upstream(content)
-            else:
-                return self.error_reply(msg, 'Unknown task ' + task_str)
+            ret = super(MRA_Module, self).receive_request(msg, content)
         except InvalidModelDescriptionError as e:
             logger.error('Invalid model description.')
             logger.error(e)
-            reply_content = make_failure('INVALID_DESCRIPTION')
+            reply_content = self.make_failure('INVALID_DESCRIPTION')
         except InvalidModelIdError as e:
             logger.error('Invalid model ID.')
             logger.error(e)
-            reply_content = make_failure('INVALID_MODEL_ID')
-        
-        return self.reply_with_content(msg, reply_content)
+            reply_content = self.make_failure('INVALID_MODEL_ID')
+        assert ret is not None or reply_content is not None,\
+            "MRA receive request is very broken, please help."
+        if ret is None:
+            ret = self.reply_with_content(msg, reply_content)
+        return ret
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
@@ -362,11 +347,6 @@ def get_ambiguities_msg(ambiguities):
         sa.append(s)
     ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
     return ambiguities_msg
-
-def make_failure(reason):
-    msg = KQMLList('FAILURE')
-    msg.set('reason', reason)
-    return msg
 
 if __name__ == "__main__":
     MRA_Module(argv=sys.argv[1:])

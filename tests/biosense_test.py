@@ -14,6 +14,15 @@ def test_choose_sense():
     assert ont_type == 'ONT::GENE'
     print(agent)
 
+def test_choose_sense_category():
+    bs = BioSense_Module(name='biosense', testing=True)
+    msg_content = KQMLList.from_string(test_ekb)
+    msg_content.sets('category', 'kinase activity')
+    res = bs.respond_choose_sense_category(msg_content)
+    print(res)
+    print(res.head)
+    assert(res.head() == 'SUCCESS')
+    assert(res.get('in-category') == 'TRUE')
 
 
 test_ekb = '''(CHOOSE-SENSE :EKB-TERM "<ekb>

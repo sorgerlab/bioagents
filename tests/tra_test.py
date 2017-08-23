@@ -1,13 +1,15 @@
 import json
+from xml.etree import ElementTree
 from nose.tools import raises
 import sympy.physics.units as units
 from bioagents.tra import tra_module
 from bioagents.tra.tra import *
+from indra.sources import trips
 from kqml import KQMLList
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation,\
     Dephosphorylation
-from kqml.kqml_performative import KQMLPerformative
+from kqml import KQMLPerformative, KQMLString
 from integration import FirstGenIntegChecks
 
 def test_time_interval():
@@ -283,12 +285,48 @@ class TestATest(FirstGenIntegChecks.ComparativeIntegCheck):
         super(TestATest, self).__init__(tra_module.TRA_Module, "TRA")
         self.expected = "(SUCCESS :content (:satisfies-rate 1.0 :num-sim 10 :suggestion (:type \\\"always_value\\\" :value (:type \\\"qualitative\\\" :value \\\"low\\\"))))\\\""
         return
-    
+
     def get_message(self):
         "Demonstrate a stupid way of doing this. This is just a test."
-        content = '(SATISFIES-PATTERN :pattern (:entities ((:description "<ekb><TERM id=\\"V43454\\"><type>ONT::MACROMOLECULAR-COMPLEX</type><components><component id=\\"V43388\\"/><component id=\\"V43439\\"/></components><text normalization=\\"\\">The MAPK1-MAP2K1 complex</text></TERM><TERM dbid=\\"UP:P28482|HGNC:6871\\" id=\\"V43388\\"><type>ONT::GENE</type><name>MAPK-1</name><text>The MAPK1-MAP2K1 complex</text></TERM><TERM dbid=\\"UP:Q02750|HGNC:6840\\" id=\\"V43439\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>"))) :model "[{\\"type\\": \\"Complex\\", \\"id\\": \\"3ade3e9c-7c7c-4148-b2e9-e2ebccf6880d\\", \\"members\\": [{\\"db_refs\\": {\\"TEXT\\": \\"MAP-2-K-1\\", \\"HGNC\\": \\"6840\\", \\"UP\\": \\"Q02750\\", \\"NCIT\\": \\"C17808\\"}, \\"name\\": \\"MAP2K1\\"}, {\\"db_refs\\": {\\"TEXT\\": \\"MAPK-1\\", \\"HGNC\\": \\"6871\\", \\"UP\\": \\"P28482\\", \\"NCIT\\": \\"C17589\\"}, \\"name\\": \\"MAPK1\\"}], \\"evidence\\": [{\\"text\\": \\"MAP2K1 binds MAPK1.\\", \\"epistemics\\": {\\"section_type\\": null}, \\"source_api\\": \\"trips\\"}]}]" :conditions ((:type "multiple" :value 10.0 :quantity (:type "total" :entity (:description "<ekb><TERM id=\\"V123\\"><name>MAP2K1</name></TERM></ekb>")))))'
-        return KQMLPerformative.from_string('(request :reply-with IO-1 :content %s)' % content)
-    
+        # The 3 lines below can be refactored into a reusable function
+        tp = trips.process_text('MAPK1-MAP2K1 complex')
+        ekb = ElementTree.tostring(tp.tree)
+        entity = KQMLString(ekb)
+
+        # These 2 lines can be refactored into a reusable function
+        tp = trips.process_text('MAP2K1 binds MAPK1.')
+        model = KQMLString(json.dumps(stmts_to_json(tp.statements)))
+
+        tp = trips.process_text('MAP2K1')
+        ekb = ElementTree.tostring(tp.tree)
+        condition_entity = KQMLString(ekb)
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        conditions = KQMLList()
+        condition = KQMLList()
+        condition.sets('type', 'multiple')
+        condition.set('value', '10.0')
+        quantity = KQMLList()
+        quantity.sets('type', 'total')
+        entity = KQMLList()
+        entity.append(KQMLList([':description', condition_entity]))
+        quantity.set('entity', entity)
+        condition.set('quantity', quantity)
+        conditions.append(condition)
+        content.set('conditions', conditions)
+        #content = '(SATISFIES-PATTERN :pattern (:entities ((:description "<ekb><TERM id=\\"V43454\\"><type>ONT::MACROMOLECULAR-COMPLEX</type><components><component id=\\"V43388\\"/><component id=\\"V43439\\"/></components><text normalization=\\"\\">The MAPK1-MAP2K1 complex</text></TERM><TERM dbid=\\"UP:P28482|HGNC:6871\\" id=\\"V43388\\"><type>ONT::GENE</type><name>MAPK-1</name><text>The MAPK1-MAP2K1 complex</text></TERM><TERM dbid=\\"UP:Q02750|HGNC:6840\\" id=\\"V43439\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>"))) :model "[{\\"type\\": \\"Complex\\", \\"id\\": \\"3ade3e9c-7c7c-4148-b2e9-e2ebccf6880d\\", \\"members\\": [{\\"db_refs\\": {\\"TEXT\\": \\"MAP-2-K-1\\", \\"HGNC\\": \\"6840\\", \\"UP\\": \\"Q02750\\", \\"NCIT\\": \\"C17808\\"}, \\"name\\": \\"MAP2K1\\"}, {\\"db_refs\\": {\\"TEXT\\": \\"MAPK-1\\", \\"HGNC\\": \\"6871\\", \\"UP\\": \\"P28482\\", \\"NCIT\\": \\"C17589\\"}, \\"name\\": \\"MAPK1\\"}], \\"evidence\\": [{\\"text\\": \\"MAP2K1 binds MAPK1.\\", \\"epistemics\\": {\\"section_type\\": null}, \\"source_api\\": \\"trips\\"}]}]" :conditions ((:type "multiple" :value 10.0 :quantity (:type "total" :entity (:description "<ekb><TERM id=\\"V123\\"><name>MAP2K1</name></TERM></ekb>")))))'
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-1')
+        return msg
+
     def is_correct_response(self):
         "Demonstrate a stupid way of checking the response."
         return self.output.getvalue() == self.expected

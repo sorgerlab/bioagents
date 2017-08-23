@@ -29,20 +29,16 @@ class BioSense_Module(Bioagent):
         and call the appropriate function to prepare the response. A reply
         message is then sent back.
         """
+        content = msg.get('content')
+        task_str = content.head().upper()
+        if task_str not in self.tasks:
+            self.error_reply(msg, 'Unknown task ' + task_str)
+            return
         try:
-            content = msg.get('content')
-            task_str = content.head().upper()
-        except Exception as e:
-            logger.error('Could not get task string from request.')
-            logger.error(e)
-            self.error_reply(msg, 'Invalid task')
-
-        try:
-            if task_str == 'CHOOSE-SENSE':
-                reply = self.respond_choose_sense(content)
-            else:
-                self.error_reply(msg, 'Unknown task ' + task_str)
-                return
+            task_str = task_str.replace('-','_').lower()
+            fun_name = 'respond_%s' % task_str
+            fun = getattr(self, fun_name)
+            reply = fun(content)
         except Exception as e:
             logger.error('Failed to perform task.')
             logger.error(e)

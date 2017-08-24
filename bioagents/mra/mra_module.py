@@ -36,7 +36,6 @@ class MRA_Module(Bioagent):
         message is then sent back.
         """
         ret = None
-        reply_content = None
         try:
             ret = super(MRA_Module, self).receive_request(msg, content)
         except InvalidModelDescriptionError as e:
@@ -47,8 +46,9 @@ class MRA_Module(Bioagent):
             logger.error('Invalid model ID.')
             logger.error(e)
             reply_content = self.make_failure('INVALID_MODEL_ID')
-        assert ret is not None or reply_content is not None,\
-            "MRA receive request is very broken, please help."
+        except Exception as e:
+            logger.error(e)
+            reply_content = self.make_failure('INTERNAL_FAILURE')
         if ret is None:
             ret = self.reply_with_content(msg, reply_content)
         return ret

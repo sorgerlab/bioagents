@@ -64,10 +64,7 @@ class Bioagent(KQMLModule):
             reply_msg = KQMLPerformative('reply')
             reply_msg.set('content', reply_content)
             self.reply(msg, reply_msg)
-            ret = None
-        else:
-            ret = (msg, reply_content)
-        return ret
+        return (msg, reply_content)
 
     def error_reply(self, msg, comment):
         if not self.testing:

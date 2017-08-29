@@ -49,13 +49,13 @@ class Bioagent(KQMLModule):
         except AttributeError:
             self.logger.error("Tried to execute unimplemented task.")
             self.logger.error("Did not find response method %s." % resp_name)
-            raise NotImplementedError("Task %s was not implemented."%task)
+            raise NotImplementedError("Task %s was not implemented." % task)
         try:
             reply_content = resp(content)
         except Exception as e:
             self.logger.error('Could not perform response to %s' % task)
             self.logger.error(e)
-            reply_content = self.make_failure('INTERNAL_FAILURE' % task)
+            reply_content = self.make_failure('INTERNAL_FAILURE')
         return reply_content
 
     def reply_with_content(self, msg, reply_content):

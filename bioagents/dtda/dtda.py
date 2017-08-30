@@ -11,7 +11,7 @@ import logging
 import sqlite3
 import operator
 from indra.statements import ActiveForm
-from bioagents.databases import cbio_client
+from indra.databases import cbio_client
 
 logger = logging.getLogger('DTDA')
 
@@ -38,7 +38,7 @@ def _make_cbio_efo_map():
 
 cbio_efo_map = _make_cbio_efo_map()
 
-class DTDA:
+class DTDA(object):
     def __init__(self):
         # Build an initial set of substitution statements
         bel_corpus = _resource_dir + 'large_corpus_direct_subs.pkl'
@@ -137,12 +137,12 @@ class DTDA:
         study_ids = self._get_studies_from_disease_name(disease_name)
         if not study_ids:
             raise DiseaseNotFoundException
-        gene_list_str = self._get_gene_list_str()
+        gene_list = self._get_gene_list()
         mutation_dict = {}
         num_case = 0
         for study_id in study_ids:
             num_case += cbio_client.get_num_sequenced(study_id)
-            mutations = cbio_client.get_mutations(study_id, gene_list_str,
+            mutations = cbio_client.get_mutations(study_id, gene_list,
                                                   mutation_type)
             for g, a in zip(mutations['gene_symbol'],
                            mutations['amino_acid_change']):
@@ -190,10 +190,11 @@ class DTDA:
         # mut_residues =
         return (mut_protein, mut_percent)
 
-    def _get_gene_list_str(self):
-        gene_list_str = \
-            ','.join([','.join(v) for v in self.gene_lists.values()])
-        return gene_list_str
+    def _get_gene_list(self):
+        gene_list = []
+        for one_list in self.gene_lists.values():
+            gene_list += one_list
+        return gene_list
 
     gene_lists = {
         'rtk_signaling':

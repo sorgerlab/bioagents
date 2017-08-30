@@ -10,7 +10,7 @@ def main():
           author='Benjamin Gyori',
           author_email='benjamin_gyori@hms.harvard.edu',
           url='http://github.com/sorgerlab/bioagents',
-          packages=['bioagents', 'bioagents.databases', 'bioagents.dtda',
+          packages=['bioagents', 'bioagents.dtda',
                     'bioagents.kappa', 'bioagents.mea', 'bioagents.mra',
                     'bioagents.resources'],
           install_requires=['pysb', 'indra', 'pykqml', 'objectpath', 'rdflib',

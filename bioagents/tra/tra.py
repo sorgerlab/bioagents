@@ -28,13 +28,18 @@ class TRA(object):
             self.ode_mode = False
         if not self.ode_mode:
             self.kappa = kappa
-            kappa_ver = kappa.version()
-            if kappa_ver is None or kappa_ver.get('version_id') is None:
-                raise SimulatorError('Invalid Kappa client.')
-            logger.info('Using kappa version %s / build %s' %
-                         (kappa_ver.get('version_id'),
-                          kappa_ver.get('version_build')))
-        else:
+            try:
+                kappa_ver = kappa.version()
+                if kappa_ver is None or kappa_ver.get('version_id') is None:
+                    raise SimulatorError('Invalid Kappa client.')
+                logger.info('Using kappa version %s / build %s' %
+                             (kappa_ver.get('version_id'),
+                              kappa_ver.get('version_build')))
+            except Exception as e:
+                logger.error('Could not get Kappa version.')
+                logger.error('Kappa error was: %s' % e)
+                self.ode_mode = True
+        if self.ode_mode:
             logger.info('Using ODE mode in TRA.')
 
     def check_property(self, model, pattern, conditions=None):

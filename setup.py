@@ -15,7 +15,7 @@ def main():
                     'bioagents.resources'],
           install_requires=['pysb', 'indra', 'pykqml', 'objectpath', 'rdflib',
                             'functools32', 'requests', 'lxml',
-                            'pandas', 'suds'],
+                            'pandas'],
           include_package_data=True,
           keywords=['systems', 'biology', 'model', 'pathway', 'assembler',
                     'nlp', 'mechanism', 'biochemistry'],

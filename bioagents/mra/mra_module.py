@@ -150,6 +150,13 @@ class MRA_Module(Bioagent):
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
+        action = content.get('action')
+        actionl = KQMLList()
+        if action['action'] == 'remove_stmts':
+            actionl.append('remove_stmts')
+            actionl.set('statements', encode_indra_stmts(action['stmts']))
+        msg.set('action', actionl)
+
         # Add the diagram
         diagrams = res.get('diagrams')
         if not no_display:
@@ -301,6 +308,7 @@ def ekb_from_agent(agent):
                     text_tag, close_tag])
     return ekb
 
+
 def get_target(target_str):
     tp = TripsProcessor(target_str)
     terms = tp.tree.findall('TERM')
@@ -320,6 +328,7 @@ def encode_indra_stmts(stmts):
     stmts_json = stmts_to_json(stmts)
     json_str = json.dumps(stmts_json)
     return json_str
+
 
 def get_ambiguities_msg(ambiguities):
     sa = []

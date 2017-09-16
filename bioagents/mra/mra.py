@@ -22,6 +22,7 @@ logger = logging.getLogger('MRA')
 class MRA(object):
     def __init__(self):
         self.models = {}
+        self.transformations = []
         self.id_counter = 0
         self.default_policy = 'two_step'
         self.default_initial_amount = 100.0
@@ -66,6 +67,7 @@ class MRA(object):
         model_id = self.new_model(stmts)
         res = {'model_id': model_id,
                'model': stmts}
+        transformations[()]
         if not stmts:
             return res
         model_exec = self.assemble_pysb(stmts)
@@ -164,8 +166,13 @@ class MRA(object):
         except KeyError:
             stmts = []
         model_id = self.new_model(stmts)
+        forward_action = self.transformations.pop()
+        if forward_action[0] == 'add_stmts':
+            stmts_added = action[1]
+            action = {'action': 'remove_stmts', 'statements': stmts_added}
         res = {'model_id': model_id,
-               'model': stmts}
+               'model': stmts,
+               'action': action}
         model_exec = self.assemble_pysb(stmts)
         if not stmts:
             return res
@@ -186,6 +193,7 @@ class MRA(object):
     def new_model(self, stmts):
         model_id = self.get_new_id()
         self.models[model_id] = stmts
+        self.transformations.append(('add_stmts', stmts, None, model_id))
         return model_id
 
     def extend_model(self, stmts, model_id):
@@ -197,6 +205,8 @@ class MRA(object):
             if not stmt_exists(self.models[model_id], st):
                 self.models[new_model_id].append(st)
                 new_stmts.append(st)
+        self.transformations.append(('add_stmts', new_stmts, model_id,
+                                     new_model_id))
         return new_model_id, new_stmts
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):

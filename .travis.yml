@@ -9,28 +9,27 @@ addons:
             - ocaml-nox
             - opam
 before_install:
-  #- sudo add-apt-repository --yes ppa:webupd8team/java
   - sudo apt-get update
   - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh -nv;
   - chmod +x miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="/home/travis/miniconda/bin:$PATH"
   - conda update --yes conda
-  - conda install --yes python="$TRAVIS_PYTHON_VERSION" qt=4 numpy scipy sympy cython=0.23.5 nose lxml matplotlib=1.5.0 networkx
+  - conda install --yes python="$TRAVIS_PYTHON_VERSION" qt=4 numpy scipy sympy cython=0.23.5 nose lxml matplotlib=1.5.0 networkx pandas
 install:
-  # INDRA dependencies
+  # Dependencies of Bioagents
   - sudo apt-get install graphviz
-  #- sudo apt-get install oracle-java8-installer
-  #- sudo update-java-alternatives -s java-8-oracle
-  #- sudo apt-get install oracle-java8-set-default
-  #- export JAVA_HOME="/usr/lib/jvm/java-8-oracle/"
-  - pip install pygraphviz jsonschema coverage python-coveralls pandas ndex
-  - pip install doctest-ignore-unicode
+  - pip install pygraphviz ndex
   # PySB and dependencies
   - wget "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz" -O bionetgen.tar.gz -nv
   - tar xzf bionetgen.tar.gz
   - export BNGPATH=`pwd`/BioNetGen-2.2.6-stable
   - pip install git+https://github.com/pysb/pysb.git
+  # PyKQML
+  - pip install git+https://github.com/bgyori/pykqml.git
+  # INDRA
+  - pip install git+https://github.com/sorgerlab/indra.git
+  ##########
   # Kappa
   # First install ocamlfind via opam (needed to build KaSim/KaSa)
   #- opam init -a git://github.com/ocaml/opam-repository && eval $(opam config env)
@@ -44,13 +43,9 @@ install:
   #- make all
   #- export KAPPAPATH=`pwd`
   #- cd ../
-  # Biopax/Paxtools dependencies
-  #- pip install jnius-indra
-  - git clone https://github.com/sorgerlab/indra.git
-  - cd indra
-  - git submodule update --remote
-  - cd $TRAVIS_BUILD_DIR
-  - git clone https://github.com/bgyori/pykqml.git
+  ############
+  # Install utilities for running tests
+  - pip install coverage doctest-ignore-unicode python-coveralls
 before_script:
   # Enable plotting on fake display
   - "export DISPLAY=:99.0"
@@ -58,10 +53,10 @@ before_script:
   - sleep 3
 script:
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
-  # - export _JAVA_OPTIONS="-Xmx4g -Xms1g"
   # Run standard unit tests
   - cd $TRAVIS_BUILD_DIR
-  - nosetests bioagents
+  - cd bioagents
+  - nosetests
      -v --with-doctest --with-doctest-ignore-unicode
      --with-coverage --cover-inclusive --cover-package=indra
 after_success:

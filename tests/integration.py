@@ -47,6 +47,8 @@ def color_diff(expected, received):
     return ''.join(output)
 
 
+define_in_child = lambda x: ("Define %s in the child!" % x)
+
 class _IntegrationTest(TestCase):
     """An abstract object for creating integration tests of bioagents.
 
@@ -70,7 +72,6 @@ class _IntegrationTest(TestCase):
 
     run_test: Actually run the test. This makes calls to the stubs.
     """
-    define_in_child = lambda x: ("Define %s in the child!" % x)
 
     def __init__(self, bioagent):
         self.output = None  # BytesIO()
@@ -94,7 +95,7 @@ class _IntegrationTest(TestCase):
 
     def give_feedback(self):
         "Create an informative string to give some feedback."
-        raise NotImplementedError(define_in_child('feedback'))
+        raise NotImplementedError(define_in_child('the feedback'))
 
     def run_test(self):
         msg, content = self.get_message()
@@ -102,23 +103,7 @@ class _IntegrationTest(TestCase):
         assert self.is_correct_response(), self.give_feedback()
 
 
-class _ContentCompareTest(_IntegrationTest):
-    """Tntegration test in which response is compared to expected response."""
-    def __init__(self, *args, **kwargs):
-        super(_ContentCompareTest, self).__init__(*args, **kwargs)
-        self.expected = NotImplemented
-
-    def give_feedback(self):
-        """Return feedback comparing the expected to the result."""
-        ret_fmt = 'Did not get the expected output string:\n'
-        ret_fmt += 'Expected: %s\n' % self.expected
-        ret_fmt += 'Received: %s\n' % self.str_output
-        ret_fmt += 'Diff: %s\n' % \
-            color_diff(self.expected, self.output.to_string())
-        return ret_fmt
-
-
-class _StringCompareTest(_ContentCompareTest):
+class _StringCompareTest(_IntegrationTest):
     """Integration test in which the expected result is a verbatim string."""
     def __init__(self, *args, **kwargs):
         super(_StringCompareTest, self).__init__(*args, **kwargs)
@@ -128,3 +113,11 @@ class _StringCompareTest(_ContentCompareTest):
         output_str = self.output.to_string()
         return output_str == self.expected
 
+    def give_feedback(self):
+        """Return feedback comparing the expected to the result."""
+        ret_fmt = 'Did not get the expected output string:\n'
+        ret_fmt += 'Expected: %s\n' % self.expected
+        ret_fmt += 'Received: %s\n' % self.str_output
+        ret_fmt += 'Diff: %s\n' % \
+            color_diff(self.expected, self.output.to_string())
+        return ret_fmt

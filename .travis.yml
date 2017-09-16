@@ -55,7 +55,6 @@ script:
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
   # Run standard unit tests
   - cd $TRAVIS_BUILD_DIR
-  - cd bioagents
-  - nosetests
+  - nosetests bioagents
      -v --with-doctest --with-doctest-ignore-unicode
-     --with-coverage --cover-inclusive --cover-package=indra
+     --with-coverage --cover-inclusive --cover-package=bioagents

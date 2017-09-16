@@ -19,6 +19,8 @@ class TRA_Module(Bioagent):
     name = "TRA"
     tasks = ['SATISFIES-PATTERN']
     def __init__(self, **kwargs):
+        '''
+        TEMPORARILY DISABLED WHILE KAPPA CLIENT IS UPDATED
         kappa_url = None
         if 'argv' in kwargs.keys():
             argv = kwargs['argv']
@@ -42,7 +44,8 @@ class TRA_Module(Bioagent):
                 self.logger.error('Could not instantiate TRA with Kappa service.')
                 self.logger.error(e)
                 self.ode_mode = True
-
+        '''
+        self.ode_mode = True
         if not self.ode_mode:
             self.tra = TRA(kappa)
         else:

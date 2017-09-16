@@ -1,59 +1,56 @@
-""" Web api client for the kappa programming language
-"""
+"""Web API client for a Kappa simulator."""
 
 import urllib, urllib2
 import json
-import subprocess
+import requests
 from time import sleep
 
 class RuntimeError(Exception):
     def __init__(self, errors):
         self.errors = errors
 
+kappa_default = 'http://api.executableknowledge.org/kappa/v2/projects/default'
 
 class KappaRuntime(object):
-    """ Create a client by supplying a web endpoint
-    """
-    def __init__(self, endpoint):
-        self.url = "{0}/v1".format(endpoint)
+    def __init__(self, endpoint=None):
+        """Create a Kappa client."""
+        if not endpoint:
+            self.url = kappa_default
+        else:
+            self.url = endpoint
 
-    """ get version of environment this should provide
-        a quick status check for the endpoint as the
-        URL is already versioned.
-    """
     def version(self):
+        """Return the version of the Kappa environment."""
         try:
-            version_url = "{0}/version".format(self.url)
-            response = urllib2.urlopen(version_url)
-            text = response.read()
-            return json.loads(text)
-        except urllib2.URLError as e:
-            raise RuntimeError(e.reason)
+            res = requests.get(self.url)
+            if res.status_code != 200:
+                raise Exception('Kappa service returned with code: %s' %
+                                res.status_code)
+            content = res.json()
+            version = content.get('project_version')
+            return version
+        except Exception as e:
+            raise RuntimeError(e)
 
-    """ parse code throw an exception if the parse
-        fails.
-    """
-    def parse(self,code):
-        query_args = { 'code':code }
-        encoded_args = urllib.urlencode(query_args)
-        parse_url = "{0}/parse?{1}".format(self.url,encoded_args)
-        try:
-            response = urllib2.urlopen(parse_url)
-            text = response.read()
-            return json.loads(text)
-        except urllib2.HTTPError as e:
-            if e.code == 400:
-                error_details = json.loads(e.read())
-                raise RuntimeError(error_details)
-            else:
-                raise e
-        except urllib2.URLError as e:
-            RuntimeError(e.reason)
+    def parse(self, code):
+        """Parse given Kappa model code and throw exception if fails."""
+        query_args = {'code': code}
+        parse_url = self.url + '/parse'
+        res = requests.post(parse_url, json=query_args)
+        #try:
+        content = response.json()
+        return json.loads(content)
+        #except urllib2.HTTPError as e:
+        #    if e.code == 400:
+        #        error_details = json.loads(e.read())
+        #        raise RuntimeError(error_details)
+        #    else:
+        #        raise e
+        #except urllib2.URLError as e:
+        #    RuntimeError(e.reason)
 
-    """ parse code throw an exception if the parse
-        fails.
-    """
-    def start(self,parameter):
+    def start(self, parameter):
+        """Start a simulation with given parameters."""
         if not 'max_time' in parameter:
             parameter['max_time'] = None
         if not 'max_events' in parameter:
@@ -82,9 +79,8 @@ class KappaRuntime(object):
         else:
             raise e
 
-    """ stop running process
-    """
-    def stop(self,token):
+    def stop(self, token):
+        """Stop a given simulation."""
         method = "DELETE"
         handler = urllib2.HTTPHandler()
         opener = urllib2.build_opener(handler)
@@ -108,9 +104,8 @@ class KappaRuntime(object):
         else:
             raise e
 
-    """ status of running process
-    """
-    def status(self,token):
+    def status(self, token):
+        """Return status of running simulation."""
         try:
             version_url = "{0}/process/{1}".format(self.url,token)
             response = urllib2.urlopen(version_url)
@@ -126,9 +121,8 @@ class KappaRuntime(object):
             RuntimeError(e.reason)
 
 
-    """ shutdown server
-    """
     def shutdown(self,key):
+        """Shutdown the server."""
         method = "POST"
         handler = urllib2.HTTPHandler()
         opener = urllib2.build_opener(handler)

@@ -103,14 +103,11 @@ class _IntegrationTest(TestCase):
         assert self.is_correct_response(), self.give_feedback()
 
 
-class _StringCompareTest(_IntegrationTest):
-    """A basic integration test in which the expected result is a string."""
+class _ContentCompareTest(_IntegrationTest):
+    """Tntegration test in which response is compared to expected response."""
     def __init__(self, *args, **kwargs):
-        super(_StringCompareTest, self).__init__(*args, **kwargs)
+        super(_ContentCompareTest, self).__init__(*args, **kwargs)
         self.expected = NotImplemented
-
-    def is_correct_response(self):
-        return self.output == self.expected
 
     def give_feedback(self):
         """Return feedback comparing the expected to the result."""
@@ -119,6 +116,17 @@ class _StringCompareTest(_IntegrationTest):
         ret_fmt += 'Received: %s\n' % self.output
         ret_fmt += 'Diff: %s\n' % color_diff(self.expected, self.output)
         return ret_fmt
+
+
+class _StringCompareTest(_ContentCompareTest):
+    """Integration test in which the expected result is a verbatim string."""
+    def __init__(self, *args, **kwargs):
+        super(_StringCompareTest, self).__init__(*args, **kwargs)
+        self.expected = NotImplemented
+
+    def is_correct_response(self):
+        return self.output == self.expected
+
 
 def _decode_output(output):
     if output is None:

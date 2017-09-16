@@ -9,7 +9,7 @@ from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation,\
     Dephosphorylation
 from kqml import KQMLPerformative, KQMLString, KQMLList
-from tests.integration import FirstGenIntegChecks
+from tests.integration import _StringCompareTest
 
 def test_time_interval():
     TimeInterval(2.0, 4.0, 'second')
@@ -279,24 +279,24 @@ def test_module():
     assert res[2] is not None
 
 
-class _TRAModelTest(FirstGenIntegChecks.ComparativeIntegCheck):
+class _TRAModelTest(_StringCompareTest):
     def __init__(self, *args, **kwargs):
         super(_TRAModelTest, self).__init__(*args, **kwargs)
         self.entity_str = NotImplemented
         self.model_str = NotImplemented
         return
-    
+
     def get_entity(self):
         "Get the entity KQMLString using trips."
         tp = trips.process_text(self.entity_str)
         ekb = ElementTree.tostring(tp.tree)
         return KQMLString(ekb)
-    
+
     def get_model(self):
         "Get the model KQMLString from trips."
         tp = trips.process_text(self.model_str)
         return KQMLString(json.dumps(stmts_to_json(tp.statements)))
-            
+
 
 class TestModel(_TRAModelTest):
     "Test that TRA can correctly run a model."
@@ -308,11 +308,7 @@ class TestModel(_TRAModelTest):
         return
 
     def get_message(self):
-        "Demonstrate a stupid way of doing this. This is just a test."
-        # The 3 lines below can be refactored into a reusable function
         entity = self.get_entity()
-        
-        # These 2 lines can be refactored into a reusable function
         model = self.get_model()
 
         tp = trips.process_text('MAP2K1')

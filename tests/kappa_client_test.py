@@ -6,23 +6,39 @@ from bioagents.kappa import kappa_client
 
 kappa = kappa_client.KappaRuntime()
 
+def _get_toy_model():
+    fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         'test_model.ka')
+    with open(fname, 'rt') as fh:
+        model = fh.read()
+    return model
+
+
+kappa_model = _get_toy_model()
+
+
 def test_version():
     version = kappa.version()
     assert(version == 4)
 
-if __name__ == '__main__':
-    fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         'test_model.ka')
-    with open(fname, 'rt') as fh:
-        kappa_model = fh.read()
+'''
+This block is temporarily disabled while new Kappa client
+is being updated.
 
+def test_parse():
+    res = kappa.parse(kappa_model)
+    print(res)
+
+
+def test_run_sim():
     kappa_params = {'code': kappa_model,
                     'plot_period': 100,
                     'max_time': 10000}
     print('Starting simulation')
     sim_id = kappa.start(kappa_params)
-    print('Started simulation')
+    assert(sim_id is not None)
 
+    print('Started simulation')
     while True:
         sleep(1)
         print('Checking status')
@@ -34,7 +50,6 @@ if __name__ == '__main__':
         else:
             print(status.get('time_percentage'))
     kappa_plot = status.get('plot')
-
     values = kappa_plot['time_series']
     values.sort(key = lambda x: x['observation_time'])
     nt = len(values)
@@ -47,3 +62,4 @@ if __name__ == '__main__':
         for i, obs in enumerate(obs_list):
             yobs[obs][t] = value['observation_values'][i]
     print(tspan, yobs)
+'''

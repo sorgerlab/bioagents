@@ -21,34 +21,33 @@ class KappaRuntime(object):
 
     def version(self):
         """Return the version of the Kappa environment."""
-        #try:
-        res = requests.get(self.url)
-        if res.status_code != 200:
-            raise Exception('Kappa service returned with code: %s' %
-                            res.status_code)
-        content = res.json()
-        version = content.get('project_version')
-        return version
-        #except Exception as e:
-        #    raise RuntimeError(e)
+        try:
+            res = requests.get(self.url)
+            if res.status_code != 200:
+                raise Exception('Kappa service returned with code: %s' %
+                                res.status_code)
+            content = res.json()
+            version = content.get('project_version')
+            return version
+        except Exception as e:
+            raise RuntimeError(e)
 
     def parse(self, code):
         """Parse given Kappa model code and throw exception if fails."""
-        query_args = { 'code':code }
-        encoded_args = urllib.urlencode(query_args)
-        parse_url = "{0}/parse?{1}".format(self.url,encoded_args)
-        try:
-            response = urllib2.urlopen(parse_url)
-            text = response.read()
-            return json.loads(text)
-        except urllib2.HTTPError as e:
-            if e.code == 400:
-                error_details = json.loads(e.read())
-                raise RuntimeError(error_details)
-            else:
-                raise e
-        except urllib2.URLError as e:
-            RuntimeError(e.reason)
+        query_args = {'code': code}
+        parse_url = self.url + '/parse'
+        res = requests.post(parse_url, json=query_args)
+        #try:
+        content = response.json()
+        return json.loads(content)
+        #except urllib2.HTTPError as e:
+        #    if e.code == 400:
+        #        error_details = json.loads(e.read())
+        #        raise RuntimeError(error_details)
+        #    else:
+        #        raise e
+        #except urllib2.URLError as e:
+        #    RuntimeError(e.reason)
 
     def start(self, parameter):
         """Start a simulation with given parameters."""

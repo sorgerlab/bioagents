@@ -67,7 +67,6 @@ class MRA(object):
         model_id = self.new_model(stmts)
         res = {'model_id': model_id,
                'model': stmts}
-        transformations[()]
         if not stmts:
             return res
         model_exec = self.assemble_pysb(stmts)
@@ -168,11 +167,11 @@ class MRA(object):
         model_id = self.new_model(stmts)
         forward_action = self.transformations.pop()
         if forward_action[0] == 'add_stmts':
-            stmts_added = action[1]
-            action = {'action': 'remove_stmts', 'statements': stmts_added}
+            stmts_added = forward_action[1]
+            undo_action = {'action': 'remove_stmts', 'statements': stmts_added}
         res = {'model_id': model_id,
                'model': stmts,
-               'action': action}
+               'action': undo_action}
         model_exec = self.assemble_pysb(stmts)
         if not stmts:
             return res

@@ -150,11 +150,12 @@ class MRA_Module(Bioagent):
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
-        action = content.get('action')
+        # Get the action and add it to the message
+        action = res.get('action')
         actionl = KQMLList()
         if action['action'] == 'remove_stmts':
             actionl.append('remove_stmts')
-            actionl.set('statements', encode_indra_stmts(action['stmts']))
+            actionl.sets('statements', encode_indra_stmts(action['statements']))
         msg.set('action', actionl)
 
         # Add the diagram

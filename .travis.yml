@@ -29,6 +29,8 @@ install:
   # Dependencies of Bioagents not covered by previous installs
   - sudo apt-get install graphviz
   - pip install pygraphviz ndex socketIO-client
+  - wget "http://sorger.med.harvard.edu/data/bgyori/bioagents/drug_targets.db" -O drug_targets.db -nv
+  - mv drug_targets.db bioagents/bioagents/resources
   ##########
   # Kappa
   # First install ocamlfind via opam (needed to build KaSim/KaSa)

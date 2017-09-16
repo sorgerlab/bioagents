@@ -6,6 +6,9 @@ from tests.integration import _IntegrationTest
 from bioagents.mra import MRA, MRA_Module
 from bioagents.mra.mra_module import ekb_from_agent, get_target
 
+# ################
+# MRA unit tests
+# ################
 def test_agent_to_ekb():
     egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
     term = ekb_from_agent(egfr)
@@ -41,6 +44,21 @@ def test_expand_model_from_ekb():
     assert(len(m.models[2]) == 2)
 
 
+def test_get_upstream():
+    m = MRA()
+    egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
+    kras = Agent('KRAS', db_refs = {'HGNC': '6407', 'TEXT': 'KRAS'})
+    stmts = [Activation(egfr, kras)]
+    model_id = m.new_model(stmts)
+    upstream = m.get_upstream(kras, model_id)
+    assert(len(upstream) == 1)
+    assert(upstream[0].name == 'EGFR')
+
+
+# #####################
+# MRA_Module unit tests
+# #####################
+
 def test_respond_build_model_from_json():
     mm = MRA_Module(testing=True)
     st = Phosphorylation(Agent('MEK'), Agent('ERK'))
@@ -71,17 +89,6 @@ def test_respond_expand_model_from_json():
     assert(reply.get('model-id') == '2')
 
 
-def test_get_upstream():
-    m = MRA()
-    egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
-    kras = Agent('KRAS', db_refs = {'HGNC': '6407', 'TEXT': 'KRAS'})
-    stmts = [Activation(egfr, kras)]
-    model_id = m.new_model(stmts)
-    upstream = m.get_upstream(kras, model_id)
-    assert(len(upstream) == 1)
-    assert(upstream[0].name == 'EGFR')
-
-
 def test_respond_model_get_upstream():
     mm = MRA_Module(testing=True)
     egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
@@ -96,18 +103,31 @@ def test_respond_model_get_upstream():
     ups = reply.get('upstream')
     assert(len(ups) == 1)
 
+
+# #####################
+# MRA integration tests
+# #####################
+
+def _get_build_model_request(text):
+    content = KQMLList('BUILD-MODEL')
+    descr = ekb_kstring_from_text(text)
+    content.set('description', descr)
+    return _get_request(content), content
+
+
+def _get_request(content):
+    msg = KQMLPerformative('REQUEST')
+    msg.set('content', content)
+    msg.set('reply-with', 'IO-1')
+    return msg
+
+
 class TestBuildModelAmbiguity(_IntegrationTest):
     def __init__(self, *args):
         super(TestBuildModelAmbiguity, self).__init__(MRA_Module)
 
     def get_message(self):
-        content = KQMLList('BUILD-MODEL')
-        descr = ekb_kstring_from_text('MEK1 phosphorylates ERK2')
-        content.set('description', descr)
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-1')
-        return msg, content
+        return _get_build_model_request('MEK1 phosphorylates ERK2')
 
     def is_correct_response(self):
         assert self.output.head() == 'SUCCESS'
@@ -129,6 +149,27 @@ class TestBuildModelAmbiguity(_IntegrationTest):
     def give_feedback(self):
         return None
 
+
+class TestModelUndo(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestModelUndo, self).__init__(MRA_Module)
+        # Start off with a model
+        msg, content = _get_build_model_request('MEK1 phosphorylates ERK2')
+        self.bioagent.receive_request(msg, content)
+
+    def get_message(self):
+        content = KQMLList('MODEL-UNDO')
+        msg = _get_request(content)
+        return msg, content
+
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS'
+        assert self.output.get('model-id') == '2'
+        assert self.output.gets('model') == '[]'
+        return True
+
+    def give_feedback(self):
+        return None
 
 def test_undo():
     mm = MRA_Module(testing=True)

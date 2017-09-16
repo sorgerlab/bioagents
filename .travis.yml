@@ -45,7 +45,7 @@ install:
   #- cd ../
   ############
   # Install utilities for running tests
-  - pip install coverage doctest-ignore-unicode python-coveralls
+  - pip install coverage
 before_script:
   # Enable plotting on fake display
   - "export DISPLAY=:99.0"
@@ -55,6 +55,4 @@ script:
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
   # Run standard unit tests
   - cd $TRAVIS_BUILD_DIR
-  - nosetests bioagents
-     -v --with-doctest --with-doctest-ignore-unicode
-     --with-coverage --cover-inclusive --cover-package=bioagents
+  - nosetests tests -v --with-coverage --cover-inclusive --cover-package=bioagents

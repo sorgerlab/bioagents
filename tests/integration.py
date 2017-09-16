@@ -70,32 +70,31 @@ class _IntegrationTest(TestCase):
 
     run_test: Actually run the test. This makes calls to the stubs.
     """
-    nie_fmt = "Define %s in the child!"
+    define_in_child = lambda x: ("Define %s in the child!" % x)
 
     def __init__(self, bioagent):
         self.output = None  # BytesIO()
         self.bioagent = bioagent(testing=True)  # out = self.output)
         TestCase.__init__(self, 'run_test')
-        return
 
     def __getattribute__(self, attr_name):
         "Ensure that all attributes are implemented."
         attr = TestCase.__getattribute__(self, attr_name)
         if attr is NotImplemented:
-            raise NotImplementedError(self.nie_fmt % attr_name)
+            raise NotImplementedError(define_in_child(attr_name))
         return attr
 
     def get_message(self):
         "Get the message to be sent to the Bioagent."
-        raise NotImplementedError(self.nie_fmt % "the message constructor")
+        raise NotImplementedError(define_in_child('the message constructor'))
 
     def is_correct_response(self):
         "Check that the response is correct. Must be defined in child."
-        raise NotImplementedError(self.nie_fmt % "the response criteria")
+        raise NotImplementedError(define_in_child('the response criteria'))
 
     def give_feedback(self):
         "Create an informative string to give some feedback."
-        raise NotImplementedError(self.nie_fmt % "feedback")
+        raise NotImplementedError(define_in_child('feedback'))
 
     def run_test(self):
         msg, content = self.get_message()
@@ -116,10 +115,10 @@ class _StringCompareTest(_IntegrationTest):
     def give_feedback(self):
         """Return feedback comparing the expected to the result."""
         ret_fmt = 'Did not get the expected output string:\n'
-        ret_fmt += 'Expected: %s\nReceived: %s\nDiff: %s\n'
-
-        return ret_fmt % (self.expected, self.output,
-                          color_diff(self.expected, res))
+        ret_fmt += 'Expected: %s\n' % self.expected
+        ret_fmt += 'Received: %s\n' % self.output
+        ret_fmt += 'Diff: %s\n' % color_diff(self.expected, self.output)
+        return ret_fmt
 
 def _decode_output(output):
     if output is None:

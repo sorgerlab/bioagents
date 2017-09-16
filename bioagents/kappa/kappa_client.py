@@ -1,9 +1,8 @@
-""" Web api client for the kappa programming language
-"""
+"""Web API client for a Kappa simulator."""
 
 import urllib, urllib2
 import json
-import subprocess
+import requests
 from time import sleep
 
 class RuntimeError(Exception):
@@ -13,8 +12,8 @@ class RuntimeError(Exception):
 kappa_default = 'http://api.executableknowledge.org/kappa/v2/projects/default'
 
 class KappaRuntime(object):
-    """Create a Kappa client."""
     def __init__(self, endpoint=None):
+        """Create a Kappa client."""
         if not endpoint:
             self.url = kappa_default
         else:
@@ -22,13 +21,16 @@ class KappaRuntime(object):
 
     def version(self):
         """Return the version of the Kappa environment."""
-        try:
-            version_url = "{0}/version".format(self.url)
-            response = urllib2.urlopen(version_url)
-            text = response.read()
-            return json.loads(text)
-        except urllib2.URLError as e:
-            raise RuntimeError(e.reason)
+        #try:
+        res = requests.get(self.url)
+        if res.status_code != 200:
+            raise Exception('Kappa service returned with code: %s' %
+                            res.status_code)
+        content = res.json()
+        version = content.get('project_version')
+        return version
+        #except Exception as e:
+        #    raise RuntimeError(e)
 
     def parse(self, code):
         """Parse given Kappa model code and throw exception if fails."""

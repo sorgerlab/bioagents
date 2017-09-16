@@ -287,13 +287,10 @@ class TestModel(_StringCompareTest):
         self.expected = '(SUCCESS :content (:satisfies-rate 1.0 ' + \
             ':num-sim 10 :suggestion (:type "always_value" ' + \
             ':value (:type "qualitative" :value "low"))))'
-        self.entity_str = 'MAPK1-MAP2K1 complex'
-        self.model_str = 'MAP2K1 binds MAPK1'
-        return
 
     def get_message(self):
-        model = stmts_kstring_from_text(self.model_str)
-        entity = ekb_kstring_from_text(self.entity_str)
+        model = stmts_kstring_from_text('MAP2K1 binds MAPK1')
+        entity = ekb_kstring_from_text('MAPK1-MAP2K1 complex')
         condition_entity = ekb_kstring_from_text('MAP2K1')
 
         entities = KQMLList([KQMLList([':description', entity])])

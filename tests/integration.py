@@ -2,10 +2,16 @@ from unittest import TestCase
 from difflib import SequenceMatcher
 from io import BytesIO
 from kqml.kqml_performative import KQMLPerformative
+
+import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('integration_tests')
+
 try:
     from colorama.ansi import Back, Style, Fore
 except:
-    raise Warning("Will not be able to mark diffs with color.")
+    logger.warning('Will not be able to mark diffs with color.')
     # Create dummies
     class DummyColorer(object):
         def __getattribute__(self, *args, **kwargs):
@@ -66,7 +72,7 @@ class ParentIntegChecks:
             self.bioagent = Bioagent(testing=True)#, out = self.output)
             TestCase.__init__(self, 'run_test')
             return
-        
+
         def __getattribute__(self, attr_name):
             "Ensure that all attributes are implemented."
             attr =  TestCase.__getattribute__(self, attr_name)
@@ -91,7 +97,7 @@ class ParentIntegChecks:
             self.output = self.bioagent.receive_request(msg, content)
             #self.bioagent.dispatcher.dispatch_message(msg)
             assert self.is_correct_response(), self.give_feedback()
-            
+
 
 class FirstGenIntegChecks:
     class ComparativeIntegCheck(ParentIntegChecks.IntegCheckParent):
@@ -113,5 +119,5 @@ class FirstGenIntegChecks:
                     res = str(self.output[1])
             else:
                 return "UNHANDLED RESULT TYPE"
-            
+
             return ret_fmt % (self.expected, res, color_diff(self.expected, res))

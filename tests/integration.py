@@ -72,9 +72,9 @@ class _IntegrationTest(TestCase):
     """
     nie_fmt = "Define %s in the child!"
 
-    def __init__(self, Bioagent):
+    def __init__(self, bioagent):
         self.output = None  # BytesIO()
-        self.bioagent = Bioagent(testing=True)  # out = self.output)
+        self.bioagent = bioagent(testing=True)  # out = self.output)
         TestCase.__init__(self, 'run_test')
         return
 
@@ -86,7 +86,7 @@ class _IntegrationTest(TestCase):
         return attr
 
     def get_message(self):
-        "(Stub) Get the message to be sent to the Bioagent."
+        "Get the message to be sent to the Bioagent."
         raise NotImplementedError(self.nie_fmt % "the message constructor")
 
     def is_correct_response(self):
@@ -99,8 +99,8 @@ class _IntegrationTest(TestCase):
 
     def run_test(self):
         msg, content = self.get_message()
-        self.output = self.bioagent.receive_request(msg, content)
-        # self.bioagent.dispatcher.dispatch_message(msg)
+        output = self.bioagent.receive_request(msg, content)
+        self.output = _decode_output(output)
         assert self.is_correct_response(), self.give_feedback()
 
 
@@ -110,19 +110,25 @@ class _StringCompareTest(_IntegrationTest):
         super(_StringCompareTest, self).__init__(*args, **kwargs)
         self.expected = NotImplemented
 
-    def get_feedback(self):
+    def is_correct_response(self):
+        return self.output == self.expected
+
+    def give_feedback(self):
         """Return feedback comparing the expected to the result."""
         ret_fmt = 'Did not get the expected output string:\n'
         ret_fmt += 'Expected: %s\nReceived: %s\nDiff: %s\n'
-        if self.output is None:
-            res = 'None'
-        elif isinstance(self.output, tuple) and len(self.output) > 1:
-            if isinstance(self.output[1], KQMLPerformative):
-                res = self.output[1].to_string()
-            else:
-                res = str(self.output[1])
-        else:
-            return "UNHANDLED RESULT TYPE"
 
-        return ret_fmt % (self.expected, res,
+        return ret_fmt % (self.expected, self.output,
                           color_diff(self.expected, res))
+
+def _decode_output(output):
+    if output is None:
+        return 'None'
+    if isinstance(output, tuple) and len(output) > 1:
+        if isinstance(output[1], KQMLPerformative):
+            return output[1].to_string()
+        else:
+            return str(output[1])
+    else:
+        return 'UNHANDLED RESULT TYPE'
+

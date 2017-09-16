@@ -30,7 +30,8 @@ install:
   - sudo apt-get install graphviz
   - pip install pygraphviz ndex socketIO-client
   - wget "http://sorger.med.harvard.edu/data/bgyori/bioagents/drug_targets.db" -O drug_targets.db -nv
-  - mv drug_targets.db bioagents/bioagents/resources
+  - pwd
+  - mv drug_targets.db bioagents/resources
   ##########
   # Kappa
   # First install ocamlfind via opam (needed to build KaSim/KaSa)

@@ -1,7 +1,8 @@
 import json
-from kqml import KQMLList
+from kqml import KQMLList, KQMLPerformative
 from indra.statements import *
-from util import ekb_from_text
+from tests.util import *
+from tests.integration import _ContentCompareTest
 from bioagents.mra import MRA, MRA_Module
 from bioagents.mra.mra_module import ekb_from_agent, get_target
 
@@ -95,6 +96,31 @@ def test_respond_model_get_upstream():
     reply = mm.respond_model_get_upstream(msg)
     ups = reply.get('upstream')
     assert(len(ups) == 1)
+
+
+class TestBuildModel(_ContentCompareTest):
+    def __init__(self, *args):
+        super(TestBuildModel, self).__init__(MRA_Module)
+
+    def get_message(self):
+        content = KQMLList('BUILD-MODEL')
+        descr = ekb_kstring_from_text('MEK1 phosphorylates ERK2')
+        content.set('description', descr)
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-1')
+        return msg, content
+
+    def is_correct_response(self):
+        try:
+            assert self.output.head() == 'SUCCESS'
+            assert self.output.get('model-id') == '1'
+            assert self.output.get('model') is not None
+            assert self.output.get('ambiguities') is not None
+            assert self.output.get('diagram') is not None
+        except AssertionError:
+            return False
+        return True
 
 
 def test_undo():

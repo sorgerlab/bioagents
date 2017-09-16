@@ -2,10 +2,9 @@ import json
 from kqml import KQMLList, KQMLPerformative
 from indra.statements import *
 from tests.util import *
-from tests.integration import _ContentCompareTest
+from tests.integration import _IntegrationTest
 from bioagents.mra import MRA, MRA_Module
 from bioagents.mra.mra_module import ekb_from_agent, get_target
-
 
 def test_agent_to_ekb():
     egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
@@ -97,10 +96,9 @@ def test_respond_model_get_upstream():
     ups = reply.get('upstream')
     assert(len(ups) == 1)
 
-
-class TestBuildModel(_ContentCompareTest):
+class TestBuildModelAmbiguity(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModel, self).__init__(MRA_Module)
+        super(TestBuildModelAmbiguity, self).__init__(MRA_Module)
 
     def get_message(self):
         content = KQMLList('BUILD-MODEL')
@@ -112,15 +110,24 @@ class TestBuildModel(_ContentCompareTest):
         return msg, content
 
     def is_correct_response(self):
-        try:
-            assert self.output.head() == 'SUCCESS'
-            assert self.output.get('model-id') == '1'
-            assert self.output.get('model') is not None
-            assert self.output.get('ambiguities') is not None
-            assert self.output.get('diagram') is not None
-        except AssertionError:
-            return False
+        assert self.output.head() == 'SUCCESS'
+        assert self.output.get('model-id') == '1'
+        assert self.output.get('model') is not None
+        ambiguities = self.output.get('ambiguities')
+        assert len(ambiguities) == 1
+        assert ambiguities[0].get('preferred').to_string() == \
+            '(term :ont-type ONT::PROTEIN ' + \
+            ':ids "HGNC::6840|NCIT::C52823|UP::Q02750" :name "MAP2K1")'
+        assert ambiguities[0].get('alternative').to_string() == \
+            '(term :ont-type ONT::PROTEIN-FAMILY ' + \
+            ':ids "BE::MAP2K|NCIT::C105947" ' + \
+            ':name "mitogen-activated protein kinase kinase")'
+        assert self.output.get('diagram') is not None
+        assert self.output.gets('diagram').endswith('png')
         return True
+
+    def give_feedback(self):
+        return None
 
 
 def test_undo():

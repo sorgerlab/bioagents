@@ -98,8 +98,7 @@ class _IntegrationTest(TestCase):
 
     def run_test(self):
         msg, content = self.get_message()
-        output = self.bioagent.receive_request(msg, content)
-        self.output = _decode_output(output)
+        _, self.output = self.bioagent.receive_request(msg, content)
         assert self.is_correct_response(), self.give_feedback()
 
 
@@ -113,8 +112,9 @@ class _ContentCompareTest(_IntegrationTest):
         """Return feedback comparing the expected to the result."""
         ret_fmt = 'Did not get the expected output string:\n'
         ret_fmt += 'Expected: %s\n' % self.expected
-        ret_fmt += 'Received: %s\n' % self.output
-        ret_fmt += 'Diff: %s\n' % color_diff(self.expected, self.output)
+        ret_fmt += 'Received: %s\n' % self.str_output
+        ret_fmt += 'Diff: %s\n' % \
+            color_diff(self.expected, self.output.to_string())
         return ret_fmt
 
 
@@ -125,17 +125,6 @@ class _StringCompareTest(_ContentCompareTest):
         self.expected = NotImplemented
 
     def is_correct_response(self):
-        return self.output == self.expected
-
-
-def _decode_output(output):
-    if output is None:
-        return 'None'
-    if isinstance(output, tuple) and len(output) > 1:
-        if isinstance(output[1], KQMLPerformative):
-            return output[1].to_string()
-        else:
-            return str(output[1])
-    else:
-        return 'UNHANDLED RESULT TYPE'
+        output_str = self.output.to_string()
+        return output_str == self.expected
 

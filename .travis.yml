@@ -9,13 +9,9 @@ addons:
             - ocaml-nox
             - opam
 before_install:
-  - sudo add-apt-repository --yes ppa:webupd8team/java
+  #- sudo add-apt-repository --yes ppa:webupd8team/java
   - sudo apt-get update
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh -nv;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh -nv;
-    fi
+  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh -nv;
   - chmod +x miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="/home/travis/miniconda/bin:$PATH"
@@ -24,13 +20,12 @@ before_install:
 install:
   # INDRA dependencies
   - sudo apt-get install graphviz
-  - sudo apt-get install oracle-java8-installer
-  - sudo update-java-alternatives -s java-8-oracle
-  - sudo apt-get install oracle-java8-set-default
-  - export JAVA_HOME="/usr/lib/jvm/java-8-oracle/"
+  #- sudo apt-get install oracle-java8-installer
+  #- sudo update-java-alternatives -s java-8-oracle
+  #- sudo apt-get install oracle-java8-set-default
+  #- export JAVA_HOME="/usr/lib/jvm/java-8-oracle/"
   - pip install pygraphviz jsonschema coverage python-coveralls pandas ndex
   - pip install doctest-ignore-unicode
-  - wget http://sorger.med.harvard.edu/data/bachman/Phosphorylation_site_dataset.tsv --directory-prefix=indra/resources/ -nv
   # PySB and dependencies
   - wget "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz" -O bionetgen.tar.gz -nv
   - tar xzf bionetgen.tar.gz
@@ -50,7 +45,7 @@ install:
   #- export KAPPAPATH=`pwd`
   #- cd ../
   # Biopax/Paxtools dependencies
-  - pip install jnius-indra
+  #- pip install jnius-indra
   - git clone https://github.com/sorgerlab/indra.git
   - cd indra
   - git submodule update --remote
@@ -63,7 +58,7 @@ before_script:
   - sleep 3
 script:
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
-  - export _JAVA_OPTIONS="-Xmx4g -Xms1g"
+  # - export _JAVA_OPTIONS="-Xmx4g -Xms1g"
   # Run standard unit tests
   - cd $TRAVIS_BUILD_DIR
   - nosetests bioagents

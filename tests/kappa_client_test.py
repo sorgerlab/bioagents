@@ -4,7 +4,8 @@ import itertools
 from time import sleep
 from bioagents.kappa import kappa_client
 
-kappa = kappa_client.KappaRuntime('http://maasha.org:8080')
+api_url = 'http://api.executableknowledge.org/kappa/v2/projects/default'
+kappa = kappa_client.KappaRuntime(api_url)
 
 fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                      'test_model.ka')

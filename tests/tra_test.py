@@ -9,6 +9,7 @@ from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation,\
     Dephosphorylation
 from kqml import KQMLPerformative, KQMLString, KQMLList
+from tests.util import *
 from tests.integration import _StringCompareTest
 
 def test_time_interval():
@@ -279,41 +280,21 @@ def test_module():
     assert res[2] is not None
 
 
-class _TRAModelTest(_StringCompareTest):
-    def __init__(self, *args, **kwargs):
-        super(_TRAModelTest, self).__init__(*args, **kwargs)
-        self.entity_str = NotImplemented
-        self.model_str = NotImplemented
-        return
-
-    def get_entity(self):
-        "Get the entity KQMLString using trips."
-        tp = trips.process_text(self.entity_str)
-        ekb = ElementTree.tostring(tp.tree)
-        return KQMLString(ekb)
-
-    def get_model(self):
-        "Get the model KQMLString from trips."
-        tp = trips.process_text(self.model_str)
-        return KQMLString(json.dumps(stmts_to_json(tp.statements)))
-
-
-class TestModel(_TRAModelTest):
-    "Test that TRA can correctly run a model."
+class TestModel(_StringCompareTest):
+    """Test that TRA can correctly run a model."""
     def __init__(self, *args):
         super(TestModel, self).__init__(tra_module.TRA_Module)
-        self.expected = "SUCCESS"
-        self.entity_str = "MAPK1-MAP2K1 complex"
-        self.model_str = "MAP2K1 binds MAPK1"
+        self.expected = '(SUCCESS :content (:satisfies-rate 1.0 ' + \
+            ':num-sim 10 :suggestion (:type "always_value" ' + \
+            ':value (:type "qualitative" :value "low"))))'
+        self.entity_str = 'MAPK1-MAP2K1 complex'
+        self.model_str = 'MAP2K1 binds MAPK1'
         return
 
     def get_message(self):
-        entity = self.get_entity()
-        model = self.get_model()
-
-        tp = trips.process_text('MAP2K1')
-        ekb = ElementTree.tostring(tp.tree)
-        condition_entity = KQMLString(ekb)
+        model = stmts_kstring_from_text(self.model_str)
+        entity = ekb_kstring_from_text(self.entity_str)
+        condition_entity = ekb_kstring_from_text('MAP2K1')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -335,20 +316,10 @@ class TestModel(_TRAModelTest):
         condition.set('quantity', quantity)
         conditions.append(condition)
         content.set('conditions', conditions)
-        #content = '(SATISFIES-PATTERN :pattern (:entities ((:description "<ekb><TERM id=\\"V43454\\"><type>ONT::MACROMOLECULAR-COMPLEX</type><components><component id=\\"V43388\\"/><component id=\\"V43439\\"/></components><text normalization=\\"\\">The MAPK1-MAP2K1 complex</text></TERM><TERM dbid=\\"UP:P28482|HGNC:6871\\" id=\\"V43388\\"><type>ONT::GENE</type><name>MAPK-1</name><text>The MAPK1-MAP2K1 complex</text></TERM><TERM dbid=\\"UP:Q02750|HGNC:6840\\" id=\\"V43439\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>"))) :model "[{\\"type\\": \\"Complex\\", \\"id\\": \\"3ade3e9c-7c7c-4148-b2e9-e2ebccf6880d\\", \\"members\\": [{\\"db_refs\\": {\\"TEXT\\": \\"MAP-2-K-1\\", \\"HGNC\\": \\"6840\\", \\"UP\\": \\"Q02750\\", \\"NCIT\\": \\"C17808\\"}, \\"name\\": \\"MAP2K1\\"}, {\\"db_refs\\": {\\"TEXT\\": \\"MAPK-1\\", \\"HGNC\\": \\"6871\\", \\"UP\\": \\"P28482\\", \\"NCIT\\": \\"C17589\\"}, \\"name\\": \\"MAPK1\\"}], \\"evidence\\": [{\\"text\\": \\"MAP2K1 binds MAPK1.\\", \\"epistemics\\": {\\"section_type\\": null}, \\"source_api\\": \\"trips\\"}]}]" :conditions ((:type "multiple" :value 10.0 :quantity (:type "total" :entity (:description "<ekb><TERM id=\\"V123\\"><name>MAP2K1</name></TERM></ekb>")))))'
         msg = KQMLPerformative('REQUEST')
         msg.set('content', content)
         msg.set('reply-with', 'IO-1')
         return (msg, content)
-
-    def is_correct_response(self):
-        "Demonstrate a stupid way of checking the response."
-        if isinstance(self.output, tuple) and len(self.output) > 1:
-            if isinstance(self.output[1], KQMLList):
-                ret = self.output[1].head() == self.expected
-        else:
-            ret = False
-        return ret
 
 ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
 

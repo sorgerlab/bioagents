@@ -160,23 +160,23 @@ class MRA(object):
 
     def model_undo(self):
         """Revert to the previous model version."""
-        try:
-            stmts = self.models[self.id_counter-1]
-        except KeyError:
-            stmts = []
-        model_id = self.new_model(stmts)
         forward_action = self.transformations.pop()
         if forward_action[0] == 'add_stmts':
             stmts_added = forward_action[1]
+            old_model_id = forward_action[2]
+            new_model_id = self.get_new_id()
+            stmts = self.models[old_model_id] \
+                if old_model_id is not None else []
+            self.models[new_model_id] = stmts
             undo_action = {'action': 'remove_stmts', 'statements': stmts_added}
-        res = {'model_id': model_id,
+        res = {'model_id': new_model_id,
                'model': stmts,
                'action': undo_action}
         model_exec = self.assemble_pysb(stmts)
         if not stmts:
             return res
         res['ambiguities'] = []
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id)
         return res
 
     def get_upstream(self, target, model_id):

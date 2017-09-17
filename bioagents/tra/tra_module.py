@@ -11,7 +11,7 @@ from indra.statements import stmts_from_json
 from indra.sources.trips import processor as trips_processor
 
 from bioagents.tra.tra import *
-from bioagents.kappa import kappa_client
+from bioagents.legacy.kappa import kappa_client
 from kqml import KQMLList, KQMLPerformative
 
 

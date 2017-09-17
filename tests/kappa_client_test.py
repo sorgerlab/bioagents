@@ -2,7 +2,7 @@ import os
 import numpy
 import itertools
 from time import sleep
-from bioagents.kappa import kappa_client
+from bioagents.legacy.kappa import kappa_client
 
 kappa = kappa_client.KappaRuntime()
 

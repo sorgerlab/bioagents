@@ -1,3 +1,4 @@
+import sys
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -42,24 +43,32 @@ class Bioagent(KQMLModule):
         return self.reply_with_content(msg, reply_content)
 
     def _respond_to(self, task, content):
-        "Get the method to responsd to the task indicated by task."
+        """Get the method to responsd to the task indicated by task."""
         resp_name = "respond_" + task.replace('-', '_').lower()
         try:
             resp = getattr(self, resp_name)
         except AttributeError:
             self.logger.error("Tried to execute unimplemented task.")
             self.logger.error("Did not find response method %s." % resp_name)
-            raise NotImplementedError("Task %s was not implemented." % task)
+            return self.make_failure('INVALID_TASK')
         try:
             reply_content = resp(content)
+            return reply_content
         except Exception as e:
+            # This line below is needed to make sure a more specific exception
+            # from the child class is raised
+            # raise e, None, sys.exc_info()[2]
+            # However this would mean that exceptions unhandled in the child
+            # class would actually error here. Currently if receive_request
+            # is reimplemented in the child class, the Exception here is
+            # always the one triggered, and the (more meaningful) child
+            # exception is ignored.
             self.logger.error('Could not perform response to %s' % task)
             self.logger.error(e)
-            reply_content = self.make_failure('INTERNAL_FAILURE')
-        return reply_content
+            return self.make_failure('INTERNAL_FAILURE')
 
     def reply_with_content(self, msg, reply_content):
-        "A wrapper around the reply method from KQMLModule."
+        """A wrapper around the reply method from KQMLModule."""
         if not self.testing:
             reply_msg = KQMLPerformative('reply')
             reply_msg.set('content', reply_content)

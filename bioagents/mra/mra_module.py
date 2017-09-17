@@ -46,9 +46,6 @@ class MRA_Module(Bioagent):
             logger.error('Invalid model ID.')
             logger.error(e)
             reply_content = self.make_failure('INVALID_MODEL_ID')
-        except Exception as e:
-            logger.error(e)
-            reply_content = self.make_failure('INTERNAL_FAILURE')
         if ret is None:
             ret = self.reply_with_content(msg, reply_content)
         return ret
@@ -58,16 +55,15 @@ class MRA_Module(Bioagent):
         descr = content.gets('description')
         descr_format = content.gets('format')
         no_display = content.get('no-display')
-        try:
-            if not descr_format or descr_format == 'ekb':
-                res = self.mra.build_model_from_ekb(descr)
-            elif descr_format == 'indra_json':
-                res = self.mra.build_model_from_json(descr)
-            else:
-                err_msg = 'Invalid description format: %s' % descr_format
-                raise InvalidModelDescriptionError(err_msg)
-        except Exception as e:
-            raise InvalidModelDescriptionError(e)
+        if not descr_format or descr_format == 'ekb':
+            res = self.mra.build_model_from_ekb(descr)
+        elif descr_format == 'indra_json':
+            res = self.mra.build_model_from_json(descr)
+        else:
+            err_msg = 'Invalid description format: %s' % descr_format
+            raise InvalidModelDescriptionError(err_msg)
+        if res.get('error'):
+            raise InvalidModelDescriptionError(res.get('error'))
         model_id = res.get('model_id')
         if model_id is None:
             raise InvalidModelDescriptionError()

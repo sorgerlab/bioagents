@@ -4,7 +4,6 @@ from nose.tools import raises
 import sympy.physics.units as units
 from bioagents.tra import tra_module
 from bioagents.tra.tra import *
-from indra.sources import trips
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation,\
     Dephosphorylation

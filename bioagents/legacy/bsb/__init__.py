@@ -1,1 +1,1 @@
-from bioagents.bsb.bsb import BSB
+from bioagents.legacy.bsb.bsb import BSB

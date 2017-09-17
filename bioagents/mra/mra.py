@@ -22,6 +22,7 @@ logger = logging.getLogger('MRA')
 class MRA(object):
     def __init__(self):
         self.models = {}
+        self.transformations = []
         self.id_counter = 0
         self.default_policy = 'two_step'
         self.default_initial_amount = 100.0
@@ -159,18 +160,23 @@ class MRA(object):
 
     def model_undo(self):
         """Revert to the previous model version."""
-        try:
-            stmts = self.models[self.id_counter-1]
-        except KeyError:
-            stmts = []
-        model_id = self.new_model(stmts)
-        res = {'model_id': model_id,
-               'model': stmts}
+        forward_action = self.transformations.pop()
+        if forward_action[0] == 'add_stmts':
+            stmts_added = forward_action[1]
+            old_model_id = forward_action[2]
+            new_model_id = self.get_new_id()
+            stmts = self.models[old_model_id] \
+                if old_model_id is not None else []
+            self.models[new_model_id] = stmts
+            undo_action = {'action': 'remove_stmts', 'statements': stmts_added}
+        res = {'model_id': new_model_id,
+               'model': stmts,
+               'action': undo_action}
         model_exec = self.assemble_pysb(stmts)
         if not stmts:
             return res
         res['ambiguities'] = []
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id)
         return res
 
     def get_upstream(self, target, model_id):
@@ -186,6 +192,7 @@ class MRA(object):
     def new_model(self, stmts):
         model_id = self.get_new_id()
         self.models[model_id] = stmts
+        self.transformations.append(('add_stmts', stmts, None, model_id))
         return model_id
 
     def extend_model(self, stmts, model_id):
@@ -197,6 +204,8 @@ class MRA(object):
             if not stmt_exists(self.models[model_id], st):
                 self.models[new_model_id].append(st)
                 new_stmts.append(st)
+        self.transformations.append(('add_stmts', new_stmts, model_id,
+                                     new_model_id))
         return new_model_id, new_stmts
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):

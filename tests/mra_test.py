@@ -55,6 +55,14 @@ def test_get_upstream():
     assert(upstream[0].name == 'EGFR')
 
 
+def test_has_mechanism():
+    m = MRA()
+    ekb = ekb_from_text('BRAF binds MEK')
+    m.build_model_from_ekb(ekb)
+    has_mechanism = m.has_mechanism(ekb, 1)
+    assert(has_mechanism)
+
+
 # #####################
 # MRA_Module unit tests
 # #####################
@@ -109,12 +117,15 @@ def test_respond_model_undo():
     _, content = _get_build_model_request('HRAS activates RAF')
     reply = mm.respond_build_model(content)
     _, content = _get_expand_model_request('NRAS activates RAF', '1')
-    reply = mm.respond_expand_model(content)
+    expand_reply = mm.respond_expand_model(content)
+    expand_stmts = expand_reply.gets('model-new')
     content = KQMLList.from_string('(MODEL-UNDO)')
     reply = mm.respond_model_undo(content)
     assert reply.gets('model-id') == '3'
     action = reply.get('action')
-    assert action is not None
+    assert action.head() == 'remove_stmts'
+    stmts = action.get('statements')
+    assert json.loads(stmts.string_value()) == json.loads(expand_stmts)
 
 
 # #####################
@@ -126,6 +137,7 @@ def _get_build_model_request(text):
     descr = ekb_kstring_from_text(text)
     content.set('description', descr)
     return _get_request(content), content
+
 
 def _get_expand_model_request(text, model_id):
     content = KQMLList('EXPAND-MODEL')
@@ -206,12 +218,6 @@ class TestMissingDescriptionFailure(_FailureTest):
         return msg, content
 '''
 
-def test_has_mechanism():
-    m = MRA()
-    ekb = ekb_from_text('BRAF binds MEK')
-    m.build_model_from_ekb(ekb)
-    has_mechanism = m.has_mechanism(ekb, 1)
-    assert(has_mechanism)
 
 '''
 def test_replace_agent_one():

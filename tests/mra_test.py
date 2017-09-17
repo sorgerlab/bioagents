@@ -63,6 +63,37 @@ def test_has_mechanism():
     assert(has_mechanism)
 
 
+def test_transformations():
+    m = MRA()
+    stmts1 = [Phosphorylation(Agent('A'), Agent('B'))]
+    m.new_model(stmts1)
+    assert(len(m.transformations) == 1)
+    tr = m.transformations[0]
+    assert(tr[0] == 'add_stmts')
+    assert(tr[1] == stmts1)
+    assert(tr[2] is None)
+    assert(tr[3] == 1)
+    stmts2 = [Phosphorylation(Agent('C'), Agent('D'))]
+    m.extend_model(stmts2, 1)
+    assert(len(m.transformations) == 2)
+    tr = m.transformations[1]
+    assert(tr[0] == 'add_stmts')
+    assert(tr[1] == stmts2)
+    assert(tr[2] == 1)
+    assert(tr[3] == 2)
+
+
+def test_model_undo():
+    m = MRA()
+    stmts1 = [Phosphorylation(Agent('A'), Agent('B'))]
+    m.new_model(stmts1)
+    res = m.model_undo()
+    action = res.get('action')
+    assert action is not None
+    assert action.get('action') == 'remove_stmts'
+    assert action.get('statements') == stmts1
+
+
 # #####################
 # MRA_Module unit tests
 # #####################

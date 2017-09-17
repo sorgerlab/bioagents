@@ -117,7 +117,25 @@ class _StringCompareTest(_IntegrationTest):
         """Return feedback comparing the expected to the result."""
         ret_fmt = 'Did not get the expected output string:\n'
         ret_fmt += 'Expected: %s\n' % self.expected
-        ret_fmt += 'Received: %s\n' % self.str_output
+        ret_fmt += 'Received: %s\n' % self.output.to_string()
         ret_fmt += 'Diff: %s\n' % \
             color_diff(self.expected, self.output.to_string())
         return ret_fmt
+
+
+class _FailureTest(_IntegrationTest):
+    """Integration test in which the expected result is a failure."""
+    def __init__(self, *args, **kwargs):
+        super(_FailureTest, self).__init__(*args, **kwargs)
+        self.expected_reason = NotImplemented
+
+    def is_correct_response(self):
+        assert self.output.head() == 'FAILURE', 'Head is not FAILURE'
+        reason = self.output.gets('reason')
+        assert reason == self.expected_reason, \
+            'Reason mismatch: %s instead of %s' % \
+            (reason, self.expected_reason)
+        return True
+
+    def give_feedback(self):
+        pass

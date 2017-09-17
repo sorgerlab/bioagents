@@ -16,14 +16,14 @@ def _get_toy_model():
 
 kappa_model = _get_toy_model()
 
+'''
+This block is temporarily disabled while new Kappa client
+is being updated.
 
 def test_version():
     version = kappa.version()
     assert(version == 4)
 
-'''
-This block is temporarily disabled while new Kappa client
-is being updated.
 
 def test_parse():
     res = kappa.parse(kappa_model)

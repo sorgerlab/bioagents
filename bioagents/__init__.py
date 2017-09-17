@@ -50,9 +50,10 @@ class Bioagent(KQMLModule):
         except AttributeError:
             self.logger.error("Tried to execute unimplemented task.")
             self.logger.error("Did not find response method %s." % resp_name)
-            reply_content = self.make_failure('INVALID_TASK')
+            return self.make_failure('INVALID_TASK')
         try:
             reply_content = resp(content)
+            return reply_content
         except Exception as e:
             # This line below is needed to make sure a more specific exception
             # from the child class is raised
@@ -64,8 +65,7 @@ class Bioagent(KQMLModule):
             # exception is ignored.
             self.logger.error('Could not perform response to %s' % task)
             self.logger.error(e)
-            reply_content = self.make_failure('INTERNAL_FAILURE')
-        return reply_content
+            return self.make_failure('INTERNAL_FAILURE')
 
     def reply_with_content(self, msg, reply_content):
         """A wrapper around the reply method from KQMLModule."""

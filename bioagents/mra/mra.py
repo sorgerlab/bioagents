@@ -256,7 +256,7 @@ def make_diagrams(pysb_model, model_id):
 
 def make_sbgn(pysb_model, model_id):
     pa = PysbAssembler()
-    pa.model = model
+    pa.model = pysb_model
     sbgn_str = pa.export_model('sbgn')
     return sbgn_str
 

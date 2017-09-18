@@ -245,11 +245,20 @@ def get_ambiguities(tp):
 
 
 def make_diagrams(pysb_model, model_id):
+    sbgn = make_sbgn(pysb_model, model_id)
     rxn = make_reaction_network(pysb_model, model_id)
     cm = make_contact_map(pysb_model, model_id)
     im = make_influence_map(pysb_model, model_id)
-    diagrams = {'reactionnetwork': rxn, 'contactmap': cm, 'influencemap': im}
+    diagrams = {'reactionnetwork': rxn, 'contactmap': cm,
+                'influencemap': im, 'sbgn': sbgn}
     return diagrams
+
+
+def make_sbgn(pysb_model, model_id):
+    pa = PysbAssembler()
+    pa.model = pysb_model
+    sbgn_str = pa.export_model('sbgn')
+    return sbgn_str
 
 def make_influence_map(pysb_model, model_id):
     """Generate a Kappa influence map."""
@@ -275,6 +284,7 @@ def make_contact_map(pysb_model, model_id):
     except Exception:
         return None
     return full_path
+
 
 def make_reaction_network(pysb_model, model_id):
     """Generate a PySB/BNG reaction network as a PNG file."""

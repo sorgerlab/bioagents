@@ -83,7 +83,7 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 if not self.testing:
-                    self.send_display_model(model_msg, diagrams)
+                    self.send_display_model(diagrams)
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
@@ -130,7 +130,7 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 if not self.testing:
-                    self.send_display_model(model_msg, diagrams)
+                    self.send_display_model(diagrams)
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
@@ -166,7 +166,7 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 if not self.testing:
-                    self.send_display_model(model_msg, diagrams)
+                    self.send_display_model(diagrams)
         return msg
 
     def respond_has_mechanism(self, content):
@@ -223,7 +223,7 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 if not self.testing:
-                    self.send_display_model(model_msg, rxn_diagram)
+                    self.send_display_model(rxn_diagram)
         return msg
 
     def respond_model_get_upstream(self, content):
@@ -247,20 +247,19 @@ class MRA_Module(Bioagent):
         reply.set('upstream-names', KQMLList(names))
         return reply
 
-    def send_display_model(self, model, diagrams):
-        msg = KQMLPerformative('tell')
-        content = KQMLList('display-model')
-        content.set('type', 'indra')
-        content.sets('model', model)
-        msg.set('content', content)
-        self.send(msg)
-        for diagram_type, path in diagrams.items():
-            if not path:
+    def send_display_model(self, diagrams):
+        for diagram_type, resource in diagrams.items():
+            if not resource:
                 continue
             msg = KQMLPerformative('tell')
-            content = KQMLList('display-image')
-            content.set('type', diagram_type)
-            content.sets('path', path)
+            if diagram_type == 'sbgn':
+                content = KQMLList('display-sbgn')
+                content.set('type', diagram_type)
+                content.sets('graph', resource)
+            else:
+                content = KQMLList('display-image')
+                content.set('type', diagram_type)
+                content.sets('path', resource)
             msg.set('content', content)
             self.send(msg)
 

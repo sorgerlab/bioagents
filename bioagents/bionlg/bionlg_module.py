@@ -2,12 +2,14 @@ import sys
 import json
 import logging
 from bioagents import Bioagent
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger('BIONLG')
 from indra.statements import stmts_from_json
 from indra.assemblers import EnglishAssembler
 from kqml import KQMLList, KQMLPerformative, KQMLString
+
+
+logger = logging.getLogger('BIONLG')
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
 
 
 class BioNLG_Module(Bioagent):
@@ -23,8 +25,8 @@ class BioNLG_Module(Bioagent):
         """Handle request messages and respond.
 
         If a "request" message is received, decode the task and the content
-        and call the appropriate function to prepare the response. A reply_content
-        message is then sent back.
+        and call the appropriate function to prepare the response. A
+        reply_content message is then sent back.
         """
         try:
             content = msg.get('content')
@@ -58,10 +60,12 @@ class BioNLG_Module(Bioagent):
         reply.set('NL', txts_list)
         return reply
 
+
 def decode_indra_stmts(stmts_json_str):
     stmts_json = json.loads(stmts_json_str)
     stmts = stmts_from_json(stmts_json)
     return stmts
+
 
 def assemble_english(stmts):
     txts = []
@@ -72,6 +76,7 @@ def assemble_english(stmts):
             txt = txt[:-1]
             txts.append(txt)
     return txts
+
 
 if __name__ == "__main__":
     BioNLG_Module(argv=sys.argv[1:])

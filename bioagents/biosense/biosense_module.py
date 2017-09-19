@@ -1,9 +1,6 @@
 import os
 import sys
 import logging
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger('BIOSENSE')
 import indra
 from indra.util import read_unicode_csv
 from indra.tools import expand_families
@@ -13,12 +10,20 @@ from indra.databases import get_identifiers_url
 from indra.preassembler.hierarchy_manager import hierarchies
 from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
 
+
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('BIOSENSE')
+
+
 _indra_path = indra.__path__[0]
+
 
 class BioSense_Module(Bioagent):
     name = 'BioSense'
     tasks = ['CHOOSE-SENSE', 'CHOOSE-SENSE-CATEGORY',
              'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER']
+
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()
         if tell_content == 'START-CONVERSATION':
@@ -68,13 +73,13 @@ class BioSense_Module(Bioagent):
         """Return response content to choose-sense-is-member request."""
         # Get the member agent first
         ekb = content.gets('ekb-term')
-        agents,_ = process_ekb(ekb)
+        agents, _ = process_ekb(ekb)
         if len(agents) != 1:
             return make_failure('INVALID_AGENT')
         member_agent = list(agents.values())[0][0]
         # Get the collection next
         ekb = content.gets('collection')
-        agents,_ = process_ekb(ekb)
+        agents, _ = process_ekb(ekb)
         if len(agents) != 1:
             return make_failure('INVALID_COLLECTION')
         collection_agent = list(agents.values())[0][0]
@@ -99,17 +104,18 @@ class BioSense_Module(Bioagent):
         if members is None:
             return make_failure('COLLECTION_NOT_FAMILY_OR_COMPLEX')
 
-        kagents = [get_kagent((agent, 'ONT::PROTEIN', get_urls(m))) for m in members]
+        kagents = [get_kagent((agent, 'ONT::PROTEIN', get_urls(m)))
+                   for m in members]
 
         msg = KQMLList('SUCCESS')
         msg.set('members', KQMLList(kagents))
         return msg
 
+
 def get_kagent(agent_tuple, term_id=None):
     agent, ont_type, urls = agent_tuple
     db_refs = '|'.join('%s:%s' % (k, v) for k, v in
                        agent.db_refs.items())
-    name = agent.name
     kagent = KQMLList(term_id) if term_id else KQMLList()
     kagent.sets('name', agent.name)
     kagent.sets('ids', db_refs)
@@ -123,11 +129,13 @@ def get_kagent(agent_tuple, term_id=None):
     kagent.set('ont-type', ont_type)
     return kagent
 
+
 def process_ekb(ekb):
     tp = trips.process_xml(ekb)
     agents = get_agent_tuples(tp)
     ambiguities = get_ambiguities(tp)
     return agents, ambiguities
+
 
 def get_agent_tuples(tp):
     terms = tp.tree.findall('TERM')
@@ -140,10 +148,12 @@ def get_agent_tuples(tp):
         all_agents[term_id] = (agent, ont_type, urls)
     return all_agents
 
+
 def get_urls(agent):
     urls = {k: get_identifiers_url(k, v) for k, v in agent.db_refs.items()
             if k != 'TEXT'}
     return urls
+
 
 def get_ambiguities(tp):
     terms = tp.tree.findall('TERM')
@@ -155,6 +165,7 @@ def get_ambiguities(tp):
             all_ambiguities[term_id] = ambiguities
     return all_ambiguities
 
+
 def get_members(agent):
     dbname, dbid = agent.get_grounding()
     if dbname != 'BE':
@@ -165,6 +176,7 @@ def get_members(agent):
     children_agents = [expand_families._agent_from_uri(uri)
                        for uri in children_uris]
     return children_agents
+
 
 def get_ambiguities_msg(ambiguities):
     sa = []
@@ -194,10 +206,12 @@ def get_ambiguities_msg(ambiguities):
     ambiguities_msg = KQMLList(sa)
     return ambiguities_msg
 
+
 def make_failure(reason):
     msg = KQMLList('FAILURE')
     msg.set('reason', reason)
     return msg
+
 
 def _read_kinases():
     path = os.path.dirname(os.path.abspath(__file__))
@@ -214,9 +228,9 @@ def _read_tfs():
     gene_names = [lin[1] for lin in list(tf_table)[1:]]
     return gene_names
 
+
 kinase_list = _read_kinases()
 tf_list = _read_tfs()
-
 
 
 if __name__ == "__main__":

@@ -1,13 +1,21 @@
 import sys
 import logging
+from kqml import KQMLModule, KQMLPerformative, KQMLList
+
+
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
-from kqml import KQMLModule, KQMLPerformative, KQMLList
+
+
+class BioagentException(Exception):
+    pass
+
 
 class Bioagent(KQMLModule):
     """Abstract class for bioagents."""
     name = "Generic Bioagent (Should probably be overwritten)"
     tasks = []
+
     def __init__(self, **kwargs):
         super(Bioagent, self).__init__(name=self.name, **kwargs)
         for task in self.tasks:
@@ -54,15 +62,9 @@ class Bioagent(KQMLModule):
         try:
             reply_content = resp(content)
             return reply_content
+        except BioagentException:
+            raise
         except Exception as e:
-            # This line below is needed to make sure a more specific exception
-            # from the child class is raised
-            # raise e, None, sys.exc_info()[2]
-            # However this would mean that exceptions unhandled in the child
-            # class would actually error here. Currently if receive_request
-            # is reimplemented in the child class, the Exception here is
-            # always the one triggered, and the (more meaningful) child
-            # exception is ignored.
             self.logger.error('Could not perform response to %s' % task)
             self.logger.error(e)
             return self.make_failure('INTERNAL_FAILURE')

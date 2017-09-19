@@ -12,13 +12,14 @@ from pysb import Observable
 from pysb.integrate import Solver
 from pysb.export.kappa import KappaExporter
 import model_checker as mc
-
-logger = logging.getLogger('TRA')
 import matplotlib
+from bioagents import BioagentException
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+
 logger = logging.getLogger('TRA')
+
 
 class TRA(object):
     def __init__(self, kappa):
@@ -33,8 +34,8 @@ class TRA(object):
                 if kappa_ver is None or kappa_ver.get('version_id') is None:
                     raise SimulatorError('Invalid Kappa client.')
                 logger.info('Using kappa version %s / build %s' %
-                             (kappa_ver.get('version_id'),
-                              kappa_ver.get('version_build')))
+                            (kappa_ver.get('version_id'),
+                             kappa_ver.get('version_build')))
             except Exception as e:
                 logger.error('Could not get Kappa version.')
                 logger.error('Kappa error was: %s' % e)
@@ -118,10 +119,12 @@ class TRA(object):
     def plot_results(self, tspan, results, obs_name):
         plt.figure()
         plt.ion()
-        lr = matplotlib.patches.Rectangle((0,0), tspan[-1], 50, color='red',
-                                           alpha=0.1)
-        hr = matplotlib.patches.Rectangle((0,50), tspan[-1], 50, color='green',
-                                           alpha=0.1)
+        lr = matplotlib.patches.Rectangle(
+            (0, 0), tspan[-1], 50, color='red', alpha=0.1
+            )
+        hr = matplotlib.patches.Rectangle(
+            (0, 50), tspan[-1], 50, color='green', alpha=0.1
+            )
         ax = plt.gca()
         ax.add_patch(lr)
         ax.add_patch(hr)
@@ -208,6 +211,7 @@ class TRA(object):
         self.sol.run()
         return ts, self.sol.yobs
 
+
 def get_ltl_from_pattern(pattern, obs):
     if not pattern.pattern_type:
         return None
@@ -264,6 +268,7 @@ def get_ltl_from_pattern(pattern, obs):
         raise InvalidTemporalPatternError(msg)
     return fstr
 
+
 def apply_condition(model, condition):
     agent = condition.quantity.entity
     monomer = model.monomers[pa._n(agent.name)]
@@ -291,6 +296,7 @@ def apply_condition(model, condition):
         model.parameters[ic_name].value *= 1.1
     logger.info('New initial condition: %s' % model.parameters[ic_name])
 
+
 def get_create_observable(model, agent):
     site_pattern = pa.get_site_pattern(agent)
     obs_name = pa.get_agent_rule_str(agent) + '_obs'
@@ -299,14 +305,16 @@ def get_create_observable(model, agent):
     model.add_component(obs)
     return obs
 
+
 def pysb_to_kappa(model):
     ke = KappaExporter(model)
     kappa_model = ke.export()
     return kappa_model
 
+
 def get_sim_result(kappa_plot):
     values = kappa_plot['time_series']
-    values.sort(key = lambda x: x['observation_time'])
+    values.sort(key=lambda x: x['observation_time'])
     nt = len(values)
     obs_list = [str(l[1:-1]) for l in kappa_plot['legend']]
     yobs = numpy.ndarray(nt, list(zip(obs_list, itertools.repeat(float))))
@@ -317,6 +325,7 @@ def get_sim_result(kappa_plot):
         for i, obs in enumerate(obs_list):
             yobs[obs][t] = value['observation_values'][i]
     return (tspan, yobs)
+
 
 def get_all_patterns(obs_name):
     patterns = []
@@ -346,6 +355,7 @@ def get_all_patterns(obs_name):
     patterns.append((fstr, pattern))
     return patterns
 
+
 class TemporalPattern(object):
     def __init__(self, pattern_type, entities, time_limit, *args, **kwargs):
         self.pattern_type = pattern_type
@@ -353,12 +363,13 @@ class TemporalPattern(object):
         self.time_limit = time_limit
         # TODO: handle extra arguments by pattern type
         if self.pattern_type in \
-            ('always_value', 'eventual_value', 'sometime_value'):
+           ('always_value', 'eventual_value', 'sometime_value'):
             value = kwargs.get('value')
             if value is None:
                 msg = 'Missing molecular quantity'
                 raise InvalidTemporalPatternError(msg)
             self.value = value
+
 
 class MolecularCondition(object):
     def __init__(self, condition_type, quantity, value=None):
@@ -387,6 +398,7 @@ class MolecularCondition(object):
             msg = 'Unknown condition type: %s' % condition_type
             raise InvalidMolecularConditionError(msg)
         self.condition_type = condition_type
+
 
 class MolecularQuantity(object):
     def __init__(self, quant_type, value, unit=None):
@@ -428,6 +440,7 @@ class MolecularQuantity(object):
                                                 quant_type)
         self.quant_type = quant_type
 
+
 class MolecularQuantityReference(object):
     def __init__(self, quant_type, entity):
         if quant_type in ['total', 'initial']:
@@ -440,6 +453,7 @@ class MolecularQuantityReference(object):
             raise InvalidMolecularQuantityRefError(msg)
         else:
             self.entity = entity
+
 
 class TimeInterval(object):
     def __init__(self, lb, ub, unit):
@@ -475,7 +489,7 @@ class TimeInterval(object):
             try:
                 # sympy >= 1.1
                 return units.convert_to(val, units.seconds).args[0]
-            except:
+            except Exception:
                 # sympy < 1.1
                 return val / units.seconds
         return None
@@ -486,23 +500,30 @@ class TimeInterval(object):
     def get_ub_seconds(self):
         return self._convert_to_sec(self.ub)
 
-class InvalidMolecularQuantityError(Exception):
+
+class InvalidMolecularQuantityError(BioagentException):
     pass
 
-class InvalidMolecularQuantityRefError(Exception):
+
+class InvalidMolecularQuantityRefError(BioagentException):
     pass
 
-class InvalidMolecularEntityError(Exception):
+
+class InvalidMolecularEntityError(BioagentException):
     pass
 
-class InvalidMolecularConditionError(Exception):
+
+class InvalidMolecularConditionError(BioagentException):
     pass
 
-class InvalidTemporalPatternError(Exception):
+
+class InvalidTemporalPatternError(BioagentException):
     pass
 
-class InvalidTimeIntervalError(Exception):
+
+class InvalidTimeIntervalError(BioagentException):
     pass
 
-class SimulatorError(Exception):
+
+class SimulatorError(BioagentException):
     pass

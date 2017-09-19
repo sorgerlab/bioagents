@@ -4,7 +4,9 @@ from itertools import islice, chain
 
 
 def k_shortest_paths(G, source, target, k, weight=None):
-    return list(islice(nx.shortest_simple_paths(G, source, target, weight=weight), k))
+    return list(islice(
+        nx.shortest_simple_paths(G, source, target, weight=weight), k
+        ))
 
 
 def shortest_paths_csv(sp_list, netn_obj, fh, path_counter=0):
@@ -12,33 +14,44 @@ def shortest_paths_csv(sp_list, netn_obj, fh, path_counter=0):
         path_counter = path_counter + 1
         genes_in_path = netn_obj.get_node_names_by_id_list(l)
         for i in xrange(0, len(genes_in_path) - 1):
-            es = netn_obj.get_edge_ids_by_node_attribute(genes_in_path[i], genes_in_path[i + 1])
+            es = netn_obj.get_edge_ids_by_node_attribute(
+                genes_in_path[i], genes_in_path[i + 1]
+                )
             for ed in es:
                 fh.write(str(genes_in_path[i]) + '\t'
                          + str(netn_obj.get_edge_attribute_by_id(ed, 'interaction'))
-                         + '\t' + str(genes_in_path[i + 1]) + '\t' + str(path_counter) + '\n')
+                         + '\t' + str(genes_in_path[i + 1])
+                         + '\t' + str(path_counter) + '\n')
     return path_counter
 
 
-def source_list_to_target_list_all_shortest(sources, targets, netn_obj, npaths=20, fh=open('out_file.txt', 'w')):
+def source_list_to_target_list_all_shortest(
+        sources, targets, netn_obj, npaths=20, fh=open('out_file.txt', 'w')
+        ):
     names = [netn_obj.node[n]['name'] for n in netn_obj.nodes_iter()]
-    sources_list = [netn_obj.get_node_ids(i) for i in list(set(sources).intersection(set(names)))]
+    sources_list = [netn_obj.get_node_ids(i)
+                    for i in list(set(sources).intersection(set(names)))]
     sources_ids = list(chain(*sources_list))
-    targets_list = [netn_obj.get_node_ids(i) for i in list(set(targets).intersection(set(names)))]
+    targets_list = [netn_obj.get_node_ids(i)
+                    for i in list(set(targets).intersection(set(names)))]
     targets_ids = list(chain(*targets_list))
     path_counter = 0
     g = nx.DiGraph(netn_obj)
     for s in sources_ids:
         for t in targets_ids:
             sp_list = k_shortest_paths(g, s, t, npaths)
-            path_counter = shortest_paths_csv(sp_list, netn_obj, fh, path_counter=path_counter)
+            path_counter = shortest_paths_csv(
+                sp_list, netn_obj, fh, path_counter=path_counter
+                )
 
 
 def sources_to_targets_dict(sources, targets, netn_obj, npaths=1):
     names = [netn_obj.node[n]['name'] for n in netn_obj.nodes_iter()]
-    sources_list = [netn_obj.get_node_ids(i) for i in list(set(sources).intersection(set(names)))]
+    sources_list = [netn_obj.get_node_ids(i)
+                    for i in list(set(sources).intersection(set(names)))]
     sources_ids = list(chain(*sources_list))
-    targets_list = [netn_obj.get_node_ids(i) for i in list(set(targets).intersection(set(names)))]
+    targets_list = [netn_obj.get_node_ids(i)
+                    for i in list(set(targets).intersection(set(names)))]
     targets_ids = list(chain(*targets_list))
     g = nx.DiGraph(netn_obj)
     path_dict = {}
@@ -104,23 +117,23 @@ def k_shortest_paths_multi(G, source_names, target_names, npaths=20):
 def network_from_paths(G, forward, reverse, sources, targets):
     M = NdexGraph()
     edge_tuples = set()
+
+    def add_path(*args, **kwargs):
+        add_path_nodes(*args, **kwargs)
+        for index in range(0, len(path) - 1):
+            tpl = (path[index], path[index + 1])
+            edge_tuples.add(tpl)
+
     for path in forward:
-        add_path(M, G, path, 'Forward', edge_tuples)
+        add_path(M, G, path, 'Forward')
     for path in reverse:
-        add_path(M, G, path, 'Reverse', edge_tuples)
+        add_path(M, G, path, 'Reverse')
     for source in sources:
         M.node[source]['st_layout'] = 'Source'
     for target in targets:
         M.node[target]['st_layout'] = 'Target'
     add_edges_from_tuples(M, list(edge_tuples))
     return M
-
-
-def add_path(network, old_network, path, label, edge_tuples, conflict_label='Both'):
-    add_path_nodes(network, old_network, path, label, conflict_label)
-    for index in range(0, len(path) - 1):
-        tuple = (path[index], path[index + 1])
-        edge_tuples.add(tuple)
 
 
 def add_path_nodes(network, old_network, path, label, conflict_label):
@@ -130,60 +143,76 @@ def add_path_nodes(network, old_network, path, label, conflict_label):
             network.add_node(node_id, st_layout=label, name=old_name)
         else:
             current_label = network.node[node_id]['st_layout']
-            if current_label is not label and current_label is not conflict_label:
+            if current_label is not label\
+               and current_label is not conflict_label:
                 network.node[node_id]['st_layout'] = conflict_label
 
 
 def add_edges_from_tuples(network, tuples):
-    for tuple in tuples:
-        network.add_edge_between(tuple[0], tuple[1])
+    for tpl in tuples:
+        network.add_edge_between(tpl[0], tpl[1])
 
 
 def get_node_ids_by_names(G, node_names):
     node_ids = set()
     for name in node_names:
-        for id in G.get_node_ids(name, 'name'):
-            node_ids.add(id)
+        for node_id in G.get_node_ids(name, 'name'):
+            node_ids.add(node_id)
     return list(node_ids)
 
 
 # get_source_target_network(G, ['MAP2K1'], ['MMP9'], "MAP2K1 to MMP9", npaths=20)
-def get_source_target_network(reference_network, source_names, target_names, new_network_name, npaths=20):
+def get_source_target_network(reference_network, source_names, target_names,
+                              new_network_name, npaths=20):
     # interpret INDRA statements into causal directed edges
-    # needs to specify which edges must be doubled to provide both forward and reverse
+    # needs to specify which edges must be doubled to provide both forward and
+    # reverse.
     two_way_edgetypes = ['Complex']
     indra_causality(reference_network, two_way_edgetypes)
 
     # forward and reverse direction paths for first pair of sources and targets
-    forward1 = k_shortest_paths_multi(reference_network, source_names, target_names, npaths)
-    reverse1 = k_shortest_paths_multi(reference_network, target_names, source_names, npaths)
+    forward1 = k_shortest_paths_multi(reference_network, source_names,
+                                      target_names, npaths)
+    reverse1 = k_shortest_paths_multi(reference_network, target_names,
+                                      source_names, npaths)
 
     source_ids = get_node_ids_by_names(reference_network, source_names)
     target_ids = get_node_ids_by_names(reference_network, target_names)
 
-    # TODO sort paths by length
-
-
-    P1 = network_from_paths(reference_network, forward1, reverse1, source_ids, target_ids)
+    # TODO: sort paths by length
+    P1 = network_from_paths(
+        reference_network,
+        forward1,
+        reverse1,
+        source_ids,
+        target_ids
+        )
     P1.set_name(new_network_name)
     print "Created " + P1.get_name()
     forward1.sort(key=lambda s: len(s))
     reverse1.sort(key=lambda s: len(s))
-    return {'forward': forward1[:npaths], 'reverse': reverse1[:npaths], 'network': P1}
+    return {'forward': forward1[:npaths], 'reverse': reverse1[:npaths],
+            'network': P1}
 
 
-def get_source_target_network_new(network, source_names, target_names, new_network_name, npaths=20, direction='all'):
+def get_source_target_network_new(network, source_names, target_names,
+                                  new_network_name, npaths=20,
+                                  direction='all'):
     # forward and reverse direction paths for first pair of sources and targets
     forward = []
     reverse = []
     if direction == 'all' or direction == 'forward':
-        forward = k_shortest_paths_multi(network, source_names, target_names, npaths)
+        forward = k_shortest_paths_multi(network, source_names, target_names,
+                                         npaths)
     if direction == 'all' or direction == 'reverse':
-        reverse = k_shortest_paths_multi(network, target_names, source_names, npaths)
+        reverse = k_shortest_paths_multi(network, target_names, source_names,
+                                         npaths)
 
-    forward_node_id_list, forward_edge_id_list = path_element_lists(network, forward)
+    forward_node_id_list, forward_edge_id_list = path_element_lists(network,
+                                                                    forward)
     forward_node_id_set = set(forward_node_id_list)
-    reverse_node_id_list, reverse_edge_id_list = path_element_lists(network, reverse)
+    reverse_node_id_list, reverse_edge_id_list = path_element_lists(network,
+                                                                    reverse)
     reverse_node_id_set = set(reverse_node_id_list)
     node_id_set = forward_node_id_set.union(reverse_node_id_set)
     edge_id_set = set(forward_edge_id_list).union(set(reverse_edge_id_list))
@@ -192,7 +221,9 @@ def get_source_target_network_new(network, source_names, target_names, new_netwo
         network.set_node_attribute(node_id, "st_layout", "Forward")
     for node_id in reverse_node_id_list:
         network.set_node_attribute(node_id, "st_layout", "Reverse")
-    overlap_node_id_list = list(set(forward_node_id_list).intersection(set(reverse_node_id_list)))
+    overlap_node_id_list = list(set(forward_node_id_list).intersection(
+        set(reverse_node_id_list)
+        ))
     for node_id in overlap_node_id_list:
         network.set_node_attribute(node_id, "st_layout", "Both")
 
@@ -212,7 +243,8 @@ def get_source_target_network_new(network, source_names, target_names, new_netwo
 
     forward.sort(key=lambda s: len(s))
     reverse.sort(key=lambda s: len(s))
-    return {'forward': forward[:npaths], 'reverse': reverse[:npaths], 'network': network}
+    return {'forward': forward[:npaths], 'reverse': reverse[:npaths],
+            'network': network}
 
 
 # destructively modifies g

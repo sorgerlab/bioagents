@@ -2,7 +2,6 @@ from io import BytesIO
 from unittest import TestCase
 from difflib import SequenceMatcher
 from kqml.kqml_performative import KQMLPerformative
-
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -10,7 +9,7 @@ logger = logging.getLogger('integration_tests')
 
 try:
     from colorama.ansi import Back, Style, Fore
-except:
+except ImportError:
     logger.warning('Will not be able to mark diffs with color.')
 
     # Create dummies
@@ -47,7 +46,9 @@ def color_diff(expected, received):
     return ''.join(output)
 
 
-define_in_child = lambda x: ("Define %s in the child!" % x)
+def define_in_child(s):
+    return "Define %s in the child!" % s
+
 
 class _IntegrationTest(TestCase):
     """An abstract object for creating integration tests of bioagents.

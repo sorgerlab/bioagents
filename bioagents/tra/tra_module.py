@@ -1,23 +1,30 @@
 import sys
 import json
 import logging
-from bioagents import Bioagent
+from bioagents import Bioagent, BioagentException
+from indra.assemblers import pysb_assembler, PysbAssembler
+from indra.statements import stmts_from_json
+from indra.sources.trips import processor as trips_processor
+from bioagents.tra.tra import *
+from bioagents.legacy.kappa import kappa_client
+from kqml import KQMLList, KQMLPerformative
+
+# This version of logging is coming from tra...
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('TRA')
 
-from indra.assemblers import pysb_assembler, PysbAssembler
-from indra.statements import stmts_from_json
-from indra.sources.trips import processor as trips_processor
 
-from bioagents.tra.tra import *
-from bioagents.legacy.kappa import kappa_client
-from kqml import KQMLList, KQMLPerformative
+class NoKappaError(BioagentException):
+    "This exists only while the kappa module is being updated."
+    def __init__(self):
+        super(NoKappaError).__init__(self, "Kappa currently unavailable.")
 
 
 class TRA_Module(Bioagent):
     name = "TRA"
     tasks = ['SATISFIES-PATTERN']
+
     def __init__(self, **kwargs):
         '''
         TEMPORARILY DISABLED WHILE KAPPA CLIENT IS UPDATED
@@ -47,7 +54,7 @@ class TRA_Module(Bioagent):
         '''
         self.ode_mode = True
         if not self.ode_mode:
-            self.tra = TRA(kappa)
+            raise NoKappaError()  # self.tra = TRA(kappa)
         else:
             self.tra = TRA(None)
 
@@ -122,10 +129,12 @@ class TRA_Module(Bioagent):
         msg.set('content', content)
         self.send(msg)
 
+
 def decode_indra_stmts(stmts_json_str):
     stmts_json = json.loads(stmts_json_str)
     stmts = stmts_from_json(stmts_json)
     return stmts
+
 
 def assemble_model(model_indra_str):
     stmts = decode_indra_stmts(model_indra_str)
@@ -136,6 +145,7 @@ def assemble_model(model_indra_str):
     for m in model.monomers:
         pysb_assembler.set_extended_initial_condition(model, m, 0)
     return model
+
 
 def get_molecular_entity(lst):
     try:
@@ -149,6 +159,7 @@ def get_molecular_entity(lst):
     except Exception as e:
         raise InvalidMolecularEntityError(e)
 
+
 def get_molecular_quantity(lst):
     try:
         quant_type = lst.gets('type')
@@ -161,6 +172,7 @@ def get_molecular_quantity(lst):
     except Exception as e:
         raise InvalidMolecularQuantityError(e)
 
+
 def get_molecular_quantity_ref(lst):
     try:
         quant_type = lst.gets('type')
@@ -170,6 +182,7 @@ def get_molecular_quantity_ref(lst):
     except Exception as e:
         raise InvalidMolecularQuantityRefError(e)
 
+
 def get_time_interval(lst):
     try:
         lb = lst.gets('lower-bound')
@@ -178,6 +191,7 @@ def get_time_interval(lst):
         return TimeInterval(lb, ub, unit)
     except Exception as e:
         raise InvalidTimeIntervalError(e)
+
 
 def get_temporal_pattern(lst):
     pattern_type = lst.gets('type')
@@ -202,6 +216,7 @@ def get_temporal_pattern(lst):
     tp = TemporalPattern(pattern_type, entities, time_limit, value=value)
     return tp
 
+
 def get_molecular_condition(lst):
     try:
         condition_type = lst.gets('type')
@@ -217,8 +232,10 @@ def get_molecular_condition(lst):
     except Exception as e:
         raise InvalidMolecularConditionError(e)
 
-class InvalidModelDescriptionError(Exception):
+
+class InvalidModelDescriptionError(BioagentException):
     pass
+
 
 if __name__ == "__main__":
     m = TRA_Module(argv=sys.argv[1:])

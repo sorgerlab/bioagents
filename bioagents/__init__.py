@@ -1,10 +1,9 @@
 import sys
 import logging
-from kqml import KQMLModule, KQMLPerformative, KQMLList
-
-
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
+logger = logging.getLogger('Bioagents')
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 
 class BioagentException(Exception):
@@ -36,16 +35,16 @@ class Bioagent(KQMLModule):
             content = msg.get('content')
             task = content.head().upper()
         except Exception as e:
-            self.logger.error('Could not get task string from request.')
-            self.logger.error(e)
+            logger.error('Could not get task string from request.')
+            logger.error(e)
             reply_content = self.make_failure('INVALID_REQUEST')
 
         if task in self.tasks:
             reply_content = self._respond_to(task, content)
         else:
-            self.logger.error('Could not perform task.')
-            self.logger.error("Task %s not found in %s." %
-                              (task, str(self.tasks)))
+            logger.error('Could not perform task.')
+            logger.error("Task %s not found in %s." %
+                         (task, str(self.tasks)))
             reply_content = self.make_failure('UNKNOWN_TASK')
 
         return self.reply_with_content(msg, reply_content)
@@ -56,8 +55,8 @@ class Bioagent(KQMLModule):
         try:
             resp = getattr(self, resp_name)
         except AttributeError:
-            self.logger.error("Tried to execute unimplemented task.")
-            self.logger.error("Did not find response method %s." % resp_name)
+            logger.error("Tried to execute unimplemented task.")
+            logger.error("Did not find response method %s." % resp_name)
             return self.make_failure('INVALID_TASK')
         try:
             reply_content = resp(content)
@@ -65,8 +64,8 @@ class Bioagent(KQMLModule):
         except BioagentException:
             raise
         except Exception as e:
-            self.logger.error('Could not perform response to %s' % task)
-            self.logger.error(e)
+            logger.error('Could not perform response to %s' % task)
+            logger.error(e)
             return self.make_failure('INTERNAL_FAILURE')
 
     def reply_with_content(self, msg, reply_content):

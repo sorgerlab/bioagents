@@ -1,13 +1,13 @@
 import sys
 import json
 import logging
-from bioagents import Bioagent, BioagentException
+from kqml import KQMLList, KQMLPerformative
 from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra.tra import *
 from bioagents.legacy.kappa import kappa_client
-from kqml import KQMLList, KQMLPerformative
+from bioagents import Bioagent, BioagentException
 
 # This version of logging is coming from tra...
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -48,8 +48,8 @@ class TRA_Module(Bioagent):
                 kappa = kappa_client.KappaRuntime(self.kappa_url)
                 self.ode_mode = False
             except Exception as e:
-                self.logger.error('Could not instantiate TRA with Kappa service.')
-                self.logger.error(e)
+                logger.error('Could not instantiate TRA with Kappa service.')
+                logger.error(e)
                 self.ode_mode = True
         '''
         self.ode_mode = True

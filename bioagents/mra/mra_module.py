@@ -2,11 +2,11 @@ import sys
 import json
 import random
 import logging
-from bioagents import Bioagent, BioagentException
 import pysb.export
 from indra.statements import stmts_to_json
 from indra.sources.trips.processor import TripsProcessor
 from kqml import KQMLPerformative, KQMLList, KQMLString
+from bioagents import Bioagent, BioagentException
 from mra import MRA
 
 

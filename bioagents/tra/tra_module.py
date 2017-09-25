@@ -83,6 +83,10 @@ class TRA_Module(Bioagent):
             logger.error(e)
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
+        except InvalidMolecularEntityError as e:
+            logger.error(e)
+            reply_content = self.make_failure('INVALID_ENTITY_DESCRIPTION')
+            return reply_content
 
         if conditions_lst is None:
             conditions = None

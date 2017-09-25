@@ -258,6 +258,8 @@ def make_diagrams(pysb_model, model_id):
 def make_sbgn(pysb_model, model_id):
     pa = PysbAssembler()
     pa.model = pysb_model
+    for m in pysb_model.monomers:
+        pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
     sbgn_str = pa.export_model('sbgn')
     return sbgn_str
 

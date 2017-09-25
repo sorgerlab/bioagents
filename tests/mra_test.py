@@ -234,8 +234,7 @@ class TestModelUndo(_IntegrationTest):
     def give_feedback(self):
         return None
 
-# THIS TEST IS FAILING DUE TO THE INTERNAL_ERROR BUG, REMOVED FOR NOW
-'''
+
 class TestMissingDescriptionFailure(_FailureTest):
     def __init__(self, *args):
         super(TestMissingDescriptionFailure, self).__init__(MRA_Module)
@@ -247,7 +246,6 @@ class TestMissingDescriptionFailure(_FailureTest):
         msg = _get_request(content)
         print(content)
         return msg, content
-'''
 
 
 '''

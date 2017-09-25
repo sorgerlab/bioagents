@@ -96,7 +96,6 @@ class Test_Module(KQMLModule):
         self.ready()
         self.initialize_tests(file_in)
 
-        self.logger = logging.getLogger(self.name + '_Module')
         return None
 
     def get_perf(self, msg_id, msg_txt):
@@ -115,7 +114,7 @@ class Test_Module(KQMLModule):
             self.sent.push(sm)
             self.expected.push(em)
         self.total_tests = len(self.sent.lst)
-        self.logger.info('Collected %s test messages from %s' % \
+        logger.info('Collected %s test messages from %s' % \
               (self.total_tests, test_file))
         # Send off the first test
         sm = self.sent.pop()
@@ -146,22 +145,22 @@ class Test_Module(KQMLModule):
         expected_content = self.expected.pop().strip()
         actual_content = content.__repr__().strip()
         colored_content = self.color_diff(expected_content, actual_content)
-        self.logger.info('expected:  %s' % expected_content)
-        self.logger.info('actual:    %s' % actual_content)
-        self.logger.info('colordiff: %s' % colored_content)
+        logger.info('expected:  %s' % expected_content)
+        logger.info('actual:    %s' % actual_content)
+        logger.info('colordiff: %s' % colored_content)
         if expected_content == actual_content:
             self.passed_tests += 1
-            self.logger.info('PASS')
+            logger.info('PASS')
         else:
-            self.logger.info('FAIL')
-        self.logger.info('---')
+            logger.info('FAIL')
+        logger.info('---')
 
         if not self.sent.is_empty():
             sm = self.sent.pop()
             self.send(self.get_perf(self.msg_counter, sm))
             self.msg_counter += 1
         if self.expected.is_empty():
-            self.logger.info('%d PASSED / %d FAILED' % \
+            logger.info('%d PASSED / %d FAILED' % \
                         (self.passed_tests,
                          self.total_tests - self.passed_tests))
             self.dispatcher.shutdown()

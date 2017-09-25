@@ -8,12 +8,16 @@ import ndex.client as nc
 import requests
 import io
 from enum import Enum
+from bioagents import BioagentException
+
 
 logger = logging.getLogger('QCA')
 
-class PathNotFoundException(Exception):
+
+class PathNotFoundException(BioagentException):
     def __init__(self, *args, **kwargs):
             Exception.__init__(self, *args, **kwargs)
+
 
 class QCA:
     def __init__(self):
@@ -121,7 +125,7 @@ class QCA:
                 try:
                     result_json = json.loads(prc)
                     if result_json.get('data') is not None and \
-                        result_json.get("data").get("forward_english") is not None:
+                       result_json.get("data").get("forward_english") is not None:
                         f_e = result_json.get("data").get("forward_english")
 
                         results_list += [f_e_i for f_e_i in f_e if len(f_e) > 0]
@@ -135,8 +139,10 @@ class QCA:
 
         path_scoring = PathScoring()
 
-        results_list_sorted = sorted(results_list,
-            lambda x,y: path_scoring.cross_country_scoring(x, y))
+        results_list_sorted = sorted(
+            results_list,
+            lambda x, y: path_scoring.cross_country_scoring(x, y)
+            )
 
         return results_list_sorted[:3]
 
@@ -193,7 +199,7 @@ class QCA:
     def save_query_results(self, query, query_results):
         path = self.results_directory + "/" + query.get("name")
         outfile = open(path, 'wt')
-        json.dump(query_results,outfile, indent=4)
+        json.dump(query_results, outfile, indent=4)
         outfile.close()
 
     def get_mutation_paths(self, query_result, mutated_nodes,
@@ -213,8 +219,11 @@ class QCA:
             # --------------------------
             # Get Directed Paths
             path_query_result = \
-                self.get_directed_paths_by_names(query["source_names"],
-                query["target_names"], cx)
+                self.get_directed_paths_by_names(
+                    query["source_names"],
+                    query["target_names"],
+                    cx
+                    )
             path_node_names = self.get_path_node_names(path_query_result)
             query_result["forward_paths"] = path_query_result["forward_paths"]
             query_result["reverse_paths"] = path_query_result["reverse_paths"]
@@ -232,10 +241,11 @@ class QCA:
             # (skip mutation nodes already in paths)
             mutation_node_names_not_in_paths = \
                 list(set(mutation_node_names).difference(set(path_node_names)))
-            mutation_query_result = \
-                self.get_directed_paths_by_names(path_node_names,
-                                                 mutation_node_names_not_in_paths,
-                                                 cx)
+            mutation_query_result = self.get_directed_paths_by_names(
+                path_node_names,
+                mutation_node_names_not_in_paths,
+                cx
+                )
             query_result["forward_mutation_paths"] = \
                 mutation_query_result["forward_paths"]
             query_result["reverse_mutation_paths"] = \
@@ -271,6 +281,7 @@ class QCA:
     #
     # for query in queries:
     #     run_query(query)
+
 
 class PathScoring():
     def __init__(self):
@@ -323,7 +334,7 @@ class PathScoring():
                                                    else 0)
         res = {}
         prev = None
-        for i,(k,v) in enumerate(sorted_scores):
+        for i, (k, v) in enumerate(sorted_scores):
             if v != prev:  # NEXT PLACE
                 place, prev = i+1,v
             res[k] = place
@@ -375,7 +386,7 @@ class PathScoring():
                             top_edge = edge
                         else:
                             if edge_ranking.edge_type_rank[edge.get("interaction")] < \
-                                edge_ranking.edge_type_rank[top_edge.get("interaction")]:
+                               edge_ranking.edge_type_rank[top_edge.get("interaction")]:
                                 top_edge = edge
 
                     path_tuples.append((prefix + str(i),
@@ -383,18 +394,19 @@ class PathScoring():
 
         return path_tuples
 
-    #==============================================
-    # helper function to convert the raw edge dict
-    # to an array which is the format used in
-    # path scoring
-    #==============================================
     def convert_edge_dict_to_array(self, edge):
+        '''
+        Helper function to convert the raw edge dict
+        to an array which is the format used in
+        path scoring
+        '''
         tmp_edge_list = []
         for e in edge.keys():
 
             tmp_edge_list.append(edge[e])
 
         return tmp_edge_list
+
 
 class EdgeRanking(object):
     def __init__(self):
@@ -473,6 +485,7 @@ class EdgeRanking(object):
     def print_edge_types(self):
         for et in self.edge_types:
             print et
+
 
 #==================================
 # Enum Classes

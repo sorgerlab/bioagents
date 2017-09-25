@@ -2,12 +2,14 @@ import sys
 import json
 import logging
 from bioagents import Bioagent
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger('QCA')
 from indra.sources.trips.processor import TripsProcessor
 from kqml import KQMLList, KQMLString
 from qca import QCA
+
+
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('QCA')
 
 
 class QCA_Module(Bioagent):
@@ -18,6 +20,7 @@ class QCA_Module(Bioagent):
     '''
     name = 'QCA'
     tasks = ['FIND-QCA-PATH', 'HAS-QCA-PATH']
+
     def __init__(self, **kwargs):
         # Instantiate a singleton QCA agent
         self.qca = QCA()
@@ -92,7 +95,6 @@ class QCA_Module(Bioagent):
         term_id = terms[0].attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
         return agent.name
-
 
 
 if __name__ == "__main__":

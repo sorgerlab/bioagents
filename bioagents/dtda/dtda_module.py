@@ -1,14 +1,17 @@
 import sys
 import logging
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger('DTDA')
 import xml.etree.ElementTree as ET
 from indra.sources.trips.processor import TripsProcessor
-from kqml import KQMLModule, KQMLPerformative, KQMLList
+from kqml import KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException
 from bioagents import Bioagent
+
+
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('DTDA')
+
 
 class DTDA_Module(Bioagent):
     """The DTDA module is a TRIPS module built around the DTDA agent.
@@ -17,6 +20,7 @@ class DTDA_Module(Bioagent):
     name = "DTDA"
     tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
              'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
+
     def __init__(self, **kwargs):
         # Instantiate a singleton DTDA agent
         self.dtda = DTDA()
@@ -26,27 +30,26 @@ class DTDA_Module(Bioagent):
         """Response content to is-drug-target request."""
         try:
             drug_arg = content.gets('drug')
-        except:
-            reply = make_failure('INVALID_DRUG')
+        except Exception:
+            return self.make_failure('INVALID_DRUG')
         try:
             drug = self._get_target(drug_arg)
-        except Exception as e:
-            reply = make_failure('DRUG_NOT_FOUND')
-            return reply
-        drug_name = drug.name
+        except Exception:
+            return self.make_failure('DRUG_NOT_FOUND')
         try:
             target_arg = content.gets('target')
             target = self._get_target(target_arg)
             target_name = target.name
-        except:
-            reply = make_failure('INVALID_TARGET')
-            return reply
+        except Exception:
+            return self.make_failure('INVALID_TARGET')
 
         try:
-            is_target = self.dtda.is_nominal_drug_target(drug_name, target_name)
+            is_target = self.dtda.is_nominal_drug_target(
+                drug.name,
+                target_name
+                )
         except DrugNotFoundException:
-            reply = make_failure('DRUG_NOT_FOUND')
-            return reply
+            return self.make_failure('DRUG_NOT_FOUND')
         reply = KQMLList('SUCCESS')
         reply.set('is-target', 'TRUE' if is_target else 'FALSE')
         return reply
@@ -57,9 +60,8 @@ class DTDA_Module(Bioagent):
             target_arg = content.gets('target')
             target = self._get_target(target_arg)
             target_name = target.name
-        except Exception as e:
-            reply = make_failure('INVALID_TARGET')
-            return reply
+        except Exception:
+            return self.make_failure('INVALID_TARGET')
         drug_names, pubchem_ids = self.dtda.find_target_drugs(target_name)
         reply = KQMLList('SUCCESS')
         drugs = KQMLList()
@@ -79,11 +81,11 @@ class DTDA_Module(Bioagent):
             disease = self.get_disease(disease_arg)
         except Exception as e:
             logger.error(e)
-            reply = make_failure('INVALID_DISEASE')
+            reply = self.make_failure('INVALID_DISEASE')
             return reply
 
         if disease.disease_type != 'cancer':
-            reply = make_failure('DISEASE_NOT_FOUND')
+            reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
         logger.debug('Disease: %s' % disease.name)
@@ -92,7 +94,7 @@ class DTDA_Module(Bioagent):
             mut_protein, mut_percent = \
                 self.dtda.get_top_mutation(disease.name)
         except DiseaseNotFoundException:
-            reply = make_failure('DISEASE_NOT_FOUND')
+            reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
         # TODO: get functional effect from actual mutations
@@ -114,11 +116,11 @@ class DTDA_Module(Bioagent):
             disease = self.get_disease(disease_arg)
         except Exception as e:
             logger.error(e)
-            reply = make_failure('INVALID_DISEASE')
+            reply = self.make_failure('INVALID_DISEASE')
             return reply
 
         if disease.disease_type != 'cancer':
-            reply = make_failure('DISEASE_NOT_FOUND')
+            reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
         logger.debug('Disease: %s' % disease.name)
@@ -127,7 +129,7 @@ class DTDA_Module(Bioagent):
             mut_protein, mut_percent = \
                 self.dtda.get_top_mutation(disease.name)
         except DiseaseNotFoundException:
-            reply = make_failure('DISEASE_NOT_FOUND')
+            reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
         reply = KQMLList()
@@ -177,11 +179,6 @@ class DTDA_Module(Bioagent):
         dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
         disease = Disease(disease_type, dbname, dbid_dict)
         return disease
-
-def make_failure(reason):
-    msg = KQMLList('FAILURE')
-    msg.set('reason', reason)
-    return msg
 
 
 if __name__ == "__main__":

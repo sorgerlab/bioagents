@@ -2,15 +2,17 @@ import sys
 import json
 import random
 import logging
-from bioagents import Bioagent
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger('MRA')
 import pysb.export
 from indra.statements import stmts_to_json
 from indra.sources.trips.processor import TripsProcessor
 from kqml import KQMLPerformative, KQMLList, KQMLString
+from bioagents import Bioagent, BioagentException
 from mra import MRA
+
+
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('MRA')
 
 
 class MRA_Module(Bioagent):
@@ -18,6 +20,7 @@ class MRA_Module(Bioagent):
     tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
              'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
              'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
+
     def __init__(self, **kwargs):
         # Instantiate a singleton MRA agent
         self.mra = MRA()
@@ -155,7 +158,10 @@ class MRA_Module(Bioagent):
         actionl = KQMLList()
         if action['action'] == 'remove_stmts':
             actionl.append('remove_stmts')
-            actionl.sets('statements', encode_indra_stmts(action['statements']))
+            actionl.sets(
+                'statements',
+                encode_indra_stmts(action['statements'])
+                )
         msg.set('action', actionl)
 
         # Add the diagram
@@ -232,7 +238,7 @@ class MRA_Module(Bioagent):
         target = get_target(target_arg)
         try:
             model_id = self._get_model_id(content)
-        except Exception as e:
+        except Exception:
             model_id = 1
         upstream = self.mra.get_upstream(target, model_id)
         terms = []
@@ -280,18 +286,18 @@ class MRA_Module(Bioagent):
         return model_id
 
 
-class InvalidModelDescriptionError(Exception):
+class InvalidModelDescriptionError(BioagentException):
     pass
 
 
-class InvalidModelIdError(Exception):
+class InvalidModelIdError(BioagentException):
     pass
 
 
 def ekb_from_agent(agent):
     dbids = ['%s:%s' % (k, v) for k, v in agent.db_refs.items()]
     dbids_str = '|'.join(dbids)
-    termid = 'MRAGEN%d' % random.randint(1000001,10000000-1)
+    termid = 'MRAGEN%d' % random.randint(1000001, 10000000-1)
     open_tag = '<ekb><TERM dbid="%s" id="%s">' % (dbids_str, termid)
     type_tag = '<type>ONT::GENE-PROTEIN</type>'
     name_tag = '<name>%s</name>' % agent.name
@@ -353,6 +359,6 @@ def get_ambiguities_msg(ambiguities):
     ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
     return ambiguities_msg
 
+
 if __name__ == "__main__":
     MRA_Module(argv=sys.argv[1:])
-

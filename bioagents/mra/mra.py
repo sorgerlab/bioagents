@@ -17,7 +17,9 @@ from indra.assemblers import pysb_assembler, PysbAssembler
 from pysb import kappa
 from pysb.tools import render_reactions
 
+
 logger = logging.getLogger('MRA')
+
 
 class MRA(object):
     def __init__(self):
@@ -82,7 +84,7 @@ class MRA(object):
         stmts = tp.statements
         new_model_id, new_stmts = self.extend_model(stmts, model_id)
         logger.info('Old model id: %s, New model id: %s' %
-                     (model_id, new_model_id))
+                    (model_id, new_model_id))
         model_stmts = self.models[new_model_id]
         res = {'model_id': new_model_id,
                'model': model_stmts}
@@ -101,7 +103,7 @@ class MRA(object):
         stmts = stmts_from_json(json.loads(model_json))
         new_model_id, new_stmts = self.extend_model(stmts, model_id)
         logger.info('Old model id: %s, New model id: %s' %
-                     (model_id, new_model_id))
+                    (model_id, new_model_id))
         model_stmts = self.models[new_model_id]
         res = {'model_id': new_model_id,
                'model': model_stmts}
@@ -112,7 +114,6 @@ class MRA(object):
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, new_model_id)
         return res
-
 
     def has_mechanism(self, mech_ekb, model_id):
         """Return True if the given model contains the given mechanism."""
@@ -184,7 +185,7 @@ class MRA(object):
         stmts = self.models[model_id]
         rel_stmts = [st for st in stmts if isinstance(st, IncreaseAmount) or
                                            isinstance(st, Activation)]
-        rel_stmts = [st for st in rel_stmts if st.subj and \
+        rel_stmts = [st for st in rel_stmts if st.subj and
                      (st.obj.name == target.name)]
         upstream_agents = [st.subj for st in rel_stmts]
         return upstream_agents
@@ -259,6 +260,7 @@ def make_sbgn(pysb_model, model_id):
     pa.model = pysb_model
     sbgn_str = pa.export_model('sbgn')
     return sbgn_str
+
 
 def make_influence_map(pysb_model, model_id):
     """Generate a Kappa influence map."""

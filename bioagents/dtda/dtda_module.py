@@ -78,7 +78,7 @@ class DTDA_Module(Bioagent):
         """Response content to find-drug-target request."""
         try:
             drug_arg = content.gets('drug')
-            drug = self._get_drug(drug_arg)
+            drug = self._get_agent(drug_arg)
             drug_name = drug.name
         except Exception:
             return self.make_failure('INVALID_DRUG')

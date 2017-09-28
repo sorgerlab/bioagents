@@ -1,5 +1,6 @@
 import os
 import json
+from collections import OrderedDict
 from kqml import KQMLString, KQMLPerformative
 from indra.statements import stmts_to_json
 from indra.sources import trips
@@ -52,8 +53,10 @@ def read_or_load(text, force_rewrite=False):
         html = trips.trips_client.send_query(text)
         ekb_xml = trips.trips_client.get_xml(html)
         ekb_cache[text] = ekb_xml
+        ekb_cache_items = sorted(ekb_cache.items(), key=lambda x: x[0])
+        ekb_cache_ordered = OrderedDict(ekb_cache_items)
         with open(cache_file, 'w') as fh:
-            json.dump(ekb_cache, fh, indent=1)
+            json.dump(ekb_cache_ordered, fh, indent=1)
     else:
         ekb_xml = ekb_cache[text]
     return ekb_xml

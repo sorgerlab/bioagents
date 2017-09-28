@@ -23,16 +23,48 @@ class TestFindDrugTargets1(_IntegrationTest):
         return None
 
 
+class TestFindTargetDrug1(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(DTDA_Module)
+
+    def get_message(self):
+        target = ekb_kstring_from_text('BRAF')
+        content = KQMLList('FIND-TARGET-DRUG')
+        content.set('target', target)
+        return get_request(content), content
+
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS', self.output
+        assert len(self.output.get('drugs')) == 9, self.output
+        return True
+
+    def give_feedback(self):
+        return None
+
+
+class TestIsDrugTarget1(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(DTDA_Module)
+
+    def get_message(self):
+        target = ekb_kstring_from_text('BRAF')
+        drug = ekb_kstring_from_text('Vemurafenib')
+        content = KQMLList('IS-DRUG-TARGET')
+        content.set('target', target)
+        content.set('drug', drug)
+        return get_request(content), content
+
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS', self.output
+        assert self.output.gets('is-target') == 'TRUE', self.output
+        return True
+
+    def give_feedback(self):
+        return None
+
 
 def test_mutation_statistics():
     d = DTDA()
     mutation_dict = \
         d.get_mutation_statistics('pancreatic carcinoma', 'missense')
     assert(mutation_dict['KRAS'] > 0)
-
-def test_is_drug_target():
-    req = '(IS-DRUG-TARGET :DRUG "<ekb><TERM id=\\"V33937\\" dbid=\\"CHEBI:63637\\"><features></features><type>ONT::MOLECULE</type><name>VEMURAFENIB</name><drum-terms><drum-term dbid=\\"CHEBI:63637\\" match-score=\\"1.0\\" name=\\"vemurafenib\\" /></drum-terms></TERM></ekb>" :TARGET "<ekb><TERM id=\\"V33952\\" dbid=\\"HGNC:1097|NCIT:C51194|NCIT:C17476\\"><features></features><type>ONT::GENE-PROTEIN</type><name>BRAF</name><drum-terms><drum-term dbid=\\"HGNC:1097\\" match-score=\\"0.99587\\" name=\\"B-Raf proto-oncogene, serine/threonine kinase\\" /><drum-term dbid=\\"NCIT:C51194\\" match-score=\\"0.99587\\" name=\\"BRAF\\" /><drum-term dbid=\\"NCIT:C17476\\" match-score=\\"0.82444\\" name=\\"B-RAF protein kinase\\" /></drum-terms></TERM></ekb>")'
-    req_msg = KQMLList.from_string(req)
-    dm = DTDA_Module(testing=True)
-    res = dm.respond_is_drug_target(req_msg)
-    assert(res.to_string() == '(SUCCESS :is-target TRUE)')

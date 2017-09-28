@@ -22,13 +22,12 @@ class TestFindDrugTargets1(_IntegrationTest):
     def give_feedback(self):
         return None
 
-
-class TestFindTargetDrug1(_IntegrationTest):
+class _TestFindTargetDrug(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super(_TestFindTargetDrug, self).__init__(DTDA_Module)
 
     def get_message(self):
-        target = ekb_kstring_from_text('BRAF')
+        target = ekb_kstring_from_text(self.target)
         content = KQMLList('FIND-TARGET-DRUG')
         content.set('target', target)
         return get_request(content), content
@@ -40,6 +39,40 @@ class TestFindTargetDrug1(_IntegrationTest):
 
     def give_feedback(self):
         return None
+
+
+class TestFindTargetDrug1(_TestFindTargetDrug):
+    target = 'BRAF'
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS', self.output
+        assert len(self.output.get('drugs')) == 9, self.output
+        return True
+
+
+class TestFindTargetDrug2(_TestFindTargetDrug):
+    target = 'PAK4'
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS', self.output
+        assert len(self.output.get('drugs')) == 1, self.output
+        assert self.output.get('drugs')[0].gets('name') == 'PF-3758309'
+        assert self.output.get('drugs')[0].get('pubchem_id') == 25227462
+        return True
+
+
+class TestFindTargetDrug3(_TestFindTargetDrug):
+    target = 'KRAS'
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS', self.output
+        assert len(self.output.get('drugs')) == 0, self.output
+        return True
+
+
+class TestFindTargetDrug4(_TestFindTargetDrug):
+    target = 'JAK2'
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS', self.output
+        assert len(self.output.get('drugs')) == 3, self.output
+        return True
 
 
 class TestIsDrugTarget1(_IntegrationTest):

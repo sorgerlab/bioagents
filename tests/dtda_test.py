@@ -1,6 +1,28 @@
 from kqml import KQMLList
 from bioagents.dtda import DTDA
 from bioagents.dtda import DTDA_Module
+from tests.util import *
+from tests.integration import _IntegrationTest, _FailureTest
+
+
+class TestFindDrugTargets1(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(DTDA_Module)
+
+    def get_message(self):
+        drug = ekb_kstring_from_text('Vemurafenib')
+        content = KQMLList('FIND-DRUG-TARGETS')
+        content.set('drug', drug)
+        return get_request(content), content
+
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS', self.output
+        return True
+
+    def give_feedback(self):
+        return None
+
+
 
 def test_mutation_statistics():
     d = DTDA()

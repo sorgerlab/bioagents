@@ -1,6 +1,6 @@
 import os
 import json
-from kqml import KQMLString
+from kqml import KQMLString, KQMLPerformative
 from indra.statements import stmts_to_json
 from indra.sources import trips
 
@@ -27,6 +27,13 @@ def stmts_kstring_from_text(text):
     stmts_json = stmts_json_from_text(text)
     ks = KQMLString(json.dumps(stmts_json))
     return ks
+
+
+def get_request(content):
+    msg = KQMLPerformative('REQUEST')
+    msg.set('content', content)
+    msg.set('reply-with', 'IO-1')
+    return msg
 
 
 cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),

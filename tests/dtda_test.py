@@ -1,3 +1,4 @@
+import unittest
 from kqml import KQMLList
 from bioagents.dtda import DTDA
 from bioagents.dtda import DTDA_Module
@@ -11,6 +12,8 @@ def test_mutation_statistics():
         d.get_mutation_statistics('pancreatic carcinoma', 'missense')
     assert(mutation_dict['KRAS'] > 0)
 
+
+@unittest.skip('TRIPS ontology needs to be integrated to include this test')
 def test_get_disease():
     disease_ekb = ekb_from_text('pancreatic cancer')
     disease = DTDA_Module.get_disease(disease_ekb)
@@ -140,7 +143,7 @@ class TestIsDrugTarget3(_TestIsDrugTarget):
 
 
 # FIND-TREATMENT tests
-
+@unittest.skip('TRIPS ontology needs to be integrated to include this test')
 class TestFindDiseaseTargets1(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -198,7 +201,7 @@ class TestFindDiseaseTargets3(_IntegrationTest):
 
 
 # FIND-DISEASE-TARGETS tests
-
+@unittest.skip('TRIPS ontology needs to be integrated to include this test')
 class TestFindTreatment1(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)

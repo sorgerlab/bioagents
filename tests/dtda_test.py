@@ -142,7 +142,7 @@ class TestIsDrugTarget3(_TestIsDrugTarget):
 
 
 # FIND-TREATMENT tests
-@unittest.skip('TRIPS ontology needs to be integrated to include this test')
+#@unittest.skip('TRIPS ontology needs to be integrated to include this test')
 class TestFindDiseaseTargets1(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -155,7 +155,10 @@ class TestFindDiseaseTargets1(_IntegrationTest):
 
     def is_correct_response(self):
         assert self.output.head() == 'SUCCESS', self.output
-        assert len(self.output.get('drugs')) == 0, self.output
+        protein = self.output.get('protein')
+        assert protein.get('name') == 'KRAS'
+        assert self.output.gets('prevalence') == '0.88'
+        assert self.output.gets('functional-effect') == 'ACTIVE'
         return True
 
     def give_feedback(self):

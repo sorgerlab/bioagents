@@ -11,6 +11,8 @@ def trips_isa(concept1, concept2):
     # Preprocess to make this more general
     concept1 = concept1.lower().replace('ont::', '')
     concept2 = concept2.lower().replace('ont::', '')
+    if concept1 == concept2:
+        return True
     isa = trips_ontology.isa('http://trips.ihmc.us/concepts/', concept1,
                              'http://trips.ihmc.us/concepts/', concept2)
     return isa

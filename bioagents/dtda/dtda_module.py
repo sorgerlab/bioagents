@@ -18,7 +18,7 @@ class DTDA_Module(Bioagent):
     Its role is to receive and decode messages and send responses from and
     to other agents in the system."""
     name = "DTDA"
-    tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG',
+    tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG', 'FIND-DRUG-TARGETS',
              'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
 
     def __init__(self, **kwargs):
@@ -33,12 +33,12 @@ class DTDA_Module(Bioagent):
         except Exception:
             return self.make_failure('INVALID_DRUG')
         try:
-            drug = self._get_target(drug_arg)
+            drug = self._get_agent(drug_arg)
         except Exception:
             return self.make_failure('DRUG_NOT_FOUND')
         try:
             target_arg = content.gets('target')
-            target = self._get_target(target_arg)
+            target = self._get_agent(target_arg)
             target_name = target.name
         except Exception:
             return self.make_failure('INVALID_TARGET')
@@ -58,7 +58,7 @@ class DTDA_Module(Bioagent):
         """Response content to find-target-drug request."""
         try:
             target_arg = content.gets('target')
-            target = self._get_target(target_arg)
+            target = self._get_agent(target_arg)
             target_name = target.name
         except Exception:
             return self.make_failure('INVALID_TARGET')
@@ -72,6 +72,24 @@ class DTDA_Module(Bioagent):
                 drug.set('pubchem_id', pci)
             drugs.append(drug)
         reply.set('drugs', drugs)
+        return reply
+
+    def respond_find_drug_targets(self, content):
+        """Response content to find-drug-target request."""
+        try:
+            drug_arg = content.gets('drug')
+            drug = self._get_agent(drug_arg)
+            drug_name = drug.name
+        except Exception:
+            return self.make_failure('INVALID_DRUG')
+        drug_targets = self.dtda.find_drug_targets(drug_name)
+        reply = KQMLList('SUCCESS')
+        targets = KQMLList()
+        for target_name in targets:
+            target = KQMLList()
+            target.sets('name', target_name)
+            targets.append(target)
+        reply.set('targets', targets)
         return reply
 
     def respond_find_disease_targets(self, content):
@@ -160,14 +178,16 @@ class DTDA_Module(Bioagent):
         reply.append(reply2)
         return reply
 
-    def _get_target(self, target_str):
-        tp = TripsProcessor(target_str)
+    @staticmethod
+    def _get_agent(agent_ekb):
+        tp = TripsProcessor(agent_ekb)
         terms = tp.tree.findall('TERM')
         term_id = terms[0].attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
         return agent
 
-    def get_disease(self, disease_str):
+    @staticmethod
+    def get_disease(disease_str):
         term = ET.fromstring(disease_str).find('TERM')
         disease_type = term.find('type').text
         if disease_type.startswith('ONT::'):

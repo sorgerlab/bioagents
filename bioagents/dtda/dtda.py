@@ -65,9 +65,7 @@ class DTDA(object):
             self.drug_db.close()
 
     def is_nominal_drug_target(self, drug_name, target_name):
-        '''
-        Return True if the drug targets the target, and False if not
-        '''
+        """Return True if the drug targets the target, and False if not."""
         if self.drug_db is not None:
             res = self.drug_db.execute('SELECT nominal_target FROM agent '
                                        'WHERE source_id LIKE "HMSL%%" '
@@ -82,9 +80,7 @@ class DTDA(object):
         return False
 
     def find_target_drugs(self, target_name):
-        '''
-        Find all the drugs that nominally target the target.
-        '''
+        """Return all the drugs that nominally target the target."""
         if self.drug_db is not None:
             res = self.drug_db.execute('SELECT name, primary_cid FROM agent '
                                        'WHERE source_id LIKE "HMSL%%" '
@@ -99,6 +95,20 @@ class DTDA(object):
             drug_names = []
             pubchem_ids = []
         return drug_names, pubchem_ids
+
+    def find_drug_targets(self, drug_name):
+        """Return all the drugs that nominally target the target."""
+        if self.drug_db is not None:
+            res = self.drug_db.execute('SELECT nominal_target FROM agent '
+                                       'WHERE name LIKE "%%%s%%" ' %
+                                       drug_name).fetchall()
+            if not res:
+                target_names = []
+            else:
+                target_names = list(res)
+        else:
+            target_names = []
+        return target_names
 
     def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)

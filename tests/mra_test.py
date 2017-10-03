@@ -167,7 +167,7 @@ def _get_build_model_request(text):
     content = KQMLList('BUILD-MODEL')
     descr = ekb_kstring_from_text(text)
     content.set('description', descr)
-    return _get_request(content), content
+    return get_request(content), content
 
 
 def _get_expand_model_request(text, model_id):
@@ -175,14 +175,7 @@ def _get_expand_model_request(text, model_id):
     descr = ekb_kstring_from_text(text)
     content.set('description', descr)
     content.set('model-id', model_id)
-    return _get_request(content), content
-
-
-def _get_request(content):
-    msg = KQMLPerformative('REQUEST')
-    msg.set('content', content)
-    msg.set('reply-with', 'IO-1')
-    return msg
+    return get_request(content), content
 
 
 class TestBuildModelAmbiguity(_IntegrationTest):
@@ -222,7 +215,7 @@ class TestModelUndo(_IntegrationTest):
 
     def get_message(self):
         content = KQMLList('MODEL-UNDO')
-        msg = _get_request(content)
+        msg = get_request(content)
         return msg, content
 
     def is_correct_response(self):
@@ -243,8 +236,7 @@ class TestMissingDescriptionFailure(_FailureTest):
     def get_message(self):
         content = KQMLList('BUILD-MODEL')
         content.sets('description', '')
-        msg = _get_request(content)
-        print(content)
+        msg = get_request(content)
         return msg, content
 
 

@@ -194,10 +194,14 @@ class DTDA_Module(Bioagent):
         if disease_type.startswith('ONT::'):
             disease_type = disease_type[5:].lower()
         drum_term = term.find('drum-terms/drum-term')
-        dbname = drum_term.attrib['name']
-        dbid = term.attrib['dbid']
-        dbids = dbid.split('|')
-        dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
+        if drum_term is None:
+            dbname = term.find('name').text
+            dbid_dict = {}
+        else:
+            dbname = drum_term.attrib['name']
+            dbid = term.attrib['dbid']
+            dbids = dbid.split('|')
+            dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
         disease = Disease(disease_type, dbname, dbid_dict)
         return disease
 

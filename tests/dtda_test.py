@@ -13,7 +13,6 @@ def test_mutation_statistics():
     assert(mutation_dict['KRAS'] > 0)
 
 
-@unittest.skip('TRIPS ontology needs to be integrated to include this test')
 def test_get_disease():
     disease_ekb = ekb_from_text('pancreatic cancer')
     disease = DTDA_Module.get_disease(disease_ekb)

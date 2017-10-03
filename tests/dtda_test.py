@@ -13,7 +13,6 @@ def test_mutation_statistics():
     assert(mutation_dict['KRAS'] > 0)
 
 
-@unittest.skip('TRIPS ontology needs to be integrated to include this test')
 def test_get_disease():
     disease_ekb = ekb_from_text('pancreatic cancer')
     disease = DTDA_Module.get_disease(disease_ekb)
@@ -142,8 +141,7 @@ class TestIsDrugTarget3(_TestIsDrugTarget):
         return True
 
 
-# FIND-TREATMENT tests
-@unittest.skip('TRIPS ontology needs to be integrated to include this test')
+# FIND-DISEASE-TARGETS tests
 class TestFindDiseaseTargets1(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -156,7 +154,10 @@ class TestFindDiseaseTargets1(_IntegrationTest):
 
     def is_correct_response(self):
         assert self.output.head() == 'SUCCESS', self.output
-        assert len(self.output.get('drugs')) == 0, self.output
+        protein = self.output.get('protein')
+        assert protein.get('name') == 'KRAS'
+        assert self.output.gets('prevalence') == '0.88'
+        assert self.output.gets('functional-effect') == 'ACTIVE'
         return True
 
     def give_feedback(self):
@@ -200,8 +201,7 @@ class TestFindDiseaseTargets3(_IntegrationTest):
         return None
 
 
-# FIND-DISEASE-TARGETS tests
-@unittest.skip('TRIPS ontology needs to be integrated to include this test')
+# FIND-TREATMENT tests
 class TestFindTreatment1(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -213,8 +213,11 @@ class TestFindTreatment1(_IntegrationTest):
         return get_request(content), content
 
     def is_correct_response(self):
-        assert self.output.head() == 'SUCCESS', self.output
-        assert len(self.output.get('drugs')) == 0, self.output
+        part1, part2 = self.output
+        assert part1.head() == 'SUCCESS', part1
+        assert part2.head() == 'SUCCESS', part2
+        assert part1.gets('prevalence') == '0.88', part1.get('prevalence')
+        assert len(part2.get('drugs')) == 0
         return True
 
     def give_feedback(self):

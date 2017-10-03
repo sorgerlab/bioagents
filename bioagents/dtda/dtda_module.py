@@ -6,6 +6,7 @@ from kqml import KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException
 from bioagents import Bioagent
+from bioagents.resources.trips_ont_manager import trips_isa
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -102,7 +103,7 @@ class DTDA_Module(Bioagent):
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
-        if disease.disease_type != 'cancer':
+        if not trips_isa(disease.disease_type, 'ont::cancer'):
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
@@ -137,7 +138,7 @@ class DTDA_Module(Bioagent):
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
-        if disease.disease_type != 'cancer':
+        if not trips_isa(disease.disease_type, 'ont::cancer'):
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
@@ -193,10 +194,14 @@ class DTDA_Module(Bioagent):
         if disease_type.startswith('ONT::'):
             disease_type = disease_type[5:].lower()
         drum_term = term.find('drum-terms/drum-term')
-        dbname = drum_term.attrib['name']
-        dbid = term.attrib['dbid']
-        dbids = dbid.split('|')
-        dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
+        if drum_term is None:
+            dbname = term.find('name').text
+            dbid_dict = {}
+        else:
+            dbname = drum_term.attrib['name']
+            dbid = term.attrib['dbid']
+            dbids = dbid.split('|')
+            dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
         disease = Disease(disease_type, dbname, dbid_dict)
         return disease
 

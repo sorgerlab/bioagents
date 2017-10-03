@@ -178,14 +178,16 @@ class DTDA_Module(Bioagent):
         reply.append(reply2)
         return reply
 
-    def _get_agent(self, agent_ekb):
+    @staticmethod
+    def _get_agent(agent_ekb):
         tp = TripsProcessor(agent_ekb)
         terms = tp.tree.findall('TERM')
         term_id = terms[0].attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
         return agent
 
-    def get_disease(self, disease_str):
+    @staticmethod
+    def get_disease(disease_str):
         term = ET.fromstring(disease_str).find('TERM')
         disease_type = term.find('type').text
         if disease_type.startswith('ONT::'):

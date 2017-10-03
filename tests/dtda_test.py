@@ -11,6 +11,16 @@ def test_mutation_statistics():
         d.get_mutation_statistics('pancreatic carcinoma', 'missense')
     assert(mutation_dict['KRAS'] > 0)
 
+def test_get_disease():
+    disease_ekb = ekb_from_text('pancreatic cancer')
+    disease = DTDA_Module.get_disease(disease_ekb)
+    disease_ekb = ekb_from_text('lung cancer')
+    disease = DTDA_Module.get_disease(disease_ekb)
+    disease_ekb = ekb_from_text('diabetes')
+    disease = DTDA_Module.get_disease(disease_ekb)
+    disease_ekb = ekb_from_text('common cold')
+    disease = DTDA_Module.get_disease(disease_ekb)
+
 
 # FIND-TARGET-DRUG tests
 

@@ -6,6 +6,7 @@ from kqml import KQMLList
 from dtda import DTDA, Disease, \
                  DrugNotFoundException, DiseaseNotFoundException
 from bioagents import Bioagent
+from bioagents.resources.trips_ont_manager import trips_isa
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -102,7 +103,7 @@ class DTDA_Module(Bioagent):
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
-        if disease.disease_type != 'cancer':
+        if not trips_isa(disease.disease_type, 'ont::cancer'):
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
@@ -137,7 +138,7 @@ class DTDA_Module(Bioagent):
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
-        if disease.disease_type != 'cancer':
+        if not trips_isa(disease.disease_type, 'ont::cancer'):
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 

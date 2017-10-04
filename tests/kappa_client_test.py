@@ -5,9 +5,12 @@ from time import sleep
 from bioagents.legacy.kappa import kappa_client
 
 
+TEST_MODEL_FILE = os.path.join(os.path.dirname(__file__), 'test_model.ka')
+
+
 def _get_toy_model():
     fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         'test_model.ka')
+                         TEST_MODEL_FILE)
     with open(fname, 'rt') as fh:
         model = fh.read()
     return model
@@ -36,8 +39,9 @@ def test_version():
 
 def test_file_upload():
     kappa = _get_kappa()
-    kappa.add_file('test_model.ka')
-    assert 'test_model.ka' in kappa.get_files(), "File not uploaded."
+    kappa.add_file(TEST_MODEL_FILE)
+    assert os.path.basename(TEST_MODEL_FILE) in kappa.get_files(),\
+        "File not uploaded."
 
 
 def test_code_upload():
@@ -49,13 +53,13 @@ def test_code_upload():
 
 def test_parse():
     kappa = _get_kappa()
-    res = kappa.compile(['test_model.ka'])
+    res = kappa.compile([TEST_MODEL_FILE])
     print(res)
 
 
 def test_run_sim():
     kappa = _get_kappa()
-    kappa.compile(['test_model.ka'])
+    kappa.compile([TEST_MODEL_FILE])
     print('Starting simulation')
     kappa.start(plot_period=100)
 

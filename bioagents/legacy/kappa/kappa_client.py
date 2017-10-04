@@ -86,7 +86,7 @@ class KappaRuntime(object):
         if fname in file_list:
             requests.delete(self.url + '/files/%s' % fname)
 
-        return self.add_code(content, fname)
+        return self.add_code(content, os.path.basename(fname))
 
     def add_code(self, code_str, name=None):
         """Add a code string to the project."""

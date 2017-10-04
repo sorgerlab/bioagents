@@ -22,8 +22,19 @@ def test_version():
     assert(version is not None)
 
 
+def test_file_upload():
+    kappa.add_file('test_model.ka')
+    assert 'test_model.ka' in kappa.get_files(), "File not uploaded."
+
+
+def test_code_upload():
+    original_files = kappa.get_files()
+    kappa.add_code(kappa_model)
+    assert len(original_files) < len(kappa.get_files()), "Code not added."
+
+
 def test_parse():
-    res = kappa.parse('test_model.ka')
+    res = kappa.compile(['test_model.ka'])
     print(res)
 
 

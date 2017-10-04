@@ -132,7 +132,7 @@ class Kappa_Module(Bioagent):
             try:
                 reply_content = self.respond_parse(arguments)
             except Exception as e:
-                message = 'Could not parse Kappa model: (%s)' % e
+                message = 'Could not compile Kappa model: (%s)' % e
                 return self.error_reply(msg, message)
         elif task_str == 'KAPPA-START':
             try:
@@ -192,7 +192,7 @@ class Kappa_Module(Bioagent):
 
     def respond_parse(self, arguments):
         '''
-        Response content to parse message
+        Response content to compile message
         '''
         if "CODE" not in arguments:
             reply_content = self.response_error(["Missing code"])
@@ -204,7 +204,7 @@ class Kappa_Module(Bioagent):
             logger.debug('respond_parse {0}'.format(request_code))
             reply_content = KQMLList()
             try:
-                response = self.kappa.parse(request_code)
+                response = self.kappa.compile(request_code)
                 logger.debug(response)
                 reply_content = KQMLList.from_string('(SUCCESS)')
             except KappaRuntimeError as e:

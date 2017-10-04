@@ -2,13 +2,21 @@
 
 import urllib2
 import json
+import re
 import requests
 from time import sleep
 
 
 class KappaRuntimeError(Exception):
-    def __init__(self, errors):
-        self.errors = errors
+    def __init__(self, error, text=''):
+        self.error = error
+        self.text = text
+
+    def __str__(self):
+        msg = "Kappa failed with error: %s." % self.error
+        if self.text is not '':
+            msg += "\nThe following text was found: %s." % self.text
+        return msg
 
 
 kappa_default = 'http://api.executableknowledge.org/kappa/v2/projects/default'
@@ -22,61 +30,95 @@ class KappaRuntime(object):
             self.url = kappa_default_v2
         else:
             self.url = endpoint
+        return
+
+    def dispatch(self, method, *args, **kwargs):
+        """Send a request of type method to the project."""
+        if not hasattr(requests, method):
+            raise AttributeError('Requests does not have method %s.' % method)
+        resp = getattr(requests, method)(*args, **kwargs)
+        if resp.status_code is not 200:
+            raise KappaRuntimeError(
+                resp.reason,
+                re.findall(
+                    'u?[\"\']text[\"\']: ?u?[\"\'](.*?)[\"\'],',
+                    resp.content
+                    )
+                )
+        return resp
+
+    def get_files(self):
+        """Get a list of files in this project."""
+        resp = self.dispatch('get', self.url + '/files')
+        return [f['id'] for f in resp.json()]
 
     def add_file(self, fname):
         """Add a file to the project."""
         with open(fname, 'rb') as f:
             content = f.read()
 
-        resp = requests.get(self.url + '/files')
-        file_list = [f['id'] for f in resp.json()]
+        file_list = self.get_files()
         if fname in file_list:
             requests.delete(self.url + '/files/%s' % fname)
 
+        return self.add_code(content, fname)
+
+    def add_code(self, code_str, name=None):
+        """Add a code string to the project."""
+        if name is None:
+            fname_list = self.get_files()
+            fmt = "bioagent_%d.ka"
+            i = 0
+            while fmt % i in fname_list:
+                i += 1
+            name = fmt % i
         file_data = {
             'metadata': {
                 'compile': True,
-                'id': fname,
+                'id': name,
                 'position': 0,
                 'version': [{
                     'client_id': 'foobar',
                     'local_version_file_version': 0
                     }]
                 },
-            'content': content
+            'content': code_str
             }
-        res = requests.post(self.url + '/files', data=json.dumps(file_data))
-        return res
+        self.dispatch('post', self.url + '/files', data=json.dumps(file_data))
+        return
 
     def version(self):
         """Return the version of the Kappa environment."""
         try:
-            res = requests.get(self.url)
-            if res.status_code != 200:
-                raise Exception('Kappa service returned with code: %s' %
-                                res.status_code)
+            res = self.dispatch('get', self.url)
             content = res.json()
             version = content.get('project_version')
             return version
         except Exception as e:
             raise KappaRuntimeError(e)
 
-    def parse(self, fname):
-        """Parse given Kappa model code and throw exception if fails."""
-        self.add_file(fname)
-        parse_url = self.url + '/parse'
-        res = requests.post(parse_url, data=json.dumps([]).encode('utf8'))
-        #try:
+    def compile(self, fname_list=None, code_list=None):
+        """Parse given Kappa files and any other files that have been added.
+
+        Parameters
+        ----------
+        fname_list : List or None
+            A list of local file names (ending in `.ka`) to be added to the
+            project before compiling. None by default, indicating no new files.
+        code_list : List or None
+            A list of code strings to be added to the project before compiling.
+            None by default, indicating no new strings.
+        """
+        for fname in [] if fname_list is None else fname_list:
+            self.add_file(fname)
+        for code_str in [] if code_list is None else code_list:
+            self.add_code(code_str)
+        data = json.dumps([]).encode('utf8')
+        res = self.dispatch('post', self.url + '/parse', data=data)
+        if res.status_code is not 200:
+            pass
         content = res.json()
         return content
-        #except urllib2.HTTPError as e:
-        #    if e.code == 400:
-        #        error_details = json.loads(e.read())
-        #        raise KappaRuntimeError(error_details)
-        #    else:
-        #        raise e
-        #except urllib2.URLError as e:
-        #    KappaRuntimeError(e.reason)
 
     def start(self, parameter):
         """Start a simulation with given parameters."""

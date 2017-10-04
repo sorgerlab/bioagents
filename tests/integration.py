@@ -42,7 +42,7 @@ def color_diff(expected, received):
             output.append(Back.CYAN + sm.a[a0:a1] + Back.RESET +
                           Fore.CYAN + sm.b[b0:b1] + Style.RESET_ALL)
         else:
-            raise RuntimeError('unexpected opcode')
+            raise KappaRuntimeError('unexpected opcode')
     return ''.join(output)
 
 

@@ -4,7 +4,7 @@ import argparse
 import operator
 import json
 
-from kappa_client import KappaRuntime, RuntimeError
+from kappa_client import KappaRuntime, KappaRuntimeError
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from bioagents import Bioagent
 
@@ -207,7 +207,7 @@ class Kappa_Module(Bioagent):
                 response = self.kappa.parse(request_code)
                 logger.debug(response)
                 reply_content = KQMLList.from_string('(SUCCESS)')
-            except RuntimeError as e:
+            except KappaRuntimeError as e:
                 logger.debug(e.errors)
                 reply_content = self.response_error(e.errors)
         return reply_content
@@ -243,7 +243,7 @@ class Kappa_Module(Bioagent):
                     response = self.kappa.start(parameter)
                     response_message = '(SUCCESS :id %d)' % response
                     response_content = KQMLList.from_string(response_message)
-                except RuntimeError as e:
+                except KappaRuntimeError as e:
                     response_content = self.response_error(e.errors)
             except ValueError as e:
                 response_content = self.response_error([str(e)])
@@ -259,7 +259,7 @@ class Kappa_Module(Bioagent):
                 response_content = render_status(status)
             except ValueError as e:
                 response_content = self.response_error([str(e)])
-            except RuntimeError as e:
+            except KappaRuntimeError as e:
                 response_content = self.response_error(e.errors)
         return response_content
 
@@ -271,7 +271,7 @@ class Kappa_Module(Bioagent):
                 token = int(arguments["ID"])
                 status = self.kappa.stop(token)
                 response_content = KQMLList.from_string('(SUCCESS)')
-            except RuntimeError as e:
+            except KappaRuntimeError as e:
                 response_content = self.response_error(e.errors)
         return response_content
 

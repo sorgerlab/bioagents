@@ -16,17 +16,14 @@ def _get_toy_model():
 
 kappa_model = _get_toy_model()
 
-'''
-This block is temporarily disabled while new Kappa client
-is being updated.
 
 def test_version():
     version = kappa.version()
-    assert(version == 4)
+    assert(version is not None)
 
 
 def test_parse():
-    res = kappa.parse(kappa_model)
+    res = kappa.parse('test_model.ka')
     print(res)
 
 
@@ -62,4 +59,4 @@ def test_run_sim():
         for i, obs in enumerate(obs_list):
             yobs[obs][t] = value['observation_values'][i]
     print(tspan, yobs)
-'''
+

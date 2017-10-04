@@ -86,7 +86,7 @@ class DTDA_Module(Bioagent):
         drug_targets = self.dtda.find_drug_targets(drug_name)
         reply = KQMLList('SUCCESS')
         targets = KQMLList()
-        for target_name in targets:
+        for target_name in drug_targets:
             target = KQMLList()
             target.sets('name', target_name)
             targets.append(target)

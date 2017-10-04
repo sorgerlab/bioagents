@@ -105,7 +105,7 @@ class DTDA(object):
             if not res:
                 target_names = []
             else:
-                target_names = list(res)
+                target_names = [r[0] for r in res]
         else:
             target_names = []
         return target_names

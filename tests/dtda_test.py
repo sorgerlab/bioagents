@@ -93,6 +93,8 @@ class TestFindDrugTargets1(_IntegrationTest):
 
     def is_correct_response(self):
         assert self.output.head() == 'SUCCESS', self.output
+        assert len(self.output.get('targets')) == 1, self.output
+        assert self.output.get('targets')[0].gets('name') == 'BRAF'
         return True
 
     def give_feedback(self):

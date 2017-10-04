@@ -8,28 +8,42 @@ from time import sleep
 
 
 class KappaRuntimeError(Exception):
-    def __init__(self, error, text=''):
-        self.error = error
-        self.text = text
+    def __init__(self, resp):
+        self.error = resp.reason
+        self.text = re.findall(
+            'u?[\"\']text[\"\']: ?u?[\"\'](.*?)[\"\'],',
+            resp.content
+            )
+        return
 
     def __str__(self):
         msg = "Kappa failed with error: %s." % self.error
-        if self.text is not '':
-            msg += "\nThe following text was found: %s." % self.text
+        if self.text:
+            msg += "\nThe following text was found: %s." % ', '.join(self.text)
         return msg
 
 
-kappa_default = 'http://api.executableknowledge.org/kappa/v2/projects/default'
-kappa_default_v2 = 'https://api.executableknowledge.org/kappa/v2/projects/default'
-
-
 class KappaRuntime(object):
-    def __init__(self, endpoint=None):
+    kappa_url = 'https://api.executableknowledge.org/kappa/v2/projects'
+
+    def __init__(self, project_name='default'):
         """Create a Kappa client."""
-        if not endpoint:
-            self.url = kappa_default_v2
-        else:
-            self.url = endpoint
+        resp = self.dispatch('get', self.kappa_url)
+        if resp.status_code is not 200:
+            raise KappaRuntimeError(resp)
+        project_list = [t['project_id'] for t in resp.json()]
+        if project_name is not 'default':
+            if project_name in project_list:
+                resp = self.dispatch(
+                    'delete',
+                    self.kappa_url + '/' + project_name
+                    )
+            resp = self.dispatch(
+                'post',
+                self.kappa_url,
+                data=json.dumps({'project_id': project_name})
+                )
+        self.url = self.kappa_url + '/' + project_name
         return
 
     def dispatch(self, method, *args, **kwargs):
@@ -38,13 +52,7 @@ class KappaRuntime(object):
             raise AttributeError('Requests does not have method %s.' % method)
         resp = getattr(requests, method)(*args, **kwargs)
         if resp.status_code is not 200:
-            raise KappaRuntimeError(
-                resp.reason,
-                re.findall(
-                    'u?[\"\']text[\"\']: ?u?[\"\'](.*?)[\"\'],',
-                    resp.content
-                    )
-                )
+            raise KappaRuntimeError(resp)
         return resp
 
     def get_files(self):

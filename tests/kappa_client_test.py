@@ -4,7 +4,6 @@ import itertools
 from time import sleep
 from bioagents.legacy.kappa import kappa_client
 
-kappa = kappa_client.KappaRuntime()
 
 def _get_toy_model():
     fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -14,31 +13,48 @@ def _get_toy_model():
     return model
 
 
+def _get_kappa():
+    return kappa_client.KappaRuntime('test_project')
+
+
 kappa_model = _get_toy_model()
 
 
+def test_init_default():
+    kappa = kappa_client.KappaRuntime()
+
+
+def test_init_with_project():
+    kappa = _get_kappa()
+
+
 def test_version():
+    kappa = _get_kappa()
     version = kappa.version()
     assert(version is not None)
 
 
 def test_file_upload():
+    kappa = _get_kappa()
     kappa.add_file('test_model.ka')
     assert 'test_model.ka' in kappa.get_files(), "File not uploaded."
 
 
 def test_code_upload():
+    kappa = _get_kappa()
     original_files = kappa.get_files()
     kappa.add_code(kappa_model)
     assert len(original_files) < len(kappa.get_files()), "Code not added."
 
 
 def test_parse():
+    kappa = _get_kappa()
     res = kappa.compile(['test_model.ka'])
     print(res)
 
 
 def test_run_sim():
+    kappa = _get_kappa()
     kappa_params = {'code': kappa_model,
                     'plot_period': 100,
                     'max_time': 10000}

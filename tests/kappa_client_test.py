@@ -57,31 +57,28 @@ def test_run_sim():
     kappa = _get_kappa()
     kappa.compile(['test_model.ka'])
     print('Starting simulation')
-    sim_id = kappa.start(plot_period=100)
-    assert(sim_id is not None)
+    kappa.start(plot_period=100)
 
     print('Started simulation')
     while True:
         sleep(1)
         print('Checking status')
-        status = kappa.status(sim_id)
+        status = kappa.sim_status()
         print('Got status')
-        is_running = status.get('is_running')
+        is_running = status.get('simulation_progress_is_running')
         if not is_running:
             break
         else:
-            print(status.get('time_percentage'))
-    kappa_plot = status.get('plot')
-    values = kappa_plot['time_series']
-    values.sort(key = lambda x: x['observation_time'])
+            print(status.get('simulation_progress_time'))
+    kappa_plot = kappa.sim_plot()
+    values = kappa_plot['series']
     nt = len(values)
     obs_list = [str(l[1:-1]) for l in kappa_plot['legend']]
     yobs = numpy.ndarray(nt, list(zip(obs_list, itertools.repeat(float))))
 
     tspan = []
     for t, value in enumerate(values):
-        tspan.append(value['observation_time'])
+        tspan.append(value[0])
         for i, obs in enumerate(obs_list):
-            yobs[obs][t] = value['observation_values'][i]
+            yobs[obs][t] = value[1]
     print(tspan, yobs)
-

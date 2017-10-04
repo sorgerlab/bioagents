@@ -10,6 +10,9 @@ from datetime import datetime
 from time import sleep
 
 
+KAPPA_BASE = 'https://api.executableknowledge.org/kappa/v2'
+
+
 class KappaRuntimeError(Exception):
     def __init__(self, resp):
         self.error = resp.reason
@@ -36,14 +39,14 @@ class KappaRuntimeError(Exception):
 
 
 class KappaRuntime(object):
-    kappa_url = 'https://api.executableknowledge.org/kappa/v2/projects'
+    kappa_url = KAPPA_BASE + '/projects'
 
     def __init__(self, project_name='default'):
         """Create a Kappa client."""
         resp = self.dispatch('get', self.kappa_url)
         if resp.status_code is not 200:
             raise KappaRuntimeError(resp)
-        project_list = [t['project_id'] for t in resp.json()]
+        project_list = resp.json()
         if project_name is not 'default':
             if project_name in project_list:
                 resp = self.dispatch(
@@ -111,13 +114,10 @@ class KappaRuntime(object):
 
     def version(self):
         """Return the version of the Kappa environment."""
-        try:
-            res = self.dispatch('get', self.url)
-            content = res.json()
-            version = content.get('project_version')
-            return version
-        except Exception as e:
-            raise KappaRuntimeError(e)
+        res = self.dispatch('get', KAPPA_BASE)
+        content = res.json()
+        version = content.get('build')
+        return version
 
     def compile(self, fname_list=None, code_list=None):
         """Parse given Kappa files and any other files that have been added.
@@ -159,7 +159,7 @@ class KappaRuntime(object):
         """
         complete_params = {
             'plot_period': 10,
-            'pause_condition': '',
+            'pause_condition': '[false]',
             'seed': None,
             'store_trace': True
             }
@@ -167,88 +167,23 @@ class KappaRuntime(object):
         resp = self.dispatch('post', self.url + '/simulation', complete_params)
         return resp.json()
 
-    def stop(self, token):
-        """Stop a given simulation."""
-        method = "DELETE"
-        handler = urllib2.HTTPHandler()
-        opener = urllib2.build_opener(handler)
-        parse_url = "{0}/process/{1}".format(self.url,token)
-        request = urllib2.Request(parse_url)
-        request.get_method = lambda: method
-        try:
-            connection = opener.open(request)
-        except urllib2.HTTPError,e:
-            connection = e
-        except urllib2.URLError as e:
-            raise KappaRuntimeError(e.reason)
+    def _tell_sim(self, method, cmd):
+        return self.dispatch(method, self.url + '/simulation/%s' % cmd)
 
-        if connection.code == 200:
-            text = connection.read()
-            return None
-        elif connection.code == 400:
-            text = connection.read()
-            error_details = json.loads(text)
-            raise KappaRuntimeError(error_details)
-        else:
-            raise e
+    def pause_sim(self):
+        """Pause a given simulation."""
+        self._tell_sim('put', 'pause')
 
-    def status(self, token):
+    def continue_sim(self):
+        """Continue the pause simulation."""
+        self._tell_sim('put', 'continue')
+
+    def sim_status(self):
         """Return status of running simulation."""
-        try:
-            version_url = "{0}/process/{1}".format(self.url,token)
-            response = urllib2.urlopen(version_url)
-            text = response.read()
-            return json.loads(text)
-        except urllib2.HTTPError as e:
-            if e.code == 400:
-                error_details = json.loads(e.read())
-                raise KappaRuntimeError(error_details)
-            else:
-                raise e
-        except urllib2.URLError as e:
-            KappaRuntimeError(e.reason)
+        resp = self.dispatch('get', self.url + '/simulation')
+        return json.loads(resp.content)
 
-    def shutdown(self,key):
-        """Shutdown the server."""
-        method = "POST"
-        handler = urllib2.HTTPHandler()
-        opener = urllib2.build_opener(handler)
-        parse_url = "{0}/shutdown".format(self.url)
-        request = urllib2.Request(parse_url, data=key)
-        request.get_method = lambda: method
-        try:
-            connection = opener.open(request)
-        except urllib2.HTTPError,e:
-            connection = e
-        except urllib2.URLError as e:
-            raise KappaRuntimeError(e.reason)
-        if connection.code == 200:
-            text = connection.read()
-            return text
-        elif connection.code == 400:
-            text = connection.read()
-            raise KappaRuntimeError(text)
-        elif connection.code == 401:
-            text = connection.read()
-            raise KappaRuntimeError(text)
-        else:
-            raise e
-
-
-if __name__ == "__main__":
-    with open("../abc-pert.ka") as f:
-        try:
-            subprocess.Popen('../WebSim.native --shutdown-key 6666 --port 6666'.split())
-            sleep(1)
-            data = f.read()
-            runtime = KappaRuntime("http://localhost:6666")
-            token = runtime.start({ 'code': data
-                                  , 'nb_plot': 10
-                                  , 'max_events' : 10000 })
-            sleep(10)
-            status = runtime.status(token)
-            print status
-            #print render_status(status).toString()
-            print runtime.shutdown('6666')
-        except KappaRuntimeError as e:
-            print e.errors
+    def sim_plot(self):
+        """Get the data from the simulation."""
+        resp = self._tell_sim('get', 'plot')
+        return json.loads(resp.content)

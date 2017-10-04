@@ -2,8 +2,11 @@
 
 import urllib2
 import json
+import os
 import re
 import requests
+import pickle
+from datetime import datetime
 from time import sleep
 
 
@@ -14,6 +17,15 @@ class KappaRuntimeError(Exception):
             'u?[\"\']text[\"\']: ?u?[\"\'](.*?)[\"\'],',
             resp.content
             )
+        try:
+            now = datetime.now()
+            pkl_name = '%s_err_resp.pkl' % now.strftime('%Y%m%d-%H%M%S')
+            with open(pkl_name, 'wb') as f:
+                pickle.dump(resp, f, protocol=2)
+            print("Pickled response for further analysis.")
+            print("See %s" % os.path.abspath(pkl_name))
+        except Exception:
+            print("Failed to pickle response for further analysis.")
         return
 
     def __str__(self):
@@ -41,16 +53,18 @@ class KappaRuntime(object):
             resp = self.dispatch(
                 'post',
                 self.kappa_url,
-                data=json.dumps({'project_id': project_name})
+                {'project_id': project_name}
                 )
         self.url = self.kappa_url + '/' + project_name
         return
 
-    def dispatch(self, method, *args, **kwargs):
+    def dispatch(self, method, url, data=None):
         """Send a request of type method to the project."""
         if not hasattr(requests, method):
             raise AttributeError('Requests does not have method %s.' % method)
-        resp = getattr(requests, method)(*args, **kwargs)
+        if data is not None:
+            data = json.dumps(data).encode('utf8')
+        resp = getattr(requests, method)(url, data=data)
         if resp.status_code is not 200:
             raise KappaRuntimeError(resp)
         return resp
@@ -92,7 +106,7 @@ class KappaRuntime(object):
                 },
             'content': code_str
             }
-        self.dispatch('post', self.url + '/files', data=json.dumps(file_data))
+        self.dispatch('post', self.url + '/files', file_data)
         return
 
     def version(self):
@@ -121,42 +135,37 @@ class KappaRuntime(object):
             self.add_file(fname)
         for code_str in [] if code_list is None else code_list:
             self.add_code(code_str)
-        data = json.dumps([]).encode('utf8')
-        res = self.dispatch('post', self.url + '/parse', data=data)
-        if res.status_code is not 200:
-            pass
+        res = self.dispatch('post', self.url + '/parse', [])
         content = res.json()
         return content
 
-    def start(self, parameter):
-        """Start a simulation with given parameters."""
-        if 'max_time' not in parameter:
-            parameter['max_time'] = None
-        if not 'max_events' in parameter:
-            parameter['max_events'] = None
-        code = json.dumps(parameter)
-        method = "POST"
-        handler = urllib2.HTTPHandler()
-        opener = urllib2.build_opener(handler)
-        parse_url = "{0}/process".format(self.url)
-        request = urllib2.Request(parse_url, data=code)
-        request.get_method = lambda: method
-        try:
-            connection = opener.open(request)
-        except urllib2.HTTPError,e:
-            connection = e
-        except urllib2.URLError as e:
-            raise KappaRuntimeError(e.reason)
+    def start(self, **parameters):
+        """Start a simulation with given parameters.
 
-        if connection.code == 200:
-            text = connection.read()
-            return int(json.loads(text))
-        elif connection.code == 400:
-            text = connection.read()
-            error_details = json.loads(text)
-            raise KappaRuntimeError(error_details)
-        else:
-            raise e
+        Note that parameters are subject to changes in the kappa remote api.
+
+        Parameters
+        ----------
+        plot_period : int or float
+            The period of the plot perhaps?
+        pause_condition : string or None
+            I'm sure there are some options for this, but I have no idea what
+            they are. Default None
+        seed: int
+            A random seed for the simulation, I expect.
+        store_trace : bool
+            Presumably you can choose whether to store the trace. Hopefully
+            interpretation is straightforward. Default True.
+        """
+        complete_params = {
+            'plot_period': 10,
+            'pause_condition': '',
+            'seed': None,
+            'store_trace': True
+            }
+        complete_params.update(parameters)
+        resp = self.dispatch('post', self.url + '/simulation', complete_params)
+        return resp.json()
 
     def stop(self, token):
         """Stop a given simulation."""

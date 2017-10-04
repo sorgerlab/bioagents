@@ -55,11 +55,9 @@ def test_parse():
 
 def test_run_sim():
     kappa = _get_kappa()
-    kappa_params = {'code': kappa_model,
-                    'plot_period': 100,
-                    'max_time': 10000}
+    kappa.compile(['test_model.ka'])
     print('Starting simulation')
-    sim_id = kappa.start(kappa_params)
+    sim_id = kappa.start(plot_period=100)
     assert(sim_id is not None)
 
     print('Started simulation')

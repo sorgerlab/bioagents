@@ -327,7 +327,7 @@ def get_sim_result(kappa_plot):
     for i, value in enumerate(values):
         tspan.append(value[i_t])
         for j, obs in enumerate(obs_list):
-            yobs[obs][i] = value[j]
+            yobs[obs][i] = value[j + 1]
     return (tspan, yobs)
 
 

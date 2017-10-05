@@ -29,6 +29,10 @@ class QCA_Module(Bioagent):
 
     def respond_find_qca_path(self, content):
         """Response content to find-qca-path request"""
+        if self.qca.ndex is None:
+            reply = self.make_failure('SERVICE_UNAVAILABLE')
+            return reply
+
         source_arg = content.gets('SOURCE')
         target_arg = content.gets('TARGET')
         reltype_arg = content.get('RELTYPE')

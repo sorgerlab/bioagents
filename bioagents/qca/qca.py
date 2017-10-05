@@ -88,7 +88,12 @@ class QCA:
         # list of query dicts
         self.queries = []
 
-        self.ndex = nc.Ndex(host=self.host)
+        try:
+            self.ndex = nc.Ndex(host=self.host)
+        except Exception as e:
+            logger.error('QCA could not connect to %s' % self.host)
+            logger.error(e)
+            self.ndex = None
 
     def find_causal_path(self, source_names, target_names,
                          exit_on_found_path=False, relation_types=None):

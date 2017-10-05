@@ -5,7 +5,7 @@ from kqml import KQMLList, KQMLPerformative
 from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
 from indra.sources.trips import processor as trips_processor
-from bioagents.tra.tra import *
+from bioagents.tra.tra import TRA, SimulatorError, tra_molecule, tra_time
 from bioagents.tra import kappa_client
 from bioagents import Bioagent, BioagentException
 
@@ -15,47 +15,33 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('TRA')
 
 
-class NoKappaError(BioagentException):
-    "This exists only while the kappa module is being updated."
-    def __init__(self):
-        super(NoKappaError).__init__(self, "Kappa currently unavailable.")
-
-
 class TRA_Module(Bioagent):
     name = "TRA"
     tasks = ['SATISFIES-PATTERN']
 
     def __init__(self, **kwargs):
-        kappa_url = None
-        if 'argv' in kwargs.keys():
-            argv = kwargs['argv']
-            opt_str = '--kappa_url'
-            if opt_str in argv:
-                idx = argv.index(opt_str)
-                argv.pop(idx)
-                kappa_url = argv.pop(idx)
-        if kappa_url is not None:
-            self.kappa_url = kappa_url
-        else:
-            logger.error('No Kappa URL given.')
-            self.kappa_url = None
-            self.ode_mode = True
+        use_kappa = True
+        if 'argv' in kwargs.keys() and '--no_kappa' in kwargs['argv']:
+            use_kappa = False
+
         # Instantiate a singleton TRA agent
-        if self.kappa_url:
+        self.ode_mode = True
+        if use_kappa:
             try:
-                kappa = kappa_client.KappaRuntime(self.kappa_url)
+                kappa = kappa_client.KappaRuntime('TRA_modelling')
                 self.ode_mode = False
             except Exception as e:
                 logger.error('Could not instantiate TRA with Kappa service.')
-                logger.error(e)
-                self.ode_mode = True
-        self.ode_mode = True
+                logger.exception(e)
+        else:
+            logger.warning('You have chose to not use Kappa.')
+
         if not self.ode_mode:
             self.tra = TRA(kappa)
         else:
             self.tra = TRA()
 
-        super(TRA_Module, self).__init__(**kwargs)
+        return super(TRA_Module, self).__init__(**kwargs)
 
     def respond_satisfies_pattern(self, content):
         """Return response content to satisfies-pattern request."""
@@ -66,22 +52,22 @@ class TRA_Module(Bioagent):
         try:
             model = assemble_model(model_indra_str)
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
             reply_content = self.make_failure('INVALID_MODEL')
             return reply_content
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
-        except InvalidTimeIntervalError as e:
-            logger.error(e)
+        except tra_time.InvalidIntervalError as e:
+            logger.exception(e)
             reply_content = self.make_failure('INVALID_TIME_LIMIT')
             return reply_content
-        except InvalidTemporalPatternError as e:
-            logger.error(e)
+        except tra_time.InvalidPatternError as e:
+            logger.exception(e)
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
-        except InvalidMolecularEntityError as e:
-            logger.error(e)
+        except tra_molecule.InvalidEntityError as e:
+            logger.exception(e)
             reply_content = self.make_failure('INVALID_ENTITY_DESCRIPTION')
             return reply_content
 
@@ -94,7 +80,7 @@ class TRA_Module(Bioagent):
                     condition = get_molecular_condition(condition_lst)
                     conditions.append(condition)
             except Exception as e:
-                logger.error(e)
+                logger.exception(e)
                 reply_content = self.make_failure('INVALID_CONDITIONS')
                 return reply_content
 
@@ -102,11 +88,11 @@ class TRA_Module(Bioagent):
             sat_rate, num_sim, suggestion, fig_path = \
                 self.tra.check_property(model, pattern, conditions)
         except SimulatorError as e:
-            logger.error(e)
+            logger.exception(e)
             reply_content = self.make_failure('KAPPA_FAILURE')
             return reply_content
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
 
@@ -158,7 +144,7 @@ def get_molecular_entity(lst):
         agent = tp._get_agent_by_id(term_id, None)
         return agent
     except Exception as e:
-        raise InvalidMolecularEntityError(e)
+        raise tra_molecule.InvalidEntityError(e)
 
 
 def get_molecular_quantity(lst):
@@ -169,9 +155,9 @@ def get_molecular_quantity(lst):
             unit = lst.gets('unit')
         else:
             unit = None
-        return MolecularQuantity(quant_type, value, unit)
+        return tra_molecule.Quantity(quant_type, value, unit)
     except Exception as e:
-        raise InvalidMolecularQuantityError(e)
+        raise tra_molecule.InvalidQuantityError(e)
 
 
 def get_molecular_quantity_ref(lst):
@@ -179,9 +165,9 @@ def get_molecular_quantity_ref(lst):
         quant_type = lst.gets('type')
         entity_lst = lst.get('entity')
         entity = get_molecular_entity(entity_lst)
-        return MolecularQuantityReference(quant_type, entity)
+        return tra_molecule.QuantityReference(quant_type, entity)
     except Exception as e:
-        raise InvalidMolecularQuantityRefError(e)
+        raise tra_molecule.InvalidQuantityRefError(e)
 
 
 def get_time_interval(lst):
@@ -189,9 +175,9 @@ def get_time_interval(lst):
         lb = lst.gets('lower-bound')
         ub = lst.gets('upper-bound')
         unit = lst.gets('unit')
-        return TimeInterval(lb, ub, unit)
+        return tra_time.Interval(lb, ub, unit)
     except Exception as e:
-        raise InvalidTimeIntervalError(e)
+        raise tra_time.InvalidIntervalError(e)
 
 
 def get_temporal_pattern(lst):
@@ -214,7 +200,7 @@ def get_temporal_pattern(lst):
         value = get_molecular_quantity(value_lst)
     else:
         value = None
-    tp = TemporalPattern(pattern_type, entities, time_limit, value=value)
+    tp = tra_time.Pattern(pattern_type, entities, time_limit, value=value)
     return tp
 
 
@@ -229,9 +215,9 @@ def get_molecular_condition(lst):
             value = lst.gets('value')
         else:
             value = None
-        return MolecularCondition(condition_type, quantity, value)
+        return tra_molecule.Condition(condition_type, quantity, value)
     except Exception as e:
-        raise InvalidMolecularConditionError(e)
+        raise tra_molecule.InvalidConditionError(e)
 
 
 class InvalidModelDescriptionError(BioagentException):

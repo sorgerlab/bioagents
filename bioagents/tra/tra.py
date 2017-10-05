@@ -4,7 +4,6 @@ import logging
 import itertools
 from time import sleep
 from copy import deepcopy
-from collections import defaultdict
 import sympy.physics.units as units
 import indra.statements as ist
 import indra.assemblers.pysb_assembler as pa
@@ -23,7 +22,7 @@ logger = logging.getLogger('TRA')
 
 
 class TRA(object):
-    def __init__(self, kappa):
+    def __init__(self, kappa=None):
         if kappa is None:
             self.ode_mode = True
             logger.info('Using ODE mode in TRA.')
@@ -148,7 +147,7 @@ class TRA(object):
             except Exception as e:
                 logger.exception(e)
                 msg = 'Applying molecular condition failed.'
-                raise InvalidMolecularConditionError(msg)
+                raise tra_molecule.InvalidConditionError(msg)
             # Run a simulation
             logger.info('Starting simulation %d' % (i+1))
             if not self.ode_mode:
@@ -226,7 +225,7 @@ def get_ltl_from_pattern(pattern, obs):
         if not pattern.value.quant_type == 'qualitative':
             msg = 'Cannot handle always value of "%s" type.' % \
                 pattern.value.quant_type
-            raise InvalidTemporalPatternError(msg)
+            raise tra_time.InvalidPatternError(msg)
         if pattern.value.value == 'low':
             val = 0
         elif pattern.value.value == 'high':
@@ -234,13 +233,13 @@ def get_ltl_from_pattern(pattern, obs):
         else:
             msg = 'Cannot handle always value of "%s".' % \
                 pattern.value.value
-            raise InvalidTemporalPatternError(msg)
+            raise tra_time.InvalidPatternError(msg)
         fstr = mc.always_formula(obs.name, val)
     elif pattern.pattern_type == 'eventual_value':
         if not pattern.value.quant_type == 'qualitative':
             msg = 'Cannot handle eventual value of "%s" type.' % \
                 pattern.value.quant_type
-            raise InvalidTemporalPatternError(msg)
+            raise tra_time.InvalidPatternError(msg)
         if pattern.value.value == 'low':
             val = 0
         elif pattern.value.value == 'high':
@@ -248,13 +247,13 @@ def get_ltl_from_pattern(pattern, obs):
         else:
             msg = 'Cannot handle eventual value of "%s".' % \
                 pattern.value.value
-            raise InvalidTemporalPatternError(msg)
+            raise tra_time.InvalidPatternError(msg)
         fstr = mc.eventual_formula(obs.name, val)
     elif pattern.pattern_type == 'sometime_value':
         if not pattern.value.quant_type == 'qualitative':
             msg = 'Cannot handle sometime value of "%s" type.' % \
                 pattern.value.quant_type
-            raise InvalidTemporalPatternError(msg)
+            raise tra_time.InvalidPatternError(msg)
         if pattern.value.value == 'low':
             val = 0
         elif pattern.value.value == 'high':
@@ -262,11 +261,11 @@ def get_ltl_from_pattern(pattern, obs):
         else:
             msg = 'Cannot handle sometime value of "%s".' % \
                 pattern.value.value
-            raise InvalidTemporalPatternError(msg)
+            raise tra_errors.InvalidTemporalPatternError(msg)
         fstr = mc.sometime_formula(obs.name, val)
     else:
         msg = 'Unknown pattern %s' % pattern.pattern_type
-        raise InvalidTemporalPatternError(msg)
+        raise tra_time.InvalidPatternError(msg)
     return fstr
 
 
@@ -358,174 +357,176 @@ def get_all_patterns(obs_name):
     return patterns
 
 
-class TemporalPattern(object):
-    def __init__(self, pattern_type, entities, time_limit, *args, **kwargs):
-        self.pattern_type = pattern_type
-        self.entities = entities
-        self.time_limit = time_limit
-        # TODO: handle extra arguments by pattern type
-        if self.pattern_type in \
-           ('always_value', 'eventual_value', 'sometime_value'):
-            value = kwargs.get('value')
-            if value is None:
-                msg = 'Missing molecular quantity'
-                raise InvalidTemporalPatternError(msg)
-            self.value = value
-
-
-class MolecularCondition(object):
-    def __init__(self, condition_type, quantity, value=None):
-        if isinstance(quantity, MolecularQuantityReference):
-            self.quantity = quantity
-        else:
-            msg = 'Invalid molecular quantity reference'
-            raise InvalidMolecularConditionError(msg)
-        if condition_type == 'exact':
-            if isinstance(value, MolecularQuantity):
+class tra_time:
+    class Pattern(object):
+        def __init__(self, pattern_type, entities, time_limit, **kwargs):
+            self.pattern_type = pattern_type
+            self.entities = entities
+            self.time_limit = time_limit
+            # TODO: handle extra arguments by pattern type
+            if self.pattern_type in \
+               ('always_value', 'eventual_value', 'sometime_value'):
+                value = kwargs.get('value')
+                if value is None:
+                    msg = 'Missing molecular quantity'
+                    raise tra_time.InvalidPatternError(msg)
                 self.value = value
+
+    class InvalidPatternError(BioagentException):
+        pass
+
+    class Interval(object):
+        def __init__(self, lb, ub, unit):
+            if unit == 'day':
+                sym_unit = units.day
+            elif unit == 'hour':
+                sym_unit = units.hour
+            elif unit == 'minute':
+                sym_unit = units.minute
+            elif unit == 'second':
+                sym_unit = units.second
             else:
-                msg = 'Invalid molecular condition value'
-                raise InvalidMolecularConditionError(msg)
-        elif condition_type == 'multiple':
-            try:
-                value_num = float(value)
-                if value_num < 0:
-                    raise ValueError('Negative molecular quantity not allowed')
-            except ValueError as e:
-                raise InvalidMolecularConditionError(e)
-            self.value = value_num
-        elif condition_type in ['increase', 'decrease']:
-            self.value = None
-        else:
-            msg = 'Unknown condition type: %s' % condition_type
-            raise InvalidMolecularConditionError(msg)
-        self.condition_type = condition_type
-
-
-class MolecularQuantity(object):
-    def __init__(self, quant_type, value, unit=None):
-        if quant_type == 'concentration':
-            try:
-                value_num = float(value)
-            except ValueError:
-                msg = 'Invalid concentration value %s' % value
-                raise InvalidMolecularQuantityError(msg)
-            if unit == 'mM':
-                sym_value = value_num * units.milli * units.mol / units.liter
-            elif unit == 'uM':
-                sym_value = value_num * units.micro * units.mol / units.liter
-            elif unit == 'nM':
-                sym_value = value_num * units.nano * units.mol / units.liter
-            elif unit == 'pM':
-                sym_value = value_num * units.pico * units.mol / units.liter
+                raise tra_time.InvalidIntervalError(
+                    'Invalid unit %s' % unit
+                    )
+            if lb is not None:
+                try:
+                    lb_num = float(lb)
+                except ValueError:
+                    raise tra_time.InvalidIntervalError(
+                        'Bad bound %s' % lb
+                        )
+                self.lb = lb_num * sym_unit
             else:
-                msg = 'Invalid unit %s' % unit
-                raise InvalidMolecularQuantityError(msg)
-            self.value = sym_value
-        elif quant_type == 'number':
-            try:
-                value_num = int(value)
-                if value_num < 0:
-                    raise ValueError
-            except ValueError:
-                msg = 'Invalid molecule number value %s' % value
-                raise InvalidMolecularQuantityError(msg)
-            self.value = value_num
-        elif quant_type == 'qualitative':
-            if value in ['low', 'high']:
-                self.value = value
+                self.lb = None
+            if ub is not None:
+                try:
+                    ub_num = float(ub)
+                except ValueError:
+                    raise tra_time.InvalidIntervalError(
+                        'Bad bound %s' % ub
+                        )
+                self.ub = ub_num * sym_unit
             else:
-                msg = 'Invalid qualitative quantity value %s' % value
-                raise InvalidMolecularQuantityError(msg)
-        else:
-            raise InvalidMolecularQuantityError('Invalid quantity type %s' %
-                                                quant_type)
-        self.quant_type = quant_type
+                self.ub = None
+
+        def _convert_to_sec(self, val):
+            if val is not None:
+                try:
+                    # sympy >= 1.1
+                    return units.convert_to(val, units.seconds).args[0]
+                except Exception:
+                    # sympy < 1.1
+                    return val / units.seconds
+            return None
+
+        def get_lb_seconds(self):
+            return self._convert_to_sec(self.lb)
+
+        def get_ub_seconds(self):
+            return self._convert_to_sec(self.ub)
+
+    class InvalidIntervalError(BioagentException):
+        pass
 
 
-class MolecularQuantityReference(object):
-    def __init__(self, quant_type, entity):
-        if quant_type in ['total', 'initial']:
+class tra_molecule:
+    class Condition(object):
+        def __init__(self, condition_type, quantity, value=None):
+            if isinstance(quantity, tra_molecule.QuantityReference):
+                self.quantity = quantity
+            else:
+                msg = 'Invalid molecular quantity reference'
+                raise tra_molecule.InvalidConditionError(msg)
+            if condition_type == 'exact':
+                if isinstance(value, tra_molecule.Quantity):
+                    self.value = value
+                else:
+                    msg = 'Invalid molecular condition value'
+                    raise tra_molecule.InvalidConditionError(msg)
+            elif condition_type == 'multiple':
+                try:
+                    value_num = float(value)
+                    if value_num < 0:
+                        raise ValueError(
+                            'Negative molecular quantity not allowed'
+                            )
+                except ValueError as e:
+                    raise tra_molecule.InvalidConditionError(e)
+                self.value = value_num
+            elif condition_type in ['increase', 'decrease']:
+                self.value = None
+            else:
+                msg = 'Unknown condition type: %s' % condition_type
+                raise tra_molecule.InvalidConditionError(msg)
+            self.condition_type = condition_type
+
+    class Quantity(object):
+        def __init__(self, quant_type, value, unit=None):
+            if quant_type == 'concentration':
+                try:
+                    val = float(value)
+                except ValueError:
+                    msg = 'Invalid concentration value %s' % value
+                    raise tra_molecule.InvalidQuantityError(msg)
+                if unit == 'mM':
+                    sym_value = val * units.milli * units.mol / units.liter
+                elif unit == 'uM':
+                    sym_value = val * units.micro * units.mol / units.liter
+                elif unit == 'nM':
+                    sym_value = val * units.nano * units.mol / units.liter
+                elif unit == 'pM':
+                    sym_value = val * units.pico * units.mol / units.liter
+                else:
+                    msg = 'Invalid unit %s' % unit
+                    raise tra_molecule.InvalidQuantityError(msg)
+                self.value = sym_value
+            elif quant_type == 'number':
+                try:
+                    val = int(value)
+                    if val < 0:
+                        raise ValueError
+                except ValueError:
+                    msg = 'Invalid molecule number value %s' % value
+                    raise tra_molecule.InvalidQuantityError(msg)
+                self.value = val
+            elif quant_type == 'qualitative':
+                if value in ['low', 'high']:
+                    self.value = value
+                else:
+                    msg = 'Invalid qualitative quantity value %s' % value
+                    raise tra_molecule.InvalidQuantityError(msg)
+            else:
+                raise tra_molecule.InvalidQuantityError(
+                    'Invalid quantity type %s' % quant_type
+                    )
             self.quant_type = quant_type
-        else:
-            msg = 'Unknown quantity type %s' % quant_type
-            raise InvalidMolecularQuantityRefError(msg)
-        if not isinstance(entity, ist.Agent):
-            msg = 'Invalid molecular Agent'
-            raise InvalidMolecularQuantityRefError(msg)
-        else:
-            self.entity = entity
 
+    class QuantityReference(object):
+        def __init__(self, quant_type, entity):
+            if quant_type in ['total', 'initial']:
+                self.quant_type = quant_type
+            else:
+                msg = 'Unknown quantity type %s' % quant_type
+                raise tra_molecule.InvalidQuantityRefError(msg)
+            if not isinstance(entity, ist.Agent):
+                msg = 'Invalid molecular Agent'
+                raise tra_molecule.InvalidQuantityRefError(msg)
+            else:
+                self.entity = entity
 
-class TimeInterval(object):
-    def __init__(self, lb, ub, unit):
-        if unit == 'day':
-            sym_unit = units.day
-        elif unit == 'hour':
-            sym_unit = units.hour
-        elif unit == 'minute':
-            sym_unit = units.minute
-        elif unit == 'second':
-            sym_unit = units.second
-        else:
-            raise InvalidTimeIntervalError('Invalid unit %s' % unit)
-        if lb is not None:
-            try:
-                lb_num = float(lb)
-            except ValueError:
-                raise InvalidTimeIntervalError('Invalid bound %s' % lb)
-            self.lb = lb_num * sym_unit
-        else:
-            self.lb = None
-        if ub is not None:
-            try:
-                ub_num = float(ub)
-            except ValueError:
-                raise InvalidTimeIntervalError('Invalid bound %s' % ub)
-            self.ub = ub_num * sym_unit
-        else:
-            self.ub = None
+    class InvalidQuantityError(BioagentException):
+        pass
 
-    def _convert_to_sec(self, val):
-        if val is not None:
-            try:
-                # sympy >= 1.1
-                return units.convert_to(val, units.seconds).args[0]
-            except Exception:
-                # sympy < 1.1
-                return val / units.seconds
-        return None
+    class InvalidQuantityRefError(BioagentException):
+        pass
 
-    def get_lb_seconds(self):
-        return self._convert_to_sec(self.lb)
+    class InvalidEntityError(BioagentException):
+        pass
 
-    def get_ub_seconds(self):
-        return self._convert_to_sec(self.ub)
-
-
-class InvalidMolecularQuantityError(BioagentException):
-    pass
-
-
-class InvalidMolecularQuantityRefError(BioagentException):
-    pass
-
-
-class InvalidMolecularEntityError(BioagentException):
-    pass
-
-
-class InvalidMolecularConditionError(BioagentException):
-    pass
-
-
-class InvalidTemporalPatternError(BioagentException):
-    pass
-
-
-class InvalidTimeIntervalError(BioagentException):
-    pass
+    class InvalidConditionError(BioagentException):
+        pass
 
 
 class SimulatorError(BioagentException):
-    pass
+        pass

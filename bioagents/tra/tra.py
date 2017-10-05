@@ -161,7 +161,7 @@ class TRA(object):
                 tspan, yobs = self.simulate_odes(model_sim, max_time,
                                                  plot_period)
             # Get and plot observable
-            yobs_from_min = yobs[min_time_idx:]
+            yobs_from_min = yobs[min(min_time_idx, len(yobs)):]
             results.append(yobs_from_min)
         return tspan, results
 
@@ -184,7 +184,7 @@ class TRA(object):
         # Export kappa model
         kappa_model = pysb_to_kappa(model_sim)
         # Start simulation
-        self.kappa.submit(code_list=[kappa_model])
+        self.kappa.compile(code_list=[kappa_model])
         self.kappa.start(
             plot_period=plot_period,
             pause_condition="[T] > %d" % max_time
@@ -202,6 +202,7 @@ class TRA(object):
                         status_json.get('simulation_progress_time_percentage')
                         )
         tspan, yobs = get_sim_result(self.kappa.sim_plot())
+        self.kappa.renew()
         return tspan, yobs
 
     def simulate_odes(self, model_sim, max_time, plot_period):
@@ -261,7 +262,7 @@ def get_ltl_from_pattern(pattern, obs):
         else:
             msg = 'Cannot handle sometime value of "%s".' % \
                 pattern.value.value
-            raise tra_errors.InvalidTemporalPatternError(msg)
+            raise tra_time.InvalidPatternError(msg)
         fstr = mc.sometime_formula(obs.name, val)
     else:
         msg = 'Unknown pattern %s' % pattern.pattern_type
@@ -317,8 +318,10 @@ def get_sim_result(kappa_plot):
     i_t = kappa_plot['legend'].index('[T]')
     values.sort(key=lambda x: x[i_t])
     nt = len(values)
-    obs_list = [key for key in kappa_plot['legend'] if key != '[T]']
-    yobs = numpy.ndarray(nt, list(zip(obs_list, itertools.repeat(float))))
+    obs_list = [
+        key.encode('utf8') for key in kappa_plot['legend'] if key != '[T]'
+        ]
+    yobs = numpy.ndarray(nt, zip(obs_list, [float]*len(obs_list)))
 
     tspan = []
     for i, value in enumerate(values):

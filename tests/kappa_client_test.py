@@ -2,7 +2,7 @@ import os
 import numpy
 import itertools
 from time import sleep
-from bioagents.legacy.kappa import kappa_client
+from bioagents.tra import kappa_client
 
 
 TEST_MODEL_FILE = os.path.join(os.path.dirname(__file__), 'test_model.ka')

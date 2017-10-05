@@ -43,22 +43,28 @@ class KappaRuntime(object):
 
     def __init__(self, project_name='default'):
         """Create a Kappa client."""
+        self.project_name = project_name
+        self.renew()
+        self.url = self.kappa_url + '/' + project_name
+        return
+
+    def renew(self):
+        """Method to recreate the project, removing anything that was there."""
         resp = self.dispatch('get', self.kappa_url)
         if resp.status_code is not 200:
             raise KappaRuntimeError(resp)
         project_list = resp.json()
-        if project_name is not 'default':
-            if project_name in project_list:
+        if self.project_name is not 'default':
+            if self.project_name in project_list:
                 resp = self.dispatch(
                     'delete',
-                    self.kappa_url + '/' + project_name
+                    self.kappa_url + '/' + self.project_name
                     )
             resp = self.dispatch(
                 'post',
                 self.kappa_url,
-                {'project_id': project_name}
+                {'project_id': self.project_name}
                 )
-        self.url = self.kappa_url + '/' + project_name
         return
 
     def dispatch(self, method, url, data=None):

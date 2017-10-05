@@ -21,8 +21,11 @@ class TRA_Module(Bioagent):
 
     def __init__(self, **kwargs):
         use_kappa = True
-        if 'argv' in kwargs.keys() and '--no_kappa' in kwargs['argv']:
+        if (('argv' in kwargs.keys() and '--no_kappa' in kwargs['argv'])
+           or ('no_kappa' in kwargs.keys() and kwargs['no_kappa'])):
             use_kappa = False
+            if 'no_kappa' in kwargs.keys():
+                kwargs.pop('no_kappa')
 
         # Instantiate a singleton TRA agent
         self.ode_mode = True

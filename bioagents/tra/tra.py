@@ -14,6 +14,7 @@ from pysb.export.kappa import KappaExporter
 import model_checker as mc
 import matplotlib
 from bioagents import BioagentException
+from bioagents.tra.kappa_client import KappaRuntimeError
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -25,23 +26,20 @@ class TRA(object):
     def __init__(self, kappa):
         if kappa is None:
             self.ode_mode = True
+            logger.info('Using ODE mode in TRA.')
         else:
             self.ode_mode = False
-        if not self.ode_mode:
             self.kappa = kappa
             try:
                 kappa_ver = kappa.version()
-                if kappa_ver is None or kappa_ver.get('version_id') is None:
-                    raise SimulatorError('Invalid Kappa client.')
-                logger.info('Using kappa version %s / build %s' %
-                            (kappa_ver.get('version_id'),
-                             kappa_ver.get('version_build')))
-            except Exception as e:
+                logger.info(
+                    'Using kappa build %s' % kappa_ver
+                    )
+            except KappaRuntimeError as e:
                 logger.error('Could not get Kappa version.')
-                logger.error('Kappa error was: %s' % e)
+                logger.exception(e)
                 self.ode_mode = True
-        if self.ode_mode:
-            logger.info('Using ODE mode in TRA.')
+        return
 
     def check_property(self, model, pattern, conditions=None):
         # TODO: handle multiple entities (observables) in pattern
@@ -148,7 +146,7 @@ class TRA(object):
             try:
                 model_sim = self.condition_model(model, conditions)
             except Exception as e:
-                logger.error(e)
+                logger.exception(e)
                 msg = 'Applying molecular condition failed.'
                 raise InvalidMolecularConditionError(msg)
             # Run a simulation
@@ -158,7 +156,7 @@ class TRA(object):
                     tspan, yobs = self.simulate_kappa(model_sim, max_time,
                                                       plot_period)
                 except Exception as e:
-                    logger.error(e)
+                    logger.exception(e)
                     raise SimulatorError('Kappa simulation failed.')
             else:
                 tspan, yobs = self.simulate_odes(model_sim, max_time,
@@ -187,21 +185,24 @@ class TRA(object):
         # Export kappa model
         kappa_model = pysb_to_kappa(model_sim)
         # Start simulation
-        kappa_params = {'code': kappa_model,
-                        'plot_period': plot_period,
-                        'max_time': max_time}
-        sim_id = self.kappa.start(kappa_params)
+        self.kappa.submit(code_list=[kappa_model])
+        self.kappa.start(
+            plot_period=plot_period,
+            pause_condition="[T] > %d" % max_time
+            )
         while True:
             sleep(0.2)
-            status = self.kappa.status(sim_id)
-            is_running = status.get('is_running')
+            status_json = self.kappa.sim_status()
+            is_running = status_json.get('simulation_progress_is_running')
             if not is_running:
                 break
             else:
-                if status.get('time_percentage') is not None:
-                    logger.info('Sim time percentage: %d' %
-                                  status.get('time_percentage'))
-        tspan, yobs = get_sim_result(status.get('plot'))
+                if status_json.get('time_percentage') is not None:
+                    logger.info(
+                        'Sim time percentage: %d' %
+                        status_json.get('simulation_progress_time_percentage')
+                        )
+        tspan, yobs = get_sim_result(self.kappa.sim_plot())
         return tspan, yobs
 
     def simulate_odes(self, model_sim, max_time, plot_period):
@@ -313,17 +314,18 @@ def pysb_to_kappa(model):
 
 
 def get_sim_result(kappa_plot):
-    values = kappa_plot['time_series']
-    values.sort(key=lambda x: x['observation_time'])
+    values = kappa_plot['series']
+    i_t = kappa_plot['legend'].index('[T]')
+    values.sort(key=lambda x: x[i_t])
     nt = len(values)
-    obs_list = [str(l[1:-1]) for l in kappa_plot['legend']]
+    obs_list = [key for key in kappa_plot['legend'] if key != '[T]']
     yobs = numpy.ndarray(nt, list(zip(obs_list, itertools.repeat(float))))
 
     tspan = []
-    for t, value in enumerate(values):
-        tspan.append(value['observation_time'])
-        for i, obs in enumerate(obs_list):
-            yobs[obs][t] = value['observation_values'][i]
+    for i, value in enumerate(values):
+        tspan.append(value[i_t])
+        for j, obs in enumerate(obs_list):
+            yobs[obs][i] = value[j]
     return (tspan, yobs)
 
 

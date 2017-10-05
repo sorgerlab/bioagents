@@ -6,7 +6,7 @@ from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra.tra import *
-from bioagents.legacy.kappa import kappa_client
+from bioagents.tra import kappa_client
 from bioagents import Bioagent, BioagentException
 
 # This version of logging is coming from tra...
@@ -26,8 +26,6 @@ class TRA_Module(Bioagent):
     tasks = ['SATISFIES-PATTERN']
 
     def __init__(self, **kwargs):
-        '''
-        TEMPORARILY DISABLED WHILE KAPPA CLIENT IS UPDATED
         kappa_url = None
         if 'argv' in kwargs.keys():
             argv = kwargs['argv']
@@ -51,12 +49,11 @@ class TRA_Module(Bioagent):
                 logger.error('Could not instantiate TRA with Kappa service.')
                 logger.error(e)
                 self.ode_mode = True
-        '''
         self.ode_mode = True
         if not self.ode_mode:
-            raise NoKappaError()  # self.tra = TRA(kappa)
+            self.tra = TRA(kappa)
         else:
-            self.tra = TRA(None)
+            self.tra = TRA()
 
         super(TRA_Module, self).__init__(**kwargs)
 

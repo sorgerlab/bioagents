@@ -2,7 +2,7 @@ import json
 from nose.tools import raises
 import sympy.physics.units as units
 from bioagents.tra import tra_module
-from bioagents.tra.tra import *
+from bioagents.tra import tra
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation, \
                              Dephosphorylation
@@ -17,7 +17,7 @@ ekb_complex = ekb_kstring_from_text('BRAF-KRAS complex')
 
 
 def test_time_interval():
-    TimeInterval(2.0, 4.0, 'second')
+    tra.TimeInterval(2.0, 4.0, 'second')
 
 
 def test_get_time_interval_full():
@@ -48,14 +48,14 @@ def test_get_time_interval_lb():
     assert ti.get_lb_seconds() == 14400
 
 
-@raises(InvalidTimeIntervalError)
+@raises(tra.InvalidTimeIntervalError)
 def test_get_time_interval_nounit():
     ts = '(:lower-bound 4)'
     lst = KQMLList.from_string(ts)
     tra_module.get_time_interval(lst)
 
 
-@raises(InvalidTimeIntervalError)
+@raises(tra.InvalidTimeIntervalError)
 def test_get_time_interval_badunit():
     ts = '(:lower-bound 4 :unit "xyz")'
     lst = KQMLList.from_string(ts)
@@ -78,14 +78,14 @@ def test_molecular_quantity_conc2():
     assert mq.value == 200 * units.nano * units.mol / units.liter
 
 
-@raises(InvalidMolecularQuantityError)
+@raises(tra.InvalidMolecularQuantityError)
 def test_molecular_quantity_conc_badval():
     s = '(:type "concentration" :value "xyz" :unit "nM")'
     lst = KQMLList.from_string(s)
     tra_module.get_molecular_quantity(lst)
 
 
-@raises(InvalidMolecularQuantityError)
+@raises(tra.InvalidMolecularQuantityError)
 def test_molecular_quantity_conc_badunit():
     s = '(:type "concentration" :value 200 :unit "meter")'
     lst = KQMLList.from_string(s)
@@ -100,7 +100,7 @@ def test_molecular_quantity_num():
     assert mq.value == 20000
 
 
-@raises(InvalidMolecularQuantityError)
+@raises(tra.InvalidMolecularQuantityError)
 def test_molecular_quantity_num_badval():
     s = '(:type "number" :value -1)'
     lst = KQMLList.from_string(s)
@@ -115,7 +115,7 @@ def test_molecular_quantity_qual():
     assert mq.value == 'high'
 
 
-@raises(InvalidMolecularQuantityError)
+@raises(tra.InvalidMolecularQuantityError)
 def test_molecular_quantity_qual_badval():
     s = '(:type "qualitative" :value 123)'
     lst = KQMLList.from_string(s)
@@ -138,14 +138,14 @@ def test_molecular_quantity_ref2():
     assert len(mqr.entity.bound_conditions) == 1
 
 
-@raises(InvalidMolecularQuantityRefError)
+@raises(tra.InvalidMolecularQuantityRefError)
 def test_molecular_quantity_badtype():
     s = '(:type "xyz" :entity (:description %s))' % ekb_complex
     lst = KQMLList.from_string(s)
     tra_module.get_molecular_quantity_ref(lst)
 
 
-@raises(InvalidMolecularQuantityRefError)
+@raises(tra.InvalidMolecularQuantityRefError)
 def test_molecular_quantity_badentity():
     s = '(:type "xyz" :entity (:description "xyz"))'
     lst = KQMLList.from_string(s)
@@ -185,7 +185,7 @@ def test_get_molecular_condition_multiple():
     assert mc.quantity.entity.name == 'BRAF'
 
 
-@raises(InvalidMolecularConditionError)
+@raises(tra.InvalidMolecularConditionError)
 def test_get_molecular_condition_badtype():
     lst = KQMLList.from_string('(:type "xyz" :value 2 ' +
                                ':quantity (:type "total" ' +
@@ -193,7 +193,7 @@ def test_get_molecular_condition_badtype():
     tra_module.get_molecular_condition(lst)
 
 
-@raises(InvalidMolecularConditionError)
+@raises(tra.InvalidMolecularConditionError)
 def test_get_molecular_condition_badvalue():
     lst = KQMLList.from_string('(:type "multiple" :value "xyz" ' +
                                ':quantity (:type "total" ' +
@@ -201,7 +201,7 @@ def test_get_molecular_condition_badvalue():
     tra_module.get_molecular_condition(lst)
 
 
-@raises(InvalidMolecularConditionError)
+@raises(tra.InvalidMolecularConditionError)
 def test_get_molecular_condition_badvalue2():
     lst = KQMLList.from_string('(:type "exact" :value 2 ' +
                                ':quantity (:type "total" ' +
@@ -209,7 +209,7 @@ def test_get_molecular_condition_badvalue2():
     tra_module.get_molecular_condition(lst)
 
 
-@raises(InvalidMolecularConditionError)
+@raises(tra.InvalidMolecularConditionError)
 def test_get_molecular_condition_badentity():
     lst = KQMLList.from_string('(:type "exact" :value 2 ' +
                                ':quantity (:type "total" ' +
@@ -225,10 +225,10 @@ def test_apply_condition_exact():
         ':entity (:description %s)))' % ekb_map2k1
         )
     mc = tra_module.get_molecular_condition(lst)
-    apply_condition(model, mc)
+    tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value == 0
     mc.value.value = 2000
-    apply_condition(model, mc)
+    tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value == 2000
 
 
@@ -238,7 +238,7 @@ def test_apply_condition_multiple():
                                ':quantity (:type "total" ' +
                                ':entity (:description %s)))' % ekb_map2k1)
     mc = tra_module.get_molecular_condition(lst)
-    apply_condition(model, mc)
+    tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value == 250
 
 
@@ -249,7 +249,7 @@ def test_apply_condition_decrease():
                                ':entity (:description %s)))' % ekb_map2k1)
     mc = tra_module.get_molecular_condition(lst)
     pold = model.parameters['MAP2K1_0'].value
-    apply_condition(model, mc)
+    tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value < pold
 
 
@@ -304,7 +304,7 @@ def test_get_temporal_pattern_eventual():
 
 
 def test_get_all_patterns():
-    patterns = get_all_patterns('MAPK1')
+    patterns = tra.get_all_patterns('MAPK1')
     print(patterns)
 
 
@@ -366,17 +366,17 @@ class _TraTestModel1(_StringCompareTest):
         return (msg, content)
 
 
-class TestModelKappa1(_TraTestModel1):
+class TraTestModel1_Kappa(_TraTestModel1):
     """Test that the tra can run a model using Kappa"""
     def __init__(self, *args):
-        super(TestModelKappa1, self).__init__(tra_module.TRA_Module)
+        super(TraTestModel1_Kappa, self).__init__(tra_module.TRA_Module)
 
 
-class TestModelNoKappa1(_TraTestModel1):
+class TraTestModel1_NoKappa(_TraTestModel1):
     """Test that the tra can run a model without using Kappa"""
     def __init__(self, *args):
-        super(TestModelNoKappa1, self).__init__(tra_module.TRA_Module,
-                                                no_kappa=True)
+        super(TraTestModel1_NoKappa, self).__init__(tra_module.TRA_Module,
+                                                    no_kappa=True)
 
 
 class TraTestModel2(_StringCompareTest):
@@ -410,6 +410,7 @@ class TraTestModel2(_StringCompareTest):
         msg.set('content', content)
         msg.set('reply-with', 'IO-1')
         return (msg, content)
+
 
 def _get_gk_model():
     SelfExporter.do_export = True

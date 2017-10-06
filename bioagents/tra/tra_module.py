@@ -5,7 +5,7 @@ from kqml import KQMLList, KQMLPerformative
 from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
 from indra.sources.trips import processor as trips_processor
-from bioagents.tra.tra import *
+from bioagents.tra import tra
 from bioagents.tra import kappa_client
 from bioagents import Bioagent, BioagentException
 
@@ -40,9 +40,9 @@ class TRA_Module(Bioagent):
             logger.warning('You have chose to not use Kappa.')
 
         if not self.ode_mode:
-            self.tra = TRA(kappa)
+            self.tra = tra.TRA(kappa)
         else:
-            self.tra = TRA()
+            self.tra = tra.TRA()
 
         return super(TRA_Module, self).__init__(**kwargs)
 
@@ -61,15 +61,15 @@ class TRA_Module(Bioagent):
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
-        except InvalidTimeIntervalError as e:
+        except tra.InvalidTimeIntervalError as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_TIME_LIMIT')
             return reply_content
-        except InvalidTemporalPatternError as e:
+        except tra.InvalidTemporalPatternError as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
-        except InvalidMolecularEntityError as e:
+        except tra.InvalidMolecularEntityError as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_ENTITY_DESCRIPTION')
             return reply_content
@@ -90,7 +90,7 @@ class TRA_Module(Bioagent):
         try:
             sat_rate, num_sim, suggestion, fig_path = \
                 self.tra.check_property(model, pattern, conditions)
-        except SimulatorError as e:
+        except tra.SimulatorError as e:
             logger.exception(e)
             reply_content = self.make_failure('KAPPA_FAILURE')
             return reply_content
@@ -147,7 +147,7 @@ def get_molecular_entity(lst):
         agent = tp._get_agent_by_id(term_id, None)
         return agent
     except Exception as e:
-        raise InvalidMolecularEntityError(e)
+        raise tra.InvalidMolecularEntityError(e)
 
 
 def get_molecular_quantity(lst):
@@ -158,9 +158,9 @@ def get_molecular_quantity(lst):
             unit = lst.gets('unit')
         else:
             unit = None
-        return MolecularQuantity(quant_type, value, unit)
+        return tra.MolecularQuantity(quant_type, value, unit)
     except Exception as e:
-        raise InvalidMolecularQuantityError(e)
+        raise tra.InvalidMolecularQuantityError(e)
 
 
 def get_molecular_quantity_ref(lst):
@@ -168,9 +168,9 @@ def get_molecular_quantity_ref(lst):
         quant_type = lst.gets('type')
         entity_lst = lst.get('entity')
         entity = get_molecular_entity(entity_lst)
-        return MolecularQuantityReference(quant_type, entity)
+        return tra.MolecularQuantityReference(quant_type, entity)
     except Exception as e:
-        raise InvalidMolecularQuantityRefError(e)
+        raise tra.InvalidMolecularQuantityRefError(e)
 
 
 def get_time_interval(lst):
@@ -178,9 +178,9 @@ def get_time_interval(lst):
         lb = lst.gets('lower-bound')
         ub = lst.gets('upper-bound')
         unit = lst.gets('unit')
-        return TimeInterval(lb, ub, unit)
+        return tra.TimeInterval(lb, ub, unit)
     except Exception as e:
-        raise InvalidTimeIntervalError(e)
+        raise tra.InvalidTimeIntervalError(e)
 
 
 def get_temporal_pattern(lst):
@@ -203,7 +203,7 @@ def get_temporal_pattern(lst):
         value = get_molecular_quantity(value_lst)
     else:
         value = None
-    tp = TemporalPattern(pattern_type, entities, time_limit, value=value)
+    tp = tra.TemporalPattern(pattern_type, entities, time_limit, value=value)
     return tp
 
 
@@ -218,9 +218,9 @@ def get_molecular_condition(lst):
             value = lst.gets('value')
         else:
             value = None
-        return MolecularCondition(condition_type, quantity, value)
+        return tra.MolecularCondition(condition_type, quantity, value)
     except Exception as e:
-        raise InvalidMolecularConditionError(e)
+        raise tra.InvalidMolecularConditionError(e)
 
 
 class InvalidModelDescriptionError(BioagentException):

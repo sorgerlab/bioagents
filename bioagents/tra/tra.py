@@ -31,9 +31,7 @@ class TRA(object):
             self.kappa = kappa
             try:
                 kappa_ver = kappa.version()
-                logger.info(
-                    'Using kappa build %s' % kappa_ver
-                    )
+                logger.info('Using kappa build %s' % kappa_ver)
             except KappaRuntimeError as e:
                 logger.error('Could not get Kappa version.')
                 logger.exception(e)
@@ -116,12 +114,10 @@ class TRA(object):
     def plot_results(self, tspan, results, obs_name):
         plt.figure()
         plt.ion()
-        lr = matplotlib.patches.Rectangle(
-            (0, 0), tspan[-1], 50, color='red', alpha=0.1
-            )
-        hr = matplotlib.patches.Rectangle(
-            (0, 50), tspan[-1], 50, color='green', alpha=0.1
-            )
+        lr = matplotlib.patches.Rectangle((0, 0), tspan[-1], 50, color='red',
+                                          alpha=0.1)
+        hr = matplotlib.patches.Rectangle((0, 50), tspan[-1], 50,
+                                          color='green', alpha=0.1)
         ax = plt.gca()
         ax.add_patch(lr)
         ax.add_patch(hr)
@@ -185,10 +181,8 @@ class TRA(object):
         kappa_model = pysb_to_kappa(model_sim)
         # Start simulation
         self.kappa.compile(code_list=[kappa_model])
-        self.kappa.start(
-            plot_period=plot_period,
-            pause_condition="[T] > %d" % max_time
-            )
+        self.kappa.start(plot_period=plot_period,
+                         pause_condition="[T] > %d" % max_time)
         while True:
             sleep(0.2)
             status_json = self.kappa.sim_status()
@@ -360,6 +354,11 @@ def get_all_patterns(obs_name):
     return patterns
 
 
+# #############################################################
+# Classes for representing time intervals and temporal patterns
+# #############################################################
+
+
 class TemporalPattern(object):
     def __init__(self, pattern_type, entities, time_limit, **kwargs):
         self.pattern_type = pattern_type
@@ -429,6 +428,11 @@ class InvalidTimeIntervalError(BioagentException):
     pass
 
 
+# ############################################################
+# Classes for representing molecular quantities and conditions
+# ############################################################
+
+
 class MolecularCondition(object):
     def __init__(self, condition_type, quantity, value=None):
         if isinstance(quantity, MolecularQuantityReference):
@@ -446,9 +450,7 @@ class MolecularCondition(object):
             try:
                 value_num = float(value)
                 if value_num < 0:
-                    raise ValueError(
-                        'Negative molecular quantity not allowed'
-                        )
+                    raise ValueError('Negative molecular quantity not allowed')
             except ValueError as e:
                 raise InvalidMolecularConditionError(e)
             self.value = value_num
@@ -496,9 +498,8 @@ class MolecularQuantity(object):
                 msg = 'Invalid qualitative quantity value %s' % value
                 raise InvalidMolecularQuantityError(msg)
         else:
-            raise InvalidMolecularQuantityError(
-                'Invalid quantity type %s' % quant_type
-                )
+            raise InvalidMolecularQuantityError('Invalid quantity type %s' %
+                                                quant_type)
         self.quant_type = quant_type
 
 
@@ -533,4 +534,4 @@ class InvalidMolecularConditionError(BioagentException):
 
 
 class SimulatorError(BioagentException):
-        pass
+    pass

@@ -31,7 +31,7 @@ class TRA_Module(Bioagent):
         self.ode_mode = True
         if use_kappa:
             try:
-                kappa = kappa_client.KappaRuntime('TRA_modelling')
+                kappa = kappa_client.KappaRuntime('TRA_simulations')
                 self.ode_mode = False
             except Exception as e:
                 logger.error('Could not instantiate TRA with Kappa service.')

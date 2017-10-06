@@ -374,8 +374,10 @@ class TemporalPattern(object):
                 raise InvalidTemporalPatternError(msg)
             self.value = value
 
+
 class InvalidTemporalPatternError(BioagentException):
     pass
+
 
 class TimeInterval(object):
     def __init__(self, lb, ub, unit):
@@ -388,12 +390,12 @@ class TimeInterval(object):
         elif unit == 'second':
             sym_unit = units.second
         else:
-            raise InvalidTimelIntervalError('Invalid unit %s' % unit)
+            raise InvalidTimeIntervalError('Invalid unit %s' % unit)
         if lb is not None:
             try:
                 lb_num = float(lb)
             except ValueError:
-                raise InvalidTimelIntervalError('Bad bound %s' % lb)
+                raise InvalidTimeIntervalError('Bad bound %s' % lb)
             self.lb = lb_num * sym_unit
         else:
             self.lb = None
@@ -401,7 +403,7 @@ class TimeInterval(object):
             try:
                 ub_num = float(ub)
             except ValueError:
-                raise InvalidTimelIntervalError('Bad bound %s' % ub)
+                raise InvalidTimeIntervalError('Bad bound %s' % ub)
             self.ub = ub_num * sym_unit
         else:
             self.ub = None
@@ -457,6 +459,7 @@ class MolecularCondition(object):
             raise InvalidMolecularConditionError(msg)
         self.condition_type = condition_type
 
+
 class MolecularQuantity(object):
     def __init__(self, quant_type, value, unit=None):
         if quant_type == 'concentration':
@@ -498,6 +501,7 @@ class MolecularQuantity(object):
                 )
         self.quant_type = quant_type
 
+
 class MolecularQuantityReference(object):
     def __init__(self, quant_type, entity):
         if quant_type in ['total', 'initial']:
@@ -511,14 +515,18 @@ class MolecularQuantityReference(object):
         else:
             self.entity = entity
 
+
 class InvalidMolecularQuantityError(BioagentException):
     pass
+
 
 class InvalidMolecularQuantityRefError(BioagentException):
     pass
 
+
 class InvalidMolecularEntityError(BioagentException):
     pass
+
 
 class InvalidMolecularConditionError(BioagentException):
     pass

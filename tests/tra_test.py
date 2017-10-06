@@ -326,7 +326,7 @@ class _TraTestModel1(_StringCompareTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
         super(_TraTestModel1, self).__init__(*args, **kwargs)
-        self.expected = '(SUCCESS :content (:satisfies-rate 1.0 ' + \
+        self.expected = '(SUCCESS :content (:satisfies-rate 0.0 ' + \
             ':num-sim 10 :suggestion (:type "always_value" ' + \
             ':value (:type "qualitative" :value "low"))))'
 
@@ -338,6 +338,11 @@ class _TraTestModel1(_StringCompareTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
+        pattern.sets('type', 'always_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
 
         content = KQMLList('SATISFIES-PATTERN')
         content.set('pattern', pattern)
@@ -371,7 +376,40 @@ class TestModelNoKappa1(_TraTestModel1):
     """Test that the tra can run a model without using Kappa"""
     def __init__(self, *args):
         super(TestModelNoKappa1, self).__init__(tra_module.TRA_Module,
-                                               no_kappa=True)
+                                                no_kappa=True)
+
+
+class TraTestModel2(_StringCompareTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModel2, self).__init__(tra_module.TRA_Module)
+        self.expected = '(SUCCESS :content (:satisfies-rate 0.0 ' + \
+            ':num-sim 10 :suggestion (:type "always_value" ' + \
+            ':value (:type "qualitative" :value "high"))))'
+
+    def get_message(self):
+        model = stmts_kstring_from_text('MEK binds ERK')
+        entity = ekb_kstring_from_text('MEK bound to ERK')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'always_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'low')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        quantity = KQMLList()
+        quantity.sets('type', 'total')
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-1')
+        return (msg, content)
 
 def _get_gk_model():
     SelfExporter.do_export = True

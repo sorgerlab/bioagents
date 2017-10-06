@@ -1,18 +1,24 @@
 import json
-from xml.etree import ElementTree
 from nose.tools import raises
 import sympy.physics.units as units
 from bioagents.tra import tra_module
-from bioagents.tra.tra import *
+from bioagents.tra import tra
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
-from indra.statements import stmts_to_json, Agent, Phosphorylation,\
-    Dephosphorylation
-from kqml import KQMLPerformative, KQMLString, KQMLList
-from tests.util import *
+from indra.statements import stmts_to_json, Agent, Phosphorylation, \
+                             Dephosphorylation
+from kqml import KQMLPerformative, KQMLList
 from tests.integration import _StringCompareTest
+from tests.util import stmts_kstring_from_text, ekb_kstring_from_text
+
+
+ekb_map2k1 = ekb_kstring_from_text('MAP2K1')
+ekb_braf = ekb_kstring_from_text('BRAF')
+ekb_complex = ekb_kstring_from_text('BRAF-KRAS complex')
+
 
 def test_time_interval():
-    TimeInterval(2.0, 4.0, 'second')
+    tra.TimeInterval(2.0, 4.0, 'second')
+
 
 def test_get_time_interval_full():
     ts = '(:lower-bound 2 :upper-bound 4 :unit "hour")'
@@ -23,6 +29,7 @@ def test_get_time_interval_full():
     assert ti.get_lb_seconds() == 7200
     assert ti.get_ub_seconds() == 14400
 
+
 def test_get_time_interval_ub():
     ts = '(:upper-bound 4 :unit "hour")'
     lst = KQMLList.from_string(ts)
@@ -30,6 +37,7 @@ def test_get_time_interval_ub():
     assert ti.lb is None
     assert ti.ub == 4*units.hours
     assert ti.get_ub_seconds() == 14400
+
 
 def test_get_time_interval_lb():
     ts = '(:lower-bound 4 :unit "hour")'
@@ -39,17 +47,20 @@ def test_get_time_interval_lb():
     assert ti.ub is None
     assert ti.get_lb_seconds() == 14400
 
-@raises(InvalidTimeIntervalError)
+
+@raises(tra.InvalidTimeIntervalError)
 def test_get_time_interval_nounit():
     ts = '(:lower-bound 4)'
     lst = KQMLList.from_string(ts)
-    ti = tra_module.get_time_interval(lst)
+    tra_module.get_time_interval(lst)
 
-@raises(InvalidTimeIntervalError)
+
+@raises(tra.InvalidTimeIntervalError)
 def test_get_time_interval_badunit():
     ts = '(:lower-bound 4 :unit "xyz")'
     lst = KQMLList.from_string(ts)
-    ti = tra_module.get_time_interval(lst)
+    tra_module.get_time_interval(lst)
+
 
 def test_molecular_quantity_conc1():
     s = '(:type "concentration" :value 2 :unit "uM")'
@@ -58,6 +69,7 @@ def test_molecular_quantity_conc1():
     assert mq.quant_type == 'concentration'
     assert mq.value == 2 * units.micro * units.mol / units.liter
 
+
 def test_molecular_quantity_conc2():
     s = '(:type "concentration" :value 200 :unit "nM")'
     lst = KQMLList.from_string(s)
@@ -65,17 +77,20 @@ def test_molecular_quantity_conc2():
     assert mq.quant_type == 'concentration'
     assert mq.value == 200 * units.nano * units.mol / units.liter
 
-@raises(InvalidMolecularQuantityError)
+
+@raises(tra.InvalidMolecularQuantityError)
 def test_molecular_quantity_conc_badval():
     s = '(:type "concentration" :value "xyz" :unit "nM")'
     lst = KQMLList.from_string(s)
-    mq = tra_module.get_molecular_quantity(lst)
+    tra_module.get_molecular_quantity(lst)
 
-@raises(InvalidMolecularQuantityError)
+
+@raises(tra.InvalidMolecularQuantityError)
 def test_molecular_quantity_conc_badunit():
     s = '(:type "concentration" :value 200 :unit "meter")'
     lst = KQMLList.from_string(s)
-    mq = tra_module.get_molecular_quantity(lst)
+    tra_module.get_molecular_quantity(lst)
+
 
 def test_molecular_quantity_num():
     s = '(:type "number" :value 20000)'
@@ -84,11 +99,13 @@ def test_molecular_quantity_num():
     assert mq.quant_type == 'number'
     assert mq.value == 20000
 
-@raises(InvalidMolecularQuantityError)
+
+@raises(tra.InvalidMolecularQuantityError)
 def test_molecular_quantity_num_badval():
     s = '(:type "number" :value -1)'
     lst = KQMLList.from_string(s)
-    mq = tra_module.get_molecular_quantity(lst)
+    tra_module.get_molecular_quantity(lst)
+
 
 def test_molecular_quantity_qual():
     s = '(:type "qualitative" :value "high")'
@@ -97,140 +114,162 @@ def test_molecular_quantity_qual():
     assert mq.quant_type == 'qualitative'
     assert mq.value == 'high'
 
-@raises(InvalidMolecularQuantityError)
+
+@raises(tra.InvalidMolecularQuantityError)
 def test_molecular_quantity_qual_badval():
     s = '(:type "qualitative" :value 123)'
     lst = KQMLList.from_string(s)
-    mq = tra_module.get_molecular_quantity(lst)
+    tra_module.get_molecular_quantity(lst)
+
 
 def test_molecular_quantity_ref():
-    s = '(:type "total" :entity (:description "%s"))' % ekb_complex
+    s = '(:type "total" :entity (:description %s))' % ekb_complex
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
     assert mqr.quant_type == 'total'
     assert len(mqr.entity.bound_conditions) == 1
 
+
 def test_molecular_quantity_ref2():
-    s = '(:type "initial" :entity (:description "%s"))' % ekb_complex
+    s = '(:type "initial" :entity (:description %s))' % ekb_complex
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
     assert mqr.quant_type == 'initial'
     assert len(mqr.entity.bound_conditions) == 1
 
-@raises(InvalidMolecularQuantityRefError)
-def test_molecular_quantity_badtype():
-    s = '(:type "xyz" :entity (:description "%s"))' % ekb_complex
-    lst = KQMLList.from_string(s)
-    mqr = tra_module.get_molecular_quantity_ref(lst)
 
-@raises(InvalidMolecularQuantityRefError)
+@raises(tra.InvalidMolecularQuantityRefError)
+def test_molecular_quantity_badtype():
+    s = '(:type "xyz" :entity (:description %s))' % ekb_complex
+    lst = KQMLList.from_string(s)
+    tra_module.get_molecular_quantity_ref(lst)
+
+
+@raises(tra.InvalidMolecularQuantityRefError)
 def test_molecular_quantity_badentity():
     s = '(:type "xyz" :entity (:description "xyz"))'
     lst = KQMLList.from_string(s)
-    mqr = tra_module.get_molecular_quantity_ref(lst)
+    tra_module.get_molecular_quantity_ref(lst)
+
 
 def test_get_molecular_condition_dec():
-    lst = KQMLList.from_string('(:type "decrease" :quantity (:type "total" ' +\
-                               ':entity (:description "%s")))' % ekb_braf)
+    lst = KQMLList.from_string('(:type "decrease" :quantity (:type "total" ' +
+                               ':entity (:description %s)))' % ekb_braf)
     mc = tra_module.get_molecular_condition(lst)
     assert mc.condition_type == 'decrease'
     assert mc.quantity.quant_type == 'total'
     assert mc.quantity.entity.name == 'BRAF'
 
+
 def test_get_molecular_condition_exact():
-    lst = KQMLList.from_string('(:type "exact" :value (:value 0 :type "number") ' +
-                               ':quantity (:type "total" ' +
-                               ':entity (:description "%s")))' % ekb_braf)
+    lst = KQMLList.from_string(
+        '(:type "exact" :value (:value 0 :type "number") '
+        ':quantity (:type "total" '
+        ':entity (:description %s)))' % ekb_braf
+        )
     mc = tra_module.get_molecular_condition(lst)
     assert mc.condition_type == 'exact'
     assert mc.value.quant_type == 'number'
     assert mc.quantity.quant_type == 'total'
     assert mc.quantity.entity.name == 'BRAF'
 
+
 def test_get_molecular_condition_multiple():
     lst = KQMLList.from_string('(:type "multiple" :value 2 ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description "%s")))' % ekb_braf)
+                               ':entity (:description %s)))' % ekb_braf)
     mc = tra_module.get_molecular_condition(lst)
     assert mc.condition_type == 'multiple'
     assert mc.value == 2.0
     assert mc.quantity.quant_type == 'total'
     assert mc.quantity.entity.name == 'BRAF'
 
-@raises(InvalidMolecularConditionError)
+
+@raises(tra.InvalidMolecularConditionError)
 def test_get_molecular_condition_badtype():
     lst = KQMLList.from_string('(:type "xyz" :value 2 ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description "%s")))' % ekb_braf)
-    mc = tra_module.get_molecular_condition(lst)
+                               ':entity (:description %s)))' % ekb_braf)
+    tra_module.get_molecular_condition(lst)
 
-@raises(InvalidMolecularConditionError)
+
+@raises(tra.InvalidMolecularConditionError)
 def test_get_molecular_condition_badvalue():
     lst = KQMLList.from_string('(:type "multiple" :value "xyz" ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description "%s")))' % ekb_braf)
-    mc = tra_module.get_molecular_condition(lst)
+                               ':entity (:description %s)))' % ekb_braf)
+    tra_module.get_molecular_condition(lst)
 
-@raises(InvalidMolecularConditionError)
+
+@raises(tra.InvalidMolecularConditionError)
 def test_get_molecular_condition_badvalue2():
     lst = KQMLList.from_string('(:type "exact" :value 2 ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description "%s")))' % ekb_braf)
-    mc = tra_module.get_molecular_condition(lst)
+                               ':entity (:description %s)))' % ekb_braf)
+    tra_module.get_molecular_condition(lst)
 
-@raises(InvalidMolecularConditionError)
+
+@raises(tra.InvalidMolecularConditionError)
 def test_get_molecular_condition_badentity():
     lst = KQMLList.from_string('(:type "exact" :value 2 ' +
                                ':quantity (:type "total" ' +
                                ':entity (:description "xyz")))')
-    mc = tra_module.get_molecular_condition(lst)
+    tra_module.get_molecular_condition(lst)
+
 
 def test_apply_condition_exact():
     model = _get_gk_model()
-    lst = KQMLList.from_string('(:type "exact" :value (:value 0 :type "number") ' +
-                               ':quantity (:type "total" ' +
-                               ':entity (:description "%s")))' % ekb_map2k1)
+    lst = KQMLList.from_string(
+        '(:type "exact" :value (:value 0 :type "number") '
+        ':quantity (:type "total" '
+        ':entity (:description %s)))' % ekb_map2k1
+        )
     mc = tra_module.get_molecular_condition(lst)
-    apply_condition(model, mc)
+    tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value == 0
     mc.value.value = 2000
-    apply_condition(model, mc)
+    tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value == 2000
+
 
 def test_apply_condition_multiple():
     model = _get_gk_model()
     lst = KQMLList.from_string('(:type "multiple" :value 2.5 ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description "%s")))' % ekb_map2k1)
+                               ':entity (:description %s)))' % ekb_map2k1)
     mc = tra_module.get_molecular_condition(lst)
-    apply_condition(model, mc)
+    tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value == 250
+
 
 def test_apply_condition_decrease():
     model = _get_gk_model()
     lst = KQMLList.from_string('(:type "decrease" ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description "%s")))' % ekb_map2k1)
+                               ':entity (:description %s)))' % ekb_map2k1)
     mc = tra_module.get_molecular_condition(lst)
     pold = model.parameters['MAP2K1_0'].value
-    apply_condition(model, mc)
+    tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value < pold
 
+
 def test_get_molecular_entity():
-    me = KQMLList.from_string('(:description "%s")' % ekb_complex)
+    me = KQMLList.from_string('(:description %s)' % ekb_complex)
     ent = tra_module.get_molecular_entity(me)
     assert len(ent.bound_conditions) == 1
 
+
 def test_get_temporal_pattern():
     pattern_msg = '(:type "transient" :entities ((:description ' + \
-                    '"%s")))' % ekb_complex
+                    '%s)))' % ekb_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
     assert pattern.pattern_type == 'transient'
 
+
 def test_get_temporal_pattern_always():
     pattern_msg = '(:type "always_value" :entities ((:description ' + \
-                    '"%s")) :value (:type "qualitative" :value "low"))' % \
+                    '%s)) :value (:type "qualitative" :value "low"))' % \
                     ekb_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
@@ -239,9 +278,10 @@ def test_get_temporal_pattern_always():
     assert pattern.value.quant_type == 'qualitative'
     assert pattern.value.value == 'low'
 
+
 def test_get_temporal_pattern_sometime():
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
-                    '"%s")) :value (:type "qualitative" :value "high"))' % \
+                    '%s)) :value (:type "qualitative" :value "high"))' % \
                     ekb_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
@@ -250,9 +290,10 @@ def test_get_temporal_pattern_sometime():
     assert pattern.value.quant_type == 'qualitative'
     assert pattern.value.value == 'high'
 
+
 def test_get_temporal_pattern_eventual():
     pattern_msg = '(:type "eventual_value" :entities ((:description ' + \
-                    '"%s")) :value (:type "qualitative" :value "high"))' % \
+                    '%s)) :value (:type "qualitative" :value "high"))' % \
                     ekb_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
@@ -261,16 +302,18 @@ def test_get_temporal_pattern_eventual():
     assert pattern.value.quant_type == 'qualitative'
     assert pattern.value.value == 'high'
 
+
 def test_get_all_patterns():
-    patterns = get_all_patterns('MAPK1')
+    patterns = tra.get_all_patterns('MAPK1')
     print(patterns)
+
 
 def test_module():
     tra = tra_module.TRA_Module(testing=True)
     content = KQMLList()
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
-                    '"%s")) :value (:type "qualitative" :value "high"))' % \
-                    ekb_complex
+                  '%s)) :value (:type "qualitative" :value "high"))' % \
+                  ekb_complex
     pattern = KQMLList.from_string(pattern_msg)
     content.set('pattern', pattern)
     model_json = _get_gk_model_indra()
@@ -279,11 +322,11 @@ def test_module():
     assert res[2] is not None
 
 
-class TestModel(_StringCompareTest):
+class _TraTestModel1(_StringCompareTest):
     """Test that TRA can correctly run a model."""
-    def __init__(self, *args):
-        super(TestModel, self).__init__(tra_module.TRA_Module)
-        self.expected = '(SUCCESS :content (:satisfies-rate 1.0 ' + \
+    def __init__(self, *args, **kwargs):
+        super(_TraTestModel1, self).__init__(*args, **kwargs)
+        self.expected = '(SUCCESS :content (:satisfies-rate 0.0 ' + \
             ':num-sim 10 :suggestion (:type "always_value" ' + \
             ':value (:type "qualitative" :value "low"))))'
 
@@ -295,6 +338,11 @@ class TestModel(_StringCompareTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
+        pattern.sets('type', 'always_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
 
         content = KQMLList('SATISFIES-PATTERN')
         content.set('pattern', pattern)
@@ -317,11 +365,52 @@ class TestModel(_StringCompareTest):
         msg.set('reply-with', 'IO-1')
         return (msg, content)
 
-ekb_map2k1 = '<ekb><TERM dbid=\\"UP:Q02750|HGNC:6840\\" end=\\"6\\" id=\\"V2700141\\"><type>ONT::GENE</type><name>MAP-2-K-1</name><text>MAP2K1</text></TERM></ekb>'
 
-ekb_braf = '<ekb><TERM dbid=\\"UP:P15056|HGNC:1097\\" id=\\"V34744\\"><type>ONT::GENE</type><name>BRAF</name><text>BRAF</text></TERM></ekb>'
+class TraTestModel1_Kappa(_TraTestModel1):
+    """Test that the tra can run a model using Kappa"""
+    def __init__(self, *args):
+        super(TraTestModel1_Kappa, self).__init__(tra_module.TRA_Module)
 
-ekb_complex = '<ekb><TERM id=\\"V34770\\"><type>ONT::MACROMOLECULAR-COMPLEX</type><components><component id=\\"V34744\\"/><component id=\\"V34752\\"/></components><text normalization=\\"\\">The BRAF-KRAS complex</text></TERM> <TERM dbid=\\"UP:P15056|HGNC:1097\\" id=\\"V34744\\"><type>ONT::GENE</type><name>BRAF</name><text>The BRAF-KRAS complex</text></TERM> <TERM dbid=\\"UP:P79800|HGNC:6407|UP:Q5EFX7|UP:O42277|UP:P01116|UP:Q05147|XFAM:PF00071|UP:Q9YH38\\" id=\\"V34752\\"><type>ONT::GENE-PROTEIN</type><name>KRAS</name><text>KRAS</text></TERM></ekb>'
+
+class TraTestModel1_NoKappa(_TraTestModel1):
+    """Test that the tra can run a model without using Kappa"""
+    def __init__(self, *args):
+        super(TraTestModel1_NoKappa, self).__init__(tra_module.TRA_Module,
+                                                    no_kappa=True)
+
+
+class TraTestModel2(_StringCompareTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModel2, self).__init__(tra_module.TRA_Module)
+        self.expected = '(SUCCESS :content (:satisfies-rate 0.0 ' + \
+            ':num-sim 10 :suggestion (:type "always_value" ' + \
+            ':value (:type "qualitative" :value "high"))))'
+
+    def get_message(self):
+        model = stmts_kstring_from_text('MEK binds ERK')
+        entity = ekb_kstring_from_text('MEK bound to ERK')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'always_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'low')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        quantity = KQMLList()
+        quantity.sets('type', 'total')
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-1')
+        return (msg, content)
+
 
 def _get_gk_model():
     SelfExporter.do_export = True
@@ -362,6 +451,7 @@ def _get_gk_model():
     Initial(MAPK1(phospho='u', map2k1=None, dusp6=None), MAPK1_0)
     SelfExporter.do_export = False
     return model
+
 
 def _get_gk_model_indra():
     kras = Agent('KRAS', db_refs={'HGNC': '6407', 'UP': 'P01116'})

@@ -1,10 +1,16 @@
+__all__ = ['TRA', 'get_ltl_from_pattern', 'apply_condition',
+           'get_create_observable', 'pysb_to_kappa', 'get_sim_result',
+           'get_all_patterns', 'TemporalPattern', 'TimeInterval',
+           'InvalidTemporalPatternError', 'InvalidTimeIntervalError',
+           'MolecularCondition', 'MolecularQuantity',
+           'MolecularQuantityReference', 'InvalidMolecularConditionError',
+           'InvalidMolecularQuantityError',
+           'InvalidMolecularQuantityRefError', 'SimulatorError']
 import os
 import numpy
 import logging
-import itertools
 from time import sleep
 from copy import deepcopy
-from collections import defaultdict
 import sympy.physics.units as units
 import indra.statements as ist
 import indra.assemblers.pysb_assembler as pa
@@ -14,6 +20,7 @@ from pysb.export.kappa import KappaExporter
 import model_checker as mc
 import matplotlib
 from bioagents import BioagentException
+from bioagents.tra.kappa_client import KappaRuntimeError
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -22,26 +29,21 @@ logger = logging.getLogger('TRA')
 
 
 class TRA(object):
-    def __init__(self, kappa):
+    def __init__(self, kappa=None):
         if kappa is None:
             self.ode_mode = True
+            logger.info('Using ODE mode in TRA.')
         else:
             self.ode_mode = False
-        if not self.ode_mode:
             self.kappa = kappa
             try:
                 kappa_ver = kappa.version()
-                if kappa_ver is None or kappa_ver.get('version_id') is None:
-                    raise SimulatorError('Invalid Kappa client.')
-                logger.info('Using kappa version %s / build %s' %
-                            (kappa_ver.get('version_id'),
-                             kappa_ver.get('version_build')))
-            except Exception as e:
+                logger.info('Using kappa build %s' % kappa_ver)
+            except KappaRuntimeError as e:
                 logger.error('Could not get Kappa version.')
-                logger.error('Kappa error was: %s' % e)
+                logger.exception(e)
                 self.ode_mode = True
-        if self.ode_mode:
-            logger.info('Using ODE mode in TRA.')
+        return
 
     def check_property(self, model, pattern, conditions=None):
         # TODO: handle multiple entities (observables) in pattern
@@ -73,18 +75,19 @@ class TRA(object):
         # The number of independent simulations to perform
         num_sim = 10
         # Run simulations
-        tspan, results = self.run_simulations(model, conditions, num_sim,
-                                              min_time_idx, max_time,
-                                              plot_period)
+        results = self.run_simulations(model, conditions, num_sim,
+                                       min_time_idx, max_time,
+                                       plot_period)
 
-        fig_path = self.plot_results(tspan, results, obs.name)
+        fig_path = self.plot_results(results, obs.name)
+        yobs_list = [yobs for _, yobs in results]
 
         # Discretize observations
-        [self.discretize_obs(yobs, obs.name) for yobs in results]
+        [self.discretize_obs(yobs, obs.name) for yobs in yobs_list]
         # We check for the given pattern
         if given_pattern:
             truths = []
-            for yobs in results:
+            for yobs in yobs_list:
                 # Run model checker on the given pattern
                 MC = mc.ModelChecker(fstr, yobs)
                 logger.info('Main property %s' % MC.truth)
@@ -105,7 +108,7 @@ class TRA(object):
         for fs, pat in all_patterns:
             logger.info('Testing pattern: %s' % pat)
             truths = []
-            for yobs in results:
+            for yobs in yobs_list:
                 MC = mc.ModelChecker(fs, yobs)
                 logger.info('Property %s' % MC.truth)
                 truths.append(MC.truth)
@@ -116,19 +119,18 @@ class TRA(object):
                 else:
                     return sat_rate, num_sim, pat, fig_path
 
-    def plot_results(self, tspan, results, obs_name):
+    def plot_results(self, results, obs_name):
         plt.figure()
         plt.ion()
-        lr = matplotlib.patches.Rectangle(
-            (0, 0), tspan[-1], 50, color='red', alpha=0.1
-            )
-        hr = matplotlib.patches.Rectangle(
-            (0, 50), tspan[-1], 50, color='green', alpha=0.1
-            )
+        max_time = max([result[0][-1] for result in results])
+        lr = matplotlib.patches.Rectangle((0, 0), max_time, 50, color='red',
+                                          alpha=0.1)
+        hr = matplotlib.patches.Rectangle((0, 50), max_time, 50,
+                                          color='green', alpha=0.1)
         ax = plt.gca()
         ax.add_patch(lr)
         ax.add_patch(hr)
-        for yobs in results:
+        for tspan, yobs in results:
             plt.plot(tspan, yobs[obs_name])
         plt.ylim(0, max(numpy.max(yobs[obs_name]), 100.0))
         plt.xlabel('Time (s)')
@@ -148,7 +150,7 @@ class TRA(object):
             try:
                 model_sim = self.condition_model(model, conditions)
             except Exception as e:
-                logger.error(e)
+                logger.exception(e)
                 msg = 'Applying molecular condition failed.'
                 raise InvalidMolecularConditionError(msg)
             # Run a simulation
@@ -158,15 +160,17 @@ class TRA(object):
                     tspan, yobs = self.simulate_kappa(model_sim, max_time,
                                                       plot_period)
                 except Exception as e:
-                    logger.error(e)
+                    logger.exception(e)
                     raise SimulatorError('Kappa simulation failed.')
             else:
                 tspan, yobs = self.simulate_odes(model_sim, max_time,
                                                  plot_period)
             # Get and plot observable
-            yobs_from_min = yobs[min_time_idx:]
-            results.append(yobs_from_min)
-        return tspan, results
+            start_idx = min(min_time_idx, len(yobs))
+            yobs_from_min = yobs[start_idx:]
+            tspan = tspan[start_idx:]
+            results.append((tspan, yobs_from_min))
+        return results
 
     def discretize_obs(self, yobs, obs_name):
         # TODO: This needs to be done in a model/observable-dependent way
@@ -187,21 +191,23 @@ class TRA(object):
         # Export kappa model
         kappa_model = pysb_to_kappa(model_sim)
         # Start simulation
-        kappa_params = {'code': kappa_model,
-                        'plot_period': plot_period,
-                        'max_time': max_time}
-        sim_id = self.kappa.start(kappa_params)
+        self.kappa.compile(code_list=[kappa_model])
+        self.kappa.start(plot_period=plot_period,
+                         pause_condition="[T] > %d" % max_time)
         while True:
             sleep(0.2)
-            status = self.kappa.status(sim_id)
-            is_running = status.get('is_running')
+            status_json = self.kappa.sim_status()
+            is_running = status_json.get('simulation_progress_is_running')
             if not is_running:
                 break
             else:
-                if status.get('time_percentage') is not None:
-                    logger.info('Sim time percentage: %d' %
-                                  status.get('time_percentage'))
-        tspan, yobs = get_sim_result(status.get('plot'))
+                if status_json.get('time_percentage') is not None:
+                    logger.info(
+                        'Sim time percentage: %d' %
+                        status_json.get('simulation_progress_time_percentage')
+                        )
+        tspan, yobs = get_sim_result(self.kappa.sim_plot())
+        self.kappa.renew()
         return tspan, yobs
 
     def simulate_odes(self, model_sim, max_time, plot_period):
@@ -313,17 +319,21 @@ def pysb_to_kappa(model):
 
 
 def get_sim_result(kappa_plot):
-    values = kappa_plot['time_series']
-    values.sort(key=lambda x: x['observation_time'])
+    values = kappa_plot['series']
+    i_t = kappa_plot['legend'].index('[T]')
+    values.sort(key=lambda x: x[i_t])
     nt = len(values)
-    obs_list = [str(l[1:-1]) for l in kappa_plot['legend']]
-    yobs = numpy.ndarray(nt, list(zip(obs_list, itertools.repeat(float))))
+    obs_dict = {
+        j: key.encode('utf8') for j, key in enumerate(kappa_plot['legend'])
+        if key != '[T]'
+        }
+    yobs = numpy.ndarray(nt, zip(obs_dict.values(), [float]*len(obs_dict)))
 
     tspan = []
-    for t, value in enumerate(values):
-        tspan.append(value['observation_time'])
-        for i, obs in enumerate(obs_list):
-            yobs[obs][t] = value['observation_values'][i]
+    for i, value in enumerate(values):
+        tspan.append(value[i_t])
+        for j, obs in obs_dict.iteritems():
+            yobs[obs][i] = value[j]
     return (tspan, yobs)
 
 
@@ -331,13 +341,17 @@ def get_all_patterns(obs_name):
     patterns = []
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.always_formula(obs_name, val_num)
-        pattern = \
-            '(:type "always_value" :value (:type "qualitative" :value "%s"))' % val_str
+        pattern = (
+            '(:type "always_value" '
+            ':value (:type "qualitative" :value "%s"))' % val_str
+            )
         patterns.append((fstr, pattern))
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.eventual_formula(obs_name, val_num)
-        pattern = \
-            '(:type "eventual_value" :value (:type "qualitative" :value "%s"))' % val_str
+        pattern = (
+            '(:type "eventual_value" '
+            ':value (:type "qualitative" :value "%s"))' % val_str
+            )
         patterns.append((fstr, pattern))
     fstr = mc.transient_formula(obs_name)
     pattern = '(:type "transient")'
@@ -347,8 +361,10 @@ def get_all_patterns(obs_name):
     patterns.append((fstr, pattern))
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.sometime_formula(obs_name, val_num)
-        pattern = \
-            '(:type "sometime_value" :value (:type "qualitative" :value "%s"))' % val_str
+        pattern = (
+            '(:type "sometime_value" '
+            ':value (:type "qualitative" :value "%s"))' % val_str
+            )
         patterns.append((fstr, pattern))
     fstr = mc.noact_formula(obs_name)
     pattern = '(:type "no_change")'
@@ -356,8 +372,13 @@ def get_all_patterns(obs_name):
     return patterns
 
 
+# #############################################################
+# Classes for representing time intervals and temporal patterns
+# #############################################################
+
+
 class TemporalPattern(object):
-    def __init__(self, pattern_type, entities, time_limit, *args, **kwargs):
+    def __init__(self, pattern_type, entities, time_limit, **kwargs):
         self.pattern_type = pattern_type
         self.entities = entities
         self.time_limit = time_limit
@@ -369,6 +390,65 @@ class TemporalPattern(object):
                 msg = 'Missing molecular quantity'
                 raise InvalidTemporalPatternError(msg)
             self.value = value
+
+
+class InvalidTemporalPatternError(BioagentException):
+    pass
+
+
+class TimeInterval(object):
+    def __init__(self, lb, ub, unit):
+        if unit == 'day':
+            sym_unit = units.day
+        elif unit == 'hour':
+            sym_unit = units.hour
+        elif unit == 'minute':
+            sym_unit = units.minute
+        elif unit == 'second':
+            sym_unit = units.second
+        else:
+            raise InvalidTimeIntervalError('Invalid unit %s' % unit)
+        if lb is not None:
+            try:
+                lb_num = float(lb)
+            except ValueError:
+                raise InvalidTimeIntervalError('Bad bound %s' % lb)
+            self.lb = lb_num * sym_unit
+        else:
+            self.lb = None
+        if ub is not None:
+            try:
+                ub_num = float(ub)
+            except ValueError:
+                raise InvalidTimeIntervalError('Bad bound %s' % ub)
+            self.ub = ub_num * sym_unit
+        else:
+            self.ub = None
+
+    def _convert_to_sec(self, val):
+        if val is not None:
+            try:
+                # sympy >= 1.1
+                return units.convert_to(val, units.seconds).args[0]
+            except Exception:
+                # sympy < 1.1
+                return val / units.seconds
+        return None
+
+    def get_lb_seconds(self):
+        return self._convert_to_sec(self.lb)
+
+    def get_ub_seconds(self):
+        return self._convert_to_sec(self.ub)
+
+
+class InvalidTimeIntervalError(BioagentException):
+    pass
+
+
+# ############################################################
+# Classes for representing molecular quantities and conditions
+# ############################################################
 
 
 class MolecularCondition(object):
@@ -404,31 +484,31 @@ class MolecularQuantity(object):
     def __init__(self, quant_type, value, unit=None):
         if quant_type == 'concentration':
             try:
-                value_num = float(value)
+                val = float(value)
             except ValueError:
                 msg = 'Invalid concentration value %s' % value
                 raise InvalidMolecularQuantityError(msg)
             if unit == 'mM':
-                sym_value = value_num * units.milli * units.mol / units.liter
+                sym_value = val * units.milli * units.mol / units.liter
             elif unit == 'uM':
-                sym_value = value_num * units.micro * units.mol / units.liter
+                sym_value = val * units.micro * units.mol / units.liter
             elif unit == 'nM':
-                sym_value = value_num * units.nano * units.mol / units.liter
+                sym_value = val * units.nano * units.mol / units.liter
             elif unit == 'pM':
-                sym_value = value_num * units.pico * units.mol / units.liter
+                sym_value = val * units.pico * units.mol / units.liter
             else:
                 msg = 'Invalid unit %s' % unit
                 raise InvalidMolecularQuantityError(msg)
             self.value = sym_value
         elif quant_type == 'number':
             try:
-                value_num = int(value)
-                if value_num < 0:
+                val = int(value)
+                if val < 0:
                     raise ValueError
             except ValueError:
                 msg = 'Invalid molecule number value %s' % value
                 raise InvalidMolecularQuantityError(msg)
-            self.value = value_num
+            self.value = val
         elif quant_type == 'qualitative':
             if value in ['low', 'high']:
                 self.value = value
@@ -455,52 +535,6 @@ class MolecularQuantityReference(object):
             self.entity = entity
 
 
-class TimeInterval(object):
-    def __init__(self, lb, ub, unit):
-        if unit == 'day':
-            sym_unit = units.day
-        elif unit == 'hour':
-            sym_unit = units.hour
-        elif unit == 'minute':
-            sym_unit = units.minute
-        elif unit == 'second':
-            sym_unit = units.second
-        else:
-            raise InvalidTimeIntervalError('Invalid unit %s' % unit)
-        if lb is not None:
-            try:
-                lb_num = float(lb)
-            except ValueError:
-                raise InvalidTimeIntervalError('Invalid bound %s' % lb)
-            self.lb = lb_num * sym_unit
-        else:
-            self.lb = None
-        if ub is not None:
-            try:
-                ub_num = float(ub)
-            except ValueError:
-                raise InvalidTimeIntervalError('Invalid bound %s' % ub)
-            self.ub = ub_num * sym_unit
-        else:
-            self.ub = None
-
-    def _convert_to_sec(self, val):
-        if val is not None:
-            try:
-                # sympy >= 1.1
-                return units.convert_to(val, units.seconds).args[0]
-            except Exception:
-                # sympy < 1.1
-                return val / units.seconds
-        return None
-
-    def get_lb_seconds(self):
-        return self._convert_to_sec(self.lb)
-
-    def get_ub_seconds(self):
-        return self._convert_to_sec(self.ub)
-
-
 class InvalidMolecularQuantityError(BioagentException):
     pass
 
@@ -514,14 +548,6 @@ class InvalidMolecularEntityError(BioagentException):
 
 
 class InvalidMolecularConditionError(BioagentException):
-    pass
-
-
-class InvalidTemporalPatternError(BioagentException):
-    pass
-
-
-class InvalidTimeIntervalError(BioagentException):
     pass
 
 

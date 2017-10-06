@@ -39,10 +39,10 @@ def color_diff(expected, received):
         elif opcode == 'delete':
             output.append(Back.GREEN + sm.a[a0:a1] + Style.RESET_ALL)
         elif opcode == 'replace':
-            output.append(Back.CYAN + sm.a[a0:a1] + Back.RESET +
-                          Fore.CYAN + sm.b[b0:b1] + Style.RESET_ALL)
+            output.append(Back.BLUE + sm.a[a0:a1] + Back.RESET +
+                          Fore.BLUE + sm.b[b0:b1] + Style.RESET_ALL)
         else:
-            raise RuntimeError('unexpected opcode')
+            raise Exception('unexpected opcode')
     return ''.join(output)
 
 
@@ -74,9 +74,9 @@ class _IntegrationTest(TestCase):
     run_test: Actually run the test. This makes calls to the stubs.
     """
 
-    def __init__(self, bioagent):
+    def __init__(self, bioagent, **kwargs):
         self.output = None  # BytesIO()
-        self.bioagent = bioagent(testing=True)  # out = self.output)
+        self.bioagent = bioagent(testing=True, **kwargs)  # out = self.output)
         TestCase.__init__(self, 'run_test')
 
     def __getattribute__(self, attr_name):

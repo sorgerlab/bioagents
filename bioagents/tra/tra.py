@@ -320,16 +320,17 @@ def get_sim_result(kappa_plot):
     i_t = kappa_plot['legend'].index('[T]')
     values.sort(key=lambda x: x[i_t])
     nt = len(values)
-    obs_list = [
-        key.encode('utf8') for key in kappa_plot['legend'] if key != '[T]'
-        ]
-    yobs = numpy.ndarray(nt, zip(obs_list, [float]*len(obs_list)))
+    obs_dict = {
+        j: key.encode('utf8') for j, key in enumerate(kappa_plot['legend'])
+        if key != '[T]'
+        }
+    yobs = numpy.ndarray(nt, zip(obs_dict.values(), [float]*len(obs_dict)))
 
     tspan = []
     for i, value in enumerate(values):
         tspan.append(value[i_t])
-        for j, obs in enumerate(obs_list):
-            yobs[obs][i] = value[j + 1]
+        for j, obs in obs_dict.iteritems():
+            yobs[obs][i] = value[j]
     return (tspan, yobs)
 
 

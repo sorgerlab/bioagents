@@ -56,15 +56,10 @@ class KappaRuntime(object):
         project_list = resp.json()
         if self.project_name is not 'default':
             if self.project_name in project_list:
-                resp = self.dispatch(
-                    'delete',
-                    self.kappa_url + '/' + self.project_name
-                    )
-            resp = self.dispatch(
-                'post',
-                self.kappa_url,
-                {'project_id': self.project_name}
-                )
+                resp = self.dispatch('delete',
+                                     self.kappa_url + '/' + self.project_name)
+            resp = self.dispatch('post', self.kappa_url,
+                                 {'project_id': self.project_name})
         return
 
     def dispatch(self, method, url, data=None):
@@ -153,15 +148,16 @@ class KappaRuntime(object):
         Parameters
         ----------
         plot_period : int or float
-            The period of the plot perhaps?
+            The time period between output (plot) points returned by the
+            simulation. Default: 10
         pause_condition : string or None
-            I'm sure there are some options for this, but I have no idea what
-            they are. Default None
+            A Kappa Boolean expression defining a pause condition for the
+            simulation. Default: None
         seed: int
-            A random seed for the simulation, I expect.
+            A random seed for the stochastic simulation. Default: None
         store_trace : bool
             Presumably you can choose whether to store the trace. Hopefully
-            interpretation is straightforward. Default True.
+            interpretation is straightforward. Default: True
         """
         complete_params = {
             'plot_period': 10,

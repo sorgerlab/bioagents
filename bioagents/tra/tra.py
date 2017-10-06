@@ -75,18 +75,19 @@ class TRA(object):
         # The number of independent simulations to perform
         num_sim = 10
         # Run simulations
-        tspan, results = self.run_simulations(model, conditions, num_sim,
-                                              min_time_idx, max_time,
-                                              plot_period)
+        results = self.run_simulations(model, conditions, num_sim,
+                                       min_time_idx, max_time,
+                                       plot_period)
 
-        fig_path = self.plot_results(tspan, results, obs.name)
+        fig_path = self.plot_results(results, obs.name)
+        yobs_list = [yobs for _, yobs in results]
 
         # Discretize observations
-        [self.discretize_obs(yobs, obs.name) for yobs in results]
+        [self.discretize_obs(yobs, obs.name) for yobs in yobs_list]
         # We check for the given pattern
         if given_pattern:
             truths = []
-            for yobs in results:
+            for yobs in yobs_list:
                 # Run model checker on the given pattern
                 MC = mc.ModelChecker(fstr, yobs)
                 logger.info('Main property %s' % MC.truth)
@@ -107,7 +108,7 @@ class TRA(object):
         for fs, pat in all_patterns:
             logger.info('Testing pattern: %s' % pat)
             truths = []
-            for yobs in results:
+            for yobs in yobs_list:
                 MC = mc.ModelChecker(fs, yobs)
                 logger.info('Property %s' % MC.truth)
                 truths.append(MC.truth)
@@ -118,17 +119,18 @@ class TRA(object):
                 else:
                     return sat_rate, num_sim, pat, fig_path
 
-    def plot_results(self, tspan, results, obs_name):
+    def plot_results(self, results, obs_name):
         plt.figure()
         plt.ion()
-        lr = matplotlib.patches.Rectangle((0, 0), tspan[-1], 50, color='red',
+        max_time = max([result[0][-1] for result in results])
+        lr = matplotlib.patches.Rectangle((0, 0), max_time, 50, color='red',
                                           alpha=0.1)
-        hr = matplotlib.patches.Rectangle((0, 50), tspan[-1], 50,
+        hr = matplotlib.patches.Rectangle((0, 50), max_time, 50,
                                           color='green', alpha=0.1)
         ax = plt.gca()
         ax.add_patch(lr)
         ax.add_patch(hr)
-        for yobs in results:
+        for tspan, yobs in results:
             plt.plot(tspan, yobs[obs_name])
         plt.ylim(0, max(numpy.max(yobs[obs_name]), 100.0))
         plt.xlabel('Time (s)')
@@ -164,9 +166,11 @@ class TRA(object):
                 tspan, yobs = self.simulate_odes(model_sim, max_time,
                                                  plot_period)
             # Get and plot observable
-            yobs_from_min = yobs[min(min_time_idx, len(yobs)):]
-            results.append(yobs_from_min)
-        return tspan, results
+            start_idx = min(min_time_idx, len(yobs))
+            yobs_from_min = yobs[start_idx:]
+            tspan = tspan[start_idx:]
+            results.append((tspan, yobs_from_min))
+        return results
 
     def discretize_obs(self, yobs, obs_name):
         # TODO: This needs to be done in a model/observable-dependent way

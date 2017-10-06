@@ -5,7 +5,7 @@ from kqml import KQMLList, KQMLPerformative
 from indra.assemblers import pysb_assembler, PysbAssembler
 from indra.statements import stmts_from_json
 from indra.sources.trips import processor as trips_processor
-from bioagents.tra.tra import TRA, SimulatorError, tra_molecule, tra_time
+from bioagents.tra.tra import *
 from bioagents.tra import kappa_client
 from bioagents import Bioagent, BioagentException
 
@@ -61,15 +61,15 @@ class TRA_Module(Bioagent):
 
         try:
             pattern = get_temporal_pattern(pattern_lst)
-        except tra_time.InvalidIntervalError as e:
+        except InvalidTimeIntervalError as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_TIME_LIMIT')
             return reply_content
-        except tra_time.InvalidPatternError as e:
+        except InvalidTemporalPatternError as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
-        except tra_molecule.InvalidEntityError as e:
+        except InvalidMolecularEntityError as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_ENTITY_DESCRIPTION')
             return reply_content
@@ -147,7 +147,7 @@ def get_molecular_entity(lst):
         agent = tp._get_agent_by_id(term_id, None)
         return agent
     except Exception as e:
-        raise tra_molecule.InvalidEntityError(e)
+        raise InvalidMolecularEntityError(e)
 
 
 def get_molecular_quantity(lst):
@@ -158,9 +158,9 @@ def get_molecular_quantity(lst):
             unit = lst.gets('unit')
         else:
             unit = None
-        return tra_molecule.Quantity(quant_type, value, unit)
+        return MolecularQuantity(quant_type, value, unit)
     except Exception as e:
-        raise tra_molecule.InvalidQuantityError(e)
+        raise InvalidMolecularQuantityError(e)
 
 
 def get_molecular_quantity_ref(lst):
@@ -168,9 +168,9 @@ def get_molecular_quantity_ref(lst):
         quant_type = lst.gets('type')
         entity_lst = lst.get('entity')
         entity = get_molecular_entity(entity_lst)
-        return tra_molecule.QuantityReference(quant_type, entity)
+        return MolecularQuantityReference(quant_type, entity)
     except Exception as e:
-        raise tra_molecule.InvalidQuantityRefError(e)
+        raise InvalidMolecularQuantityRefError(e)
 
 
 def get_time_interval(lst):
@@ -178,9 +178,9 @@ def get_time_interval(lst):
         lb = lst.gets('lower-bound')
         ub = lst.gets('upper-bound')
         unit = lst.gets('unit')
-        return tra_time.Interval(lb, ub, unit)
+        return TimeInterval(lb, ub, unit)
     except Exception as e:
-        raise tra_time.InvalidIntervalError(e)
+        raise InvalidTimeIntervalError(e)
 
 
 def get_temporal_pattern(lst):
@@ -203,7 +203,7 @@ def get_temporal_pattern(lst):
         value = get_molecular_quantity(value_lst)
     else:
         value = None
-    tp = tra_time.Pattern(pattern_type, entities, time_limit, value=value)
+    tp = TemporalPattern(pattern_type, entities, time_limit, value=value)
     return tp
 
 
@@ -218,9 +218,9 @@ def get_molecular_condition(lst):
             value = lst.gets('value')
         else:
             value = None
-        return tra_molecule.Condition(condition_type, quantity, value)
+        return MolecularCondition(condition_type, quantity, value)
     except Exception as e:
-        raise tra_molecule.InvalidConditionError(e)
+        raise InvalidMolecularConditionError(e)
 
 
 class InvalidModelDescriptionError(BioagentException):

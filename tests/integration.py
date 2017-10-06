@@ -39,8 +39,8 @@ def color_diff(expected, received):
         elif opcode == 'delete':
             output.append(Back.GREEN + sm.a[a0:a1] + Style.RESET_ALL)
         elif opcode == 'replace':
-            output.append(Back.CYAN + sm.a[a0:a1] + Back.RESET +
-                          Fore.CYAN + sm.b[b0:b1] + Style.RESET_ALL)
+            output.append(Back.BLUE + sm.a[a0:a1] + Back.RESET +
+                          Fore.BLUE + sm.b[b0:b1] + Style.RESET_ALL)
         else:
             raise Exception('unexpected opcode')
     return ''.join(output)

@@ -9,7 +9,6 @@ __all__ = ['TRA', 'get_ltl_from_pattern', 'apply_condition',
 import os
 import numpy
 import logging
-import itertools
 from time import sleep
 from copy import deepcopy
 import sympy.physics.units as units
@@ -338,13 +337,17 @@ def get_all_patterns(obs_name):
     patterns = []
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.always_formula(obs_name, val_num)
-        pattern = \
-            '(:type "always_value" :value (:type "qualitative" :value "%s"))' % val_str
+        pattern = (
+            '(:type "always_value" '
+            ':value (:type "qualitative" :value "%s"))' % val_str
+            )
         patterns.append((fstr, pattern))
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.eventual_formula(obs_name, val_num)
-        pattern = \
-            '(:type "eventual_value" :value (:type "qualitative" :value "%s"))' % val_str
+        pattern = (
+            '(:type "eventual_value" '
+            ':value (:type "qualitative" :value "%s"))' % val_str
+            )
         patterns.append((fstr, pattern))
     fstr = mc.transient_formula(obs_name)
     pattern = '(:type "transient")'
@@ -354,8 +357,10 @@ def get_all_patterns(obs_name):
     patterns.append((fstr, pattern))
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.sometime_formula(obs_name, val_num)
-        pattern = \
-            '(:type "sometime_value" :value (:type "qualitative" :value "%s"))' % val_str
+        pattern = (
+            '(:type "sometime_value" '
+            ':value (:type "qualitative" :value "%s"))' % val_str
+            )
         patterns.append((fstr, pattern))
     fstr = mc.noact_formula(obs_name)
     pattern = '(:type "no_change")'

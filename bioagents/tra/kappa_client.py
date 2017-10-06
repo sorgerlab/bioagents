@@ -1,13 +1,11 @@
 """Web API client for a Kappa simulator."""
 
-import urllib2
 import json
 import os
 import re
 import requests
 import pickle
 from datetime import datetime
-from time import sleep
 
 
 KAPPA_BASE = 'https://api.executableknowledge.org/kappa/v2'

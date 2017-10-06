@@ -2,8 +2,7 @@ import json
 from nose.tools import raises
 import sympy.physics.units as units
 from bioagents.tra import tra_module
-from bioagents.tra.tra import tra_time, tra_molecule, apply_condition,\
-    get_all_patterns
+from bioagents.tra.tra import *
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation,\
     Dephosphorylation
@@ -13,7 +12,7 @@ from tests.util import stmts_kstring_from_text, ekb_kstring_from_text
 
 
 def test_time_interval():
-    tra_time.Interval(2.0, 4.0, 'second')
+    TimeInterval(2.0, 4.0, 'second')
 
 
 def test_get_time_interval_full():
@@ -44,14 +43,14 @@ def test_get_time_interval_lb():
     assert ti.get_lb_seconds() == 14400
 
 
-@raises(tra_time.InvalidIntervalError)
+@raises(InvalidTimeIntervalError)
 def test_get_time_interval_nounit():
     ts = '(:lower-bound 4)'
     lst = KQMLList.from_string(ts)
     tra_module.get_time_interval(lst)
 
 
-@raises(tra_time.InvalidIntervalError)
+@raises(InvalidTimeIntervalError)
 def test_get_time_interval_badunit():
     ts = '(:lower-bound 4 :unit "xyz")'
     lst = KQMLList.from_string(ts)
@@ -74,14 +73,14 @@ def test_molecular_quantity_conc2():
     assert mq.value == 200 * units.nano * units.mol / units.liter
 
 
-@raises(tra_molecule.InvalidQuantityError)
+@raises(InvalidMolecularQuantityError)
 def test_molecular_quantity_conc_badval():
     s = '(:type "concentration" :value "xyz" :unit "nM")'
     lst = KQMLList.from_string(s)
     tra_module.get_molecular_quantity(lst)
 
 
-@raises(tra_molecule.InvalidQuantityError)
+@raises(InvalidMolecularQuantityError)
 def test_molecular_quantity_conc_badunit():
     s = '(:type "concentration" :value 200 :unit "meter")'
     lst = KQMLList.from_string(s)
@@ -96,7 +95,7 @@ def test_molecular_quantity_num():
     assert mq.value == 20000
 
 
-@raises(tra_molecule.InvalidQuantityError)
+@raises(InvalidMolecularQuantityError)
 def test_molecular_quantity_num_badval():
     s = '(:type "number" :value -1)'
     lst = KQMLList.from_string(s)
@@ -111,7 +110,7 @@ def test_molecular_quantity_qual():
     assert mq.value == 'high'
 
 
-@raises(tra_molecule.InvalidQuantityError)
+@raises(InvalidMolecularQuantityError)
 def test_molecular_quantity_qual_badval():
     s = '(:type "qualitative" :value 123)'
     lst = KQMLList.from_string(s)
@@ -134,14 +133,14 @@ def test_molecular_quantity_ref2():
     assert len(mqr.entity.bound_conditions) == 1
 
 
-@raises(tra_molecule.InvalidQuantityRefError)
+@raises(InvalidMolecularQuantityRefError)
 def test_molecular_quantity_badtype():
     s = '(:type "xyz" :entity (:description "%s"))' % ekb_complex
     lst = KQMLList.from_string(s)
     tra_module.get_molecular_quantity_ref(lst)
 
 
-@raises(tra_molecule.InvalidQuantityRefError)
+@raises(InvalidMolecularQuantityRefError)
 def test_molecular_quantity_badentity():
     s = '(:type "xyz" :entity (:description "xyz"))'
     lst = KQMLList.from_string(s)
@@ -181,7 +180,7 @@ def test_get_molecular_condition_multiple():
     assert mc.quantity.entity.name == 'BRAF'
 
 
-@raises(tra_molecule.InvalidConditionError)
+@raises(InvalidMolecularConditionError)
 def test_get_molecular_condition_badtype():
     lst = KQMLList.from_string('(:type "xyz" :value 2 ' +
                                ':quantity (:type "total" ' +
@@ -189,7 +188,7 @@ def test_get_molecular_condition_badtype():
     tra_module.get_molecular_condition(lst)
 
 
-@raises(tra_molecule.InvalidConditionError)
+@raises(InvalidMolecularConditionError)
 def test_get_molecular_condition_badvalue():
     lst = KQMLList.from_string('(:type "multiple" :value "xyz" ' +
                                ':quantity (:type "total" ' +
@@ -197,7 +196,7 @@ def test_get_molecular_condition_badvalue():
     tra_module.get_molecular_condition(lst)
 
 
-@raises(tra_molecule.InvalidConditionError)
+@raises(InvalidMolecularConditionError)
 def test_get_molecular_condition_badvalue2():
     lst = KQMLList.from_string('(:type "exact" :value 2 ' +
                                ':quantity (:type "total" ' +
@@ -205,7 +204,7 @@ def test_get_molecular_condition_badvalue2():
     tra_module.get_molecular_condition(lst)
 
 
-@raises(tra_molecule.InvalidConditionError)
+@raises(InvalidMolecularConditionError)
 def test_get_molecular_condition_badentity():
     lst = KQMLList.from_string('(:type "exact" :value 2 ' +
                                ':quantity (:type "total" ' +

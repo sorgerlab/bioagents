@@ -1,18 +1,18 @@
 from ltl_nodes import build_tree
 
+
 class ModelChecker(object):
     def __init__(self, formula_str, states=None):
         self.formula_str = formula_str
         self.roots = []
         self.time = 0
 
-        # Downsample here for speed
-        states = states[::5]
-
         root = build_tree(self.formula_str)
         self.roots.append(root)
 
         if states is not None:
+            # Downsample here for speed
+            states = states[::5]
             for t, s in enumerate(states):
                 tf = self.update(s, (t == (len(states)-1)))
                 if tf is not None:
@@ -31,25 +31,31 @@ class ModelChecker(object):
         self.truth = tf
         return self.truth
 
+
 def transient_formula(var_id):
     fstr = 'F[%s,1,1] & FG([%s,0,0])' % (var_id, var_id)
     return fstr
+
 
 def sustained_formula(var_id):
     fstr = 'FG[%s,1,1]' % var_id
     return fstr
 
+
 def noact_formula(var_id):
     fstr = 'G[%s,0,0]' % var_id
     return fstr
+
 
 def always_formula(var_id, value):
     fstr = 'G[%s,%d,%d]' % (var_id, value, value)
     return fstr
 
+
 def eventual_formula(var_id, value):
     fstr = 'FG[%s,%d,%d]' % (var_id, value, value)
     return fstr
+
 
 def sometime_formula(var_id, value):
     fstr = 'F[%s,%d,%d]' % (var_id, value, value)

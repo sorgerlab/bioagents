@@ -4,7 +4,7 @@ import argparse
 import operator
 import json
 
-from kappa_client import KappaRuntime, RuntimeError
+from kappa_client import KappaRuntime, KappaRuntimeError
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from bioagents import Bioagent
 
@@ -132,7 +132,7 @@ class Kappa_Module(Bioagent):
             try:
                 reply_content = self.respond_parse(arguments)
             except Exception as e:
-                message = 'Could not parse Kappa model: (%s)' % e
+                message = 'Could not compile Kappa model: (%s)' % e
                 return self.error_reply(msg, message)
         elif task_str == 'KAPPA-START':
             try:
@@ -192,7 +192,7 @@ class Kappa_Module(Bioagent):
 
     def respond_parse(self, arguments):
         '''
-        Response content to parse message
+        Response content to compile message
         '''
         if "CODE" not in arguments:
             reply_content = self.response_error(["Missing code"])
@@ -204,10 +204,10 @@ class Kappa_Module(Bioagent):
             logger.debug('respond_parse {0}'.format(request_code))
             reply_content = KQMLList()
             try:
-                response = self.kappa.parse(request_code)
+                response = self.kappa.compile(request_code)
                 logger.debug(response)
                 reply_content = KQMLList.from_string('(SUCCESS)')
-            except RuntimeError as e:
+            except KappaRuntimeError as e:
                 logger.debug(e.errors)
                 reply_content = self.response_error(e.errors)
         return reply_content
@@ -243,7 +243,7 @@ class Kappa_Module(Bioagent):
                     response = self.kappa.start(parameter)
                     response_message = '(SUCCESS :id %d)' % response
                     response_content = KQMLList.from_string(response_message)
-                except RuntimeError as e:
+                except KappaRuntimeError as e:
                     response_content = self.response_error(e.errors)
             except ValueError as e:
                 response_content = self.response_error([str(e)])
@@ -259,7 +259,7 @@ class Kappa_Module(Bioagent):
                 response_content = render_status(status)
             except ValueError as e:
                 response_content = self.response_error([str(e)])
-            except RuntimeError as e:
+            except KappaRuntimeError as e:
                 response_content = self.response_error(e.errors)
         return response_content
 
@@ -271,7 +271,7 @@ class Kappa_Module(Bioagent):
                 token = int(arguments["ID"])
                 status = self.kappa.stop(token)
                 response_content = KQMLList.from_string('(SUCCESS)')
-            except RuntimeError as e:
+            except KappaRuntimeError as e:
                 response_content = self.response_error(e.errors)
         return response_content
 

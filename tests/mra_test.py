@@ -206,6 +206,24 @@ class TestBuildModelAmbiguity(_IntegrationTest):
         return None
 
 
+class TestBuildModelBoundCondition(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestBuildModelBoundCondition, self).__init__(MRA_Module)
+
+    def get_message(self):
+        txt = 'KRAS bound to GTP phosphorylates BRAF on T373.'
+        return _get_build_model_request(txt)
+
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS'
+        assert self.output.get('model-id') == '1'
+        assert self.output.get('model') is not None
+        return True
+
+    def give_feedback(self):
+        return None
+
+
 class TestModelUndo(_IntegrationTest):
     def __init__(self, *args):
         super(TestModelUndo, self).__init__(MRA_Module)

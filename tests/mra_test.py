@@ -217,11 +217,42 @@ class TestBuildModelBoundCondition(_IntegrationTest):
     def is_correct_response(self):
         assert self.output.head() == 'SUCCESS'
         assert self.output.get('model-id') == '1'
-        assert self.output.get('model') is not None
+        model = self.output.gets('model')
+        assert model is not None
+        indra_stmts_json = json.loads(model)
+        assert(len(indra_stmts_json) == 1)
+        stmt = stmts_from_json(indra_stmts_json)[0]
+        assert(isinstance(stmt, Phosphorylation))
+        assert(stmt.enz.bound_conditions[0].agent.name == 'GTP')
         return True
 
     def give_feedback(self):
         return None
+
+
+class TestBuildModelComplex(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestBuildModelComplex, self).__init__(MRA_Module)
+
+    def get_message(self):
+        txt = 'The EGFR-EGF complex activates SOS1.'
+        return _get_build_model_request(txt)
+
+    def is_correct_response(self):
+        assert self.output.head() == 'SUCCESS'
+        assert self.output.get('model-id') == '1'
+        model = self.output.gets('model')
+        assert model is not None
+        indra_stmts_json = json.loads(model)
+        assert(len(indra_stmts_json) == 1)
+        stmt = stmts_from_json(indra_stmts_json)[0]
+        assert(isinstance(stmt, Activation))
+        assert(stmt.subj.bound_conditions[0].agent.name == 'EGF')
+        return True
+
+    def give_feedback(self):
+        return None
+
 
 
 class TestModelUndo(_IntegrationTest):

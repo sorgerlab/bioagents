@@ -45,10 +45,8 @@ class DTDA_Module(Bioagent):
             return self.make_failure('INVALID_TARGET')
 
         try:
-            is_target = self.dtda.is_nominal_drug_target(
-                drug.name,
-                target_name
-                )
+            is_target = self.dtda.is_nominal_drug_target(drug.name,
+                                                         target_name)
         except DrugNotFoundException:
             return self.make_failure('DRUG_NOT_FOUND')
         reply = KQMLList('SUCCESS')
@@ -138,7 +136,11 @@ class DTDA_Module(Bioagent):
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
+
+        logger.info('Disease type: %s' % disease.disease_type)
+
         if not trips_isa(disease.disease_type, 'ont::cancer'):
+            logger.info('Disease is not a type of cancer.')
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 

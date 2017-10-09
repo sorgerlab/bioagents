@@ -186,22 +186,19 @@ class DTDA(object):
     def get_top_mutation(self, disease_name):
         # First, look for possible disease targets
         try:
-            mutation_stats = self.get_mutation_statistics(
-                disease_name,
-                'missense'
-                )
-        except DiseaseNotFoundException:
+            mutation_stats = self.get_mutation_statistics(disease_name,
+                                                          'missense')
+        except DiseaseNotFoundException as e:
+            logger.exception(e)
             raise DiseaseNotFoundException
         if mutation_stats is None:
             logger.error('No mutation stats')
             return None
 
         # Return the top mutation as a possible target
-        mutations_sorted = sorted(
-            mutation_stats.items(),
-            key=operator.itemgetter(1),
-            reverse=True
-            )
+        mutations_sorted = sorted(mutation_stats.items(),
+                                  key=operator.itemgetter(1),
+                                  reverse=True)
         top_mutation = mutations_sorted[0]
         mut_protein = top_mutation[0]
         mut_percent = int(top_mutation[1][0]*100.0)

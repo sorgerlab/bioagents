@@ -15,6 +15,7 @@ from indra.databases import uniprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.assemblers import pysb_assembler, PysbAssembler
 from pysb import kappa
+from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 
 
@@ -260,7 +261,11 @@ def make_sbgn(pysb_model, model_id):
     pa.model = pysb_model
     for m in pysb_model.monomers:
         pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
-    sbgn_str = pa.export_model('sbgn')
+    try:
+        sbgn_str = pa.export_model('sbgn')
+    except BngInterfaceError:
+        logger.error('Reaction network could not be generated for SBGN.')
+        return None
     return sbgn_str
 
 

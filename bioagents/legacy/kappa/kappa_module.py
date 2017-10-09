@@ -4,9 +4,9 @@ import argparse
 import operator
 import json
 
-from kappa_client import KappaRuntime, KappaRuntimeError
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from bioagents import Bioagent
+from bioagents.tra.kappa_client import KappaRuntime, KappaRuntimeError
 
 logger = logging.getLogger('Kappa')
 

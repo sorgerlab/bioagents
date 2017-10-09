@@ -5,6 +5,7 @@ from bioagents.dtda import DTDA_Module
 from tests.util import *
 from tests.integration import _IntegrationTest, _FailureTest
 
+# DTDA unit tests
 
 def test_mutation_statistics():
     d = DTDA()
@@ -22,6 +23,32 @@ def test_get_disease():
     disease = DTDA_Module.get_disease(disease_ekb)
     disease_ekb = ekb_from_text('common cold')
     disease = DTDA_Module.get_disease(disease_ekb)
+
+
+def test_is_nominal_target():
+    d = DTDA()
+    vems = ('vemurafenib', 'Vemurafenib', 'VEMURAFENIB')
+    for vem in vems:
+        is_target = d.is_nominal_drug_target(vem, 'BRAF')
+        assert is_target
+        is_target = d.is_nominal_drug_target(vem, 'KRAS')
+        assert not is_target
+
+
+def test_find_drug_targets1():
+    d = DTDA()
+    vems = ('vemurafenib', 'Vemurafenib', 'VEMURAFENIB')
+    for vem in vems:
+        targets = d.find_drug_targets(vem)
+        assert len(targets) == 1
+        assert targets[0] == 'BRAF', targets
+
+
+def test_find_drug_targets2():
+    d = DTDA()
+    targets = d.find_drug_targets('SB525334')
+    assert len(targets) == 1
+    assert targets[0] == 'TGFBR1', targets
 
 
 # FIND-TARGET-DRUG tests

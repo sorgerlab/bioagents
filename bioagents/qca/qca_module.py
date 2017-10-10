@@ -43,7 +43,18 @@ class QCA_Module(Bioagent):
             raise ValueError("Target list is empty")
 
         target = self._get_term_name(target_arg)
+        if target is none:
+            reply = self.make_failure('NO_PATH_FOUND')
+            # NOTE: use the one below if it's handled by NLG
+            #reply = self.make_failure('TARGET_MISSING')
+            return reply
+
         source = self._get_term_name(source_arg)
+        if source is none:
+            reply = self.make_failure('NO_PATH_FOUND')
+            # NOTE: use the one below if it's handled by NLG
+            #reply = self.make_failure('SOURCE_MISSING')
+            return reply
 
         if reltype_arg is None or len(reltype_arg) == 0:
             relation_types = None
@@ -96,8 +107,12 @@ class QCA_Module(Bioagent):
     def _get_term_name(self, term_str):
         tp = TripsProcessor(term_str)
         terms = tp.tree.findall('TERM')
+        if not terms:
+            return None
         term_id = terms[0].attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
+        if agent is None:
+            return None
         return agent.name
 
 

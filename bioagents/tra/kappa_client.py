@@ -6,6 +6,7 @@ import re
 import requests
 import pickle
 from datetime import datetime
+from time import sleep
 
 
 KAPPA_BASE = 'https://api.executableknowledge.org/kappa/v2'
@@ -41,24 +42,55 @@ class KappaRuntime(object):
 
     def __init__(self, project_name='default'):
         """Create a Kappa client."""
-        self.project_name = project_name
-        self.renew()
-        self.url = self.kappa_url + '/' + project_name
+        self.project_name = self.check_name(project_name)
+        self.url = self.kappa_url + '/' + self.project_name
+        self.start_project()
         return
 
-    def renew(self):
-        """Method to recreate the project, removing anything that was there."""
+    def __del__(self):
+        "Delete the project when you go"
+        self.delete_project()
+        return
+
+    def get_project_list(self):
+        """Get the list of projects on the kappa server."""
         resp = self.dispatch('get', self.kappa_url)
         if resp.status_code is not 200:
             raise KappaRuntimeError(resp)
-        project_list = resp.json()
-        if self.project_name is not 'default':
-            if self.project_name in project_list:
-                resp = self.dispatch('delete',
-                                     self.kappa_url + '/' + self.project_name)
-            resp = self.dispatch('post', self.kappa_url,
-                                 {'project_id': self.project_name})
+        return resp.json()
+
+    def check_name(self, proj_name):
+        """Make sure the project name is unique."""
+        if proj_name != 'default' and proj_name in self.get_project_list():
+            name_fmt = proj_name + "_%d"
+            i = 0
+            times_confirmed = 0
+            while times_confirmed < 2:
+                if name_fmt % i not in self.get_project_list():
+                    times_confirmed += 1
+                    # Give any other tools a chance to make their project.
+                    sleep(1)
+                else:
+                    i += 1
+            proj_name = name_fmt % i
+        return proj_name
+
+    def start_project(self):
+        """Method to recreate the project, removing anything that was there."""
+        if self.project_name != 'default' or 'default' not in self.get_project_list():
+            data = {'project_id': self.project_name}
+            self.dispatch('post', self.kappa_url, data)
         return
+
+    def delete_project(self):
+        """delete_project the project."""
+        if self.project_name != 'default':
+            self.dispatch('delete_project', self.kappa_url + '/' + self.project_name)
+
+    def reset_project(self):
+        """reset_project the project."""
+        self.delete_project()
+        self.start_project()
 
     def dispatch(self, method, url, data=None):
         """Send a request of type method to the project."""
@@ -138,7 +170,7 @@ class KappaRuntime(object):
         content = res.json()
         return content
 
-    def start(self, **parameters):
+    def start_sim(self, **parameters):
         """Start a simulation with given parameters.
 
         Note that parameters are subject to changes in the kappa remote api.

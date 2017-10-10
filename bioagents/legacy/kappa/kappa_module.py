@@ -219,7 +219,7 @@ class Kappa_Module(Bioagent):
 
     def respond_start(self, arguments):
         '''
-        Response content to start message
+        Response content to start_sim message
         '''
         if "CODE" not in arguments:
             response_content = self.response_error(["Missing code"])
@@ -240,7 +240,7 @@ class Kappa_Module(Bioagent):
                 parameter["code"] = request_code
                 try:
                     logger.debug(parameter)
-                    response = self.kappa.start(parameter)
+                    response = self.kappa.start_sim(parameter)
                     response_message = '(SUCCESS :id %d)' % response
                     response_content = KQMLList.from_string(response_message)
                 except KappaRuntimeError as e:

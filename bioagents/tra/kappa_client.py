@@ -92,6 +92,8 @@ class KappaRuntime(object):
                         while self.project_name in proj_name_list:
                             i += 1
                             self.project_name = name_fmt % i
+                    else:
+                        raise e
         return
 
     def delete_project(self, proj=None):

@@ -16,15 +16,9 @@ except ImportError:
     class DummyColorer(object):
         def __getattribute__(self, *args, **kwargs):
             return ""
-
-    class Back(DummyColorer):
-        pass
-
-    class Style(DummyColorer):
-        pass
-
-    class Fore(DummyColorer):
-        pass
+    Back = DummyColorer()
+    Style = DummyColorer()
+    Fore = DummyColorer()
 
 
 def color_diff(expected, received):

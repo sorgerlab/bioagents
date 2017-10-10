@@ -18,7 +18,7 @@ def _get_toy_model():
 
 
 def _get_kappa():
-    return kappa_client.KappaRuntime('test_project')
+    return kappa_client.KappaRuntime('test_project', debug=True)
 
 
 kappa_model = _get_toy_model()

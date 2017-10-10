@@ -6,7 +6,9 @@ import re
 import requests
 import pickle
 from datetime import datetime
-from time import sleep
+from logging import getLogger, DEBUG
+
+logger = getLogger('kappa_client')
 
 
 KAPPA_BASE = 'https://api.executableknowledge.org/kappa/v2'
@@ -40,8 +42,10 @@ class KappaRuntimeError(Exception):
 class KappaRuntime(object):
     kappa_url = KAPPA_BASE + '/projects'
 
-    def __init__(self, project_name='default'):
+    def __init__(self, project_name='default', debug=False):
         """Create a Kappa client."""
+        if debug:
+            logger.setLevel(DEBUG)
         self.project_name = project_name
         self.started = False
         self.start_project()
@@ -76,6 +80,10 @@ class KappaRuntime(object):
                     self.dispatch('post', self.kappa_url, data)
                     succeeded = True
                     self.started = True
+                    logger.info("Starting %s" % self.project_name)
+                    logger.debug(
+                        "Current projects: %s" % self.get_project_list()
+                        )
                 except KappaRuntimeError as e:
                     if self.project_name == 'default':
                         succeeded = True
@@ -93,6 +101,8 @@ class KappaRuntime(object):
         if proj != 'default' and (proj != self.project_name or self.started):
             try:
                 self.dispatch('delete', self.kappa_url + '/' + proj)
+                logger.info("Deleted %s." % proj)
+                logger.debug("Current projects: %s" % self.get_project_list())
             except KappaRuntimeError as e:
                 if re.match('Project .*? not found', e.text[0]) is None:
                     raise e

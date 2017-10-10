@@ -42,9 +42,10 @@ class KappaRuntime(object):
 
     def __init__(self, project_name='default'):
         """Create a Kappa client."""
-        self.project_name = self.check_name(project_name)
-        self.url = self.kappa_url + '/' + self.project_name
+        self.project_name = project_name
+        self.started = False
         self.start_project()
+        self.url = self.kappa_url + '/' + self.project_name
         return
 
     def __del__(self):
@@ -59,33 +60,39 @@ class KappaRuntime(object):
             raise KappaRuntimeError(resp)
         return resp.json()
 
-    def check_name(self, proj_name):
-        """Make sure the project name is unique."""
-        if proj_name != 'default' and proj_name in self.get_project_list():
-            name_fmt = proj_name + "_%d"
-            i = 0
-            times_confirmed = 0
-            while times_confirmed < 2:
-                if name_fmt % i not in self.get_project_list():
-                    times_confirmed += 1
-                    # Give any other tools a chance to make their project.
-                    sleep(1)
-                else:
-                    i += 1
-            proj_name = name_fmt % i
-        return proj_name
-
     def start_project(self):
         """Method to recreate the project, removing anything that was there."""
-        if self.project_name != 'default' or 'default' not in self.get_project_list():
-            data = {'project_id': self.project_name}
-            self.dispatch('post', self.kappa_url, data)
+        if self.started:
+            return
+
+        if self.project_name != 'default'\
+           or 'default' not in self.get_project_list():
+            name_fmt = self.project_name + "_%d"
+            i = -1
+            succeeded = False
+            while not succeeded:
+                try:
+                    data = {'project_id': self.project_name}
+                    self.dispatch('post', self.kappa_url, data)
+                    succeeded = True
+                    self.started = True
+                except KappaRuntimeError as e:
+                    if self.project_name == 'default':
+                        succeeded = True
+                    elif re.match('project .*? exists', e.text[0]):
+                        proj_name_list = self.get_project_list()
+                        while self.project_name in proj_name_list:
+                            i += 1
+                            self.project_name = name_fmt % i
         return
 
-    def delete_project(self):
+    def delete_project(self, proj=None):
         """delete_project the project."""
-        if self.project_name != 'default':
-            self.dispatch('delete_project', self.kappa_url + '/' + self.project_name)
+        if proj is None:
+            proj = self.project_name
+        if proj != 'default' and (proj != self.project_name or self.started):
+            self.dispatch('delete', self.kappa_url + '/' + proj)
+            self.started = False
 
     def reset_project(self):
         """reset_project the project."""
@@ -219,3 +226,12 @@ class KappaRuntime(object):
         """Get the data from the simulation."""
         resp = self._tell_sim('get', 'plot')
         return json.loads(resp.content)
+
+
+def clean_projects():
+    kappa = KappaRuntime()
+    proj_list = kappa.get_project_list()
+    for proj in proj_list:
+        if proj != 'default':
+            kappa.delete_project(proj)
+    return

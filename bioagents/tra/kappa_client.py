@@ -79,7 +79,7 @@ class KappaRuntime(object):
                 except KappaRuntimeError as e:
                     if self.project_name == 'default':
                         succeeded = True
-                    elif re.match('project .*? exists', e.text[0]):
+                    elif re.match('project .*? exists', e.text[0]) is not None:
                         proj_name_list = self.get_project_list()
                         while self.project_name in proj_name_list:
                             i += 1
@@ -91,7 +91,11 @@ class KappaRuntime(object):
         if proj is None:
             proj = self.project_name
         if proj != 'default' and (proj != self.project_name or self.started):
-            self.dispatch('delete', self.kappa_url + '/' + proj)
+            try:
+                self.dispatch('delete', self.kappa_url + '/' + proj)
+            except KappaRuntimeError as e:
+                if re.match('Project .*? not found', e.text[0]) is None:
+                    raise e
             self.started = False
 
     def reset_project(self):

@@ -43,14 +43,14 @@ class QCA_Module(Bioagent):
             raise ValueError("Target list is empty")
 
         target = self._get_term_name(target_arg)
-        if target is none:
+        if target is None:
             reply = self.make_failure('NO_PATH_FOUND')
             # NOTE: use the one below if it's handled by NLG
             #reply = self.make_failure('TARGET_MISSING')
             return reply
 
         source = self._get_term_name(source_arg)
-        if source is none:
+        if source is None:
             reply = self.make_failure('NO_PATH_FOUND')
             # NOTE: use the one below if it's handled by NLG
             #reply = self.make_failure('SOURCE_MISSING')

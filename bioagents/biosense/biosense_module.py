@@ -104,7 +104,7 @@ class BioSense_Module(Bioagent):
         if members is None:
             return make_failure('COLLECTION_NOT_FAMILY_OR_COMPLEX')
 
-        kagents = [get_kagent((agent, 'ONT::PROTEIN', get_urls(m)))
+        kagents = [get_kagent((m, 'ONT::PROTEIN', get_urls(m)))
                    for m in members]
 
         msg = KQMLList('SUCCESS')

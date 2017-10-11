@@ -3,6 +3,7 @@ import numpy
 import itertools
 from time import sleep
 from bioagents.tra import kappa_client
+from threading import Thread
 
 
 TEST_MODEL_FILE = os.path.join(os.path.dirname(__file__), 'test_model.ka')
@@ -17,7 +18,7 @@ def _get_toy_model():
 
 
 def _get_kappa():
-    return kappa_client.KappaRuntime('test_project')
+    return kappa_client.KappaRuntime('test_project', debug=True)
 
 
 kappa_model = _get_toy_model()
@@ -61,7 +62,7 @@ def test_run_sim():
     kappa = _get_kappa()
     kappa.compile([TEST_MODEL_FILE])
     print('Starting simulation')
-    kappa.start(plot_period=100)
+    kappa.start_sim(plot_period=100)
 
     print('Started simulation')
     while True:
@@ -86,3 +87,35 @@ def test_run_sim():
         for i, obs in enumerate(obs_list):
             yobs[obs][t] = value[1]
     print(tspan, yobs)
+
+
+def test_concurrency():
+    exception_list = []
+
+    def test_and_catch():
+        try:
+            test_file_upload()
+        except Exception as e:
+            exception_list.append(e)
+
+    th_list = []
+    for _ in range(2):
+        th_list.append(Thread(target=test_and_catch))
+
+    for th in th_list:
+        th.start()
+
+    for th in th_list:
+        th.join()
+
+    assert not len(exception_list),\
+        "Receive exceptions from threads." + '\n'.join(
+            [str(e) for e in exception_list]
+            )
+
+
+def test_reset():
+    kappa = _get_kappa()
+    kappa.add_file(TEST_MODEL_FILE)
+    kappa.reset_project()
+    kappa.add_file(TEST_MODEL_FILE)

@@ -192,7 +192,7 @@ class TRA(object):
         kappa_model = pysb_to_kappa(model_sim)
         # Start simulation
         self.kappa.compile(code_list=[kappa_model])
-        self.kappa.start(plot_period=plot_period,
+        self.kappa.start_sim(plot_period=plot_period,
                          pause_condition="[T] > %d" % max_time)
         while True:
             sleep(0.2)
@@ -207,7 +207,7 @@ class TRA(object):
                         status_json.get('simulation_progress_time_percentage')
                         )
         tspan, yobs = get_sim_result(self.kappa.sim_plot())
-        self.kappa.renew()
+        self.kappa.reset_project()
         return tspan, yobs
 
     def simulate_odes(self, model_sim, max_time, plot_period):

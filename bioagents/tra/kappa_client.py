@@ -6,6 +6,9 @@ import re
 import requests
 import pickle
 from datetime import datetime
+from logging import getLogger, DEBUG
+
+logger = getLogger('kappa_client')
 
 
 KAPPA_BASE = 'https://api.executableknowledge.org/kappa/v2'
@@ -39,26 +42,78 @@ class KappaRuntimeError(Exception):
 class KappaRuntime(object):
     kappa_url = KAPPA_BASE + '/projects'
 
-    def __init__(self, project_name='default'):
+    def __init__(self, project_name='default', debug=False):
         """Create a Kappa client."""
+        if debug:
+            logger.setLevel(DEBUG)
         self.project_name = project_name
-        self.renew()
-        self.url = self.kappa_url + '/' + project_name
+        self.started = False
+        self.start_project()
+        self.url = self.kappa_url + '/' + self.project_name
         return
 
-    def renew(self):
-        """Method to recreate the project, removing anything that was there."""
+    def __del__(self):
+        "Delete the project when you go"
+        self.delete_project()
+        return
+
+    def get_project_list(self):
+        """Get the list of projects on the kappa server."""
         resp = self.dispatch('get', self.kappa_url)
         if resp.status_code is not 200:
             raise KappaRuntimeError(resp)
-        project_list = resp.json()
-        if self.project_name is not 'default':
-            if self.project_name in project_list:
-                resp = self.dispatch('delete',
-                                     self.kappa_url + '/' + self.project_name)
-            resp = self.dispatch('post', self.kappa_url,
-                                 {'project_id': self.project_name})
+        return resp.json()
+
+    def start_project(self):
+        """Method to recreate the project, removing anything that was there."""
+        if self.started:
+            return
+
+        if self.project_name != 'default'\
+           or 'default' not in self.get_project_list():
+            name_fmt = self.project_name + "_%d"
+            i = -1
+            succeeded = False
+            while not succeeded:
+                try:
+                    data = {'project_id': self.project_name}
+                    self.dispatch('post', self.kappa_url, data)
+                    succeeded = True
+                    self.started = True
+                    logger.info("Starting %s" % self.project_name)
+                    logger.debug(
+                        "Current projects: %s" % self.get_project_list()
+                        )
+                except KappaRuntimeError as e:
+                    if self.project_name == 'default':
+                        succeeded = True
+                    elif re.match('project .*? exists', e.text[0]) is not None:
+                        proj_name_list = self.get_project_list()
+                        while self.project_name in proj_name_list:
+                            i += 1
+                            self.project_name = name_fmt % i
+                    else:
+                        raise e
         return
+
+    def delete_project(self, proj=None):
+        """delete_project the project."""
+        if proj is None:
+            proj = self.project_name
+        if proj != 'default' and (proj != self.project_name or self.started):
+            try:
+                self.dispatch('delete', self.kappa_url + '/' + proj)
+                logger.info("Deleted %s." % proj)
+                logger.debug("Current projects: %s" % self.get_project_list())
+            except KappaRuntimeError as e:
+                if re.match('Project .*? not found', e.text[0]) is None:
+                    raise e
+            self.started = False
+
+    def reset_project(self):
+        """reset_project the project."""
+        self.delete_project()
+        self.start_project()
 
     def dispatch(self, method, url, data=None):
         """Send a request of type method to the project."""
@@ -138,7 +193,7 @@ class KappaRuntime(object):
         content = res.json()
         return content
 
-    def start(self, **parameters):
+    def start_sim(self, **parameters):
         """Start a simulation with given parameters.
 
         Note that parameters are subject to changes in the kappa remote api.
@@ -187,3 +242,12 @@ class KappaRuntime(object):
         """Get the data from the simulation."""
         resp = self._tell_sim('get', 'plot')
         return json.loads(resp.content)
+
+
+def clean_projects():
+    kappa = KappaRuntime()
+    proj_list = kappa.get_project_list()
+    for proj in proj_list:
+        if proj != 'default':
+            kappa.delete_project(proj)
+    return

@@ -28,14 +28,6 @@ def test_init_default():
     kappa = kappa_client.KappaRuntime()
 
 
-def test_clean_projects():
-    kappa_client.clean_projects()
-    kappa = kappa_client.KappaRuntime()
-    p_list = kappa.get_project_list()
-    assert len(p_list) <= 1,\
-        "Not all projects besides default removed. Still have %s." % p_list
-
-
 def test_init_with_project():
     kappa = _get_kappa()
 

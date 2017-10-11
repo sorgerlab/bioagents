@@ -4,8 +4,6 @@ import json
 import os
 import re
 import requests
-import pickle
-from datetime import datetime
 from logging import getLogger, DEBUG
 
 logger = getLogger('kappa_client')
@@ -21,15 +19,6 @@ class KappaRuntimeError(Exception):
             'u?[\"\']text[\"\']: ?u?[\"\'](.*?)[\"\'],',
             resp.content
             )
-        try:
-            now = datetime.now()
-            pkl_name = '%s_err_resp.pkl' % now.strftime('%Y%m%d-%H%M%S')
-            with open(pkl_name, 'wb') as f:
-                pickle.dump(resp, f, protocol=2)
-            print("Pickled response for further analysis.")
-            print("See %s" % os.path.abspath(pkl_name))
-        except Exception:
-            print("Failed to pickle response for further analysis.")
         return
 
     def __str__(self):

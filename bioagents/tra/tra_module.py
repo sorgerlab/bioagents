@@ -142,8 +142,22 @@ def get_molecular_entity(lst):
         description_str = lst.gets('description')
         tp = trips_processor.TripsProcessor(description_str)
         terms = tp.tree.findall('TERM')
-        # TODO: handle multiple terms here
-        term_id = terms[0].attrib['id']
+        def find_complex(terms):
+            cplx = None
+            for term in terms:
+                term_type = term.find('type')
+                if term_type is not None and \
+                    term_type.text == 'ONT::MACROMOLECULAR-COMPLEX':
+                    cplx = term.attrib.get('id')
+                    break
+            return cplx
+        cplx_id = find_complex(terms)
+        if not cplx_id:
+            term_id = terms[0].attrib['id']
+            logger.info('Using ID of term: %s' % term_id)
+        else:
+            logger.info('Using ID of complex: %s' % cplx_id)
+            term_id = cplx_id
         agent = tp._get_agent_by_id(term_id, None)
         return agent
     except Exception as e:

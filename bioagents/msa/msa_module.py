@@ -38,7 +38,7 @@ class MSA_Module(Bioagent):
         """Return response content to phosphorylation_activating request."""
         target_ekb = content.gets('target')
         if target_ekb is None or target_ekb == '':
-            return self.make_failure('No target given.')
+            return self.make_failure('MISSING_TARGET')
         agent = self._get_agent(target_ekb)
         logger.debug('Found agent (target): %s.' % agent.name)
         residue = content.gets('residue')
@@ -48,9 +48,9 @@ class MSA_Module(Bioagent):
             if self._matching(s, agent, residue, position)
             ]
         if not len(related_results):
-            return self.make_failure(
+            return self.make_failure('MISSING_MECHANISM',
                 "Could not find statement matching phosphorylation activating "
-                "%s %s %s." % (agent.name, residue, position)
+                "%s, %s, %s." % (agent.name, residue, position)
                 )
         msg = KQMLPerformative('SUCCESS')
         msg.set('is-activating', 'TRUE')

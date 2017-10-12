@@ -82,8 +82,10 @@ class Bioagent(KQMLModule):
         else:
             return (msg, comment)
 
-    def make_failure(self, reason=None):
+    def make_failure(self, reason=None, description=None):
         msg = KQMLList('FAILURE')
         if reason:
             msg.set('reason', reason)
+        if description:
+            msg.sets('description', description)
         return msg

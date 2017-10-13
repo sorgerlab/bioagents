@@ -3,14 +3,20 @@ from kqml.kqml_list import KQMLList
 from tests.util import ekb_from_text
 
 
+def _get_message(heading, target=None, residue=None, position=None):
+    msa = msa_module.MSA_Module(testing=True)
+    content = KQMLList(heading)
+    if target is not None:
+        content.sets('target', ekb_from_text(target))
+    for name, value in [('residue', residue), ('position', position)]:
+        if value is not None:
+            content.sets(name, value)
+    return msa.respond_phosphorylation_activating(content)
+
+
 def test_respond_phosphorylation_activating():
     "Test the msa_module response to a query regarding phosphorylation."
-    msa = msa_module.MSA_Module(testing=True)
-    content = KQMLList('PHOSPHORYLATION-ACTIVATING')
-    content.sets('target', ekb_from_text('MAP2K1'))
-    content.sets('residue', 'S')
-    content.set('position', '222')
-    msg = msa.respond_phosphorylation_activating(content)
+    msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'MAP2K1', 'S', '222')
     assert msg.head() == 'SUCCESS', \
         "MSA could not perform this task because \"%s\"." % msg.gets('reason')
     assert msg.data[1].to_string() == ':is-activating', \
@@ -20,19 +26,27 @@ def test_respond_phosphorylation_activating():
 
 
 def test_no_target_failure():
-    msa = msa_module.MSA_Module(testing=True)
-    content = KQMLList('PHOSPHORYLATION-ACTIVATING')
-    msg = msa.respond_phosphorylation_activating(content)
+    msg = _get_message('PHOSPHORYLATION-ACTIVATING')
     assert msg.head() == 'FAILURE', \
         "MSA found target when no target given, giving %s." % msg.to_string()
     assert msg.gets('reason') == 'MISSING_TARGET'
 
 
 def test_invalid_target_failure():
-    msa = msa_module.MSA_Module(testing=True)
-    content = KQMLList('PHOSPHORYLATION-ACTIVATING')
-    content.sets('target', ekb_from_text('MEK'))
-    msg = msa.respond_phosphorylation_activating(content)
+    msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'MEK')
     assert msg.head() == 'FAILURE', \
         "MSA succeeded despite missing mechanism, giving %s." % msg.to_string()
     assert msg.gets('reason') == 'MISSING_MECHANISM'
+
+
+def test_not_phosphorylation():
+    msg = _get_message('BOGUS-ACTIVATING', 'MAP2K1', 'S', '222')
+    assert msg.head() == 'FAILURE', \
+        "MSA succeeded despite bogus action, giving %s." % msg.to_string()
+    assert msg.get('reason') == 'MISSING_MECHANISM'
+
+
+def test_not_activating():
+    msg = _get_message('PHOSPHORYLATION-INHIBITING', 'MAP2K1', 'S', '222')
+    assert msg.head() == 'FAILURE', \
+        "MSA succeeded despite getting inhibition, giving %s." % msg.to_string()

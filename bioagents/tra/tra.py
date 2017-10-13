@@ -14,6 +14,7 @@ from copy import deepcopy
 import sympy.physics.units as units
 import indra.statements as ist
 import indra.assemblers.pysb_assembler as pa
+from indra.assemblers import english_assembler
 from pysb import Observable
 from pysb.integrate import Solver
 from pysb.export.kappa import KappaExporter
@@ -79,7 +80,7 @@ class TRA(object):
                                        min_time_idx, max_time,
                                        plot_period)
 
-        fig_path = self.plot_results(results, obs.name)
+        fig_path = self.plot_results(results, pattern.entities[0], obs.name)
         yobs_list = [yobs for _, yobs in results]
 
         # Discretize observations
@@ -119,7 +120,7 @@ class TRA(object):
                 else:
                     return sat_rate, num_sim, pat, fig_path
 
-    def plot_results(self, results, obs_name):
+    def plot_results(self, results, agent, obs_name):
         plt.figure()
         plt.ion()
         max_time = max([result[0][-1] for result in results])
@@ -135,7 +136,8 @@ class TRA(object):
         plt.ylim(0, max(numpy.max(yobs[obs_name]), 100.0))
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
-        plt.title('Simulation results')
+        agent_str = english_assembler._assemble_agent_str(agent)
+        plt.title('Simulation results for %s' % agent_str)
         dir_path = os.path.dirname(os.path.realpath(__file__))
         fig_path = os.path.join(dir_path, '%s.png' % obs_name)
         plt.savefig(fig_path)

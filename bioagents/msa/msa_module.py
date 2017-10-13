@@ -45,12 +45,13 @@ class MSA_Module(Bioagent):
         position = content.gets('position')
         related_results = [
             s for s in self.signor_afs
-            if self._matching(s, agent, residue, position)
+            if self._matching(s, agent, residue, position, 'phosphorylation')
             ]
         if not len(related_results):
-            return self.make_failure('MISSING_MECHANISM',
+            return self.make_failure(
+                'MISSING_MECHANISM',
                 "Could not find statement matching phosphorylation activating "
-                "%s, %s, %s." % (agent.name, residue, position)
+                "%s, %s, %s, %s." % (agent.name, residue, position, 'phosphorylation')
                 )
         msg = KQMLPerformative('SUCCESS')
         msg.set('is-activating', 'TRUE')
@@ -64,13 +65,15 @@ class MSA_Module(Bioagent):
         agent = tp._get_agent_by_id(term_id, None)
         return agent
 
-    def _matching(self, stmt, agent, residue, position):
-        return (
-            stmt.agent.name == agent.name
-            and any([
-                (m.residue == residue and m.position == position)
-                for m in stmt.agent.mods
-                ]))
+    def _matching(self, stmt, agent, residue, position, action):
+        if stmt.agent.name != agent.name:
+            return False
+        matching_residues = any([
+            m.residue == residue
+            and m.position == position
+            and m.mod_type == action
+            for m in stmt.agent.mods])
+        return matching_residues
 
 
 if __name__ == "__main__":

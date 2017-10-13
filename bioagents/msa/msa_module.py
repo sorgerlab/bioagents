@@ -38,6 +38,8 @@ class MSA_Module(Bioagent):
         """Return response content to phosphorylation_activating request."""
         heading = content.head()
         m = re.match('(\w+)-(\w+)', heading)
+        if m is None:
+            return self.make_failure('UNKNOWN_ACTION')
         action, polarity = [s.lower() for s in m.groups()]
         target_ekb = content.gets('target')
         if target_ekb is None or target_ekb == '':

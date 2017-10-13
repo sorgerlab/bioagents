@@ -14,6 +14,12 @@ def _get_message(heading, target=None, residue=None, position=None):
     return msa.respond_phosphorylation_activating(content)
 
 
+def _check_failure(msg, flaw, reason):
+    assert msg.head() == 'FAILURE', \
+        "MSA succeeded despite %s, giving %s" % (flaw, msg.to_string())
+    assert msg.gets('reason') == reason
+
+
 def test_respond_phosphorylation_activating():
     "Test the msa_module response to a query regarding phosphorylation."
     msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'MAP2K1', 'S', '222')
@@ -27,26 +33,25 @@ def test_respond_phosphorylation_activating():
 
 def test_no_target_failure():
     msg = _get_message('PHOSPHORYLATION-ACTIVATING')
-    assert msg.head() == 'FAILURE', \
-        "MSA found target when no target given, giving %s." % msg.to_string()
-    assert msg.gets('reason') == 'MISSING_TARGET'
+    _check_failure(msg, 'no target given', 'MISSING_TARGET')
 
 
 def test_invalid_target_failure():
     msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'MEK')
-    assert msg.head() == 'FAILURE', \
-        "MSA succeeded despite missing mechanism, giving %s." % msg.to_string()
-    assert msg.gets('reason') == 'MISSING_MECHANISM'
+    _check_failure(msg, 'missing mechanism', 'MISSING_MECHANISM')
 
 
 def test_not_phosphorylation():
     msg = _get_message('BOGUS-ACTIVATING', 'MAP2K1', 'S', '222')
-    assert msg.head() == 'FAILURE', \
-        "MSA succeeded despite bogus action, giving %s." % msg.to_string()
-    assert msg.get('reason') == 'MISSING_MECHANISM'
+    _check_failure(msg, 'getting a bogus action', 'MISSING_MECHANISM')
 
 
 def test_not_activating():
     msg = _get_message('PHOSPHORYLATION-INHIBITING', 'MAP2K1', 'S', '222')
-    assert msg.head() == 'FAILURE', \
-        "MSA succeeded despite getting inhibition, giving %s." % msg.to_string()
+    _check_failure(msg, 'getting inhibition instead of activation',
+                   'MISSING_MECHANISM')
+
+
+def test_no_activity_given():
+    msg = _get_message('')
+    _check_failure(msg, 'getting no activity type', 'UNKNOWN_ACTION')

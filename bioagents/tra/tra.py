@@ -124,16 +124,19 @@ class TRA(object):
         plt.figure()
         plt.ion()
         max_time = max([result[0][-1] for result in results])
-        lr = matplotlib.patches.Rectangle((0, 0), max_time, 50, color='red',
+        thresh = 50
+        lr = matplotlib.patches.Rectangle((0, 0), max_time, thresh, color='red',
                                           alpha=0.1)
-        hr = matplotlib.patches.Rectangle((0, 50), max_time, 50,
+        hr = matplotlib.patches.Rectangle((0, thresh), max_time, thresh,
                                           color='green', alpha=0.1)
         ax = plt.gca()
         ax.add_patch(lr)
         ax.add_patch(hr)
+        plt.text(10, thresh + 5, 'High', fontsize=10)
+        plt.text(10, thresh - 5, 'Low')
         for tspan, yobs in results:
             plt.plot(tspan, yobs[obs_name])
-        plt.ylim(0, max(numpy.max(yobs[obs_name]), 100.0))
+        plt.ylim(-1, max(numpy.max(yobs[obs_name]), 101.0))
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
         agent_str = english_assembler._assemble_agent_str(agent)

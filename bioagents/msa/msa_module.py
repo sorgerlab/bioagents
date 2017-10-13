@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-import indra
+import re
 from indra.util import read_unicode_csv
 from indra.tools import expand_families, assemble_corpus
 from indra.sources import trips
@@ -36,6 +36,9 @@ class MSA_Module(Bioagent):
 
     def respond_phosphorylation_activating(self, content):
         """Return response content to phosphorylation_activating request."""
+        heading = content.head()
+        m = re.match('(\w+)-(\w+)', heading)
+        action, polarity = [s.lower() for s in m.groups()]
         target_ekb = content.gets('target')
         if target_ekb is None or target_ekb == '':
             return self.make_failure('MISSING_TARGET')
@@ -45,7 +48,7 @@ class MSA_Module(Bioagent):
         position = content.gets('position')
         related_results = [
             s for s in self.signor_afs
-            if self._matching(s, agent, residue, position, 'phosphorylation')
+            if self._matching(s, agent, residue, position, action, polarity)
             ]
         if not len(related_results):
             return self.make_failure(
@@ -65,8 +68,10 @@ class MSA_Module(Bioagent):
         agent = tp._get_agent_by_id(term_id, None)
         return agent
 
-    def _matching(self, stmt, agent, residue, position, action):
+    def _matching(self, stmt, agent, residue, position, action, polarity):
         if stmt.agent.name != agent.name:
+            return False
+        if stmt.is_active is not (polarity == 'activating'):
             return False
         matching_residues = any([
             m.residue == residue

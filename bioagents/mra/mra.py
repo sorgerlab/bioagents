@@ -273,6 +273,11 @@ def make_influence_map(pysb_model, model_id):
     """Generate a Kappa influence map."""
     try:
         im = kappa.influence_map(pysb_model)
+        for param in pysb_model.parameters:
+            try:
+                im.remove_node(param.name)
+            except:
+                pass
         fname = 'model%d_im' % model_id
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')

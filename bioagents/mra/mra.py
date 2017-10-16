@@ -9,7 +9,10 @@ import json
 import logging
 import networkx
 import subprocess
+from datetime import datetime
+
 import kappy
+
 from indra.sources import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
                             AddModification, stmts_from_json
@@ -19,12 +22,12 @@ from indra.assemblers.pysb import assembler as pysb_assembler
 from indra.assemblers.pysb import PysbAssembler
 from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
+
 from pysb.export import export
 from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
 from bioagents.mra.sbgn_colorizer import SbgnColorizer
 import pickle
 from bioagents.mra.model_diagnoser import ModelDiagnoser
-
 logger = logging.getLogger('MRA')
 
 
@@ -372,7 +375,10 @@ def draw_influence_map(pysb_model, model_id):
     """Generate a Kappa influence map, draw it and save it as a PNG."""
     try:
         im = make_influence_map(pysb_model)
-        fname = 'model%d_im' % model_id
+        fname = '%s_model%d_im' % (
+            datetime.now().strftime('%Y%m%d%H%M%S'),
+            model_id
+            )
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
         im_agraph = networkx.nx_agraph.to_agraph(im)

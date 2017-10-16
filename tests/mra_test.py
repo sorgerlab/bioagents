@@ -182,14 +182,14 @@ class TestBuildModelAmbiguity(_IntegrationTest):
     def __init__(self, *args):
         super(TestBuildModelAmbiguity, self).__init__(MRA_Module)
 
-    def get_message(self):
+    def create_message(self):
         return _get_build_model_request('MEK1 phosphorylates ERK2')
 
-    def is_correct_response(self):
-        assert self.output.head() == 'SUCCESS'
-        assert self.output.get('model-id') == '1'
-        assert self.output.get('model') is not None
-        ambiguities = self.output.get('ambiguities')
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        assert output.get('model') is not None
+        ambiguities = output.get('ambiguities')
         assert len(ambiguities) == 1
         assert ambiguities[0].get('preferred').to_string() == \
             '(term :ont-type ONT::PROTEIN ' + \
@@ -198,60 +198,48 @@ class TestBuildModelAmbiguity(_IntegrationTest):
             '(term :ont-type ONT::PROTEIN-FAMILY ' + \
             ':ids "BE::MAP2K|NCIT::C105947" ' + \
             ':name "mitogen-activated protein kinase kinase")'
-        assert self.output.get('diagram') is not None
-        assert self.output.gets('diagram').endswith('png')
-        return True
-
-    def give_feedback(self):
-        return None
+        assert output.get('diagram') is not None
+        assert output.gets('diagram').endswith('png')
 
 
 class TestBuildModelBoundCondition(_IntegrationTest):
     def __init__(self, *args):
         super(TestBuildModelBoundCondition, self).__init__(MRA_Module)
 
-    def get_message(self):
+    def create_message(self):
         txt = 'KRAS bound to GTP phosphorylates BRAF on T373.'
         return _get_build_model_request(txt)
 
-    def is_correct_response(self):
-        assert self.output.head() == 'SUCCESS'
-        assert self.output.get('model-id') == '1'
-        model = self.output.gets('model')
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = output.gets('model')
         assert model is not None
         indra_stmts_json = json.loads(model)
         assert(len(indra_stmts_json) == 1)
         stmt = stmts_from_json(indra_stmts_json)[0]
         assert(isinstance(stmt, Phosphorylation))
         assert(stmt.enz.bound_conditions[0].agent.name == 'GTP')
-        return True
-
-    def give_feedback(self):
-        return None
 
 
 class TestBuildModelComplex(_IntegrationTest):
     def __init__(self, *args):
         super(TestBuildModelComplex, self).__init__(MRA_Module)
 
-    def get_message(self):
+    def create_message(self):
         txt = 'The EGFR-EGF complex activates SOS1.'
         return _get_build_model_request(txt)
 
-    def is_correct_response(self):
-        assert self.output.head() == 'SUCCESS'
-        assert self.output.get('model-id') == '1'
-        model = self.output.gets('model')
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = output.gets('model')
         assert model is not None
         indra_stmts_json = json.loads(model)
         assert(len(indra_stmts_json) == 1)
         stmt = stmts_from_json(indra_stmts_json)[0]
         assert(isinstance(stmt, Activation))
         assert(stmt.subj.bound_conditions[0].agent.name == 'EGF')
-        return True
-
-    def give_feedback(self):
-        return None
 
 
 
@@ -262,19 +250,15 @@ class TestModelUndo(_IntegrationTest):
         msg, content = _get_build_model_request('MEK1 phosphorylates ERK2')
         self.bioagent.receive_request(msg, content)
 
-    def get_message(self):
+    def create_message(self):
         content = KQMLList('MODEL-UNDO')
         msg = get_request(content)
         return msg, content
 
-    def is_correct_response(self):
-        assert self.output.head() == 'SUCCESS'
-        assert self.output.get('model-id') == '2'
-        assert self.output.gets('model') == '[]'
-        return True
-
-    def give_feedback(self):
-        return None
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '2'
+        assert output.gets('model') == '[]'
 
 
 class TestMissingDescriptionFailure(_FailureTest):
@@ -282,7 +266,7 @@ class TestMissingDescriptionFailure(_FailureTest):
         super(TestMissingDescriptionFailure, self).__init__(MRA_Module)
         self.expected_reason = 'INVALID_DESCRIPTION'
 
-    def get_message(self):
+    def create_message(self):
         content = KQMLList('BUILD-MODEL')
         content.sets('description', '')
         msg = get_request(content)

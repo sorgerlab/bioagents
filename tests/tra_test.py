@@ -330,7 +330,7 @@ class _TraTestModel1(_StringCompareTest):
             ':num-sim 10 :suggestion (:type "always_value" ' + \
             ':value (:type "qualitative" :value "low"))))'
 
-    def get_message(self):
+    def create_message(self):
         model = stmts_kstring_from_text('MAP2K1 binds MAPK1')
         entity = ekb_kstring_from_text('MAPK1-MAP2K1 complex')
         condition_entity = ekb_kstring_from_text('MAP2K1')
@@ -387,7 +387,7 @@ class TraTestModel2(_StringCompareTest):
             ':num-sim 10 :suggestion (:type "always_value" ' + \
             ':value (:type "qualitative" :value "high"))))'
 
-    def get_message(self):
+    def create_message(self):
         model = stmts_kstring_from_text('MEK binds ERK')
         entity = ekb_kstring_from_text('MEK bound to ERK')
 
@@ -420,7 +420,7 @@ class TraTestModel3(_StringCompareTest):
             ':num-sim 10 :suggestion (:type "eventual_value" ' + \
             ':value (:type "qualitative" :value "high"))))'
 
-    def get_message(self):
+    def create_message(self):
         model = stmts_kstring_from_text('MEK phosphorylates ERK')
         entity = ekb_kstring_from_text('ERK that is phosphorylated')
 

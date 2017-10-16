@@ -157,6 +157,7 @@ class _IntegrationTest(TestCase):
     def __init__(self, bioagent, **kwargs):
         self.output = None  # BytesIO()
         self.bioagent = bioagent(testing=True, **kwargs)  # out = self.output)
+        
         TestCase.__init__(self, 'run_test')
 
     def __getattribute__(self, attr_name):
@@ -166,6 +167,7 @@ class _IntegrationTest(TestCase):
             raise NotImplementedError(define_in_child(attr_name))
         return attr
 
+    @classmethod
     def _get_method_dict(self, prefix=''):
         """Get a dict of methods with the given prefix string."""
         return {
@@ -186,18 +188,17 @@ class _IntegrationTest(TestCase):
         send_dict = self._get_method_dict('create_')
         check_dict = self._get_method_dict('check_response_to_')
         if not self.message_funcs:
-            msg_list = send_dict.iterkeys()
+            msg_list = send_dict.keys()
         else:
             msg_list = self.message_funcs[:]
         for msg in msg_list:
-            yield send_dict[msg](), check_dict.get(msg)
+            yield send_dict[msg](self), check_dict.get(msg)
 
     def run_test(self):
-        """Run the test."""
         for request_args, check_resp in self._get_messages():
             _, output = self.bioagent.receive_request(*request_args)
             if check_resp is not None:
-                check_resp(output)
+                check_resp(self, output)
 
 
 class _StringCompareTest(_IntegrationTest):

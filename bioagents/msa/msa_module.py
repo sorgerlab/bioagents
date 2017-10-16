@@ -2,14 +2,10 @@ import os
 import sys
 import logging
 import re
-from indra.util import read_unicode_csv
-from indra.tools import expand_families, assemble_corpus
-from indra.sources import trips
 from bioagents import Bioagent
-from indra.databases import get_identifiers_url
-from indra.preassembler.hierarchy_manager import hierarchies
 from indra.sources.trips.processor import TripsProcessor
-from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
+from kqml import KQMLPerformative
+import pickle
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -20,7 +16,14 @@ logger = logging.getLogger('MSA')
 def _read_signor_afs():
     path = os.path.dirname(os.path.abspath(__file__)) + \
             '/../resources/signor_active_forms.pkl'
-    signor_afs = assemble_corpus.load_statements(path)
+    with open(path, 'rb') as pkl_file:
+        stmts = pickle.load(pkl_file)
+    if isinstance(stmts, dict):
+        signor_afs = []
+        for _, stmt_list in stmts.iteritems():
+            signor_afs += stmt_list
+    else:
+        signor_afs = stmts
     return signor_afs
 
 

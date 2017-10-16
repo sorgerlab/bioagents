@@ -45,7 +45,7 @@ def define_in_child(s):
 
 
 class _IntegrationTest(TestCase):
-    """An abstract object for creating integration tests of bioagents.
+    """An abstract class for creating integration tests of bioagents.
 
     Much of the functionality of bioagents comes with their ability to
     respond to messages they receive. This is a template for tests that
@@ -96,6 +96,86 @@ class _IntegrationTest(TestCase):
         msg, content = self.get_message()
         _, self.output = self.bioagent.receive_request(msg, content)
         assert self.is_correct_response(), self.give_feedback()
+
+
+class _MultiRequestTest(_IntegrationTest):
+    """An abstract class for running a series of requests to the bioagent.
+
+    As an example, such a test may be written as follows:
+
+    ```
+    >> class TestFoo(_MultiRequestTest):
+    >>     message_funcs = ['prep', 'run']
+    >>
+    >>     def send_prep(self):
+    >>         "Creates the kqml message (msg) and content (content) for prep."
+    >>         ...
+    >>         return msg, content
+    >>
+    >>     def send_run(self):
+    >>         "Creates the kqml message and content for runing something."
+    >>         ...
+    >>         return msg, content
+    >>
+    >>     def check_run(self, output):
+    >>         "Checks that the output from the run is valid."
+    >>         ...
+    ```
+
+    This defines a test that sends a prep message, then a run message, and
+    checks the result of the run message to determine the status of the test.
+    Note that the `send_` and `check_` prefixes are required to for the mehtods
+    to be found and used. Note also that unless `message_funcs` is defined, the
+    messages will be sent in alphabetical order by default. Last of all, note
+    that the `send_` methods must have no inputs (besides self), and the
+    `check_` methods must have one input, which will be the output content of
+    `receive_request` call.
+    
+    Attributes:
+    ----------
+    message_funcs: (list) A list of the message names to be sent. This can be
+        used to set the order of execution, which is otherwise alphabetical.
+    
+    Methods:
+    -------
+    get_messages: creates a generator that iterates over the message methods 
+        given by message_funcs, or else all methods with the `send_` prefix.
+    run_test: runs the test.
+    """
+    message_funcs = []
+    
+    def _get_method_dict(self, prefix=''):
+        """Get a dict of methods with the given prefix string."""
+        return {
+            name.lstrip(prefix): attr 
+            for name, attr in self.__dict__.iteritems() 
+            if callable(attr) and name.startswith(prefix)
+            }
+
+    def get_messages(self):
+        """Get a generator iterating over the methods to send messages.
+        
+        Yields:
+        ------
+        request_args: (tuple) arguements to be passed to `receive_request`.
+        check_func: (callable) a function used to check the result of a request,
+            or else None, if no such check is to be made.
+        """
+        send_dict = self._get_method_dict('send_')
+        check_dict = self._get_method_dict('check_')
+        if not self.message_funcs:
+            msg_list = send_dict.iterkeys()
+        else:
+            msg_list = self.message_funcs[:]
+        for msg in msg_list:
+            yield send_dict[msg](), check_dict.get(msg)
+
+    def run_test(self):
+        """Run the test."""
+        for request_args, check_resp in self.get_messages():
+            _, output = self.bioagent.receive_request(*request_args)
+            if check_resp is not None:
+                check_resp(output)
 
 
 class _StringCompareTest(_IntegrationTest):

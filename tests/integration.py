@@ -1,9 +1,6 @@
-from io import BytesIO
 from unittest import TestCase
 from difflib import SequenceMatcher
-from kqml.kqml_performative import KQMLPerformative
 import logging
-from docutils.parsers.rst.states import InterpretedRoleNotImplementedError
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('integration_tests')

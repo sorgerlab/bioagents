@@ -11,6 +11,7 @@ import numpy
 import logging
 from time import sleep
 from copy import deepcopy
+from datetime import datetime
 import sympy.physics.units as units
 import indra.statements as ist
 import indra.assemblers.pysb_assembler as pa
@@ -149,7 +150,10 @@ class TRA(object):
         agent_str = english_assembler._assemble_agent_str(agent)
         plt.title('Simulation results for %s' % agent_str)
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        fig_path = os.path.join(dir_path, '%s.png' % obs_name)
+        fig_path = os.path.join(dir_path, '%s_%s.png' % (
+            datetime.now().strftime('%Y%m%d%H%M%S'),
+            obs_name
+            ))
         plt.savefig(fig_path)
         return fig_path
 

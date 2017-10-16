@@ -8,6 +8,8 @@ import copy
 import json
 import logging
 import subprocess
+from datetime import datetime
+
 from indra.sources import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
                             AddModification, stmts_from_json
@@ -17,7 +19,6 @@ from indra.assemblers import pysb_assembler, PysbAssembler
 from pysb import kappa
 from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
-
 
 logger = logging.getLogger('MRA')
 
@@ -278,7 +279,10 @@ def make_influence_map(pysb_model, model_id):
                 im.remove_node(param.name)
             except:
                 pass
-        fname = 'model%d_im' % model_id
+        fname = '%s_model%d_im' % (
+            datetime.now().strftime('%Y%m%d%H%M%S'),
+            model_id
+            )
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
         im.draw(full_path, prog='dot')

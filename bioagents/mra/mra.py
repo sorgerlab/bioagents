@@ -257,6 +257,14 @@ def make_diagrams(pysb_model, model_id):
     return diagrams
 
 
+def make_pic_name(model_id, token):
+    """Create a standardized picture name."""
+    return '%s_model%d_%s' % (
+        datetime.now().strftime('%Y%m%d%H%M%S'),
+        model_id,
+        token
+        )
+
 def make_sbgn(pysb_model, model_id):
     pa = PysbAssembler()
     pa.model = pysb_model
@@ -279,10 +287,7 @@ def make_influence_map(pysb_model, model_id):
                 im.remove_node(param.name)
             except:
                 pass
-        fname = '%s_model%d_im' % (
-            datetime.now().strftime('%Y%m%d%H%M%S'),
-            model_id
-            )
+        fname = make_pic_name(model_id, 'im')
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
         im.draw(full_path, prog='dot')
@@ -295,7 +300,7 @@ def make_contact_map(pysb_model, model_id):
     """Generate a Kappa contact map."""
     try:
         cm = kappa.contact_map(pysb_model)
-        fname = 'model%d_cm' % model_id
+        fname = make_pic_name(model_id, 'cm')
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
         cm.draw(full_path, prog='dot')
@@ -309,7 +314,7 @@ def make_reaction_network(pysb_model, model_id):
     try:
         for m in pysb_model.monomers:
             pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
-        fname = 'model%d_rxn' % model_id
+        fname = make_pic_name(model_id, 'rxn')
         diagram_dot = render_reactions.run(pysb_model)
     # TODO: use specific PySB/BNG exceptions and handle them
     # here to show meaningful error messages

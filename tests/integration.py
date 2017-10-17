@@ -128,15 +128,15 @@ class _IntegrationTest(TestCase):
     that the `send_` methods must have no inputs (besides self), and the
     `check_` methods must have one input, which will be the output content of
     `receive_request` call.
-    
+
     Single requests may also be made without any difficulty or altering of the
     above paradigm. Note that message_funcs would not be needed in such cases.
-    
+
     Attributes:
     ----------
     message_funcs: (list) A list of the message names to be sent. This can be
         used to set the order of execution, which is otherwise alphabetical.
-    
+
     Methods:
     -------
     _get_messages: creates a generator that iterates over the message methods 
@@ -157,7 +157,7 @@ class _IntegrationTest(TestCase):
     def __init__(self, bioagent, **kwargs):
         self.output = None  # BytesIO()
         self.bioagent = bioagent(testing=True, **kwargs)  # out = self.output)
-        
+
         TestCase.__init__(self, 'run_test')
 
     def __getattribute__(self, attr_name):
@@ -171,14 +171,14 @@ class _IntegrationTest(TestCase):
     def _get_method_dict(self, prefix=''):
         """Get a dict of methods with the given prefix string."""
         return {
-            name.lstrip(prefix): attr 
-            for name, attr in self.__dict__.iteritems() 
+            name[len(prefix):]: attr
+            for name, attr in self.__dict__.iteritems()
             if callable(attr) and name.startswith(prefix)
             }
 
     def _get_messages(self):
         """Get a generator iterating over the methods to send messages.
-        
+
         Yields:
         ------
         request_args: (tuple) arguements to be passed to `receive_request`.
@@ -188,7 +188,7 @@ class _IntegrationTest(TestCase):
         send_dict = self._get_method_dict('create_')
         check_dict = self._get_method_dict('check_response_to_')
         if not self.message_funcs:
-            msg_list = send_dict.keys()
+            msg_list = sorted(send_dict.keys())
         else:
             msg_list = self.message_funcs[:]
         for msg in msg_list:

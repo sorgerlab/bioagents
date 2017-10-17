@@ -25,12 +25,13 @@ def test_choose_sense_category():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
     msg_content.sets('ekb-term', mek1_ekb)
-    msg_content.sets('category', 'kinase activity')
-    res = bs.respond_choose_sense_category(msg_content)
-    print(res)
-    print(res.head())
-    assert(res.head() == 'SUCCESS')
-    assert(res.get('in-category') == 'TRUE')
+    for cat in ['kinase activity', 'enzyme']:
+        msg_content.sets('category', cat)
+        res = bs.respond_choose_sense_category(msg_content)
+        print(res)
+        print(res.head())
+        assert(res.head() == 'SUCCESS')
+        assert(res.get('in-category') == 'TRUE')
 
 def test_choose_sense_is_member():
     bs = BioSense_Module(testing=True)

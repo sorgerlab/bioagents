@@ -1,4 +1,5 @@
 import json
+import xml.etree.ElementTree as ET
 from kqml import KQMLList, KQMLPerformative
 from indra.statements import *
 from tests.util import *
@@ -92,6 +93,25 @@ def test_model_undo():
     assert action is not None
     assert action.get('action') == 'remove_stmts'
     assert action.get('statements') == stmts1
+
+
+def test_sbgn():
+    m = MRA()
+    ekb = ekb_from_text('KRAS activates BRAF.')
+    res = m.build_model_from_ekb(ekb)
+    ekb = ekb_from_text('NRAS activates BRAF.')
+    res = m.expand_model_from_ekb(ekb, 1)
+    sbgn = res['diagrams']['sbgn']
+    tree = ET.fromstring(sbgn)
+    glyphs = tree.findall('s:map/s:glyph',
+                          namespaces={'s': 'http://sbgn.org/libsbgn/pd/0.1'})
+    assert len(glyphs) == 6
+    res = m.model_undo()
+    sbgn = res['diagrams']['sbgn']
+    tree = ET.fromstring(sbgn)
+    glyphs = tree.findall('s:map/s:glyph',
+                          namespaces={'s': 'http://sbgn.org/libsbgn/pd/0.1'})
+    assert len(glyphs) == 4
 
 
 # #####################

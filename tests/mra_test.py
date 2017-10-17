@@ -273,6 +273,43 @@ class TestMissingDescriptionFailure(_FailureTest):
         return msg, content
 
 
+class TestModelBuildExpandUndo(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestModelBuildExpandUndo, self).__init__(MRA_Module)
+
+    message_funcs = ['build', 'expand', 'undo']
+
+    def create_build(self):
+        return _get_build_model_request('KRAS activates BRAF')
+
+    def check_response_to_build(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
+    def create_expand(self):
+        return _get_expand_model_request('NRAS activates BRAF', '1')
+
+    def check_response_to_expand(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '2'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 2
+
+    def create_undo(self):
+        content = KQMLList('MODEL-UNDO')
+        content.sets('model-id', '1')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_undo(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '3'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
+
 '''
 def test_replace_agent_one():
     m = MRA()

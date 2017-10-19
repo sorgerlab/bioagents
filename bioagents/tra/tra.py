@@ -130,12 +130,40 @@ class TRA(object):
     def compare_conditions(self, model, condition_agent, target_agent):
         obs = get_create_observable(model, target_agent)
         cond_quant = MolecularQuantityReference('total', condition_agent)
-        mults = numpy.linspace(0, 100, 5)
+        all_results = []
+        time_ul = 20000
+        nt = 101
+        plot_period = time_ul / (nt - 1)
+        ts = numpy.linspace(0, time_ul, nt)
+        mults = [0.0, 100.0]
         for mult in mults:
             condition = MolecularCondition('multiple', cond_quant, mult)
             results = self.run_simulations(model, [condition], 1, 0,
-                                           20000, 2000)
-            print(results)
+                                           time_ul, plot_period)
+            obs_values = results[0][1][obs.name]
+            all_results.append(obs_values)
+        # Plotting
+        fig_path = self.plot_compare_conditions(ts, all_results, target_agent,
+                                                obs.name)
+        diff = numpy.sum(all_results[-1][:len(ts)] - all_results[0][:len(ts)])
+        logger.info('TRA condition difference: %.2f' % diff)
+        res = (diff > 0)
+        return res, fig_path
+
+    def plot_compare_conditions(self, ts, results, agent, obs_name):
+        plt.figure()
+        plt.ion()
+        plt.plot(ts, results[0][:len(ts)], label='Without condition')
+        plt.plot(ts, results[-1][:len(ts)], label='With condition')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amount (molecules)')
+        agent_str = english_assembler._assemble_agent_str(agent)
+        plt.title('Simulation results for %s' % agent_str)
+        plt.legend()
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        fig_path = os.path.join(dir_path, '%s.png' % obs_name)
+        plt.savefig(fig_path)
+        return fig_path
 
     def plot_results(self, results, agent, obs_name, thresh=50):
         plt.figure()

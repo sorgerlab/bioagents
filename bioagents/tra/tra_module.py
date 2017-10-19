@@ -134,6 +134,10 @@ def assemble_model(model_indra_str):
     pa.add_default_initial_conditions(100.0)
     for m in model.monomers:
         pysb_assembler.set_extended_initial_condition(model, m, 0)
+    # Tweak parameters
+    for param in model.parameters:
+        if 'kf' in param.name and 'bind' in param.name:
+            param.value = param.value * 100
     return model
 
 

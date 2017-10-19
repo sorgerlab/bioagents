@@ -7,7 +7,7 @@ from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation, \
                              Dephosphorylation
 from kqml import KQMLPerformative, KQMLList
-from tests.integration import _StringCompareTest
+from tests.integration import _StringCompareTest, _IntegrationTest
 from tests.util import stmts_kstring_from_text, ekb_kstring_from_text
 
 
@@ -322,7 +322,7 @@ def test_module():
     assert res[2] is not None
 
 
-class _TraTestModel1(_StringCompareTest):
+class _TraTestModel1(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
         super(_TraTestModel1, self).__init__(*args, **kwargs)
@@ -379,17 +379,14 @@ class TraTestModel1_NoKappa(_TraTestModel1):
                                                     no_kappa=True)
 
 
-class TraTestModel2(_StringCompareTest):
+class TraTestModel2(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel2, self).__init__(tra_module.TRA_Module)
-        self.expected = '(SUCCESS :content (:satisfies-rate 0.0 ' + \
-            ':num-sim 10 :suggestion (:type "always_value" ' + \
-            ':value (:type "qualitative" :value "high"))))'
+        super(TraTestModel2, self).__init__(tra_module.TRA_Module, no_kappa=True)
 
     def create_message(self):
         model = stmts_kstring_from_text('MEK binds ERK')
-        entity = ekb_kstring_from_text('MEK bound to ERK')
+        entity = ekb_kstring_from_text('MEK that is bound to ERK')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -404,21 +401,22 @@ class TraTestModel2(_StringCompareTest):
         content.set('pattern', pattern)
         content.set('model', model)
 
-        quantity = KQMLList()
-        quantity.sets('type', 'total')
         msg = KQMLPerformative('REQUEST')
         msg.set('content', content)
         msg.set('reply-with', 'IO-1')
         return (msg, content)
 
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0'
 
-class TraTestModel3(_StringCompareTest):
+
+
+class TraTestModel3(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel3, self).__init__(tra_module.TRA_Module)
-        self.expected = '(SUCCESS :content (:satisfies-rate 0.0 ' + \
-            ':num-sim 10 :suggestion (:type "eventual_value" ' + \
-            ':value (:type "qualitative" :value "high"))))'
+        super(TraTestModel3, self).__init__(tra_module.TRA_Module, no_kappa=True)
 
     def create_message(self):
         model = stmts_kstring_from_text('MEK phosphorylates ERK')
@@ -427,6 +425,39 @@ class TraTestModel3(_StringCompareTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-1')
+        return (msg, content)
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0'
+
+
+class TraTestModel4(_IntegrationTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModel4, self).__init__(tra_module.TRA_Module, no_kappa=True)
+
+    def create_message(self):
+        model = stmts_kstring_from_text('MEK binds ERK')
+        entity = ekb_kstring_from_text('the MEK-ERK complex')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
         pattern.sets('type', 'always_value')
         value = KQMLList()
         value.sets('type', 'qualitative')
@@ -437,12 +468,15 @@ class TraTestModel3(_StringCompareTest):
         content.set('pattern', pattern)
         content.set('model', model)
 
-        quantity = KQMLList()
-        quantity.sets('type', 'total')
         msg = KQMLPerformative('REQUEST')
         msg.set('content', content)
         msg.set('reply-with', 'IO-1')
         return (msg, content)
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0'
 
 
 def _get_gk_model():
@@ -495,3 +529,4 @@ def _get_gk_model_indra():
     stmts = [st1, st2]
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
+

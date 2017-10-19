@@ -18,7 +18,7 @@ logger = logging.getLogger('TRA')
 
 class TRA_Module(Bioagent):
     name = "TRA"
-    tasks = ['SATISFIES-PATTERN']
+    tasks = ['SATISFIES-PATTERN', 'MODEL-COMPARE-CONDITIONS']
 
     def __init__(self, **kwargs):
         use_kappa = True
@@ -139,7 +139,7 @@ class TRA_Module(Bioagent):
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
         satisfied, fig_path = \
-            self.TRA.compare_conditions(model, condition_agent, target_agent)
+            self.tra.compare_conditions(model, condition_agent, target_agent)
 
         self.send_display_figure(fig_path)
 

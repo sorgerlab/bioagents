@@ -133,7 +133,8 @@ class TRA(object):
         mults = numpy.linspace(0, 100, 5)
         for mult in mults:
             condition = MolecularCondition('multiple', cond_quant, mult)
-            results = run_simulations(model, [condition], 1, 0, 20000, 2000)
+            results = self.run_simulations(model, [condition], 1, 0,
+                                           20000, 2000)
             print(results)
 
     def plot_results(self, results, agent, obs_name, thresh=50):

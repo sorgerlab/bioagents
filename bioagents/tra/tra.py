@@ -127,6 +127,15 @@ class TRA(object):
                 else:
                     return sat_rate, num_sim, pat, fig_path
 
+    def compare_conditions(self, model, condition_agent, target_agent):
+        obs = get_create_observable(model, target_agent)
+        cond_quant = MolecularQuantityReference('total', condition_agent)
+        mults = numpy.linspace(0, 100, 5)
+        for mult in mults:
+            condition = MolecularCondition('multiple', cond_quant, mult)
+            results = run_simulations(model, [condition], 1, 0, 20000, 2000)
+            print(results)
+
     def plot_results(self, results, agent, obs_name, thresh=50):
         plt.figure()
         plt.ion()

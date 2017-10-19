@@ -121,6 +121,35 @@ class TRA_Module(Bioagent):
         reply.set('content', content)
         return reply
 
+    def respond_model_compare_conditions(self, content):
+        condition_agent_ekb = content.gets('agent')
+        target_agent_ekb = content.gets('affected')
+        model_indra_str = content.gets('model')
+        try:
+            model = assemble_model(model_indra_str)
+        except Exception as e:
+            logger.exception(e)
+            reply_content = self.make_failure('INVALID_MODEL')
+            return reply_content
+        try:
+            condition_agent = get_single_molecular_entity(condition_agent_ekb)
+            target_agent = get_single_molecular_entity(target_agent_ekb)
+        except Exception as e:
+            logger.exception(e)
+            reply_content = self.make_failure('INVALID_PATTERN')
+            return reply_content
+        satisfied, fig_path = \
+            self.TRA.compare_conditions(model, condition_agent, target_agent)
+
+        self.send_display_figure(fig_path)
+
+        reply = KQMLList('SUCCESS')
+        content = KQMLList()
+        content.set('satisfied', 'TRUE' if satisfied else 'FALSE')
+        reply.set('content', content)
+        return reply
+
+
     def send_display_figure(self, path):
         msg = KQMLPerformative('tell')
         content = KQMLList('display-image')
@@ -216,8 +245,12 @@ def get_chemical_agents(stmts):
 
 
 def get_molecular_entity(lst):
+    description_str = lst.gets('description')
+    return get_single_molecular_entity(description_str)
+
+
+def get_single_molecular_entity(description_str):
     try:
-        description_str = lst.gets('description')
         tp = trips_processor.TripsProcessor(description_str)
         terms = tp.tree.findall('TERM')
         def find_complex(terms):

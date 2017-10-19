@@ -914,6 +914,25 @@ class TraMissingMonomerCondition(_IntegrationTest):
         assert reason == 'MODEL_MISSING_MONOMER', reason
 
 
+class TestCompareConditions(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestCompareConditions, self).__init__(tra_module.TRA_Module)
+
+    def create_message(self):
+        model = stmts_kstring_from_text('Vemurafenib inhibits ERK. MEK activates ERK.')
+        condition_entity = ekb_kstring_from_text('Vemurafenib')
+        target_entity = ekb_kstring_from_text('Active ERK')
+        content = KQMLList('MODEL-COMPARE-CONDITIONS')
+        content.set('model', model)
+        content.set('agent', condition_entity)
+        content.set('affected', target_entity)
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+
+
 def _get_gk_model():
     SelfExporter.do_export = True
     Model()
@@ -965,3 +984,5 @@ def _get_gk_model_indra():
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
 
+if __name__ == '__main__':
+    TestCompareConditions().run_test()

@@ -931,6 +931,9 @@ class TestCompareConditions(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        satisfied = content.gets('satisfied')
+        assert satisfied == 'TRUE'
 
 
 def _get_gk_model():
@@ -984,5 +987,3 @@ def _get_gk_model_indra():
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
 
-if __name__ == '__main__':
-    TestCompareConditions().run_test()

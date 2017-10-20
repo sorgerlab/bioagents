@@ -8,7 +8,8 @@ from indra.statements import stmts_to_json, Agent, Phosphorylation, \
                              Dephosphorylation
 from kqml import KQMLPerformative, KQMLList
 from tests.integration import _StringCompareTest, _IntegrationTest
-from tests.util import stmts_kstring_from_text, ekb_kstring_from_text
+from tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
+                       get_request
 
 
 ekb_map2k1 = ekb_kstring_from_text('MAP2K1')
@@ -360,9 +361,7 @@ class _TraTestModel1(_IntegrationTest):
         condition.set('quantity', quantity)
         conditions.append(condition)
         content.set('conditions', conditions)
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-1')
+        msg = get_request(content)
         return (msg, content)
 
 
@@ -400,10 +399,7 @@ class TraTestModel2(_IntegrationTest):
         content = KQMLList('SATISFIES-PATTERN')
         content.set('pattern', pattern)
         content.set('model', model)
-
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-1')
+        msg = get_request(content)
         return (msg, content)
 
     def check_response_to_message(self, output):
@@ -434,10 +430,7 @@ class TraTestModel3(_IntegrationTest):
         content = KQMLList('SATISFIES-PATTERN')
         content.set('pattern', pattern)
         content.set('model', model)
-
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-1')
+        msg = get_request(content)
         return (msg, content)
 
     def check_response_to_message(self, output):
@@ -467,10 +460,7 @@ class TraTestModel4(_IntegrationTest):
         content = KQMLList('SATISFIES-PATTERN')
         content.set('pattern', pattern)
         content.set('model', model)
-
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-1')
+        msg = get_request(content)
         return (msg, content)
 
     def check_response_to_message(self, output):
@@ -501,10 +491,7 @@ class TraTestModel5(_IntegrationTest):
         content = KQMLList('SATISFIES-PATTERN')
         content.set('pattern', pattern)
         content.set('model', model)
-
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-1')
+        msg = get_request(content)
         return (msg, content)
 
     def check_response_to_message(self, output):
@@ -538,10 +525,7 @@ class TraTestModel6(_IntegrationTest):
         content = KQMLList('SATISFIES-PATTERN')
         content.set('pattern', pattern)
         content.set('model', model)
-
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-1')
+        msg = get_request(content)
         return (msg, content)
 
     def check_response_to_message(self, output):
@@ -573,10 +557,7 @@ class TraTestModel7(_IntegrationTest):
         content = KQMLList('SATISFIES-PATTERN')
         content.set('pattern', pattern)
         content.set('model', model)
-
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-1')
+        msg = get_request(content)
         return (msg, content)
 
     def check_response_to_message1(self, output):
@@ -617,13 +598,56 @@ class TraTestModel7(_IntegrationTest):
         condition.set('quantity', quantity)
         conditions.append(condition)
         content.set('conditions', conditions)
-
-        msg = KQMLPerformative('REQUEST')
-        msg.set('content', content)
-        msg.set('reply-with', 'IO-2')
+        msg = get_request(content)
         return (msg, content)
 
     def check_response_to_message2(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0'
+
+
+class TraTestModel8(_IntegrationTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModel8, self).__init__(tra_module.TRA_Module, no_kappa=True)
+
+    def create_message(self):
+        txt = 'MEK not bound to Selumetinib phosphorylates ERK. DUSP dephosphorylates ERK. ' + \
+            'Selumetinib binds MEK.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'always_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'low')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        condition_entity = ekb_kstring_from_text('Selumetinib')
+        conditions = KQMLList()
+        condition = KQMLList()
+        condition.sets('type', 'multiple')
+        condition.set('value', '100.0')
+        quantity = KQMLList()
+        quantity.sets('type', 'total')
+        entity = KQMLList()
+        entity.set('description', condition_entity)
+        quantity.set('entity', entity)
+        condition.set('quantity', quantity)
+        conditions.append(condition)
+        content.set('conditions', conditions)
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS'
         content = output.get('content')
         assert content.gets('satisfies-rate') == '1.0'
@@ -681,5 +705,3 @@ def _get_gk_model_indra():
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
 
-if __name__ == '__main__':
-    TraTestModel7.run_test()

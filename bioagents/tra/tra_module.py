@@ -53,7 +53,8 @@ class TRA_Module(Bioagent):
         conditions_lst = content.get('conditions')
 
         try:
-            model = assemble_model(model_indra_str)
+            stmts = decode_indra_stmts(model_indra_str)
+            model = assemble_model(stmts)
         except Exception as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_MODEL')
@@ -126,8 +127,7 @@ def decode_indra_stmts(stmts_json_str):
     return stmts
 
 
-def assemble_model(model_indra_str):
-    stmts = decode_indra_stmts(model_indra_str)
+def assemble_model(stmts):
     pa = PysbAssembler(policies='two_step')
     pa.add_statements(stmts)
     model = pa.make_model()
@@ -138,7 +138,7 @@ def assemble_model(model_indra_str):
     for m in model.monomers:
         if m.name in targeted_agents:
             pysb_assembler.set_base_initial_condition(model,
-                model.monomers[agent_name], 0)
+                model.monomers[m.name], 0)
             pysb_assembler.set_extended_initial_condition(model, m, 100.0)
         else:
             pysb_assembler.set_extended_initial_condition(model, m, 0)

@@ -315,6 +315,14 @@ def test_targeted_agents():
     assert tra_module.get_targeted_agents(stmts) == ['BRAF']
 
 
+def test_assemble_model_targeted_agents():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
+             Inhibition(Agent('DRUG'), Agent('BRAF'))]
+    model = tra_module.assemble_model(stmts)
+    assert model.parameters['BRAF_0'].value == 0
+    assert model.parameters['BRAF_0_mod'].value == 100.0
+
+
 def test_module():
     tra = tra_module.TRA_Module(testing=True)
     content = KQMLList()

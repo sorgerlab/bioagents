@@ -134,8 +134,12 @@ def assemble_model(stmts):
     model = pa.make_model()
     pa.add_default_initial_conditions(100.0)
 
-    targeted_agents = get_targeted_agents(stmts)
-    no_upstream_active_agents = get_no_upstream_active_agents(stmts)
+    try:
+        targeted_agents = get_targeted_agents(stmts)
+        no_upstream_active_agents = get_no_upstream_active_agents(stmts)
+    except Exception:
+        targeted_agents = []
+        no_upstream_active_agents = []
 
     for m in model.monomers:
         if m.name in targeted_agents or m.name in no_upstream_active_agents:

@@ -81,10 +81,20 @@ class DTDA_Module(Bioagent):
             drug_name = drug.name
         except Exception:
             return self.make_failure('INVALID_DRUG')
-        drug_targets = self.dtda.find_drug_targets(drug_name)
+        if '-' in drug_name:
+            drug_names = [drug_name, drug_name.replace('-', '')]
+        else:
+            drug_names = [drug_name]
+        all_targets = []
+        for drugn in drug_names:
+            logger.info('DTDA looking for targets of %s' % drugn)
+            drug_targets = self.dtda.find_drug_targets(drugn)
+            all_targets += drug_targets
+        all_targets = sorted(list(set(all_targets)))
+
         reply = KQMLList('SUCCESS')
         targets = KQMLList()
-        for target_name in drug_targets:
+        for target_name in all_targets:
             target = KQMLList()
             target.set('name', target_name)
             targets.append(target)

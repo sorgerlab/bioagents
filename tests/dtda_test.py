@@ -115,6 +115,22 @@ class TestFindDrugTargets1(_IntegrationTest):
         assert output.get('targets')[0].gets('name') == 'BRAF'
 
 
+class TestFindDrugTargets2(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(DTDA_Module)
+
+    def create_message(self):
+        drug = ekb_kstring_from_text('SB525334')
+        content = KQMLList('FIND-DRUG-TARGETS')
+        content.set('drug', drug)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 1, output
+        assert output.get('targets')[0].gets('name') == 'TGFBR1'
+
+
 # IS-DRUG-TARGET tests
 
 class _TestIsDrugTarget(_IntegrationTest):
@@ -219,6 +235,7 @@ class TestFindTreatment1(_IntegrationTest):
         assert part1.gets('prevalence') == '0.88', part1.get('prevalence')
         assert len(part2.get('drugs')) == 0
 
+
 class TestFindTreatment2(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -236,6 +253,7 @@ class TestFindTreatment2(_IntegrationTest):
         assert part1.gets('prevalence') == '0.19', part1.get('prevalence')
         assert len(part2.get('drugs')) == 0
 
+
 class TestFindTreatment3(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -250,3 +268,6 @@ class TestFindTreatment3(_IntegrationTest):
         assert output.head() == 'FAILURE', output
         assert output.gets('reason') == 'DISEASE_NOT_FOUND', output
 
+
+if __name__ == '__main__':
+    TestFindDrugTargets2().run_test()

@@ -144,8 +144,8 @@ def assemble_model(stmts):
     for m in model.monomers:
         if m.name in targeted_agents or m.name in no_upstream_active_agents:
             pysb_assembler.set_base_initial_condition(model,
-                model.monomers[m.name], 0)
-            pysb_assembler.set_extended_initial_condition(model, m, 100.0)
+                model.monomers[m.name], 50.0)
+            pysb_assembler.set_extended_initial_condition(model, m, 50.0)
         else:
             pysb_assembler.set_extended_initial_condition(model, m, 0)
     # Tweak parameters

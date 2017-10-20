@@ -320,8 +320,8 @@ def test_assemble_model_targeted_agents():
     stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
              Inhibition(Agent('DRUG'), Agent('BRAF'))]
     model = tra_module.assemble_model(stmts)
-    assert model.parameters['BRAF_0'].value == 0
-    assert model.parameters['BRAF_0_mod'].value == 100.0
+    assert model.parameters['BRAF_0'].value == 50.0
+    assert model.parameters['BRAF_0_mod'].value == 50.0
 
 
 def test_no_upstream_active():
@@ -336,8 +336,8 @@ def test_assemble_model_no_upstream_active():
                              activity=ActivityCondition('activity', True)),
                              Agent('ERK'))]
     model = tra_module.assemble_model(stmts)
-    assert model.parameters['MEK_0'].value == 0
-    assert model.parameters['MEK_0_mod'].value == 100.0
+    assert model.parameters['MEK_0'].value == 50.0
+    assert model.parameters['MEK_0_mod'].value == 50.0
 
 
 def test_module():

@@ -37,7 +37,7 @@ class TRA_Module(Bioagent):
                 logger.error('Could not instantiate TRA with Kappa service.')
                 logger.exception(e)
         else:
-            logger.warning('You have chose to not use Kappa.')
+            logger.warning('You have chosen to not use Kappa.')
 
         if not self.ode_mode:
             self.tra = tra.TRA(kappa)
@@ -137,7 +137,7 @@ def assemble_model(model_indra_str):
     # Tweak parameters
     for param in model.parameters:
         if 'kf' in param.name and 'bind' in param.name:
-            param.value = param.value * 100
+            param.value = param.value * 150
     return model
 
 

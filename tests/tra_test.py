@@ -479,6 +479,43 @@ class TraTestModel4(_IntegrationTest):
         assert content.gets('satisfies-rate') == '1.0'
 
 
+class TraTestModel5(_IntegrationTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModel5, self).__init__(tra_module.TRA_Module, no_kappa=True)
+
+    def create_message(self):
+        txt = 'MEK phosphorylates ERK. DUSP dephosphorylates ERK.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'always_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'low')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-1')
+        return (msg, content)
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '0.0'
+        suggestion = content.get('suggestion')
+        assert suggestion.gets('type') == 'eventual_value'
+        assert suggestion.get('value').gets('value') == 'high'
+
+
 def _get_gk_model():
     SelfExporter.do_export = True
     Model()

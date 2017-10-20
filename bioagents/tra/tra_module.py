@@ -141,11 +141,16 @@ def assemble_model(stmts):
         targeted_agents = []
         no_upstream_active_agents = []
 
+    chemical_agents = get_chemical_agents(stmts)
+
     for m in model.monomers:
         if m.name in targeted_agents or m.name in no_upstream_active_agents:
             pysb_assembler.set_base_initial_condition(model,
                 model.monomers[m.name], 50.0)
             pysb_assembler.set_extended_initial_condition(model, m, 50.0)
+        elif m.name in chemical_agents:
+            pysb_assembler.set_base_initial_condition(model,
+                model.monomers[m.name], 10000.0)
         else:
             pysb_assembler.set_extended_initial_condition(model, m, 0)
     # Tweak parameters
@@ -185,6 +190,15 @@ def get_no_upstream_active_agents(stmts):
                     has_act.add(agent.name)
     act_no_ups = list(has_act - has_upstream)
     return act_no_ups
+
+
+def get_chemical_agents(stmts):
+    chemicals = set()
+    for stmt in stmts:
+        for agent in stmt.agent_list():
+            if agent is not None and 'CHEBI' in agent.db_refs:
+                chemicals.add(agent.name)
+    return list(chemicals)
 
 
 def get_molecular_entity(lst):

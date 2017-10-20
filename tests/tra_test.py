@@ -340,6 +340,23 @@ def test_assemble_model_no_upstream_active():
     assert model.parameters['MEK_0_mod'].value == 50.0
 
 
+def test_get_chemical_agents():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
+             Inhibition(Agent('DRUG', db_refs={'CHEBI': '123'}),
+                        Agent('BRAF'))]
+    chemical_agents = tra_module.get_chemical_agents(stmts)
+    assert chemical_agents == ['DRUG']
+
+
+def test_assemble_model_chemical_agents():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
+             Inhibition(Agent('DRUG', db_refs={'CHEBI': '123'}),
+                        Agent('BRAF'))]
+    model = tra_module.assemble_model(stmts)
+    assert model.parameters['DRUG_0'].value == 10000.0
+
+
+
 def test_module():
     tra = tra_module.TRA_Module(testing=True)
     content = KQMLList()

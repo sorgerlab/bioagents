@@ -5,7 +5,8 @@ from bioagents.tra import tra_module
 from bioagents.tra import tra
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation, \
-                             Dephosphorylation, Activation, Inhibition
+                             Dephosphorylation, Activation, Inhibition, \
+                             ActivityCondition
 from kqml import KQMLPerformative, KQMLList
 from tests.integration import _StringCompareTest, _IntegrationTest
 from tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
@@ -321,6 +322,22 @@ def test_assemble_model_targeted_agents():
     model = tra_module.assemble_model(stmts)
     assert model.parameters['BRAF_0'].value == 0
     assert model.parameters['BRAF_0_mod'].value == 100.0
+
+
+def test_no_upstream_active():
+    stmts = [Phosphorylation(Agent('MEK',
+                             activity=ActivityCondition('activity', True)),
+                             Agent('ERK'))]
+    assert tra_module.get_no_upstream_active_agents(stmts) == ['MEK']
+
+
+def test_assemble_model_no_upstream_active():
+    stmts = [Phosphorylation(Agent('MEK',
+                             activity=ActivityCondition('activity', True)),
+                             Agent('ERK'))]
+    model = tra_module.assemble_model(stmts)
+    assert model.parameters['MEK_0'].value == 0
+    assert model.parameters['MEK_0_mod'].value == 100.0
 
 
 def test_module():

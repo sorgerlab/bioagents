@@ -3,7 +3,8 @@ import json
 import logging
 from kqml import KQMLList, KQMLPerformative
 from indra.assemblers import pysb_assembler, PysbAssembler
-from indra.statements import stmts_from_json, Activation, Inhibition
+from indra.statements import stmts_from_json, Activation, Inhibition, \
+    ActiveForm
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra import tra
 from bioagents.tra import kappa_client
@@ -134,9 +135,10 @@ def assemble_model(stmts):
     pa.add_default_initial_conditions(100.0)
 
     targeted_agents = get_targeted_agents(stmts)
+    no_upstream_active_agents = get_no_upstream_active_agents(stmts)
 
     for m in model.monomers:
-        if m.name in targeted_agents:
+        if m.name in targeted_agents or m.name in no_upstream_active_agents:
             pysb_assembler.set_base_initial_condition(model,
                 model.monomers[m.name], 0)
             pysb_assembler.set_extended_initial_condition(model, m, 100.0)
@@ -161,6 +163,25 @@ def get_targeted_agents(stmts):
             has_inh.add(stmt.obj.name)
     inh_not_act = list(has_inh - has_act)
     return inh_not_act
+
+
+def get_no_upstream_active_agents(stmts):
+    """Return agents that are active but there's nothing upstream.
+    """
+    has_act = set()
+    has_upstream = set()
+    for stmt in stmts:
+        if isinstance(stmt, Activation):
+            has_upstream.add(stmt.obj.name)
+        elif isinstance(stmt, ActiveForm):
+            has_upstream.add(stmt.agent.name)
+        for agent in stmt.agent_list():
+            if agent is not None:
+                if agent.activity is not None and agent.activity.is_active:
+                    has_act.add(agent.name)
+    act_no_ups = list(has_act - has_upstream)
+    return act_no_ups
+
 
 def get_molecular_entity(lst):
     try:

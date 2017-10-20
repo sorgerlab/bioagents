@@ -137,21 +137,26 @@ def assemble_model(stmts):
     try:
         targeted_agents = get_targeted_agents(stmts)
         no_upstream_active_agents = get_no_upstream_active_agents(stmts)
-    except Exception:
+    except:
         targeted_agents = []
         no_upstream_active_agents = []
-
-    chemical_agents = get_chemical_agents(stmts)
+    try:
+        chemical_agents = get_chemical_agents(stmts)
+    except:
+        chemical_agents = []
 
     for m in model.monomers:
-        if m.name in targeted_agents or m.name in no_upstream_active_agents:
-            pysb_assembler.set_base_initial_condition(model,
-                model.monomers[m.name], 50.0)
-            pysb_assembler.set_extended_initial_condition(model, m, 50.0)
-        elif m.name in chemical_agents:
-            pysb_assembler.set_base_initial_condition(model,
-                model.monomers[m.name], 10000.0)
-        else:
+        try:
+            if m.name in targeted_agents or m.name in no_upstream_active_agents:
+                pysb_assembler.set_base_initial_condition(model,
+                    model.monomers[m.name], 50.0)
+                pysb_assembler.set_extended_initial_condition(model, m, 50.0)
+            elif m.name in chemical_agents:
+                pysb_assembler.set_base_initial_condition(model,
+                    model.monomers[m.name], 10000.0)
+            else:
+                pysb_assembler.set_extended_initial_condition(model, m, 0)
+        except:
             pysb_assembler.set_extended_initial_condition(model, m, 0)
     # Tweak parameters
     for param in model.parameters:

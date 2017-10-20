@@ -137,7 +137,7 @@ def assemble_model(model_indra_str):
     # Tweak parameters
     for param in model.parameters:
         if 'kf' in param.name and 'bind' in param.name:
-            param.value = param.value * 150
+            param.value = param.value * 100
     return model
 
 

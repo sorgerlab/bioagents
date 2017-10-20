@@ -80,11 +80,16 @@ class TRA(object):
                                        min_time_idx, max_time,
                                        plot_period)
 
-        fig_path = self.plot_results(results, pattern.entities[0], obs.name)
+        results_copy = deepcopy(results)
         yobs_list = [yobs for _, yobs in results]
 
         # Discretize observations
-        [self.discretize_obs(yobs, obs.name) for yobs in yobs_list]
+        # WARNING: yobs is changed by discretize_obs in place
+        thresholds = [self.discretize_obs(model, yobs, obs.name)
+                      for yobs in yobs_list]
+
+        fig_path = self.plot_results(results_copy, pattern.entities[0],
+                                     obs.name, thresholds[0])
         # We check for the given pattern
         if given_pattern:
             truths = []
@@ -120,14 +125,15 @@ class TRA(object):
                 else:
                     return sat_rate, num_sim, pat, fig_path
 
-    def plot_results(self, results, agent, obs_name):
+    def plot_results(self, results, agent, obs_name, thresh=50):
         plt.figure()
         plt.ion()
+        max_val_lim = max(numpy.max(results[0][1][obs_name]), 101.0)
         max_time = max([result[0][-1] for result in results])
-        thresh = 50
         lr = matplotlib.patches.Rectangle((0, 0), max_time, thresh, color='red',
                                           alpha=0.1)
-        hr = matplotlib.patches.Rectangle((0, thresh), max_time, thresh,
+        hr = matplotlib.patches.Rectangle((0, thresh), max_time,
+                                          max_val_lim-thresh,
                                           color='green', alpha=0.1)
         ax = plt.gca()
         ax.add_patch(lr)
@@ -136,7 +142,8 @@ class TRA(object):
         plt.text(10, thresh - 5, 'Low')
         for tspan, yobs in results:
             plt.plot(tspan, yobs[obs_name])
-        plt.ylim(-1, max(numpy.max(yobs[obs_name]), 101.0))
+        plt.ylim(-1, max_val_lim)
+        plt.xlim(-100, 21000)
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
         agent_str = english_assembler._assemble_agent_str(agent)
@@ -177,10 +184,22 @@ class TRA(object):
             results.append((tspan, yobs_from_min))
         return results
 
-    def discretize_obs(self, yobs, obs_name):
+    def discretize_obs(self, model, yobs, obs_name):
         # TODO: This needs to be done in a model/observable-dependent way
+        default_total_val = 100
+        start_val = yobs[obs_name][0]
+        max_val = numpy.max(yobs[obs_name])
+        min_val = numpy.min(yobs[obs_name])
+        # If starts low, discretize wrt total value
+        if start_val < 1e-5:
+            thresh = 0.3 * default_total_val
+        # If starts high, discretize wrt range with a certain minimum
+        else:
+            thresh = start_val + min(0.5*(max_val - min_val),
+                                     default_total_val * 0.1)
         for i, v in enumerate(yobs[obs_name]):
-            yobs[obs_name][i] = 1 if v > 50 else 0
+            yobs[obs_name][i] = 1 if v > thresh else 0
+        return thresh
 
     def condition_model(self, model, conditions):
         # Set up simulation conditions

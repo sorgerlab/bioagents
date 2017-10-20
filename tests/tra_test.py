@@ -5,7 +5,7 @@ from bioagents.tra import tra_module
 from bioagents.tra import tra
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation, \
-                             Dephosphorylation
+                             Dephosphorylation, Activation, Inhibition
 from kqml import KQMLPerformative, KQMLList
 from tests.integration import _StringCompareTest, _IntegrationTest
 from tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
@@ -307,6 +307,12 @@ def test_get_temporal_pattern_eventual():
 def test_get_all_patterns():
     patterns = tra.get_all_patterns('MAPK1')
     print(patterns)
+
+
+def test_targeted_agents():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
+             Inhibition(Agent('DRUG'), Agent('BRAF'))]
+    assert tra_module.get_targeted_agents(stmts) == ['BRAF']
 
 
 def test_module():

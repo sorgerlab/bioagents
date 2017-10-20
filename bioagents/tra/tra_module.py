@@ -3,7 +3,7 @@ import json
 import logging
 from kqml import KQMLList, KQMLPerformative
 from indra.assemblers import pysb_assembler, PysbAssembler
-from indra.statements import stmts_from_json
+from indra.statements import stmts_from_json, Activation, Inhibition
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra import tra
 from bioagents.tra import kappa_client
@@ -132,14 +132,35 @@ def assemble_model(model_indra_str):
     pa.add_statements(stmts)
     model = pa.make_model()
     pa.add_default_initial_conditions(100.0)
+
+    targeted_agents = get_targeted_agents(stmts)
+
     for m in model.monomers:
-        pysb_assembler.set_extended_initial_condition(model, m, 0)
+        if m.name in targeted_agents:
+            pysb_assembler.set_base_initial_condition(model,
+                model.monomers[agent_name], 0)
+            pysb_assembler.set_extended_initial_condition(model, m, 100.0)
+        else:
+            pysb_assembler.set_extended_initial_condition(model, m, 0)
     # Tweak parameters
     for param in model.parameters:
         if 'kf' in param.name and 'bind' in param.name:
             param.value = param.value * 100
     return model
 
+
+def get_targeted_agents(stmts):
+    """Return agents that are inhibited while not being activated by anything.
+    """
+    has_act = set()
+    has_inh = set()
+    for stmt in stmts:
+        if isinstance(stmt, Activation):
+            has_act.add(stmt.obj.name)
+        elif isinstance(stmt, Inhibition):
+            has_inh.add(stmt.obj.name)
+    inh_not_act = list(has_inh - has_act)
+    return inh_not_act
 
 def get_molecular_entity(lst):
     try:

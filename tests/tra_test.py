@@ -5,7 +5,8 @@ from bioagents.tra import tra_module
 from bioagents.tra import tra
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation, \
-                             Dephosphorylation
+                             Dephosphorylation, Activation, Inhibition, \
+                             ActivityCondition
 from kqml import KQMLPerformative, KQMLList
 from tests.integration import _StringCompareTest, _IntegrationTest
 from tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
@@ -307,6 +308,53 @@ def test_get_temporal_pattern_eventual():
 def test_get_all_patterns():
     patterns = tra.get_all_patterns('MAPK1')
     print(patterns)
+
+
+def test_targeted_agents():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
+             Inhibition(Agent('DRUG'), Agent('BRAF'))]
+    assert tra_module.get_targeted_agents(stmts) == ['BRAF']
+
+
+def test_assemble_model_targeted_agents():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
+             Inhibition(Agent('DRUG'), Agent('BRAF'))]
+    model = tra_module.assemble_model(stmts)
+    assert model.parameters['BRAF_0'].value == 50.0
+    assert model.parameters['BRAF_0_mod'].value == 50.0
+
+
+def test_no_upstream_active():
+    stmts = [Phosphorylation(Agent('MEK',
+                             activity=ActivityCondition('activity', True)),
+                             Agent('ERK'))]
+    assert tra_module.get_no_upstream_active_agents(stmts) == ['MEK']
+
+
+def test_assemble_model_no_upstream_active():
+    stmts = [Phosphorylation(Agent('MEK',
+                             activity=ActivityCondition('activity', True)),
+                             Agent('ERK'))]
+    model = tra_module.assemble_model(stmts)
+    assert model.parameters['MEK_0'].value == 50.0
+    assert model.parameters['MEK_0_mod'].value == 50.0
+
+
+def test_get_chemical_agents():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
+             Inhibition(Agent('DRUG', db_refs={'CHEBI': '123'}),
+                        Agent('BRAF'))]
+    chemical_agents = tra_module.get_chemical_agents(stmts)
+    assert chemical_agents == ['DRUG']
+
+
+def test_assemble_model_chemical_agents():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS')),
+             Inhibition(Agent('DRUG', db_refs={'CHEBI': '123'}),
+                        Agent('BRAF'))]
+    model = tra_module.assemble_model(stmts)
+    assert model.parameters['DRUG_0'].value == 10000.0
+
 
 
 def test_module():

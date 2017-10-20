@@ -195,8 +195,8 @@ class TRA(object):
             thresh = 0.3 * default_total_val
         # If starts high, discretize wrt range with a certain minimum
         else:
-            thresh = start_val + min(0.5*(max_val - min_val),
-                                     default_total_val * 0.1)
+            thresh = start_val + max(0.5*(max_val - min_val),
+                                     default_total_val * 0.10)
         for i, v in enumerate(yobs[obs_name]):
             yobs[obs_name][i] = 1 if v > thresh else 0
         return thresh

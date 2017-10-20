@@ -516,6 +516,120 @@ class TraTestModel5(_IntegrationTest):
         assert suggestion.get('value').gets('value') == 'high'
 
 
+class TraTestModel6(_IntegrationTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModel6, self).__init__(tra_module.TRA_Module, no_kappa=True)
+
+    def create_message(self):
+        txt = 'ELK1 transcribes FOS.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('FOS')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-1')
+        return (msg, content)
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0'
+
+
+class TraTestModel7(_IntegrationTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModel7, self).__init__(tra_module.TRA_Module, no_kappa=True)
+
+    def create_message1(self):
+        txt = 'ERK activates ELK1. DUSP inactivates ELK1. ' + \
+            'Active ELK1 transcribes FOS.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('FOS')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-1')
+        return (msg, content)
+
+    def check_response_to_message1(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0'
+
+    def create_message2(self):
+        txt = 'ERK activates ELK1. DUSP inactivates ELK1. ' + \
+            'Active ELK1 transcribes FOS.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('FOS')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'always_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'low')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+
+        condition_entity = ekb_kstring_from_text('DUSP')
+        conditions = KQMLList()
+        condition = KQMLList()
+        condition.sets('type', 'multiple')
+        condition.set('value', '100.0')
+        quantity = KQMLList()
+        quantity.sets('type', 'total')
+        entity = KQMLList()
+        entity.set('description', condition_entity)
+        quantity.set('entity', entity)
+        condition.set('quantity', quantity)
+        conditions.append(condition)
+        content.set('conditions', conditions)
+
+        msg = KQMLPerformative('REQUEST')
+        msg.set('content', content)
+        msg.set('reply-with', 'IO-2')
+        return (msg, content)
+
+    def check_response_to_message2(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0'
+
+
+
 def _get_gk_model():
     SelfExporter.do_export = True
     Model()
@@ -567,3 +681,5 @@ def _get_gk_model_indra():
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
 
+if __name__ == '__main__':
+    TraTestModel7.run_test()

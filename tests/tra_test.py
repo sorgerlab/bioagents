@@ -700,6 +700,77 @@ class TraTestModel8(_IntegrationTest):
         content = output.get('content')
         assert content.gets('satisfies-rate') == '1.0'
 
+class TraTestModel9(_IntegrationTest):
+
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModel9, self).__init__(tra_module.TRA_Module, no_kappa=True)
+
+    def create_message1(self):
+        txt = 'Active ELK1 transcribes FOS.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('FOS')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message1(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0'
+
+    def create_message2(self):
+        txt = 'PLX-4720 inhibits ELK1. Active ELK1 transcribes FOS.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('FOS')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        condition_entity = ekb_kstring_from_text('PLX-4720')
+        conditions = KQMLList()
+        condition = KQMLList()
+        condition.sets('type', 'multiple')
+        condition.set('value', '100.0')
+        quantity = KQMLList()
+        quantity.sets('type', 'total')
+        entity = KQMLList()
+        entity.set('description', condition_entity)
+        quantity.set('entity', entity)
+        condition.set('quantity', quantity)
+        conditions.append(condition)
+        content.set('conditions', conditions)
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message2(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '0.0'
+
 
 
 def _get_gk_model():
@@ -753,3 +824,5 @@ def _get_gk_model_indra():
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
 
+if __name__ == '__main__':
+    TraTestModel9().run_test()

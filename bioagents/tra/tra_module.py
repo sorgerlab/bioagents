@@ -201,8 +201,9 @@ def get_chemical_agents(stmts):
     chemicals = set()
     for stmt in stmts:
         for agent in stmt.agent_list():
-            if agent is not None and 'CHEBI' in agent.db_refs:
-                chemicals.add(agent.name)
+            if agent is not None and ('CHEBI' in agent.db_refs or
+                                      'PC' in agent.db_refs):
+                chemicals.add(pysb_assembler._n(agent.name))
     return list(chemicals)
 
 

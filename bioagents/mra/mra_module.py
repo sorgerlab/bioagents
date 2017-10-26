@@ -275,7 +275,7 @@ class MRA_Module(Bioagent):
             self.send(msg)
 
     def send_clean_model(self):
-        msg = KQMLPerformative('tell')
+        msg = KQMLPerformative('request')
         content = KQMLList('clean-model')
         msg.set('content', content)
         self.send(msg)

@@ -96,6 +96,10 @@ class TRA_Module(Bioagent):
             logger.exception(e)
             reply_content = self.make_failure('MODEL_MISSING_MONOMER')
             return reply_content
+        except tra.MissingMonomerSiteError as e:
+            logger.exception(e)
+            reply_content = self.make_failure('MODEL_MISSING_MONOMER_SITE')
+            return reply_content
         except tra.SimulatorError as e:
             logger.exception(e)
             reply_content = self.make_failure('KAPPA_FAILURE')

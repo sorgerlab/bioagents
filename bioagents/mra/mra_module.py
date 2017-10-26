@@ -151,6 +151,11 @@ class MRA_Module(Bioagent):
         msg.set('model-id', str(new_model_id))
         # Add the INDRA model json
         model = res.get('model')
+
+        # Handle empty model
+        if not model:
+            self.send_clean_model()
+
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
         # Get the action and add it to the message
@@ -268,6 +273,12 @@ class MRA_Module(Bioagent):
                 content.sets('path', resource)
             msg.set('content', content)
             self.send(msg)
+
+    def send_clean_model(self):
+        msg = KQMLPerformative('request')
+        content = KQMLList('clean-model')
+        msg.set('content', content)
+        self.send(msg)
 
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')

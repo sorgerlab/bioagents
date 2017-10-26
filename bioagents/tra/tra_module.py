@@ -92,6 +92,10 @@ class TRA_Module(Bioagent):
         try:
             sat_rate, num_sim, suggestion, fig_path = \
                 self.tra.check_property(model, pattern, conditions)
+        except tra.MissingMonomerError as e:
+            logger.exception(e)
+            reply_content = self.make_failure('MODEL_MISSING_MONOMER')
+            return reply_content
         except tra.SimulatorError as e:
             logger.exception(e)
             reply_content = self.make_failure('KAPPA_FAILURE')

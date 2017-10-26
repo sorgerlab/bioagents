@@ -52,6 +52,8 @@ class TRA(object):
         # TODO: make number of simulations and number of time points adaptive
 
         # Make an observable for the simulations
+        logger.info('Trying to make an observable for: %s',
+                    pattern.entities[0])
         obs = get_create_observable(model, pattern.entities[0])
 
         # Make pattern
@@ -330,7 +332,10 @@ def apply_condition(model, condition):
 def get_create_observable(model, agent):
     site_pattern = pa.get_site_pattern(agent)
     obs_name = pa.get_agent_rule_str(agent) + '_obs'
-    monomer = model.monomers[pa._n(agent.name)]
+    try:
+        monomer = model.monomers[pa._n(agent.name)]
+    except KeyError:
+        raise MissingMonomerError('%s is not in the model ' % agent.name)
     obs = Observable(obs_name.encode('utf-8'), monomer(site_pattern))
     model.add_component(obs)
     return obs
@@ -572,6 +577,10 @@ class InvalidMolecularEntityError(BioagentException):
 
 
 class InvalidMolecularConditionError(BioagentException):
+    pass
+
+
+class MissingMonomerError(BioagentException):
     pass
 
 

@@ -701,7 +701,6 @@ class TraTestModel8(_IntegrationTest):
         assert content.gets('satisfies-rate') == '1.0'
 
 class TraTestModel9(_IntegrationTest):
-
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
         super(TraTestModel9, self).__init__(tra_module.TRA_Module, no_kappa=True)

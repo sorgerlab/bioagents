@@ -6,7 +6,7 @@ from bioagents.tra import tra
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation, \
                              Dephosphorylation, Activation, Inhibition, \
-                             ActivityCondition
+                             ActivityCondition, ModCondition
 from kqml import KQMLPerformative, KQMLList
 from tests.integration import _StringCompareTest, _IntegrationTest
 from tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
@@ -356,6 +356,24 @@ def test_assemble_model_chemical_agents():
     assert model.parameters['DRUG_0'].value == 10000.0
 
 
+@raises(tra.MissingMonomerError)
+def test_missing_monomer():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS'))]
+    model = tra_module.assemble_model(stmts)
+    agent = Agent('RAS')
+    tra.get_create_observable(model, agent)
+
+
+@raises(tra.MissingMonomerSiteError)
+def test_missing_monomer_site():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS'))]
+    model = tra_module.assemble_model(stmts)
+    mc = ModCondition('phosphorylation', None, None, True)
+    agent = Agent('KRAS', mods=[mc])
+    tra.get_create_observable(model, agent)
+
+
+# Module level TRA tests
 
 def test_module():
     tra = tra_module.TRA_Module(testing=True)
@@ -370,6 +388,8 @@ def test_module():
     res = tra.respond_satisfies_pattern(content)
     assert res[2] is not None
 
+
+# TRA integration tests
 
 class _TraTestModel1(_IntegrationTest):
     """Test that TRA can correctly run a model."""
@@ -701,7 +721,6 @@ class TraTestModel8(_IntegrationTest):
         assert content.gets('satisfies-rate') == '1.0'
 
 class TraTestModel9(_IntegrationTest):
-
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
         super(TraTestModel9, self).__init__(tra_module.TRA_Module, no_kappa=True)
@@ -772,6 +791,71 @@ class TraTestModel9(_IntegrationTest):
         assert content.gets('satisfies-rate') == '0.0'
 
 
+class TraTestMissingMonomer(_IntegrationTest):
+    """Test that TRA can signal that a monomer is missing."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestMissingMonomer, self).__init__(tra_module.TRA_Module,
+                                                    no_kappa=True)
+
+    def create_message1(self):
+        txt = 'KRAS activates BRAF.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('RAS')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message1(self, output):
+        assert output.head() == 'FAILURE'
+        reason = output.get('reason')
+        assert reason == 'MODEL_MISSING_MONOMER'
+
+
+class TraTestMissingMonomerSite(_IntegrationTest):
+    """Test that TRA can signal that a monomer is missing."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestMissingMonomerSite, self).__init__(tra_module.TRA_Module,
+                                                        no_kappa=True)
+
+    def create_message1(self):
+        txt = 'KRAS activates BRAF.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('BRAF that is phosphorylated')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message1(self, output):
+        assert output.head() == 'FAILURE'
+        reason = output.get('reason')
+        assert reason == 'MODEL_MISSING_MONOMER_SITE'
+
 
 def _get_gk_model():
     SelfExporter.do_export = True
@@ -824,5 +908,3 @@ def _get_gk_model_indra():
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
 
-if __name__ == '__main__':
-    TraTestModel9().run_test()

@@ -74,7 +74,7 @@ class TRA(object):
             min_time_idx = 0
 
         # The number of independent simulations to perform
-        num_sim = 3
+        num_sim = 2
         # Run simulations
         results = self.run_simulations(model, conditions, num_sim,
                                        min_time_idx, max_time,

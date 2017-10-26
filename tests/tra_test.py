@@ -355,7 +355,15 @@ def test_assemble_model_chemical_agents():
     model = tra_module.assemble_model(stmts)
     assert model.parameters['DRUG_0'].value == 10000.0
 
+@raises(tra.MissingMonomerError)
+def test_missing_monomer():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS'))]
+    model = tra_module.assemble_model(stmts)
+    agent = Agent('RAS')
+    tra.get_create_observable(model, agent)
 
+
+# Module level TRA tests
 
 def test_module():
     tra = tra_module.TRA_Module(testing=True)
@@ -370,6 +378,8 @@ def test_module():
     res = tra.respond_satisfies_pattern(content)
     assert res[2] is not None
 
+
+# TRA integration tests
 
 class _TraTestModel1(_IntegrationTest):
     """Test that TRA can correctly run a model."""
@@ -771,6 +781,38 @@ class TraTestModel9(_IntegrationTest):
         assert content.gets('satisfies-rate') == '0.0'
 
 
+class TraTestMissingMonomer(_IntegrationTest):
+    """Test that TRA can signal that a monomer is missing."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestMissingMonomer, self).__init__(tra_module.TRA_Module,
+                                                    no_kappa=True)
+
+    def create_message1(self):
+        txt = 'KRAS activates BRAF.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('RAS')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message1(self, output):
+        assert output.head() == 'FAILURE'
+        reason = output.get('reason')
+        assert reason == 'MODEL_MISSING_MONOMER'
+
 
 def _get_gk_model():
     SelfExporter.do_export = True
@@ -823,5 +865,3 @@ def _get_gk_model_indra():
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
 
-if __name__ == '__main__':
-    TraTestModel9().run_test()

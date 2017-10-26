@@ -1,3 +1,4 @@
+import unittest
 from kqml import KQMLList
 from util import ekb_from_text
 from bioagents.biosense.biosense_module import BioSense_Module
@@ -21,6 +22,23 @@ def test_choose_sense():
     ont_type = agent.get('ont-type')
     assert ont_type == 'ONT::GENE'
 
+@unittest.skip('No ambiguity reported here yet')
+def test_choose_sense_ambiguity():
+    bs = BioSense_Module(testing=True)
+    msg_content = KQMLList('CHOOSE-SENSE')
+    pdk1_ekb = ekb_from_text('PDK1')
+    msg_content.sets('ekb-term', pdk1_ekb)
+    res = bs.respond_choose_sense(msg_content)
+    print(res)
+    agents = res.get('agents')
+    assert agents and agents.data
+    agent = agents[0]
+    name = agent.gets('name')
+    assert name == 'PDK1'
+    ont_type = agent.get('ont-type')
+    assert ont_type == 'ONT::GENE'
+
+
 def test_choose_sense_category():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
@@ -32,6 +50,7 @@ def test_choose_sense_category():
         print(res.head())
         assert(res.head() == 'SUCCESS')
         assert(res.get('in-category') == 'TRUE')
+
 
 def test_choose_sense_is_member():
     bs = BioSense_Module(testing=True)

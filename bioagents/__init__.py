@@ -22,6 +22,7 @@ class Bioagent(KQMLModule):
 
         self.ready()
         self.start()
+        logger.info("%s is has started and ready." % self.name)
         return
 
     def receive_request(self, msg, content):

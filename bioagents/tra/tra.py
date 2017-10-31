@@ -303,7 +303,10 @@ def get_ltl_from_pattern(pattern, obs):
 
 def apply_condition(model, condition):
     agent = condition.quantity.entity
-    monomer = model.monomers[pa._n(agent.name)]
+    try:
+        monomer = model.monomers[pa._n(agent.name)]
+    except KeyError:
+        raise MissingMonomerError('%s is not in the model ' % agent.name)
     site_pattern = pa.get_site_pattern(agent)
     # TODO: handle modified patterns
     if site_pattern:

@@ -373,6 +373,16 @@ def test_missing_monomer_site():
     tra.get_create_observable(model, agent)
 
 
+@raises(tra.MissingMonomerError)
+def test_missing_monomer_condition():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS'))]
+    model = tra_module.assemble_model(stmts)
+    entity = Agent('HRAS')
+    quantity = tra.MolecularQuantityReference('total', entity)
+    condition = tra.MolecularCondition('multiple', quantity, 10)
+    tra.apply_condition(model, condition)
+
+
 # Module level TRA tests
 
 def test_module():

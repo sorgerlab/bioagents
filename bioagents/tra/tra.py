@@ -163,6 +163,8 @@ class TRA(object):
             # Apply molecular condition to model
             try:
                 model_sim = self.condition_model(model, conditions)
+            except MissingMonomerError:
+                raise MissingMonomerError
             except Exception as e:
                 logger.exception(e)
                 msg = 'Applying molecular condition failed.'

@@ -867,6 +867,53 @@ class TraTestMissingMonomerSite(_IntegrationTest):
         assert reason == 'MODEL_MISSING_MONOMER_SITE'
 
 
+class TraMissingMonomerCondition(_IntegrationTest):
+    """Test that TRA can signal that a condition monomer is missing."""
+    def __init__(self, *args, **kwargs):
+        super(TraMissingMonomerCondition, self).__init__(tra_module.TRA_Module,
+              no_kappa=True)
+
+    def create_message1(self):
+        txt = 'ELK1 transcribes FOS.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('FOS')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'eventual_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        condition_entity = ekb_kstring_from_text('MAPK1')
+        conditions = KQMLList()
+        condition = KQMLList()
+        condition.sets('type', 'multiple')
+        condition.set('value', '100.0')
+        quantity = KQMLList()
+        quantity.sets('type', 'total')
+        entity = KQMLList()
+        entity.set('description', condition_entity)
+        quantity.set('entity', entity)
+        condition.set('quantity', quantity)
+        conditions.append(condition)
+        content.set('conditions', conditions)
+
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message1(self, output):
+        assert output.head() == 'FAILURE', output
+        reason = output.gets('reason')
+        assert reason == 'MODEL_MISSING_MONOMER', reason
+
+
 def _get_gk_model():
     SelfExporter.do_export = True
     Model()

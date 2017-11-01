@@ -64,10 +64,7 @@ class MSA_Module(Bioagent):
         else:
             tell_msg = KQMLPerformative('tell')
             content = KQMLPerformative('add-provenance')
-            content.sets('html', '\n'.join([
-                '%s' % str(s)
-                for s in related_results
-                ]))
+            content.sets('html', 'THIS IS PROVENANCE')
             tell_msg.set('content', content)
             self.send(tell_msg)
             msg = KQMLPerformative('SUCCESS')

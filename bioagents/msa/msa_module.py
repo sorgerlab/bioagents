@@ -61,9 +61,18 @@ class MSA_Module(Bioagent):
                 "Could not find statement matching phosphorylation activating "
                 "%s, %s, %s, %s." % (agent.name, residue, position, 'phosphorylation')
                 )
-        msg = KQMLPerformative('SUCCESS')
-        msg.set('is-activating', 'TRUE')
-        return msg
+        else:
+            tell_msg = KQMLPerformative('tell')
+            content = KQMLPerformative('add-provenance')
+            content.sets('html', '\n'.join([
+                '%s' % str(s)
+                for s in related_results
+                ]))
+            tell_msg.set('content', content)
+            self.send(tell_msg)
+            msg = KQMLPerformative('SUCCESS')
+            msg.set('is-activating', 'TRUE')
+            return msg
 
     @staticmethod
     def _get_agent(agent_ekb):

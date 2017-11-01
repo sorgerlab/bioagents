@@ -4,7 +4,7 @@ import logging
 import re
 from bioagents import Bioagent
 from indra.sources.trips.processor import TripsProcessor
-from kqml import KQMLPerformative
+from kqml import KQMLPerformative, KQMLList
 import pickle
 
 
@@ -63,7 +63,7 @@ class MSA_Module(Bioagent):
                 )
         else:
             tell_msg = KQMLPerformative('tell')
-            content = KQMLPerformative('add-provenance')
+            content = KQMLList('add-provenance')
             content.sets('html', 'THIS IS PROVENANCE')
             tell_msg.set('content', content)
             self.send(tell_msg)

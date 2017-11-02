@@ -80,7 +80,7 @@ class MSA_Module(Bioagent):
         """
         url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
         stmt_evidence_fmt = ('Found at pmid <a href={url}={pmid} '
-                             'target="_blank">{pmid}</a>:\n\n{evidence}')
+                             'target="_blank">{pmid}</a>:\n{evidence}\n\n')
         content_fmt = "<text>Supporting evidence:\n%s</text><hr>"
         content = KQMLList('add-provenance')
         evidence_list = [stmt.evidence[0] for stmt in related_results]
@@ -94,7 +94,7 @@ class MSA_Module(Bioagent):
                 stmt_evidence_fmt.format(
                     url=url_base,
                     pmid=pmid,
-                    evidence='\n\n'.join(['<i>%s</i>' % e for e in elist])
+                    evidence='\n'.join(['<i>%s</i>' % e for e in elist])
                     )
                 for pmid, elist in pmid_text_dict.items()
                 ])

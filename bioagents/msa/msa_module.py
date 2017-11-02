@@ -62,14 +62,38 @@ class MSA_Module(Bioagent):
                 "%s, %s, %s, %s." % (agent.name, residue, position, 'phosphorylation')
                 )
         else:
-            tell_msg = KQMLPerformative('tell')
-            content = KQMLList('add-provenance')
-            content.sets('html', '<text>THIS IS PROVENANCE</text>')
-            tell_msg.set('content', content)
-            self.send(tell_msg)
+            self._add_provenance(related_results)
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
             return msg
+
+    def tell(self, content):
+        """Send a tell message."""
+        msg = KQMLPerformative('tell')
+        msg.set('content', content)
+        return self.send(msg)
+
+    def _add_provenance(self, related_results):
+        """Creates the content for an add-provenance tell message.
+
+        The message is used to provide evidence supporting the conclusion.
+        """
+        content_fmt = ("<text>Supporting evidence: \"%s\" found in "
+                       "<a href=%s>. %d other statements were also found to "
+                       "support this conclusion.</text>")
+        content = KQMLList('add-provenance')
+        stmt = related_results.pop()
+        evidence = stmt.evidence[0]
+        url = 'https://www.ncbi.nlm.nih.gov/pubmed/?term=' + evidence.pmid
+        content.sets(
+            'html',
+            content_fmt % (
+                evidence.text,
+                url,
+                len(related_results)
+                )
+            )
+        return self.tell(content)
 
     @staticmethod
     def _get_agent(agent_ekb):

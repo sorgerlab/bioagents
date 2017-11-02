@@ -80,7 +80,7 @@ class MSA_Module(Bioagent):
         """
         url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
         stmt_evidence_fmt = \
-            "'<i>{text}</i>' found at pmid <a href={url}={pmid}>{pmid}</a>."
+            '"<i>{text}</i>" found at pmid <a href={url}={pmid} target="_blank">{pmid}</a>.'
         content_fmt = "<text>Supporting evidence:\n%s</text><hr>"
         content = KQMLList('add-provenance')
         evidence_list = [stmt.evidence[0] for stmt in related_results]

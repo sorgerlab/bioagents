@@ -4,7 +4,7 @@ import logging
 import re
 from bioagents import Bioagent
 from indra.sources.trips.processor import TripsProcessor
-from kqml import KQMLPerformative
+from kqml import KQMLPerformative, KQMLList
 import pickle
 
 
@@ -61,9 +61,55 @@ class MSA_Module(Bioagent):
                 "Could not find statement matching phosphorylation activating "
                 "%s, %s, %s, %s." % (agent.name, residue, position, 'phosphorylation')
                 )
-        msg = KQMLPerformative('SUCCESS')
-        msg.set('is-activating', 'TRUE')
-        return msg
+        else:
+            self._add_provenance(
+                related_results,
+                "Phosphorylation at %s%s activates %s." % (
+                    residue,
+                    position,
+                    agent.name
+                    )
+                )
+            msg = KQMLPerformative('SUCCESS')
+            msg.set('is-activating', 'TRUE')
+            return msg
+
+    def _add_provenance(self, related_results, for_what):
+        """Creates the content for an add-provenance tell message.
+
+        The message is used to provide evidence supporting the conclusion.
+        """
+        # Create some formats
+        url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
+        stmt_evidence_fmt = ('Found at pmid <a href={url}={pmid} '
+                             'target="_blank">{pmid}</a>:\n<ul>{evidence}\n'
+                             '</ul>')
+        content_fmt = '<text>Supporting evidence for \'%s\':\n%s</text><hr>'
+
+        # Extract a list of the evidence then map pmids to lists of text
+        evidence_list = [stmt.evidence[0] for stmt in related_results]
+        pmid_text_dict = {
+            pmid: [e.text for e in evidence_list if e.pmid == pmid]
+            for pmid in set([e.pmid for e in evidence_list])
+            }
+
+        # Create the text for displaying the evidence.
+        evidence_text = '\n'.join([
+            stmt_evidence_fmt.format(
+                url=url_base,
+                pmid=pmid,
+                evidence='\n'.join(['<li><i>\'%s\'</i></li>' % e for e in elist])
+                )
+            for pmid, elist in pmid_text_dict.items()
+            ])
+
+        # Actually create the content.
+        content = KQMLList('add-provenance')
+        content.sets(
+            'html',
+            content_fmt % (for_what, evidence_text)
+            )
+        return self.tell(content)
 
     @staticmethod
     def _get_agent(agent_ekb):

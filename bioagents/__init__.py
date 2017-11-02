@@ -77,6 +77,12 @@ class Bioagent(KQMLModule):
             self.reply(msg, reply_msg)
         return (msg, reply_content)
 
+    def tell(self, content):
+        """Send a tell message."""
+        msg = KQMLPerformative('tell')
+        msg.set('content', content)
+        return self.send(msg)
+
     def error_reply(self, msg, comment):
         if not self.testing:
             return KQMLModule.error_reply(self, msg, comment)

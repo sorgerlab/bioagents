@@ -89,8 +89,8 @@ class MSA_Module(Bioagent):
         url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
         stmt_evidence_fmt = ('Found at pmid <a href={url}={pmid} '
                              'target="_blank">{pmid}</a>:\n<ul>{evidence}\n'
-                             '</ul>\n')
-        content_fmt = "<text>Supporting evidence for %s:\n%s</text><hr>"
+                             '</ul>')
+        content_fmt = '<text>Supporting evidence for "%s":\n%s</text><hr>'
 
         # Extract a list of the evidence then map pmids to lists of text
         evidence_list = [stmt.evidence[0] for stmt in related_results]
@@ -104,7 +104,7 @@ class MSA_Module(Bioagent):
             stmt_evidence_fmt.format(
                 url=url_base,
                 pmid=pmid,
-                evidence='\n'.join(['<li><i>%s</i></li>' % e for e in elist])
+                evidence='\n'.join(['<li><i>"%s"</i></li>' % e for e in elist])
                 )
             for pmid, elist in pmid_text_dict.items()
             ])

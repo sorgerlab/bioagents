@@ -74,12 +74,6 @@ class MSA_Module(Bioagent):
             msg.set('is-activating', 'TRUE')
             return msg
 
-    def tell(self, content):
-        """Send a tell message."""
-        msg = KQMLPerformative('tell')
-        msg.set('content', content)
-        return self.send(msg)
-
     def _add_provenance(self, related_results, for_what):
         """Creates the content for an add-provenance tell message.
 

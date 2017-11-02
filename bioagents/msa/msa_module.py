@@ -85,24 +85,32 @@ class MSA_Module(Bioagent):
 
         The message is used to provide evidence supporting the conclusion.
         """
+        # Create some formats
         url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
         stmt_evidence_fmt = ('Found at pmid <a href={url}={pmid} '
-                             'target="_blank">{pmid}</a>:\n{evidence}\n\n')
+                             'target="_blank">{pmid}</a>:\n<ul>{evidence}\n'
+                             '</ul>\n')
         content_fmt = "<text>Supporting evidence for %s:\n%s</text><hr>"
-        content = KQMLList('add-provenance')
+
+        # Extract a list of the evidence then map pmids to lists of text
         evidence_list = [stmt.evidence[0] for stmt in related_results]
         pmid_text_dict = {
             pmid: [e.text for e in evidence_list if e.pmid == pmid]
             for pmid in set([e.pmid for e in evidence_list])
             }
+
+        # Create the text for displaying the evidence.
         evidence_text = '\n'.join([
             stmt_evidence_fmt.format(
                 url=url_base,
                 pmid=pmid,
-                evidence='\n'.join(['<i>%s</i>' % e for e in elist])
+                evidence='\n'.join(['<li><i>%s</i></li>' % e for e in elist])
                 )
             for pmid, elist in pmid_text_dict.items()
             ])
+
+        # Actually create the content.
+        content = KQMLList('add-provenance')
         content.sets(
             'html',
             content_fmt % (for_what, evidence_text)

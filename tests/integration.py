@@ -116,14 +116,29 @@ class _IntegrationTest(TestCase):
             raise NotImplementedError(define_in_child(attr_name))
         return attr
 
-    @classmethod
     def _get_method_dict(self, prefix=''):
         """Get a dict of methods with the given prefix string."""
-        return {
+        # We need to walk up the parental tree to get all relevant methods.
+        # Note: the particular way the dicts are combined preserves parent
+        # child priority, namely that a child method should always take
+        # priority over like-named parent method.
+        full_dict = {}
+        current_class = self.__class__
+        while issubclass(current_class, _IntegrationTest) and current_class is not _IntegrationTest:
+            full_dict = dict([
+                (name, attr)
+                for name, attr in current_class.__dict__.iteritems()
+                if not name.startswith('__')
+                ] + full_dict.items())
+            current_class = current_class.__base__
+
+        # Create the method dict.
+        method_dict = {
             name[len(prefix):]: attr
-            for name, attr in self.__dict__.iteritems()
+            for name, attr in full_dict.iteritems()
             if callable(attr) and name.startswith(prefix)
             }
+        return method_dict
 
     def _get_messages(self):
         """Get a generator iterating over the methods to send messages.
@@ -140,6 +155,8 @@ class _IntegrationTest(TestCase):
             msg_list = sorted(send_dict.keys())
         else:
             msg_list = self.message_funcs[:]
+        assert len(msg_list), \
+            "No messages found to test, likely error in def of test."
         for msg in msg_list:
             yield send_dict[msg](self), check_dict.get(msg)
 

@@ -78,9 +78,9 @@ class MSA_Module(Bioagent):
 
         The message is used to provide evidence supporting the conclusion.
         """
-        content_fmt = ("<text>Supporting evidence: \"%s\" found in "
-                       "<a href=%s>. %d other statements were also found to "
-                       "support this conclusion.</text>")
+        content_fmt = ("<text>Supporting evidence: '%s' found  "
+                       "<a href=%s>here</a>. I also found %d other statements "
+                       "to support this conclusion.</text>")
         content = KQMLList('add-provenance')
         stmt = related_results.pop()
         evidence = stmt.evidence[0]

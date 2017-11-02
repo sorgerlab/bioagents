@@ -62,7 +62,14 @@ class MSA_Module(Bioagent):
                 "%s, %s, %s, %s." % (agent.name, residue, position, 'phosphorylation')
                 )
         else:
-            self._add_provenance(related_results)
+            self._add_provenance(
+                related_results,
+                "Phosphorylation at %s%s activates %s." % (
+                    residue,
+                    position,
+                    agent.name
+                    )
+                )
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
             return msg
@@ -73,7 +80,7 @@ class MSA_Module(Bioagent):
         msg.set('content', content)
         return self.send(msg)
 
-    def _add_provenance(self, related_results):
+    def _add_provenance(self, related_results, for_what):
         """Creates the content for an add-provenance tell message.
 
         The message is used to provide evidence supporting the conclusion.
@@ -81,23 +88,24 @@ class MSA_Module(Bioagent):
         url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
         stmt_evidence_fmt = ('Found at pmid <a href={url}={pmid} '
                              'target="_blank">{pmid}</a>:\n{evidence}\n\n')
-        content_fmt = "<text>Supporting evidence:\n%s</text><hr>"
+        content_fmt = "<text>Supporting evidence for %s:\n%s</text><hr>"
         content = KQMLList('add-provenance')
         evidence_list = [stmt.evidence[0] for stmt in related_results]
         pmid_text_dict = {
             pmid: [e.text for e in evidence_list if e.pmid == pmid]
             for pmid in set([e.pmid for e in evidence_list])
             }
+        evidence_text = '\n'.join([
+            stmt_evidence_fmt.format(
+                url=url_base,
+                pmid=pmid,
+                evidence='\n'.join(['<i>%s</i>' % e for e in elist])
+                )
+            for pmid, elist in pmid_text_dict.items()
+            ])
         content.sets(
             'html',
-            content_fmt % '\n'.join([
-                stmt_evidence_fmt.format(
-                    url=url_base,
-                    pmid=pmid,
-                    evidence='\n'.join(['<i>%s</i>' % e for e in elist])
-                    )
-                for pmid, elist in pmid_text_dict.items()
-                ])
+            content_fmt % (for_what, evidence_text)
             )
         return self.tell(content)
 

@@ -1,7 +1,6 @@
 import json
 import unittest
 import requests
-import ndex.client as nc
 from ndex.beta.path_scoring import PathScoring
 from bioagents.qca import QCA
 
@@ -16,24 +15,27 @@ def test_improved_path_ranking():
     print(qca_results2)
     assert len(qca_results2) > 0
 
+
 def test_scratch():
     source_names = ["AKT1", "AKT2", "AKT3"]
     target_names = ["CCND1"]
     results_list = []
-    host = "http://www.ndexbio.org"
-    directed_path_query_url = 'http://general.bigmech.ndexbio.org/directedpath/query'
+    directed_path_query_url = \
+        'http://general.bigmech.ndexbio.org/directedpath/query'
 
-    ndex = nc.Ndex(host=host)
-
-    #====================
     # Assemble REST url
-    #====================
     uuid_prior = "84f321c6-dade-11e6-86b1-0ac135e8bacf"
-    uuid_high_confidence = "b04e406b-dc88-11e6-86b1-0ac135e8bacf"
     target = ",".join(target_names)
     source = ",".join(source_names)
     max_number_of_paths = 200
-    url = directed_path_query_url + '?source=' + source + '&target=' + target + '&uuid=' + uuid_prior + '&server=www.ndexbio.org' + '&pathnum=' + str(max_number_of_paths)
+    url = '%s?source=%s&target=%s&uuid=%s&server=%s&pathnum=%s' % (
+        directed_path_query_url,
+        source,
+        target,
+        uuid_prior,
+        'www.ndexbio.org',
+        str(max_number_of_paths)
+        )
 
     r = requests.post(url)
     result_json = json.loads(r.content)
@@ -46,10 +48,6 @@ def test_scratch():
     for i, edge in enumerate(edge_results):
         print len(edge)
         top_edge = None
-        if i == 24:
-            mystr = ""
-        if i == 14:
-            mystr = ""
         for ranked_edges in path_scoring.cx_edges_to_tuples(edge, "A"):
             if top_edge is None:
                 top_edge = ranked_edges
@@ -60,10 +58,11 @@ def test_scratch():
         A_all_scores.append(("A" + str(i), top_edge[1]))
 
     print(A_all_scores)
-    race_results = path_scoring.calculate_average_position(A_all_scores,[])
+    race_results = path_scoring.calculate_average_position(A_all_scores, [])
 
     print(race_results)
     print(results_list)
+
 
 if __name__ == '__main__':
     unittest.main()

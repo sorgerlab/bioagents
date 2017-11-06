@@ -78,7 +78,7 @@ class QCA_Module(Bioagent):
 
         return reply
 
-    def has_qca_path(self, content):
+    def respond_has_qca_path(self, content):
         """Response content to find-qca-path request."""
         target_arg = content.gets('TARGET')
         source_arg = content.gets('SOURCE')

@@ -3,6 +3,9 @@ import unittest
 import requests
 from ndex.beta.path_scoring import PathScoring
 from bioagents.qca import QCA
+from kqml.kqml_list import KQMLList
+from tests.util import ekb_from_text
+from bioagents.qca.qca_module import QCA_Module
 
 
 # BELOW ARE OLD QCA TESTS
@@ -62,6 +65,19 @@ def test_scratch():
 
     print(race_results)
     print(results_list)
+
+
+def test_find_qca_path():
+    content = KQMLList('FIND-QCA-PATH')
+    content.sets('target', ekb_from_text('MAP2K1'))
+    content.sets('source', ekb_from_text('BRAF'))
+    qca_mod = QCA_Module(testing=True)
+    resp = qca_mod.respond_find_qca_path(content)
+    assert resp is not None, "No response received."
+    assert resp.head() is "SUCCESS", \
+        "QCA failed task for reason: %s" % resp.gets('reason')
+    assert resp.get('paths') is not None, "Did not find paths."
+    return
 
 
 if __name__ == '__main__':

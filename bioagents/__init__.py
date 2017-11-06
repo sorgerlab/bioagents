@@ -39,6 +39,7 @@ class Bioagent(KQMLModule):
             logger.error('Could not get task string from request.')
             logger.error(e)
             reply_content = self.make_failure('INVALID_REQUEST')
+            return self.reply_with_content(msg, reply_content)
 
         if task in self.tasks:
             reply_content = self._respond_to(task, content)

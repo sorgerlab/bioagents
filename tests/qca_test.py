@@ -80,5 +80,18 @@ def test_find_qca_path():
     return
 
 
+def test_has_qca_path():
+    content = KQMLList('FIND-QCA-PATH')
+    content.sets('target', ekb_from_text('MAP2K1'))
+    content.sets('source', ekb_from_text('BRAF'))
+    qca_mod = QCA_Module(testing=True)
+    resp = qca_mod.respond_has_qca_path(content)
+    assert resp is not None, "No response received."
+    assert resp.head() is "SUCCESS", \
+        "QCA failed task for reason: %s" % resp.gets('reason')
+    assert resp.get('haspath') == 'TRUE', "Did not find path."
+    return
+
+
 if __name__ == '__main__':
     unittest.main()

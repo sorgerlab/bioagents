@@ -1,12 +1,39 @@
 import json
 import unittest
 import requests
+import ndex.client as nc
+from indra.statements import stmts_from_json, Gef
 from ndex.beta.path_scoring import PathScoring
-from bioagents.qca import QCA
-from kqml.kqml_list import KQMLList
-from tests.util import ekb_from_text
-from bioagents.qca.qca_module import QCA_Module
+from kqml import KQMLList
+from bioagents.qca import QCA, QCA_Module
+from tests.util import *
+from tests.integration import _IntegrationTest, _FailureTest
 
+@unittest.skip('Update to live Ras Machine needed')
+class TestSosKras(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestSosKras, self).__init__(QCA_Module)
+
+    def create_message(self):
+        source = ekb_kstring_from_text('SOS1')
+        target = ekb_kstring_from_text('KRAS')
+        content = KQMLList('FIND-QCA-PATH')
+        content.set('source', source)
+        content.set('target', target)
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        paths = output.get('paths')
+        assert len(paths) == 1
+        path = paths[0].string_value()
+        path_json = json.loads(path)
+        stmts = stmts_from_json(path_json)
+        assert len(stmts) == 1
+        assert isinstance(stmt, Gef)
+        assert stmt.ras.name == 'KRAS'
+        assert stmt.gef.name == 'SOS1'
 
 # BELOW ARE OLD QCA TESTS
 

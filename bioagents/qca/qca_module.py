@@ -5,6 +5,7 @@ from bioagents import Bioagent
 from indra.sources.trips.processor import TripsProcessor
 from kqml import KQMLList, KQMLString
 from qca import QCA
+from indra.statements import stmts_from_json
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -77,6 +78,12 @@ class QCA_Module(Bioagent):
         reply.set('paths', KQMLList([ks]))
 
         return reply
+
+    def _break_down_result(self, result):
+        links = [[stmts_from_json(json.loads(link['INDRA json']))
+                  for link in result[i]]
+                 for i in range(1, len(result), 2)]
+        return links
 
     def respond_has_qca_path(self, content):
         """Response content to find-qca-path request."""

@@ -6,8 +6,8 @@ from indra.statements import stmts_from_json, Gef
 from ndex.beta.path_scoring import PathScoring
 from kqml import KQMLList
 from bioagents.qca import QCA, QCA_Module
-from tests.util import *
-from tests.integration import _IntegrationTest, _FailureTest
+from tests.util import ekb_kstring_from_text, ekb_from_text, get_request
+from tests.integration import _IntegrationTest
 
 @unittest.skip('Update to live Ras Machine needed')
 class TestSosKras(_IntegrationTest):
@@ -31,11 +31,39 @@ class TestSosKras(_IntegrationTest):
         path_json = json.loads(path)
         stmts = stmts_from_json(path_json)
         assert len(stmts) == 1
-        assert isinstance(stmt, Gef)
-        assert stmt.ras.name == 'KRAS'
-        assert stmt.gef.name == 'SOS1'
+        assert isinstance(stmts[0], Gef)
+        assert stmts[0].ras.name == 'KRAS'
+        assert stmts[0].gef.name == 'SOS1'
+
+
+def test_find_qca_path():
+    content = KQMLList('FIND-QCA-PATH')
+    content.sets('target', ekb_from_text('MAP2K1'))
+    content.sets('source', ekb_from_text('BRAF'))
+    qca_mod = QCA_Module(testing=True)
+    resp = qca_mod.respond_find_qca_path(content)
+    assert resp is not None, "No response received."
+    assert resp.head() is "SUCCESS", \
+        "QCA failed task for reason: %s" % resp.gets('reason')
+    assert resp.get('paths') is not None, "Did not find paths."
+    return
+
+
+def test_has_qca_path():
+    content = KQMLList('FIND-QCA-PATH')
+    content.sets('target', ekb_from_text('MAP2K1'))
+    content.sets('source', ekb_from_text('BRAF'))
+    qca_mod = QCA_Module(testing=True)
+    resp = qca_mod.respond_has_qca_path(content)
+    assert resp is not None, "No response received."
+    assert resp.head() is "SUCCESS", \
+        "QCA failed task for reason: %s" % resp.gets('reason')
+    assert resp.get('haspath') == 'TRUE', "Did not find path."
+    return
+
 
 # BELOW ARE OLD QCA TESTS
+
 
 def test_improved_path_ranking():
     qca = QCA()
@@ -92,32 +120,6 @@ def test_scratch():
 
     print(race_results)
     print(results_list)
-
-
-def test_find_qca_path():
-    content = KQMLList('FIND-QCA-PATH')
-    content.sets('target', ekb_from_text('MAP2K1'))
-    content.sets('source', ekb_from_text('BRAF'))
-    qca_mod = QCA_Module(testing=True)
-    resp = qca_mod.respond_find_qca_path(content)
-    assert resp is not None, "No response received."
-    assert resp.head() is "SUCCESS", \
-        "QCA failed task for reason: %s" % resp.gets('reason')
-    assert resp.get('paths') is not None, "Did not find paths."
-    return
-
-
-def test_has_qca_path():
-    content = KQMLList('FIND-QCA-PATH')
-    content.sets('target', ekb_from_text('MAP2K1'))
-    content.sets('source', ekb_from_text('BRAF'))
-    qca_mod = QCA_Module(testing=True)
-    resp = qca_mod.respond_has_qca_path(content)
-    assert resp is not None, "No response received."
-    assert resp.head() is "SUCCESS", \
-        "QCA failed task for reason: %s" % resp.gets('reason')
-    assert resp.get('haspath') == 'TRUE', "Did not find path."
-    return
 
 
 if __name__ == '__main__':

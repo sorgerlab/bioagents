@@ -111,7 +111,7 @@ class Bioagent(KQMLModule):
                              'target="_blank">{pmid}</a>:\n<ul>{evidence}\n'
                              '</ul>')
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
-                       '\'{conclusion}\':</h4>\n{evidence}<hr>')
+                       '{conclusion}:</h4>\n{evidence}<hr>')
 
         def translate_stmt(stmt):
             if not with_stmt:

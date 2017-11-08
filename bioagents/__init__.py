@@ -99,7 +99,8 @@ class Bioagent(KQMLModule):
             msg.sets('description', description)
         return msg
 
-    def add_provenance_for_stmts(self, stmt_list, for_what, with_stmt=False):
+    def add_provenance_for_stmts(self, stmt_list, for_what, with_stmt=False,
+                                 with_belief=False):
         """Creates the content for an add-provenance tell message.
 
         The message is used to provide evidence supporting the conclusion.
@@ -115,7 +116,11 @@ class Bioagent(KQMLModule):
         def translate_stmt(stmt):
             if not with_stmt:
                 return ''
-            return '%s: ' % EnglishAssembler([stmt]).make_model()
+            ret = '%s' % EnglishAssembler([stmt]).make_model()
+            if with_belief:
+                ret += ' (belief: %s)'
+            ret += ': '
+            return ret
 
         # Extract a list of the evidence then map pmids to lists of text
         evidence_tpl_lst = [(translate_stmt(stmt), ev)

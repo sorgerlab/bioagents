@@ -86,7 +86,9 @@ class QCA_Module(Bioagent):
             path_str = ' -> '.join([result[i]
                                     for i in range(0, len(result), 2)])
             stmts = self._break_down_result(result)
-            self.add_provenance_for_stmts(stmts, path_str, with_stmt=True)
+            self.add_provenance_for_stmts(stmts, path_str, with_stmt=True,
+                                          with_belief=True)
+        return
 
     def _break_down_result(self, result):
         links = [stmts_from_json(json.loads(link['INDRA json']))

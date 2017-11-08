@@ -72,6 +72,11 @@ class QCA_Module(Bioagent):
         first_edges = first_result[1::2]
         indra_edges = [fe[0]['INDRA json'] for fe in first_edges]
         indra_edges = [json.loads(e) for e in indra_edges]
+        indra_edge_stmts = [stmts_from_json(e) for e in indra_edges]
+        self.add_provenance_for_stmts(indra_edge_stmts,
+                                      "the path from %s to %s" % (source,
+                                                                  target),
+                                      with_stmt=True)
         indra_edges_str = json.dumps(indra_edges)
         ks = KQMLString(indra_edges_str)
 
@@ -86,8 +91,7 @@ class QCA_Module(Bioagent):
             path_str = ' -> '.join([result[i]
                                     for i in range(0, len(result), 2)])
             stmts = self._break_down_result(result)
-            self.add_provenance_for_stmts(stmts, path_str, with_stmt=True,
-                                          with_belief=True)
+            self.add_provenance_for_stmts(stmts, path_str, with_stmt=True)
         return
 
     def _break_down_result(self, result):

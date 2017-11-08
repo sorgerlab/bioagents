@@ -89,9 +89,8 @@ class QCA_Module(Bioagent):
             self.add_provenance_for_stmts(stmts, path_str, with_stmt=True)
 
     def _break_down_result(self, result):
-        links = [[stmts_from_json(json.loads(link['INDRA json']))
-                  for link in result[i]]
-                 for i in range(1, len(result), 2)]
+        links = [stmts_from_json(json.loads(link['INDRA json']))
+                 for i in range(1, len(result), 2) for link in result[i]]
         return links
 
     def respond_has_qca_path(self, content):

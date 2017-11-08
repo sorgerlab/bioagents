@@ -107,7 +107,7 @@ class Bioagent(KQMLModule):
         """
         # Create some formats
         url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
-        pmid_link_fmt = '<a href={url}={pmid}target="_blank">{pmid}</a>'
+        pmid_link_fmt = '<a href={url}={pmid} target="_blank">{pmid}</a>'
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
 

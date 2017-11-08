@@ -64,6 +64,7 @@ class QCA_Module(Bioagent):
 
         results_list = self.qca.find_causal_path([source], [target],
                                                  relation_types=relation_types)
+        self.tell_result_provenance(results_list)
         if not results_list:
             reply = self.make_failure('NO_PATH_FOUND')
             return reply
@@ -78,6 +79,14 @@ class QCA_Module(Bioagent):
         reply.set('paths', KQMLList([ks]))
 
         return reply
+
+    def tell_result_provenance(self, results_list):
+        """Send a provenance message to include evidence for the paths."""
+        for result in results_list:
+            path_str = ' -> '.join([result[i]
+                                    for i in range(0, len(result), 2)])
+            stmts = self._break_down_result(result)
+            self.add_provenance_for_stmts(stmts, path_str, with_stmt=True)
 
     def _break_down_result(self, result):
         links = [[stmts_from_json(json.loads(link['INDRA json']))

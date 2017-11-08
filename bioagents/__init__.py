@@ -74,10 +74,9 @@ class Bioagent(KQMLModule):
 
     def reply_with_content(self, msg, reply_content):
         """A wrapper around the reply method from KQMLModule."""
-        if not self.testing:
-            reply_msg = KQMLPerformative('reply')
-            reply_msg.set('content', reply_content)
-            self.reply(msg, reply_msg)
+        reply_msg = KQMLPerformative('reply')
+        reply_msg.set('content', reply_content)
+        self.reply(msg, reply_msg)
         return (msg, reply_content)
 
     def tell(self, content):

@@ -107,9 +107,7 @@ class Bioagent(KQMLModule):
         """
         # Create some formats
         url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
-        stmt_evidence_fmt = ('Found at pmid <a href={url}={pmid} '
-                             'target="_blank">{pmid}</a>:\n<ul>{evidence}\n'
-                             '</ul>')
+        pmid_link_fmt = '<a href={url}={pmid}target="_blank">{pmid}</a>'
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
 
@@ -125,7 +123,10 @@ class Bioagent(KQMLModule):
         # Extract a list of the evidence then map pmids to lists of text
         evidence_tpl_lst = [(translate_stmt(stmt), ev)
                             for stmt in stmt_list for ev in stmt.evidence]
-        pmid_set = set([ev.pmid for _, ev in evidence_tpl_lst])
+        pmid_set = set([ev.pmid for _, ev in evidence_tpl_lst
+                        if ev.text is not None])
+        pmid_no_text_set = set([ev.pmid for _, ev in evidence_tpl_lst
+                                if ev.text is None])
         pmid_text_dict = {
             pmid: [stmt + "<i>\'%s\'</i>" % ev.text
                    for stmt, ev in evidence_tpl_lst if ev.pmid == pmid]
@@ -133,14 +134,33 @@ class Bioagent(KQMLModule):
             }
 
         # Create the text for displaying the evidence.
-        evidence_text = '\n'.join([
-            stmt_evidence_fmt.format(
-                url=url_base,
-                pmid=pmid,
-                evidence='\n'.join(['<li>%s</li>' % txt for txt in txt_list])
-                )
-            for pmid, txt_list in pmid_text_dict.items()
-            ])
+        evidence_text = ''
+        stmt_ev_fmt = 'Found at %s:\n<ul>{evidence}</ul>\n' % pmid_link_fmt
+        if len(pmid_set):
+            evidence_text = '\n'.join([
+                stmt_ev_fmt.format(
+                    url=url_base,
+                    pmid=pmid,
+                    evidence='\n'.join(['<li>%s</li>' % txt for txt in txt_list])
+                    )
+                for pmid, txt_list in pmid_text_dict.items()
+                ])
+        evidence_pmids = ''
+        if len(pmid_no_text_set):
+            evidence_pmids = "Found at the following pmids without snippets: "
+            evidence_pmids += " ".join([pmid_link_fmt.format(pmid=pmid,
+                                                             url=url_base)
+                                        for pmid in pmid_no_text_set])
+            evidence_pmids += '\n'
+        if evidence_pmids and evidence_text:
+            evidence = evidence_text + 'and...\n' + evidence_pmids
+        elif evidence_text:
+            evidence = evidence_text
+        elif evidence_pmids:
+            evidence = evidence_pmids
+        else:
+            logger.error("Got conclusion with no supporting evidence.")
+            evidence = 'Well that\'s odd...there doen\'t seem to be any...'
 
         # Actually create the content.
         content = KQMLList('add-provenance')
@@ -148,7 +168,7 @@ class Bioagent(KQMLModule):
             'html',
             content_fmt.format(
                 conclusion=for_what,
-                evidence=evidence_text,
+                evidence=evidence,
                 bioagent=self.name)
             )
         return self.tell(content)

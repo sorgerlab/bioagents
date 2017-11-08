@@ -160,6 +160,17 @@ class _IntegrationTest(TestCase):
         for msg in msg_list:
             yield send_dict[msg](self), check_dict.get(msg)
 
+    def get_output_log(self, start_line=0, end_line=None):
+        """Get the messages sent by the bioagent."""
+        buff = self.bioagent.out
+        cur_pos = buff.pos
+        buff.seek(0)
+        out_lines = [line.strip() for line in buff.readlines()]
+        buff.seek(cur_pos)
+        if end_line is None:
+            end_line = len(out_lines)
+        return out_lines[start_line:end_line]
+
     def run_test(self):
         for request_args, check_resp in self._get_messages():
             _, output = self.bioagent.receive_request(*request_args)

@@ -118,7 +118,7 @@ class Bioagent(KQMLModule):
                 return ''
             ret = '%s' % EnglishAssembler([stmt]).make_model()
             if with_belief:
-                ret += ' (belief: %s)'
+                ret += ' (belief: %s)' % stmt.belief
             ret += ': '
             return ret
 

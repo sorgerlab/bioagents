@@ -262,7 +262,6 @@ class MRA_Module(Bioagent):
         for diagram_type, resource in diagrams.items():
             if not resource:
                 continue
-            msg = KQMLPerformative('tell')
             if diagram_type == 'sbgn':
                 content = KQMLList('display-sbgn')
                 content.set('type', diagram_type)
@@ -271,8 +270,7 @@ class MRA_Module(Bioagent):
                 content = KQMLList('display-image')
                 content.set('type', diagram_type)
                 content.sets('path', resource)
-            msg.set('content', content)
-            self.send(msg)
+            self.tell(content)
 
     def send_clean_model(self):
         msg = KQMLPerformative('request')

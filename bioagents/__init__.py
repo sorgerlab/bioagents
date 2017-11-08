@@ -3,6 +3,8 @@ import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('Bioagents')
+
+from indra.assemblers import EnglishAssembler
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 
@@ -97,3 +99,52 @@ class Bioagent(KQMLModule):
         if description:
             msg.sets('description', description)
         return msg
+
+    def add_provenance_for_stmts(self, stmt_list, for_what, with_stmt=False):
+        """Creates the content for an add-provenance tell message.
+
+        The message is used to provide evidence supporting the conclusion.
+        """
+        # Create some formats
+        url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
+        stmt_evidence_fmt = ('Found at pmid <a href={url}={pmid} '
+                             'target="_blank">{pmid}</a>:\n<ul>{evidence}\n'
+                             '</ul>')
+        content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
+                       '\'{conclusion}\':</h4>\n{evidence}<hr>')
+
+        def translate_stmt(stmt):
+            if not with_stmt:
+                return ''
+            return '%s: ' % EnglishAssembler([stmt]).make_model()
+
+        # Extract a list of the evidence then map pmids to lists of text
+        evidence_tpl_lst = [(translate_stmt(stmt), ev)
+                            for stmt in stmt_list for ev in stmt.evidence]
+        pmid_set = set([ev.pmid for _, ev in evidence_tpl_lst])
+        pmid_text_dict = {
+            pmid: [stmt + "<i>\'%s\'</i>" % ev.text
+                   for stmt, ev in evidence_tpl_lst if ev.pmid == pmid]
+            for pmid in pmid_set
+            }
+
+        # Create the text for displaying the evidence.
+        evidence_text = '\n'.join([
+            stmt_evidence_fmt.format(
+                url=url_base,
+                pmid=pmid,
+                evidence='\n'.join(['<li>%s</li>' % txt for txt in txt_list])
+                )
+            for pmid, txt_list in pmid_text_dict.items()
+            ])
+
+        # Actually create the content.
+        content = KQMLList('add-provenance')
+        content.sets(
+            'html',
+            content_fmt.format(
+                conclusion=for_what,
+                evidence=evidence_text,
+                bioagent=self.name)
+            )
+        return self.tell(content)

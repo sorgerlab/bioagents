@@ -85,8 +85,7 @@ class MRA_Module(Bioagent):
                 rxn_diagram = diagrams.get('reactionnetwork')
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
-                if not self.testing:
-                    self.send_display_model(diagrams)
+                self.send_display_model(diagrams)
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
@@ -132,8 +131,7 @@ class MRA_Module(Bioagent):
                 rxn_diagram = diagrams.get('reactionnetwork')
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
-                if not self.testing:
-                    self.send_display_model(diagrams)
+                self.send_display_model(diagrams)
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
@@ -176,8 +174,7 @@ class MRA_Module(Bioagent):
                 rxn_diagram = diagrams.get('reactionnetwork')
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
-                if not self.testing:
-                    self.send_display_model(diagrams)
+                self.send_display_model(diagrams)
         return msg
 
     def respond_has_mechanism(self, content):
@@ -233,8 +230,7 @@ class MRA_Module(Bioagent):
                 rxn_diagram = diagrams.get('reactionnetwork')
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
-                if not self.testing:
-                    self.send_display_model(rxn_diagram)
+                self.send_display_model(rxn_diagram)
         return msg
 
     def respond_model_get_upstream(self, content):

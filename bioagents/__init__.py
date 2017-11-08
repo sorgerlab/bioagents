@@ -135,21 +135,23 @@ class Bioagent(KQMLModule):
 
         # Create the text for displaying the evidence.
         evidence_text = ''
-        stmt_ev_fmt = 'Found at %s:\n<ul>{evidence}</ul>\n' % pmid_link_fmt
+        stmt_ev_fmt = ('Found at ' + pmid_link_fmt +
+                       ' with snippet(s):\n<ul>{evidence}</ul>\n')
         if len(pmid_set):
             evidence_text = '\n'.join([
                 stmt_ev_fmt.format(
                     url=url_base,
                     pmid=pmid,
-                    evidence='\n'.join(['<li>%s</li>' % txt for txt in txt_list])
+                    evidence='\n'.join(['<li>%s</li>' % txt
+                                        for txt in txt_list])
                     )
                 for pmid, txt_list in pmid_text_dict.items()
                 ])
         evidence_pmids = ''
         if len(pmid_no_text_set):
             evidence_pmids = "Found at the following pmids without snippets: "
-            evidence_pmids += " ".join([pmid_link_fmt.format(pmid=pmid,
-                                                             url=url_base)
+            evidence_pmids += ", ".join([pmid_link_fmt.format(pmid=pmid,
+                                                              url=url_base)
                                         for pmid in pmid_no_text_set])
             evidence_pmids += '\n'
         if evidence_pmids and evidence_text:

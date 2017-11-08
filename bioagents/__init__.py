@@ -99,8 +99,7 @@ class Bioagent(KQMLModule):
             msg.sets('description', description)
         return msg
 
-    def add_provenance_for_stmts(self, stmt_list, for_what, with_stmt=False,
-                                 with_belief=False):
+    def add_provenance_for_stmts(self, stmt_list, for_what):
         """Creates the content for an add-provenance tell message.
 
         The message is used to provide evidence supporting the conclusion.
@@ -111,58 +110,42 @@ class Bioagent(KQMLModule):
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
 
-        def translate_stmt(stmt):
-            if not with_stmt:
-                return ''
-            ret = '%s' % EnglishAssembler([stmt]).make_model()
-            if with_belief:
-                ret += ' (belief: %s)' % stmt.belief
-            ret += ': '
-            return ret
-
         # Extract a list of the evidence then map pmids to lists of text
-        evidence_tpl_lst = [(translate_stmt(stmt), ev)
-                            for stmt in stmt_list for ev in stmt.evidence]
-        pmid_set = set([ev.pmid for _, ev in evidence_tpl_lst
+        evidence_lst = [ev for stmt in stmt_list for ev in stmt.evidence]
+        pmid_set = set([ev.pmid for ev in evidence_lst
                         if ev.text is not None])
-        pmid_no_text_set = set([ev.pmid for _, ev in evidence_tpl_lst
-                                if ev.text is None])
         pmid_text_dict = {
-            pmid: [stmt + "<i>\'%s\'</i>" % ev.text
-                   for stmt, ev in evidence_tpl_lst if ev.pmid == pmid]
+            pmid: ["<i>\'%s\'</i>" % ev.text
+                   for ev in evidence_lst if ev.pmid == pmid]
             for pmid in pmid_set
+            }
+        pmid_no_text_set = set([ev.pmid for ev in evidence_lst
+                                if ev.text is None])
+        pmid_no_text_dict = {
+            pmid: [EnglishAssembler([stmt]).make_model() for stmt in stmt_list
+                   if any([ev.pmid == pmid for ev in stmt.evidence])]
+            for pmid in pmid_no_text_set
             }
 
         # Create the text for displaying the evidence.
-        evidence_text = ''
         stmt_ev_fmt = ('Found at ' + pmid_link_fmt +
-                       ' with snippet(s):\n<ul>{evidence}</ul>\n')
-        if len(pmid_set):
-            evidence_text = '\n'.join([
-                stmt_ev_fmt.format(
-                    url=url_base,
-                    pmid=pmid,
-                    evidence='\n'.join(['<li>%s</li>' % txt
-                                        for txt in txt_list])
-                    )
-                for pmid, txt_list in pmid_text_dict.items()
-                ])
-        evidence_pmids = ''
-        if len(pmid_no_text_set):
-            evidence_pmids = "Found at the following pmids without snippets: "
-            evidence_pmids += ", ".join([pmid_link_fmt.format(pmid=pmid,
-                                                              url=url_base)
-                                        for pmid in pmid_no_text_set])
-            evidence_pmids += '\n'
-        if evidence_pmids and evidence_text:
-            evidence = evidence_text + 'and...\n' + evidence_pmids
-        elif evidence_text:
-            evidence = evidence_text
-        elif evidence_pmids:
-            evidence = evidence_pmids
-        else:
-            logger.error("Got conclusion with no supporting evidence.")
-            evidence = 'Well that\'s odd...there doen\'t seem to be any...'
+                       ' {snippet_stat}:\n<ul>{evidence}</ul>\n')
+        all_the_text_data = [('with snippet(s)', pmid_text_dict),
+                             ('without a snippet', pmid_no_text_dict)]
+        evidence_text_list = []
+        for snippet_stat, data_dict in all_the_text_data:
+            if len(data_dict):
+                evidence_text_list.append('\n'.join([
+                    stmt_ev_fmt.format(
+                        url=url_base,
+                        pmid=pmid,
+                        snippet_stat=snippet_stat,
+                        evidence='\n'.join(['<li>%s</li>' % txt
+                                            for txt in txt_list])
+                        )
+                    for pmid, txt_list in data_dict.items()
+                    ]))
+        evidence = 'and...\n'.join(evidence_text_list)
 
         # Actually create the content.
         content = KQMLList('add-provenance')

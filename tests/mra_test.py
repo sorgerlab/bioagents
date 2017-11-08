@@ -278,6 +278,9 @@ class TestModelUndo(_IntegrationTest):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
         assert output.gets('model') == '[]'
+        output_log = self.get_output_log()
+        assert any([('tell' in line and 'display' in line)
+                    for line in output_log])
 
 
 class TestMissingDescriptionFailure(_FailureTest):

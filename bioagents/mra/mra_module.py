@@ -378,7 +378,7 @@ def _get_agent_comp(agent):
     return comp_id
 
 
-def _ref_agents_all_filter(stmts_in, stmt_ref):
+def _get_matching_stmts(stmts_in, stmt_ref):
     stmts_out = []
     # Filter by statement type.
     ref_type = stmt_ref.__class__
@@ -386,29 +386,26 @@ def _ref_agents_all_filter(stmts_in, stmt_ref):
                 if isinstance(stmt, ref_type)
                 and len(stmt.agent_list()) == len(stmt_ref.agent_list())]
     # Preprocess reference Agents: make a list of entity hierarchy components
-    # that appear in the reference and also a list of reference Agent names
+    # that appear in the reference and also not in a list of reference Agent
+    # names
     ref_components = []
-    ref_agent_names = []
     for a in stmt_ref.agent_list():
         comp_id = _get_agent_comp(a)
         if comp_id is not None:
             ref_components.append(comp_id)
-        ref_agent_names.append(a.name)
     # Iterate over every Statement and check if any of its Agents are either
     # in a component appearing in the reference, or match one of the
     # reference Agents that isn't in any of the components.
     matched_stmts = []
     for st in stmts_in:
-        for st_agent, ref_agent in zip(st.agent_list(), stmt_ref.agent_list()):
-            comp_id = _get_agent_comp(st_agent)
-            if comp_id is None:
-                if st_agent.name == ref_agent.name:
-                    break
-            elif comp_id in ref_components:
+        iter_over = enumerate(zip(st.agent_list(), stmt_ref.agent_list()))
+        for i, (st_ag, ref_ag) in iter_over:
+            comp_id = _get_agent_comp(st_ag)
+            if (comp_id is None and st_ag.name != ref_ag.name) \
+               or comp_id != ref_components[i]:
                 break
         else:
-            continue
-        matched_stmts.append(st)
+            matched_stmts.append(st)
     return stmts_out
 
 

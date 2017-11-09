@@ -379,7 +379,6 @@ def _get_agent_comp(agent):
 
 
 def _get_matching_stmts(stmts_in, stmt_ref):
-    stmts_out = []
     # Filter by statement type.
     ref_type = stmt_ref.__class__
     stmts_in = [stmt for stmt in stmts_in
@@ -400,7 +399,7 @@ def _get_matching_stmts(stmts_in, stmt_ref):
                 break
         else:
             matched_stmts.append(st)
-    return stmts_out
+    return matched_stmts
 
 
 if __name__ == "__main__":

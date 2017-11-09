@@ -1,8 +1,8 @@
 import json
 import xml.etree.ElementTree as ET
 from kqml import KQMLList, KQMLPerformative
-from indra.statements import *
-from tests.util import *
+import indra.statements as sts
+from tests.util import ekb_from_text, ekb_kstring_from_text, get_request
 from tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra import MRA, MRA_Module
 from bioagents.mra.mra_module import ekb_from_agent, get_target
@@ -11,10 +11,10 @@ from bioagents.mra.mra_module import ekb_from_agent, get_target
 # MRA unit tests
 # ################
 def test_agent_to_ekb():
-    egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
+    egfr = sts.Agent('EGFR', db_refs={'HGNC': '3236', 'TEXT': 'EGFR'})
     term = ekb_from_agent(egfr)
     egfr_out = get_target(term)
-    assert(isinstance(egfr_out, Agent))
+    assert(isinstance(egfr_out, sts.Agent))
     assert(egfr_out.name == 'EGFR')
 
 
@@ -26,7 +26,7 @@ def test_build_model_from_ekb():
     assert(res.get('model_id') == 1)
     assert(res.get('model_exec'))
     assert(len(m.models[1]) == 1)
-    assert(isinstance(m.models[1][0], Phosphorylation))
+    assert(isinstance(m.models[1][0], sts.Phosphorylation))
     assert(m.models[1][0].enz.name == 'MAP2K1')
 
 
@@ -47,9 +47,9 @@ def test_expand_model_from_ekb():
 
 def test_get_upstream():
     m = MRA()
-    egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
-    kras = Agent('KRAS', db_refs = {'HGNC': '6407', 'TEXT': 'KRAS'})
-    stmts = [Activation(egfr, kras)]
+    egfr = sts.Agent('EGFR', db_refs={'HGNC': '3236', 'TEXT': 'EGFR'})
+    kras = sts.Agent('KRAS', db_refs={'HGNC': '6407', 'TEXT': 'KRAS'})
+    stmts = [sts.Activation(egfr, kras)]
     model_id = m.new_model(stmts)
     upstream = m.get_upstream(kras, model_id)
     assert(len(upstream) == 1)
@@ -66,7 +66,7 @@ def test_has_mechanism():
 
 def test_transformations():
     m = MRA()
-    stmts1 = [Phosphorylation(Agent('A'), Agent('B'))]
+    stmts1 = [sts.Phosphorylation(sts.Agent('A'), sts.Agent('B'))]
     m.new_model(stmts1)
     assert(len(m.transformations) == 1)
     tr = m.transformations[0]
@@ -74,7 +74,7 @@ def test_transformations():
     assert(tr[1] == stmts1)
     assert(tr[2] is None)
     assert(tr[3] == 1)
-    stmts2 = [Phosphorylation(Agent('C'), Agent('D'))]
+    stmts2 = [sts.Phosphorylation(sts.Agent('C'), sts.Agent('D'))]
     m.extend_model(stmts2, 1)
     assert(len(m.transformations) == 2)
     tr = m.transformations[1]
@@ -86,7 +86,7 @@ def test_transformations():
 
 def test_model_undo():
     m = MRA()
-    stmts1 = [Phosphorylation(Agent('A'), Agent('B'))]
+    stmts1 = [sts.Phosphorylation(sts.Agent('A'), sts.Agent('B'))]
     m.new_model(stmts1)
     res = m.model_undo()
     action = res.get('action')
@@ -120,9 +120,9 @@ def test_sbgn():
 
 def test_respond_build_model_from_json():
     mm = MRA_Module(testing=True)
-    st = Phosphorylation(Agent('MEK'), Agent('ERK'))
+    st = sts.Phosphorylation(sts.Agent('MEK'), sts.Agent('ERK'))
     msg = KQMLList('BUILD-MODEL')
-    msg.sets('description', json.dumps(stmts_to_json([st])))
+    msg.sets('description', json.dumps(sts.stmts_to_json([st])))
     msg.sets('format', 'indra_json')
     reply = mm.respond_build_model(msg)
     assert(reply.get('model'))
@@ -131,16 +131,16 @@ def test_respond_build_model_from_json():
 
 def test_respond_expand_model_from_json():
     mm = MRA_Module(testing=True)
-    st = Phosphorylation(Agent('MEK'), Agent('ERK'))
+    st = sts.Phosphorylation(sts.Agent('MEK'), sts.Agent('ERK'))
     msg = KQMLList('BUILD-MODEL')
-    msg.sets('description', json.dumps(stmts_to_json([st])))
+    msg.sets('description', json.dumps(sts.stmts_to_json([st])))
     msg.sets('format', 'indra_json')
     reply = mm.respond_build_model(msg)
     assert(reply.get('model'))
     assert(reply.get('model-id') == '1')
-    st = Phosphorylation(Agent('RAF'), Agent('MEK'))
+    st = sts.Phosphorylation(sts.Agent('RAF'), sts.Agent('MEK'))
     msg = KQMLList('EXPAND-MODEL')
-    msg.sets('description', json.dumps(stmts_to_json([st])))
+    msg.sets('description', json.dumps(sts.stmts_to_json([st])))
     msg.sets('format', 'indra_json')
     msg.set('model-id', '1')
     reply = mm.respond_expand_model(msg)
@@ -150,9 +150,9 @@ def test_respond_expand_model_from_json():
 
 def test_respond_model_get_upstream():
     mm = MRA_Module(testing=True)
-    egfr = Agent('EGFR', db_refs = {'HGNC': '3236', 'TEXT': 'EGFR'})
-    kras = Agent('KRAS', db_refs = {'HGNC': '6407', 'TEXT': 'KRAS'})
-    stmts = [Activation(egfr, kras)]
+    egfr = sts.Agent('EGFR', db_refs={'HGNC': '3236', 'TEXT': 'EGFR'})
+    kras = sts.Agent('KRAS', db_refs={'HGNC': '6407', 'TEXT': 'KRAS'})
+    stmts = [sts.Activation(egfr, kras)]
     model_id = mm.mra.new_model(stmts)
     kras_term = ekb_from_agent(kras)
     msg = KQMLList('MODEL-GET-UPSTREAM')
@@ -237,8 +237,8 @@ class TestBuildModelBoundCondition(_IntegrationTest):
         assert model is not None
         indra_stmts_json = json.loads(model)
         assert(len(indra_stmts_json) == 1)
-        stmt = stmts_from_json(indra_stmts_json)[0]
-        assert(isinstance(stmt, Phosphorylation))
+        stmt = sts.stmts_from_json(indra_stmts_json)[0]
+        assert(isinstance(stmt, sts.Phosphorylation))
         assert(stmt.enz.bound_conditions[0].agent.name == 'GTP')
 
 
@@ -257,10 +257,9 @@ class TestBuildModelComplex(_IntegrationTest):
         assert model is not None
         indra_stmts_json = json.loads(model)
         assert(len(indra_stmts_json) == 1)
-        stmt = stmts_from_json(indra_stmts_json)[0]
-        assert(isinstance(stmt, Activation))
+        stmt = sts.stmts_from_json(indra_stmts_json)[0]
+        assert(isinstance(stmt, sts.Activation))
         assert(stmt.subj.bound_conditions[0].agent.name == 'EGF')
-
 
 
 class TestModelUndo(_IntegrationTest):
@@ -279,6 +278,9 @@ class TestModelUndo(_IntegrationTest):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
         assert output.gets('model') == '[]'
+        output_log = self.get_output_log()
+        assert any([('tell' in line and 'display' in line)
+                    for line in output_log])
 
 
 class TestMissingDescriptionFailure(_FailureTest):

@@ -2,12 +2,36 @@ import json
 import unittest
 import requests
 import ndex.client as nc
-from indra.statements import stmts_from_json, Gef
 from ndex.beta.path_scoring import PathScoring
+from tests.util import ekb_kstring_from_text, ekb_from_text, get_request
+from tests.integration import _IntegrationTest
+from nose import SkipTest
+
+from indra.statements import stmts_from_json, Gef
+
 from kqml import KQMLList
 from bioagents.qca import QCA, QCA_Module
-from tests.util import *
-from tests.integration import _IntegrationTest, _FailureTest
+
+
+def _get_qca_content(task, source, target):
+    """Get the KQMLList content to be sent to the QCA for given task.
+
+    Paramters
+    ---------
+    source, target : str
+        The strings representing the proteins for source and target,
+        respectively, for example 'BRAF'.
+
+    Returns
+    -------
+    content : KQMLList
+        The KQML content to be sent to the QCA module as part of the request.
+    """
+    content = KQMLList(task)
+    content.set('source', ekb_kstring_from_text(source))
+    content.set('target', ekb_kstring_from_text(target))
+    return content
+
 
 @unittest.skip('Update to live Ras Machine needed')
 class TestSosKras(_IntegrationTest):
@@ -15,11 +39,7 @@ class TestSosKras(_IntegrationTest):
         super(TestSosKras, self).__init__(QCA_Module)
 
     def create_message(self):
-        source = ekb_kstring_from_text('SOS1')
-        target = ekb_kstring_from_text('KRAS')
-        content = KQMLList('FIND-QCA-PATH')
-        content.set('source', source)
-        content.set('target', target)
+        content = _get_qca_content('FIND-QCA-PATH', 'SOS1', 'KRAS')
         msg = get_request(content)
         return msg, content
 
@@ -31,11 +51,62 @@ class TestSosKras(_IntegrationTest):
         path_json = json.loads(path)
         stmts = stmts_from_json(path_json)
         assert len(stmts) == 1
-        assert isinstance(stmt, Gef)
-        assert stmt.ras.name == 'KRAS'
-        assert stmt.gef.name == 'SOS1'
+        assert isinstance(stmts[0], Gef)
+        assert stmts[0].ras.name == 'KRAS'
+        assert stmts[0].gef.name == 'SOS1'
+
+
+def test_find_qca_path():
+    content = _get_qca_content('FIND-QCA-PATH', 'MAP2K1', 'BRAF')
+    qca_mod = QCA_Module(testing=True)
+    resp = qca_mod.respond_find_qca_path(content)
+    assert resp is not None, "No response received."
+    assert resp.head() is "SUCCESS", \
+        "QCA failed task for reason: %s" % resp.gets('reason')
+    assert resp.get('paths') is not None, "Did not find paths."
+    return
+
+
+def test_has_qca_path():
+    content = _get_qca_content('HAS-QCA-PATH', 'MAP2K1', 'BRAF')
+    qca_mod = QCA_Module(testing=True)
+    resp = qca_mod.respond_has_qca_path(content)
+    assert resp is not None, "No response received."
+    assert resp.head() is "SUCCESS", \
+        "QCA failed task for reason: %s" % resp.gets('reason')
+    assert resp.get('haspath') == 'TRUE', "Did not find path."
+    return
+
+
+class ProvenanceTest(_IntegrationTest):
+    """Test whether we are creating provenance for sbgnviz.
+
+    At the moment this is a very simple test which only determines that there
+    was some provenance sent, and checks nothing about the quality of the
+    provenance.
+    """
+
+    def __init__(self, *args):
+        super(ProvenanceTest, self).__init__(QCA_Module)
+
+    def create_message(self):
+        content = _get_qca_content('FIND-QCA-PATH', 'MAP2K1', 'BRAF')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        # If there wasn't a succes, we won't get provenance.
+        if not output.head() == 'SUCCESS':
+            raise SkipTest('QCA could not find path, so there won\'t be '
+                           'any provenance.')
+        output_log = self.get_output_log()
+        assert any([('tell' in line and 'add-provenance' in line)
+                    for line in output_log])
+        return
+
 
 # BELOW ARE OLD QCA TESTS
+
 
 def test_improved_path_ranking():
     qca = QCA()
@@ -92,32 +163,6 @@ def test_scratch():
 
     print(race_results)
     print(results_list)
-
-
-def test_find_qca_path():
-    content = KQMLList('FIND-QCA-PATH')
-    content.sets('target', ekb_from_text('MAP2K1'))
-    content.sets('source', ekb_from_text('BRAF'))
-    qca_mod = QCA_Module(testing=True)
-    resp = qca_mod.respond_find_qca_path(content)
-    assert resp is not None, "No response received."
-    assert resp.head() is "SUCCESS", \
-        "QCA failed task for reason: %s" % resp.gets('reason')
-    assert resp.get('paths') is not None, "Did not find paths."
-    return
-
-
-def test_has_qca_path():
-    content = KQMLList('FIND-QCA-PATH')
-    content.sets('target', ekb_from_text('MAP2K1'))
-    content.sets('source', ekb_from_text('BRAF'))
-    qca_mod = QCA_Module(testing=True)
-    resp = qca_mod.respond_has_qca_path(content)
-    assert resp is not None, "No response received."
-    assert resp.head() is "SUCCESS", \
-        "QCA failed task for reason: %s" % resp.gets('reason')
-    assert resp.get('haspath') == 'TRUE', "Did not find path."
-    return
 
 
 if __name__ == '__main__':

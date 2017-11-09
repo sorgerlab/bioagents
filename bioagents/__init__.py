@@ -3,6 +3,8 @@ import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('Bioagents')
+
+from indra.assemblers import EnglishAssembler
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 
@@ -72,10 +74,9 @@ class Bioagent(KQMLModule):
 
     def reply_with_content(self, msg, reply_content):
         """A wrapper around the reply method from KQMLModule."""
-        if not self.testing:
-            reply_msg = KQMLPerformative('reply')
-            reply_msg.set('content', reply_content)
-            self.reply(msg, reply_msg)
+        reply_msg = KQMLPerformative('reply')
+        reply_msg.set('content', reply_content)
+        self.reply(msg, reply_msg)
         return (msg, reply_content)
 
     def tell(self, content):
@@ -97,3 +98,62 @@ class Bioagent(KQMLModule):
         if description:
             msg.sets('description', description)
         return msg
+
+    def add_provenance_for_stmts(self, stmt_list, for_what):
+        """Creates the content for an add-provenance tell message.
+
+        The message is used to provide evidence supporting the conclusion.
+        """
+        # Create some formats
+        url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
+        pmid_link_fmt = '<a href={url}={pmid} target="_blank">{pmid}</a>'
+        content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
+                       '{conclusion}:</h4>\n{evidence}<hr>')
+
+        # Extract a list of the evidence then map pmids to lists of text
+        evidence_lst = [ev for stmt in stmt_list for ev in stmt.evidence]
+        pmid_set = set([ev.pmid for ev in evidence_lst
+                        if ev.text is not None])
+        pmid_text_dict = {
+            pmid: ["<i>\'%s\'</i>" % ev.text
+                   for ev in evidence_lst if ev.pmid == pmid]
+            for pmid in pmid_set
+            }
+        pmid_no_text_set = set([ev.pmid for ev in evidence_lst
+                                if ev.text is None])
+        pmid_no_text_dict = {
+            pmid: [EnglishAssembler([stmt]).make_model() for stmt in stmt_list
+                   if any([ev.pmid == pmid for ev in stmt.evidence])]
+            for pmid in pmid_no_text_set
+            }
+
+        # Create the text for displaying the evidence.
+        stmt_ev_fmt = ('Found at ' + pmid_link_fmt +
+                       ' {snippet_stat}:\n<ul>{evidence}</ul>\n')
+        all_the_text_data = [('with snippet(s)', pmid_text_dict),
+                             ('without a snippet', pmid_no_text_dict)]
+        evidence_text_list = []
+        for snippet_stat, data_dict in all_the_text_data:
+            if len(data_dict):
+                evidence_text_list.append('\n'.join([
+                    stmt_ev_fmt.format(
+                        url=url_base,
+                        pmid=pmid,
+                        snippet_stat=snippet_stat,
+                        evidence='\n'.join(['<li>%s</li>' % txt
+                                            for txt in txt_list])
+                        )
+                    for pmid, txt_list in data_dict.items()
+                    ]))
+        evidence = 'and...\n'.join(evidence_text_list)
+
+        # Actually create the content.
+        content = KQMLList('add-provenance')
+        content.sets(
+            'html',
+            content_fmt.format(
+                conclusion=for_what,
+                evidence=evidence,
+                bioagent=self.name)
+            )
+        return self.tell(content)

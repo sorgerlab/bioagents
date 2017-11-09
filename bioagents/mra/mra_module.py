@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import random
@@ -27,6 +28,11 @@ class MRA_Module(Bioagent):
     def __init__(self, **kwargs):
         # Instantiate a singleton MRA agent
         self.mra = MRA()
+        try:
+            self.background_stmts = load_statements()
+        except Exception as e:
+            logger.info('Could not load background information.')
+            self.background_stmts = []
         super(MRA_Module, self).__init__(**kwargs)
 
     def receive_tell(self, msg, content):
@@ -401,6 +407,15 @@ def _get_matching_stmts(stmts_in, stmt_ref):
             matched_stmts.append(st)
     return matched_stmts
 
+
+_resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
+
+
+def load_statements():
+    path = os.path.join(_resource_dir, 'mra_background.pkl')
+    logger.info('Loading background information from %s' % path)
+    stmts = pickle.load(path)
+    return stmts
 
 if __name__ == "__main__":
     MRA_Module(argv=sys.argv[1:])

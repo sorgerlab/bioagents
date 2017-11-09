@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import pickle
 import random
 import logging
 import pysb.export
@@ -31,7 +32,7 @@ class MRA_Module(Bioagent):
         try:
             self.background_stmts = load_statements()
         except Exception as e:
-            logger.info('Could not load background information.')
+            logger.warning('Could not load background information.')
             self.background_stmts = []
         super(MRA_Module, self).__init__(**kwargs)
 
@@ -132,6 +133,7 @@ class MRA_Module(Bioagent):
         model_new = res.get('model_new')
         if model_new:
             model_new_msg = encode_indra_stmts(model_new)
+            self.send_background_support(model_new)
             msg.sets('model-new', model_new_msg)
         # Add the diagram
         if not no_display:
@@ -283,6 +285,13 @@ class MRA_Module(Bioagent):
         msg.set('content', content)
         self.send(msg)
 
+    def send_background_support(self, stmts):
+        for stmt in stmts:
+            matched = _get_matching_stmts(self.background_stmts, stmt)
+            if matched:
+                self.add_provenance_for_stmts(matched,
+                                              "the mechanism you added")
+
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')
         if model_id_arg is None:
@@ -414,8 +423,9 @@ _resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
 def load_statements():
     path = os.path.join(_resource_dir, 'mra_background.pkl')
     logger.info('Loading background information from %s' % path)
-    stmts = pickle.load(path)
-    return stmts
+    with open(path, 'rb') as fh:
+        stmts = pickle.load(fh)
+        return stmts
 
 if __name__ == "__main__":
     MRA_Module(argv=sys.argv[1:])

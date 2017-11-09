@@ -2,12 +2,15 @@ import json
 import unittest
 import requests
 import ndex.client as nc
-from indra.statements import stmts_from_json, Gef
 from ndex.beta.path_scoring import PathScoring
-from kqml import KQMLList
-from bioagents.qca import QCA, QCA_Module
 from tests.util import ekb_kstring_from_text, ekb_from_text, get_request
 from tests.integration import _IntegrationTest
+from nose import SkipTest
+
+from indra.statements import stmts_from_json, Gef
+
+from kqml import KQMLList
+from bioagents.qca import QCA, QCA_Module
 
 
 def _get_qca_content(task, source, target):
@@ -73,6 +76,33 @@ def test_has_qca_path():
         "QCA failed task for reason: %s" % resp.gets('reason')
     assert resp.get('haspath') == 'TRUE', "Did not find path."
     return
+
+
+class ProvenanceTest(_IntegrationTest):
+    """Test whether we are creating provenance for sbgnviz.
+
+    At the moment this is a very simple test which only determines that there
+    was some provenance sent, and checks nothing about the quality of the
+    provenance.
+    """
+
+    def __init__(self, *args):
+        super(ProvenanceTest, self).__init__(QCA_Module)
+
+    def create_message(self):
+        content = _get_qca_content('FIND-QCA-PATH', 'MAP2K1', 'BRAF')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        # If there wasn't a succes, we won't get provenance.
+        if not output.head() == 'SUCCESS':
+            raise SkipTest('QCA could not find path, so there won\'t be '
+                           'any provenance.')
+        output_log = self.get_output_log()
+        assert any([('tell' in line and 'add-provenance' in line)
+                    for line in output_log])
+        return
 
 
 # BELOW ARE OLD QCA TESTS

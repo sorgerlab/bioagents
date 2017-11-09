@@ -3,8 +3,11 @@ import json
 import random
 import logging
 import pysb.export
+
 from indra.statements import stmts_to_json
 from indra.sources.trips.processor import TripsProcessor
+from indra.preassembler.hierarchy_manager import hierarchies
+
 from kqml import KQMLPerformative, KQMLList, KQMLString
 from bioagents import Bioagent, BioagentException
 from mra import MRA
@@ -363,6 +366,50 @@ def get_ambiguities_msg(ambiguities):
         sa.append(s)
     ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
     return ambiguities_msg
+
+
+def _get_agent_comp(agent):
+    eh = hierarchies['entity']
+    a_ns, a_id = agent.get_grounding()
+    if (a_ns is None) or (a_id is None):
+        return None
+    uri = eh.get_uri(a_ns, a_id)
+    comp_id = eh.components.get(uri)
+    return comp_id
+
+
+def _ref_agents_all_filter(stmts_in, stmt_ref):
+    stmts_out = []
+    # Filter by statement type.
+    ref_type = stmt_ref.__class__
+    stmts_in = [stmt for stmt in stmts_in
+                if isinstance(stmt, ref_type)
+                and len(stmt.agent_list()) == len(stmt_ref.agent_list())]
+    # Preprocess reference Agents: make a list of entity hierarchy components
+    # that appear in the reference and also a list of reference Agent names
+    ref_components = []
+    ref_agent_names = []
+    for a in stmt_ref.agent_list():
+        comp_id = _get_agent_comp(a)
+        if comp_id is not None:
+            ref_components.append(comp_id)
+        ref_agent_names.append(a.name)
+    # Iterate over every Statement and check if any of its Agents are either
+    # in a component appearing in the reference, or match one of the
+    # reference Agents that isn't in any of the components.
+    matched_stmts = []
+    for st in stmts_in:
+        for st_agent, ref_agent in zip(st.agent_list(), stmt_ref.agent_list()):
+            comp_id = _get_agent_comp(st_agent)
+            if comp_id is None:
+                if st_agent.name == ref_agent.name:
+                    break
+            elif comp_id in ref_components:
+                break
+        else:
+            continue
+        matched_stmts.append(st)
+    return stmts_out
 
 
 if __name__ == "__main__":

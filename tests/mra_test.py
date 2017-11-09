@@ -5,7 +5,8 @@ import indra.statements as sts
 from tests.util import ekb_from_text, ekb_kstring_from_text, get_request
 from tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra import MRA, MRA_Module
-from bioagents.mra.mra_module import ekb_from_agent, get_target
+from bioagents.mra.mra_module import ekb_from_agent, get_target, \
+    _get_matching_stmts
 
 # ################
 # MRA unit tests
@@ -177,6 +178,17 @@ def test_respond_model_undo():
     assert action.head() == 'remove_stmts'
     stmts = action.get('statements')
     assert json.loads(stmts.string_value()) == json.loads(expand_stmts)
+
+
+def test_get_matching_statements():
+    braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
+    raf = sts.Agent('RAF', db_refs={'BE': 'RAF'})
+    map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
+    mek = sts.Agent('MEK', db_refs={'BE': 'MEK'})
+    stmts = [sts.Phosphorylation(braf, mek), sts.Phosphorylation(raf, map2k1)]
+    stmt_ref = sts.Phosphorylation(braf, map2k1)
+    matching = _get_matching_stmts(stmts, stmt_ref)
+    assert len(matching) == 2
 
 
 # #####################

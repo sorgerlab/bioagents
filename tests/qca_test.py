@@ -9,17 +9,34 @@ from bioagents.qca import QCA, QCA_Module
 from tests.util import ekb_kstring_from_text, ekb_from_text, get_request
 from tests.integration import _IntegrationTest
 
+
+def _get_qca_content(task, source, target):
+    """Get the KQMLList content to be sent to the QCA for given task.
+
+    Paramters
+    ---------
+    source, target : str
+        The strings representing the proteins for source and target,
+        respectively, for example 'BRAF'.
+
+    Returns
+    -------
+    content : KQMLList
+        The KQML content to be sent to the QCA module as part of the request.
+    """
+    content = KQMLList(task)
+    content.set('source', ekb_kstring_from_text(source))
+    content.set('target', ekb_kstring_from_text(target))
+    return content
+
+
 @unittest.skip('Update to live Ras Machine needed')
 class TestSosKras(_IntegrationTest):
     def __init__(self, *args):
         super(TestSosKras, self).__init__(QCA_Module)
 
     def create_message(self):
-        source = ekb_kstring_from_text('SOS1')
-        target = ekb_kstring_from_text('KRAS')
-        content = KQMLList('FIND-QCA-PATH')
-        content.set('source', source)
-        content.set('target', target)
+        content = _get_qca_content('FIND-QCA-PATH', 'SOS1', 'KRAS')
         msg = get_request(content)
         return msg, content
 
@@ -37,9 +54,7 @@ class TestSosKras(_IntegrationTest):
 
 
 def test_find_qca_path():
-    content = KQMLList('FIND-QCA-PATH')
-    content.sets('target', ekb_from_text('MAP2K1'))
-    content.sets('source', ekb_from_text('BRAF'))
+    content = _get_qca_content('FIND-QCA-PATH', 'MAP2K1', 'BRAF')
     qca_mod = QCA_Module(testing=True)
     resp = qca_mod.respond_find_qca_path(content)
     assert resp is not None, "No response received."
@@ -50,9 +65,7 @@ def test_find_qca_path():
 
 
 def test_has_qca_path():
-    content = KQMLList('FIND-QCA-PATH')
-    content.sets('target', ekb_from_text('MAP2K1'))
-    content.sets('source', ekb_from_text('BRAF'))
+    content = _get_qca_content('HAS-QCA-PATH', 'MAP2K1', 'BRAF')
     qca_mod = QCA_Module(testing=True)
     resp = qca_mod.respond_has_qca_path(content)
     assert resp is not None, "No response received."

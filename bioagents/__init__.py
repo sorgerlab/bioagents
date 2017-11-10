@@ -3,7 +3,8 @@ import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('Bioagents')
-
+from itertools import groupby
+from collections import defaultdict
 from indra.assemblers import EnglishAssembler
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
@@ -112,43 +113,34 @@ class Bioagent(KQMLModule):
 
         # Extract a list of the evidence then map pmids to lists of text
         evidence_lst = [ev for stmt in stmt_list for ev in stmt.evidence]
-        pmid_list = list({ev.pmid for ev in evidence_lst
-                          if ev.text is not None})
-        if limit and limit > len(pmid_list):
-            pmid_list = pmid_list[:limit]
-
-        pmid_text_dict = {
-            pmid: {"<i>\'%s\'</i>" % ev.text
-                   for ev in evidence_lst if ev.pmid == pmid}
-            for pmid in pmid_list
-            }
-        pmid_no_text_set = set([ev.pmid for ev in evidence_lst
-                                if ev.text is None])
-        pmid_no_text_dict = {
-            pmid: [EnglishAssembler([stmt]).make_model() for stmt in stmt_list
-                   if any([ev.pmid == pmid for ev in stmt.evidence])]
-            for pmid in pmid_no_text_set
-            }
-
+        pmid_groups = groupby(evidence_lst, lambda x: x.pmid)
+        pmid_text_dict = defaultdict(set)
+        for pmid, evidences in pmid_groups:
+            for ev in evidences:
+                # If the entry has proper text evidence
+                if ev.text:
+                    entry = "<i>\'%s\'</i>" % ev.text
+                # If the entry at least has a source ID in a database
+                elif ev.source_id:
+                    entry = "Database entry in '%s': %s" % \
+                        (ev.source_api, ev.source_id)
+                # Otherwise turn it into English
+                else:
+                    txt = EnglishAssembler([stmt]).make_model()
+                    entry = "Evidence from '%s': %s" % (ev.source_api, txt)
+                pmid_text_dict[pmid].add(entry)
         # Create the text for displaying the evidence.
-        stmt_ev_fmt = ('Found in ' + pmid_link_fmt +
-                       ' {snippet_stat}:\n<ul>{evidence}</ul>')
-        all_the_text_data = [('with evidence text', pmid_text_dict),
-                             ('without evidence text', pmid_no_text_dict)]
+        stmt_ev_fmt = ('Found in ' + pmid_link_fmt + ':\n<ul>{evidence}</ul>')
         evidence_text_list = []
         def evidence_list(txt_list):
             # Add a list item for each piece of text
             return '\n'.join(['<li>%s</li>' % txt.encode('utf-8')
                               for txt in txt_list])
-        for snippet_stat, data_dict in all_the_text_data:
-            if not data_dict:
-                continue
-            entries = [stmt_ev_fmt.format(url=url_base,
-                                          pmid=pmid,
-                                          snippet_stat=snippet_stat,
-                                          evidence=evidence_list(txt_list))
-                       for pmid, txt_list in data_dict.items()]
-            evidence_text_list.append('\n'.join(entries))
+        entries = [stmt_ev_fmt.format(url=url_base,
+                                      pmid=pmid,
+                                      evidence=evidence_list(txt_list))
+                   for pmid, txt_list in pmid_text_dict.items()]
+        evidence_text_list.append('\n'.join(entries))
         evidence = 'and...\n'.join(evidence_text_list)
 
         # Actually create the content.

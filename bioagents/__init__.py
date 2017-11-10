@@ -133,18 +133,19 @@ class Bioagent(KQMLModule):
         all_the_text_data = [('with snippet(s)', pmid_text_dict),
                              ('without a snippet', pmid_no_text_dict)]
         evidence_text_list = []
+        def evidence_list(txt_list):
+            # Add a list item for each piece of text
+            return '\n'.join(['<li>%s</li>' % txt.encode('utf-8')
+                              for txt in txt_list])
         for snippet_stat, data_dict in all_the_text_data:
-            if len(data_dict):
-                evidence_text_list.append('\n'.join([
-                    stmt_ev_fmt.format(
-                        url=url_base,
-                        pmid=pmid,
-                        snippet_stat=snippet_stat,
-                        evidence='\n'.join(['<li>%s</li>' % txt
-                                            for txt in txt_list])
-                        )
-                    for pmid, txt_list in data_dict.items()
-                    ]))
+            if not data_dict:
+                continue
+            entries = [stmt_ev_fmt.format(url=url_base,
+                                          pmid=pmid,
+                                          snippet_stat=snippet_stat,
+                                          evidence=evidence_list(txt_list))
+                       for pmid, txt_list in data_dict.items()]
+            evidence_text_list.append('\n'.join(entries))
         evidence = 'and...\n'.join(evidence_text_list)
 
         # Actually create the content.

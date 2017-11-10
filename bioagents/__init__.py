@@ -99,25 +99,28 @@ class Bioagent(KQMLModule):
             msg.sets('description', description)
         return msg
 
-    def add_provenance_for_stmts(self, stmt_list, for_what):
+    def add_provenance_for_stmts(self, stmt_list, for_what, limit=5):
         """Creates the content for an add-provenance tell message.
 
         The message is used to provide evidence supporting the conclusion.
         """
         # Create some formats
-        url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
-        pmid_link_fmt = '<a href={url}={pmid} target="_blank">{pmid}</a>'
+        url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'
+        pmid_link_fmt = '<a href={url}{pmid} target="_blank">PMID{pmid}</a>'
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
 
         # Extract a list of the evidence then map pmids to lists of text
         evidence_lst = [ev for stmt in stmt_list for ev in stmt.evidence]
-        pmid_set = set([ev.pmid for ev in evidence_lst
-                        if ev.text is not None])
+        pmid_list = list({ev.pmid for ev in evidence_lst
+                          if ev.text is not None})
+        if limit and limit > len(pmid_list):
+            pmid_list = pmid_list[:limit]
+
         pmid_text_dict = {
-            pmid: ["<i>\'%s\'</i>" % ev.text
-                   for ev in evidence_lst if ev.pmid == pmid]
-            for pmid in pmid_set
+            pmid: {"<i>\'%s\'</i>" % ev.text
+                   for ev in evidence_lst if ev.pmid == pmid}
+            for pmid in pmid_list
             }
         pmid_no_text_set = set([ev.pmid for ev in evidence_lst
                                 if ev.text is None])
@@ -128,10 +131,10 @@ class Bioagent(KQMLModule):
             }
 
         # Create the text for displaying the evidence.
-        stmt_ev_fmt = ('Found at ' + pmid_link_fmt +
-                       ' {snippet_stat}:\n<ul>{evidence}</ul>\n')
-        all_the_text_data = [('with snippet(s)', pmid_text_dict),
-                             ('without a snippet', pmid_no_text_dict)]
+        stmt_ev_fmt = ('Found in ' + pmid_link_fmt +
+                       ' {snippet_stat}:\n<ul>{evidence}</ul>')
+        all_the_text_data = [('with evidence text', pmid_text_dict),
+                             ('without evidence text', pmid_no_text_dict)]
         evidence_text_list = []
         def evidence_list(txt_list):
             # Add a list item for each piece of text

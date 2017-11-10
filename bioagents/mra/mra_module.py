@@ -289,8 +289,8 @@ class MRA_Module(Bioagent):
         for stmt in stmts:
             matched = _get_matching_stmts(self.background_stmts, stmt)
             if matched:
-                self.add_provenance_for_stmts(matched,
-                                              "the mechanism you added")
+                self.send_provenance_for_stmts(matched,
+                                               "the mechanism you added")
 
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')

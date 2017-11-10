@@ -404,8 +404,11 @@ def _get_matching_stmts(stmts_in, stmt_ref):
     # reference Agents that isn't in any of the components.
     matched_stmts = []
     for st in stmts_in:
-        iter_over = enumerate(zip(st.agent_list(), stmt_ref.agent_list()))
-        for i, (st_ag, ref_ag) in iter_over:
+        iter_over = zip(st.agent_list(), stmt_ref.agent_list())
+        for st_ag, ref_ag in iter_over:
+            # TODO: this condition could be relaxed
+            if st_ag is None or ref_ag is None:
+                break
             ref_comp_id = _get_agent_comp(ref_ag)
             st_comp_id = _get_agent_comp(st_ag)
             if (st_comp_id is None or ref_comp_id is None) and \

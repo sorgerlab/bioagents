@@ -137,19 +137,28 @@ def make_evidence_html(stmt_list, for_what, limit=5):
             # Otherwise turn it into English
             else:
                 txt = EnglishAssembler([stmt]).make_model()
-                entry = "Evidence from '%s': %s" % (ev.source_api, txt)
+                entry = "Entry in '%s' representing: %s" % \
+                    (ev.source_api, txt)
             pmid_text_dict[pmid].add(entry)
-    # Create the text for displaying the evidence.
-    stmt_ev_fmt = ('Found in ' + pmid_link_fmt + ':\n<ul>{evidence}</ul>')
-    evidence_text_list = []
+
     def evidence_list(txt_list):
         # Add a list item for each piece of text
         return '\n'.join(['<li>%s</li>' % txt.encode('utf-8')
                           for txt in txt_list])
-    entries = [stmt_ev_fmt.format(url=url_base,
-                                  pmid=pmid,
-                                  evidence=evidence_list(txt_list))
-               for pmid, txt_list in pmid_text_dict.items()]
-    evidence_text_list.append('\n'.join(entries))
-    evidence_html = 'and...\n'.join(evidence_text_list)
+
+    entries = []
+    for pmid, txt_list in pmid_text_dict.items():
+        if pmid is not None:
+            entry = ('Found in ' + pmid_link_fmt +
+                     ':\n<ul>{evidence}</ul>').format(
+                url=url_base,
+                pmid=pmid,
+                evidence=evidence_list(txt_list)
+                )
+        else:
+            entry = ('Found without literature evidence:'
+                     '\n<ul>{evidence}</ul>').format(
+                     evidence=evidence_list(txt_list))
+        entries.append(entry)
+    evidence_html = '\n'.join(entries)
     return evidence_html

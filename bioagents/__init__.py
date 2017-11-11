@@ -116,7 +116,7 @@ class Bioagent(KQMLModule):
                                         bioagent=self.name))
         return self.tell(content)
 
-def make_evidence_html(stmt_list, for_what, limit=5):
+def make_evidence_html(stmt_list, for_what, limit=1):
     """Creates HTML content for evidences corresponding to INDRA Statements."""
     # Create some formats
     url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'
@@ -125,7 +125,9 @@ def make_evidence_html(stmt_list, for_what, limit=5):
     evidence_lst = [ev for stmt in stmt_list for ev in stmt.evidence]
     pmid_groups = groupby(evidence_lst, lambda x: x.pmid)
     pmid_text_dict = defaultdict(set)
-    for pmid, evidences in pmid_groups:
+    for i, (pmid, evidences) in enumerate(pmid_groups):
+        if limit and i >= limit:
+            break
         for ev in evidences:
             # If the entry has proper text evidence
             if ev.text:

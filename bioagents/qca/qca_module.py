@@ -71,6 +71,7 @@ class QCA_Module(Bioagent):
         first_edges = first_result[1::2]
         indra_edges = [fe[0]['INDRA json'] for fe in first_edges]
         indra_edges = [json.loads(e) for e in indra_edges]
+        indra_edges = _fix_indra_edges(indra_edges)
         indra_edge_stmts = stmts_from_json(indra_edges)
         self.send_provenance_for_stmts(
             indra_edge_stmts,
@@ -120,6 +121,16 @@ class QCA_Module(Bioagent):
         if agent is None:
             return None
         return agent.name
+
+
+def _fix_indra_edges(stmt_json_list):
+    """Temporary fixes to latest INDRA representation."""
+    for stmt in stmt_json_list:
+        if stmt.get('type') == 'RasGef':
+            stmt['type'] = 'Gef'
+        if stmt.get('type') == 'RasGap':
+            stmt['type'] = 'Gap'
+    return stmt_json_list
 
 
 if __name__ == "__main__":

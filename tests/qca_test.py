@@ -33,7 +33,6 @@ def _get_qca_content(task, source, target):
     return content
 
 
-@unittest.skip('Update to live Ras Machine needed')
 class TestSosKras(_IntegrationTest):
     def __init__(self, *args):
         super(TestSosKras, self).__init__(QCA_Module)

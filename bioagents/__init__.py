@@ -3,7 +3,8 @@ import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('Bioagents')
-
+from itertools import groupby
+from collections import defaultdict
 from indra.assemblers import EnglishAssembler
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
@@ -99,61 +100,67 @@ class Bioagent(KQMLModule):
             msg.sets('description', description)
         return msg
 
-    def add_provenance_for_stmts(self, stmt_list, for_what):
-        """Creates the content for an add-provenance tell message.
+    def send_provenance_for_stmts(self, stmt_list, for_what, limit=5):
+        """Send out a provenance tell for a list of INDRA Statements.
 
-        The message is used to provide evidence supporting the conclusion.
+        The message is used to provide evidence supporting a conclusion.
         """
-        # Create some formats
-        url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/?term'
-        pmid_link_fmt = '<a href={url}={pmid} target="_blank">{pmid}</a>'
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
-
-        # Extract a list of the evidence then map pmids to lists of text
-        evidence_lst = [ev for stmt in stmt_list for ev in stmt.evidence]
-        pmid_set = set([ev.pmid for ev in evidence_lst
-                        if ev.text is not None])
-        pmid_text_dict = {
-            pmid: ["<i>\'%s\'</i>" % ev.text
-                   for ev in evidence_lst if ev.pmid == pmid]
-            for pmid in pmid_set
-            }
-        pmid_no_text_set = set([ev.pmid for ev in evidence_lst
-                                if ev.text is None])
-        pmid_no_text_dict = {
-            pmid: [EnglishAssembler([stmt]).make_model() for stmt in stmt_list
-                   if any([ev.pmid == pmid for ev in stmt.evidence])]
-            for pmid in pmid_no_text_set
-            }
-
-        # Create the text for displaying the evidence.
-        stmt_ev_fmt = ('Found at ' + pmid_link_fmt +
-                       ' {snippet_stat}:\n<ul>{evidence}</ul>\n')
-        all_the_text_data = [('with snippet(s)', pmid_text_dict),
-                             ('without a snippet', pmid_no_text_dict)]
-        evidence_text_list = []
-        for snippet_stat, data_dict in all_the_text_data:
-            if len(data_dict):
-                evidence_text_list.append('\n'.join([
-                    stmt_ev_fmt.format(
-                        url=url_base,
-                        pmid=pmid,
-                        snippet_stat=snippet_stat,
-                        evidence='\n'.join(['<li>%s</li>' % txt
-                                            for txt in txt_list])
-                        )
-                    for pmid, txt_list in data_dict.items()
-                    ]))
-        evidence = 'and...\n'.join(evidence_text_list)
-
+        evidence_html = make_evidence_html(stmt_list, for_what, limit)
         # Actually create the content.
         content = KQMLList('add-provenance')
-        content.sets(
-            'html',
-            content_fmt.format(
-                conclusion=for_what,
-                evidence=evidence,
-                bioagent=self.name)
-            )
+        content.sets('html',
+                     content_fmt.format(conclusion=for_what,
+                                        evidence=evidence_html,
+                                        bioagent=self.name))
         return self.tell(content)
+
+def make_evidence_html(stmt_list, for_what, limit=5):
+    """Creates HTML content for evidences corresponding to INDRA Statements."""
+    # Create some formats
+    url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'
+    pmid_link_fmt = '<a href={url}{pmid} target="_blank">PMID{pmid}</a>'
+    # Extract a list of the evidence then map pmids to lists of text
+    evidence_lst = [ev for stmt in stmt_list for ev in stmt.evidence]
+    pmid_groups = groupby(evidence_lst, lambda x: x.pmid)
+    pmid_text_dict = defaultdict(set)
+    for i, (pmid, evidences) in enumerate(pmid_groups):
+        if limit and i >= limit:
+            break
+        for ev in evidences:
+            # If the entry has proper text evidence
+            if ev.text:
+                entry = "<i>\'%s\'</i>" % ev.text
+            # If the entry at least has a source ID in a database
+            elif ev.source_id:
+                entry = "Database entry in '%s': %s" % \
+                    (ev.source_api, ev.source_id)
+            # Otherwise turn it into English
+            else:
+                txt = EnglishAssembler([stmt]).make_model()
+                entry = "Entry in '%s' representing: %s" % \
+                    (ev.source_api, txt)
+            pmid_text_dict[pmid].add(entry)
+
+    def evidence_list(txt_list):
+        # Add a list item for each piece of text
+        return '\n'.join(['<li>%s</li>' % txt.encode('utf-8')
+                          for txt in txt_list])
+
+    entries = []
+    for pmid, txt_list in pmid_text_dict.items():
+        if pmid is not None:
+            entry = ('Found in ' + pmid_link_fmt +
+                     ':\n<ul>{evidence}</ul>').format(
+                url=url_base,
+                pmid=pmid,
+                evidence=evidence_list(txt_list)
+                )
+        else:
+            entry = ('Found without literature evidence:'
+                     '\n<ul>{evidence}</ul>').format(
+                     evidence=evidence_list(txt_list))
+        entries.append(entry)
+    evidence_html = '\n'.join(entries)
+    return evidence_html

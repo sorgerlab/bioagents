@@ -1,10 +1,15 @@
+import os
 import sys
 import json
+import pickle
 import random
 import logging
 import pysb.export
+
 from indra.statements import stmts_to_json
 from indra.sources.trips.processor import TripsProcessor
+from indra.preassembler.hierarchy_manager import hierarchies
+
 from kqml import KQMLPerformative, KQMLList, KQMLString
 from bioagents import Bioagent, BioagentException
 from mra import MRA
@@ -24,6 +29,11 @@ class MRA_Module(Bioagent):
     def __init__(self, **kwargs):
         # Instantiate a singleton MRA agent
         self.mra = MRA()
+        try:
+            self.background_stmts = load_statements()
+        except Exception as e:
+            logger.warning('Could not load background information.')
+            self.background_stmts = []
         super(MRA_Module, self).__init__(**kwargs)
 
     def receive_tell(self, msg, content):
@@ -76,6 +86,8 @@ class MRA_Module(Bioagent):
         msg.set('model-id', str(model_id))
         # Add the INDRA model json
         model = res.get('model')
+        if model:
+            self.send_background_support(model)
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
         # Add the diagrams
@@ -122,6 +134,7 @@ class MRA_Module(Bioagent):
         # Add the INDRA model new json
         model_new = res.get('model_new')
         if model_new:
+            self.send_background_support(model_new)
             model_new_msg = encode_indra_stmts(model_new)
             msg.sets('model-new', model_new_msg)
         # Add the diagram
@@ -274,6 +287,14 @@ class MRA_Module(Bioagent):
         msg.set('content', content)
         self.send(msg)
 
+    def send_background_support(self, stmts):
+        logger.info('Sending support for %d statements' % len(stmts))
+        for stmt in stmts:
+            matched = _get_matching_stmts(self.background_stmts, stmt)
+            if matched:
+                self.send_provenance_for_stmts(matched,
+                                               "the mechanism you added")
+
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')
         if model_id_arg is None:
@@ -364,6 +385,53 @@ def get_ambiguities_msg(ambiguities):
     ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
     return ambiguities_msg
 
+
+def _get_agent_comp(agent):
+    eh = hierarchies['entity']
+    a_ns, a_id = agent.get_grounding()
+    if (a_ns is None) or (a_id is None):
+        return None
+    uri = eh.get_uri(a_ns, a_id)
+    comp_id = eh.components.get(uri)
+    return comp_id
+
+
+def _get_matching_stmts(stmts_in, stmt_ref):
+    # Filter by statement type.
+    ref_type = stmt_ref.__class__
+    stmts_in = [stmt for stmt in stmts_in
+                if isinstance(stmt, ref_type)
+                and len(stmt.agent_list()) == len(stmt_ref.agent_list())]
+    # Iterate over every Statement and check if any of its Agents are either
+    # in a component appearing in the reference, or match one of the
+    # reference Agents that isn't in any of the components.
+    matched_stmts = []
+    for st in stmts_in:
+        iter_over = zip(st.agent_list(), stmt_ref.agent_list())
+        for st_ag, ref_ag in iter_over:
+            # TODO: this condition could be relaxed
+            if st_ag is None or ref_ag is None:
+                break
+            ref_comp_id = _get_agent_comp(ref_ag)
+            st_comp_id = _get_agent_comp(st_ag)
+            if (st_comp_id is None or ref_comp_id is None) and \
+                (st_ag.name != ref_ag.name) \
+               or st_comp_id != ref_comp_id:
+                break
+        else:
+            matched_stmts.append(st)
+    return matched_stmts
+
+
+_resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
+
+
+def load_statements():
+    path = os.path.join(_resource_dir, 'mra_background.pkl')
+    logger.info('Loading background information from %s' % path)
+    with open(path, 'rb') as fh:
+        stmts = pickle.load(fh)
+        return stmts
 
 if __name__ == "__main__":
     MRA_Module(argv=sys.argv[1:])

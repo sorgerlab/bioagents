@@ -63,7 +63,7 @@ class MSA_Module(Bioagent):
                                      'phosphorylation')
                 )
         else:
-            self.add_provenance_for_stmts(
+            self.send_provenance_for_stmts(
                 related_results,
                 "Phosphorylation at %s%s activates %s." % (
                     residue,

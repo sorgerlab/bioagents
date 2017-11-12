@@ -116,7 +116,7 @@ class Bioagent(KQMLModule):
                                         bioagent=self.name))
         return self.tell(content)
 
-def make_evidence_html(stmt_list, for_what, limit=1):
+def make_evidence_html(stmt_list, for_what, limit=5):
     """Creates HTML content for evidences corresponding to INDRA Statements."""
     # Create some formats
     url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'

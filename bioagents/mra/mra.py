@@ -27,7 +27,7 @@ class MRA(object):
         self.models = {}
         self.transformations = []
         self.id_counter = 0
-        self.default_policy = 'two_step'
+        self.default_policy = 'one_step'
         self.default_initial_amount = 100.0
 
     def get_new_id(self):

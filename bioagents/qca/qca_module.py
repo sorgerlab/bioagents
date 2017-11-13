@@ -2,10 +2,11 @@ import sys
 import json
 import logging
 from bioagents import Bioagent
-from indra.sources.trips.processor import TripsProcessor
 from kqml import KQMLList, KQMLString
 from qca import QCA
 from indra.statements import stmts_from_json
+from indra.assemblers import EnglishAssembler
+from indra.sources.trips.processor import TripsProcessor
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -73,10 +74,10 @@ class QCA_Module(Bioagent):
         indra_edges = [json.loads(e) for e in indra_edges]
         indra_edges = _fix_indra_edges(indra_edges)
         indra_edge_stmts = stmts_from_json(indra_edges)
-        self.send_provenance_for_stmts(
-            indra_edge_stmts,
-            "the path from %s to %s" % (source, target)
-            )
+        for stmt in indra_edge_stmts:
+            txt = EnglishAssembler([stmt]).make_model()
+            self.send_provenance_for_stmts(
+                [stmt], "the path from %s to %s (%s)" % (source, target, txt))
         indra_edges_str = json.dumps(indra_edges)
         ks = KQMLString(indra_edges_str)
 

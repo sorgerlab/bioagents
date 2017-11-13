@@ -871,7 +871,7 @@ class TraMissingMonomerCondition(_IntegrationTest):
     """Test that TRA can signal that a condition monomer is missing."""
     def __init__(self, *args, **kwargs):
         super(TraMissingMonomerCondition, self).__init__(tra_module.TRA_Module,
-              no_kappa=True)
+                                                         no_kappa=True)
 
     def create_message1(self):
         txt = 'ELK1 transcribes FOS.'
@@ -916,7 +916,8 @@ class TraMissingMonomerCondition(_IntegrationTest):
 
 class TestCompareConditions(_IntegrationTest):
     def __init__(self, *args, **kwargs):
-        super(TestCompareConditions, self).__init__(tra_module.TRA_Module)
+        super(TestCompareConditions, self).__init__(tra_module.TRA_Module,
+                                                    no_kappa=True)
 
     def create_message(self):
         model = stmts_kstring_from_text('Vemurafenib inhibits ERK. MEK activates ERK.')
@@ -932,8 +933,8 @@ class TestCompareConditions(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS'
         content = output.get('content')
-        satisfied = content.gets('satisfied')
-        assert satisfied == 'TRUE'
+        satisfied = content.gets('result')
+        assert satisfied == 'decrease'
 
 
 def _get_gk_model():

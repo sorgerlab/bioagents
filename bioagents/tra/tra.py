@@ -143,12 +143,16 @@ class TRA(object):
             obs_values = results[0][1][obs.name]
             all_results.append(obs_values)
         # Plotting
-        fig_path = self.plot_compare_conditions(ts, all_results, target_agent,
-                                                obs.name)
+        #fig_path = self.plot_compare_conditions(ts, all_results, target_agent,
+        #                                        obs.name)
+        fig_path = ''
         diff = numpy.sum(all_results[-1][:len(ts)] - all_results[0][:len(ts)])
         logger.info('TRA condition difference: %.2f' % diff)
         # If there is a decrease in the observable, we return True
-        res = (diff < 0)
+        if abs(diff) < 0.01:
+            res = 'no_change'
+        else:
+            res = 'decrease' if (diff < 0) else 'increase'
         return res, fig_path
 
     def plot_compare_conditions(self, ts, results, agent, obs_name):

@@ -126,7 +126,8 @@ class TRA_Module(Bioagent):
         target_agent_ekb = content.gets('affected')
         model_indra_str = content.gets('model')
         try:
-            model = assemble_model(model_indra_str)
+            stmts = decode_indra_stmts(model_indra_str)
+            model = assemble_model(stmts)
         except Exception as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_MODEL')
@@ -138,14 +139,14 @@ class TRA_Module(Bioagent):
             logger.exception(e)
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
-        satisfied, fig_path = \
+        result, fig_path = \
             self.tra.compare_conditions(model, condition_agent, target_agent)
 
         self.send_display_figure(fig_path)
 
         reply = KQMLList('SUCCESS')
         content = KQMLList()
-        content.set('satisfied', 'TRUE' if satisfied else 'FALSE')
+        content.set('result', result)
         reply.set('content', content)
         return reply
 

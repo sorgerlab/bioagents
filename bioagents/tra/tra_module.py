@@ -18,7 +18,7 @@ logger = logging.getLogger('TRA')
 
 class TRA_Module(Bioagent):
     name = "TRA"
-    tasks = ['SATISFIES-PATTERN']
+    tasks = ['SATISFIES-PATTERN', 'MODEL-COMPARE-CONDITIONS']
 
     def __init__(self, **kwargs):
         use_kappa = True
@@ -121,6 +121,48 @@ class TRA_Module(Bioagent):
         reply.set('content', content)
         return reply
 
+    def respond_model_compare_conditions(self, content):
+        condition_agent_ekb = content.gets('agent')
+        target_agent_ekb = content.gets('affected')
+        model_indra_str = content.gets('model')
+        try:
+            stmts = decode_indra_stmts(model_indra_str)
+            model = assemble_model(stmts)
+        except Exception as e:
+            logger.exception(e)
+            reply_content = self.make_failure('INVALID_MODEL')
+            return reply_content
+        try:
+            condition_agent = get_single_molecular_entity(condition_agent_ekb)
+            target_agent = get_single_molecular_entity(target_agent_ekb)
+        except Exception as e:
+            logger.exception(e)
+            reply_content = self.make_failure('INVALID_PATTERN')
+            return reply_content
+        try:
+            result, fig_path = \
+                self.tra.compare_conditions(model, condition_agent,
+                                            target_agent)
+        except tra.MissingMonomerError as e:
+            logger.exception(e)
+            reply_content = self.make_failure('MODEL_MISSING_MONOMER')
+            return reply_content
+        except tra.MissingMonomerSiteError as e:
+            logger.exception(e)
+            reply_content = self.make_failure('MODEL_MISSING_MONOMER_SITE')
+            return reply_content
+        except tra.SimulatorError as e:
+            logger.exception(e)
+            reply_content = self.make_failure('KAPPA_FAILURE')
+            return reply_content
+
+        self.send_display_figure(fig_path)
+
+        reply = KQMLList('SUCCESS')
+        reply.set('result', result)
+        return reply
+
+
     def send_display_figure(self, path):
         msg = KQMLPerformative('tell')
         content = KQMLList('display-image')
@@ -216,8 +258,12 @@ def get_chemical_agents(stmts):
 
 
 def get_molecular_entity(lst):
+    description_str = lst.gets('description')
+    return get_single_molecular_entity(description_str)
+
+
+def get_single_molecular_entity(description_str):
     try:
-        description_str = lst.gets('description')
         tp = trips_processor.TripsProcessor(description_str)
         terms = tp.tree.findall('TERM')
         def find_complex(terms):

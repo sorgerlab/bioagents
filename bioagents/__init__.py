@@ -122,45 +122,33 @@ def make_evidence_html(stmt_list, for_what, limit=5):
     url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'
     pmid_link_fmt = '<a href={url}{pmid} target="_blank">PMID{pmid}</a>'
     # Extract a list of the evidence then map pmids to lists of text
-    evidence_lst = [ev for stmt in stmt_list for ev in stmt.evidence]
-    pmid_groups = groupby(evidence_lst, lambda x: x.pmid)
-    pmid_text_dict = defaultdict(set)
-    for i, (pmid, evidences) in enumerate(pmid_groups):
+    evidence_list = [ev for stmt in stmt_list for ev in stmt.evidence]
+    evidence_with_text = [ev for ev in evidence_list if ev.text]
+    evidence_from_db = [ev for ev in evidence_list if not ev.text
+                        and ev.source_id]
+    evidence_no_ids = [ev for ev in evidence_list if (ev not in
+                       evidence_with_text) and (ev not in evidence_from_db)]
+    evidence_list = evidence_with_text + evidence_from_db + evidence_no_ids
+    entries = []
+    for i, ev in enumerate(evidence_list):
         if limit and i >= limit:
             break
-        for ev in evidences:
-            # If the entry has proper text evidence
-            if ev.text:
-                entry = "<i>\'%s\'</i>" % ev.text
-            # If the entry at least has a source ID in a database
-            elif ev.source_id:
-                entry = "Database entry in '%s': %s" % \
-                    (ev.source_api, ev.source_id)
-            # Otherwise turn it into English
-            else:
-                txt = EnglishAssembler([stmt]).make_model()
-                entry = "Entry in '%s' representing: %s" % \
-                    (ev.source_api, txt)
-            pmid_text_dict[pmid].add(entry)
-
-    def evidence_list(txt_list):
-        # Add a list item for each piece of text
-        return '\n'.join(['<li>%s</li>' % txt.encode('utf-8')
-                          for txt in txt_list])
-
-    entries = []
-    for pmid, txt_list in pmid_text_dict.items():
-        if pmid is not None:
-            entry = ('Found in ' + pmid_link_fmt +
-                     ':\n<ul>{evidence}</ul>').format(
-                url=url_base,
-                pmid=pmid,
-                evidence=evidence_list(txt_list)
-                )
+        if ev.text:
+            entry = '<i>"%s"</i>' % ev.text
+        # If the entry at least has a source ID in a database
+        elif ev.source_id:
+            entry = "Database entry in '%s': %s" % \
+                (ev.source_api, ev.source_id)
+        # Otherwise turn it into English
         else:
-            entry = ('Found without literature evidence:'
-                     '\n<ul>{evidence}</ul>').format(
-                     evidence=evidence_list(txt_list))
+            txt = EnglishAssembler([stmt]).make_model()
+            entry = "Entry in '%s' representing: %s" % \
+                (ev.source_api, txt)
+        if ev.pmid:
+            entry += ' (%s)' % (pmid_link_fmt.format(url=url_base,
+                                                     pmid=ev.pmid))
         entries.append(entry)
-    evidence_html = '\n'.join(entries)
+
+    entries_list = ['<li>%s</li>' % entry.encode('utf-8') for entry in entries]
+    evidence_html = '<ul>%s</ul>' % ('\n'.join(entries_list))
     return evidence_html

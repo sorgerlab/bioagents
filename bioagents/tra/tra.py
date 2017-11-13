@@ -143,9 +143,8 @@ class TRA(object):
             obs_values = results[0][1][obs.name]
             all_results.append(obs_values)
         # Plotting
-        #fig_path = self.plot_compare_conditions(ts, all_results, target_agent,
-        #                                        obs.name)
-        fig_path = ''
+        fig_path = self.plot_compare_conditions(ts, all_results, target_agent,
+                                                obs.name)
         diff = numpy.sum(all_results[-1][:len(ts)] - all_results[0][:len(ts)])
         logger.info('TRA condition difference: %.2f' % diff)
         # If there is a decrease in the observable, we return True
@@ -282,7 +281,7 @@ class TRA(object):
         return tspan, yobs
 
     def simulate_odes(self, model_sim, max_time, plot_period):
-        ts = numpy.linspace(0, max_time, int(1.0*max_time/plot_period))
+        ts = numpy.linspace(0, max_time, int(1.0*max_time/plot_period) + 1)
         if self.sol is None:
             self.sol = Solver(model_sim, ts)
         self.sol.run()

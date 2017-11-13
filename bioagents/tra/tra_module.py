@@ -139,8 +139,22 @@ class TRA_Module(Bioagent):
             logger.exception(e)
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
-        result, fig_path = \
-            self.tra.compare_conditions(model, condition_agent, target_agent)
+        try:
+            result, fig_path = \
+                self.tra.compare_conditions(model, condition_agent,
+                                            target_agent)
+        except tra.MissingMonomerError as e:
+            logger.exception(e)
+            reply_content = self.make_failure('MODEL_MISSING_MONOMER')
+            return reply_content
+        except tra.MissingMonomerSiteError as e:
+            logger.exception(e)
+            reply_content = self.make_failure('MODEL_MISSING_MONOMER_SITE')
+            return reply_content
+        except tra.SimulatorError as e:
+            logger.exception(e)
+            reply_content = self.make_failure('KAPPA_FAILURE')
+            return reply_content
 
         self.send_display_figure(fig_path)
 

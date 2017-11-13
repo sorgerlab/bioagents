@@ -968,6 +968,29 @@ class TestCompareConditions(_IntegrationTest):
         assert satisfied == 'no_change'
 
 
+class TestCompareConditionsMissing(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestCompareConditionsMissing, self).__init__(
+            tra_module.TRA_Module, no_kappa=True)
+        model_txt = 'Vemurafenib inhibits ERK.'
+        self.model = stmts_kstring_from_text(model_txt)
+
+    def create_message(self):
+        condition_entity = ekb_kstring_from_text('Vemurafenib')
+        target_entity = ekb_kstring_from_text('MEK')
+        content = KQMLList('MODEL-COMPARE-CONDITIONS')
+        content.set('model', self.model)
+        content.set('agent', condition_entity)
+        content.set('affected', target_entity)
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE'
+        reason = output.gets('reason')
+        assert reason == 'MODEL_MISSING_MONOMER'
+
+
 def _get_gk_model():
     SelfExporter.do_export = True
     Model()

@@ -145,9 +145,7 @@ class TRA_Module(Bioagent):
         self.send_display_figure(fig_path)
 
         reply = KQMLList('SUCCESS')
-        content = KQMLList()
-        content.set('result', result)
-        reply.set('content', content)
+        reply.set('result', result)
         return reply
 
 

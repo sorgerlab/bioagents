@@ -934,8 +934,7 @@ class TestCompareConditions(_IntegrationTest):
 
     def check_response_to_message1(self, output):
         assert output.head() == 'SUCCESS'
-        content = output.get('content')
-        satisfied = content.gets('result')
+        satisfied = output.gets('result')
         assert satisfied == 'decrease'
 
     def create_message2(self):
@@ -950,8 +949,7 @@ class TestCompareConditions(_IntegrationTest):
 
     def check_response_to_message2(self, output):
         assert output.head() == 'SUCCESS'
-        content = output.get('content')
-        satisfied = content.gets('result')
+        satisfied = output.gets('result')
         assert satisfied == 'increase'
 
     def create_message3(self):
@@ -966,8 +964,7 @@ class TestCompareConditions(_IntegrationTest):
 
     def check_response_to_message3(self, output):
         assert output.head() == 'SUCCESS'
-        content = output.get('content')
-        satisfied = content.gets('result')
+        satisfied = output.gets('result')
         assert satisfied == 'no_change'
 
 

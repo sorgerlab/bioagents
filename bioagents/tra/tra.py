@@ -62,7 +62,7 @@ class TRA(object):
 
         # Set the time limit for the simulations
         if pattern.time_limit is None:
-            max_time = 20000.0
+            max_time = 10000.0
         elif pattern.time_limit.ub > 0:
             max_time = pattern.time_limit.get_ub_seconds()
         # The numer of time points to get output at
@@ -131,7 +131,7 @@ class TRA(object):
         obs = get_create_observable(model, target_agent)
         cond_quant = MolecularQuantityReference('total', condition_agent)
         all_results = []
-        time_ul = 20000
+        time_ul = 10000
         nt = 101
         plot_period = time_ul / (nt - 1)
         ts = numpy.linspace(0, time_ul, nt)
@@ -172,7 +172,8 @@ class TRA(object):
     def plot_results(self, results, agent, obs_name, thresh=50):
         plt.figure()
         plt.ion()
-        max_val_lim = max(numpy.max(results[0][1][obs_name]), 101.0)
+        max_val_lim = max(max(numpy.max(results[0][1][obs_name]), 101.0),
+                          thresh)
         max_time = max([result[0][-1] for result in results])
         lr = matplotlib.patches.Rectangle((0, 0), max_time, thresh, color='red',
                                           alpha=0.1)
@@ -182,12 +183,13 @@ class TRA(object):
         ax = plt.gca()
         ax.add_patch(lr)
         ax.add_patch(hr)
-        plt.text(10, thresh + 5, 'High', fontsize=10)
+        if thresh + 5 < max_val_lim:
+            plt.text(10, thresh + 5, 'High', fontsize=10)
         plt.text(10, thresh - 5, 'Low')
         for tspan, yobs in results:
             plt.plot(tspan, yobs[obs_name])
         plt.ylim(-1, max_val_lim)
-        plt.xlim(-100, 21000)
+        plt.xlim(-100, 10100)
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
         agent_str = english_assembler._assemble_agent_str(agent)

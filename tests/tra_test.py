@@ -918,23 +918,57 @@ class TestCompareConditions(_IntegrationTest):
     def __init__(self, *args, **kwargs):
         super(TestCompareConditions, self).__init__(tra_module.TRA_Module,
                                                     no_kappa=True)
+        model_txt = 'Vemurafenib inhibits ERK. MEK activates ERK.'
+        self.model = \
+            stmts_kstring_from_text(model_txt)
 
-    def create_message(self):
-        model = stmts_kstring_from_text('Vemurafenib inhibits ERK. MEK activates ERK.')
+    def create_message1(self):
         condition_entity = ekb_kstring_from_text('Vemurafenib')
         target_entity = ekb_kstring_from_text('Active ERK')
         content = KQMLList('MODEL-COMPARE-CONDITIONS')
-        content.set('model', model)
+        content.set('model', self.model)
         content.set('agent', condition_entity)
         content.set('affected', target_entity)
         msg = get_request(content)
         return msg, content
 
-    def check_response_to_message(self, output):
+    def check_response_to_message1(self, output):
         assert output.head() == 'SUCCESS'
         content = output.get('content')
         satisfied = content.gets('result')
         assert satisfied == 'decrease'
+
+    def create_message2(self):
+        condition_entity = ekb_kstring_from_text('Vemurafenib')
+        target_entity = ekb_kstring_from_text('Inactive ERK')
+        content = KQMLList('MODEL-COMPARE-CONDITIONS')
+        content.set('model', self.model)
+        content.set('agent', condition_entity)
+        content.set('affected', target_entity)
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message2(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        satisfied = content.gets('result')
+        assert satisfied == 'increase'
+
+    def create_message3(self):
+        condition_entity = ekb_kstring_from_text('Vemurafenib')
+        target_entity = ekb_kstring_from_text('ERK')
+        content = KQMLList('MODEL-COMPARE-CONDITIONS')
+        content.set('model', self.model)
+        content.set('agent', condition_entity)
+        content.set('affected', target_entity)
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message3(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        satisfied = content.gets('result')
+        assert satisfied == 'no_change'
 
 
 def _get_gk_model():

@@ -35,8 +35,13 @@ class DTDA_Module(Bioagent):
             return self.make_failure('INVALID_DRUG')
         try:
             drug = self._get_agent(drug_arg)
+            drug_name = drug.name
         except Exception:
             return self.make_failure('DRUG_NOT_FOUND')
+        if '-' in drug_name:
+            drug_names = [drug_name, drug_name.replace('-', '')]
+        else:
+            drug_names = [drug_name]
         try:
             target_arg = content.gets('target')
             target = self._get_agent(target_arg)
@@ -45,7 +50,7 @@ class DTDA_Module(Bioagent):
             return self.make_failure('INVALID_TARGET')
 
         try:
-            is_target = self.dtda.is_nominal_drug_target(drug.name,
+            is_target = self.dtda.is_nominal_drug_target(drug_names,
                                                          target_name)
         except DrugNotFoundException:
             return self.make_failure('DRUG_NOT_FOUND')

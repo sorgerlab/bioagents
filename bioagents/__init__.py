@@ -134,7 +134,7 @@ def make_evidence_html(stmt_list, for_what, limit=5):
         if limit and i >= limit:
             break
         if ev.text:
-            entry = '<i>"%s"</i>' % ev.text
+            entry = "<i>'%s'</i>" % ev.text
         # If the entry at least has a source ID in a database
         elif ev.source_id:
             entry = "Database entry in '%s': %s" % \

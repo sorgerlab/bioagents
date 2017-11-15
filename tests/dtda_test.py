@@ -28,10 +28,17 @@ def test_is_nominal_target():
     d = DTDA()
     vems = ('vemurafenib', 'Vemurafenib', 'VEMURAFENIB')
     for vem in vems:
-        is_target = d.is_nominal_drug_target(vem, 'BRAF')
+        is_target = d.is_nominal_drug_target([vem], 'BRAF')
         assert is_target
-        is_target = d.is_nominal_drug_target(vem, 'KRAS')
+        is_target = d.is_nominal_drug_target([vem], 'KRAS')
         assert not is_target
+
+
+def test_is_nominal_target_dash():
+    d = DTDA()
+    is_target = d.is_nominal_drug_target(['SB525334', 'SB-525334'],
+                                         'TGFBR1')
+    assert is_target
 
 
 def test_find_drug_targets1():
@@ -168,6 +175,12 @@ class TestIsDrugTarget3(_TestIsDrugTarget):
         assert output.head() == 'SUCCESS', output
         assert output.gets('is-target') == 'FALSE', output
 
+class TestIsDrugTarget4(_TestIsDrugTarget):
+    target = 'TGFBR1'
+    drug = 'SB525334'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('is-target') == 'TRUE', output
 
 # FIND-DISEASE-TARGETS tests
 class TestFindDiseaseTargets1(_IntegrationTest):

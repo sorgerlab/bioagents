@@ -70,8 +70,7 @@ class DTDA(object):
         if self.drug_db is not None:
             for drug_name in drug_names:
                 res = self.drug_db.execute('SELECT nominal_target FROM agent '
-                                           'WHERE source_id LIKE "HMSL%%" '
-                                           'AND (synonyms LIKE "%%%s%%" '
+                                           'WHERE (synonyms LIKE "%%%s%%" '
                                            'OR name LIKE "%%%s%%")' %
                                            (drug_name, drug_name)).fetchall()
                 if not res:
@@ -88,8 +87,7 @@ class DTDA(object):
         """Return all the drugs that nominally target the target."""
         if self.drug_db is not None:
             res = self.drug_db.execute('SELECT name, primary_cid FROM agent '
-                                       'WHERE source_id LIKE "HMSL%%" '
-                                       'AND nominal_target LIKE "%%%s%%" ' %
+                                       'WHERE nominal_target LIKE "%%%s%%" ' %
                                        target_name).fetchall()
             if not res:
                 drug_names = []

@@ -101,7 +101,7 @@ class TestFindTargetDrug4(_TestFindTargetDrug):
     target = 'JAK2'
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 3, output
+        assert len(output.get('drugs')) == 9, output
 
 
 # FIND-DRUG-TARGETS tests

@@ -197,7 +197,7 @@ class TestFindDiseaseTargets1(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         protein = output.get('protein')
         assert protein.get('name') == 'KRAS'
-        assert output.gets('prevalence') == '0.88'
+        assert output.gets('prevalence') == '0.89'
         assert output.gets('functional-effect') == 'ACTIVE'
 
 class TestFindDiseaseTargets2(_IntegrationTest):
@@ -245,7 +245,7 @@ class TestFindTreatment1(_IntegrationTest):
         part1, part2 = output
         assert part1.head() == 'SUCCESS', part1
         assert part2.head() == 'SUCCESS', part2
-        assert part1.gets('prevalence') == '0.88', part1.get('prevalence')
+        assert part1.gets('prevalence') == '0.89', part1.get('prevalence')
         assert len(part2.get('drugs')) == 0
 
 

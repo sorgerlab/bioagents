@@ -17,9 +17,10 @@ def test_make_evidence_html1():
     stmt = Phosphorylation(Agent('A'), Agent('B'),
                             evidence=[ev1, ev2, ev3, ev4])
     ev_html = make_evidence_html([stmt], 'proof for a conclusion')
-    assert len(re.findall('Found in', ev_html)) == 2
-    assert len(re.findall('Found without', ev_html)) == 1
-    print(ev_html)
+    assert 'Some evidence' in ev_html, ev_html
+    assert 'Entry in \'biopax\'' in ev_html, ev_html
+    assert 'Entry in \'bel\'' in ev_html, ev_html
+    assert 'Database entry' in ev_html, ev_html
 
 
 class TestErrorHandling(_IntegrationTest):

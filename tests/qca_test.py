@@ -1,16 +1,12 @@
 import json
-import unittest
 import requests
-import ndex.client as nc
-from ndex.beta.path_scoring import PathScoring
+from nose import SkipTest
 from tests.util import ekb_kstring_from_text, ekb_from_text, get_request
 from tests.integration import _IntegrationTest
-from nose import SkipTest
-
 from indra.statements import stmts_from_json, Gef
-
 from kqml import KQMLList
 from bioagents.qca import QCA, QCA_Module
+from bioagents.qca.qca import PathScoring
 
 
 def _get_qca_content(task, source, target):
@@ -121,10 +117,10 @@ def test_scratch():
     target_names = ["CCND1"]
     results_list = []
     directed_path_query_url = \
-        'http://general.bigmech.ndexbio.org/directedpath/query'
+        'http://general.bigmech.ndexbio.org:5603/directedpath/query'
 
     # Assemble REST url
-    uuid_prior = "84f321c6-dade-11e6-86b1-0ac135e8bacf"
+    uuid_prior = "50e3dff7-133e-11e6-a039-06603eb7f303"
     target = ",".join(target_names)
     source = ",".join(source_names)
     max_number_of_paths = 200
@@ -162,7 +158,3 @@ def test_scratch():
 
     print(race_results)
     print(results_list)
-
-
-if __name__ == '__main__':
-    unittest.main()

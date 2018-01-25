@@ -46,7 +46,8 @@ class QCA:
             #    "server": "public.ndexbio.org"
             #}
             {
-                "id": "d68677b8-173d-11e7-b39e-0ac135e8bacf",
+                #"id": "d68677b8-173d-11e7-b39e-0ac135e8bacf",
+                "id": "50e3dff7-133e-11e6-a039-06603eb7f303",
                 #"id": "89274295-1730-11e7-b39e-0ac135e8bacf",
                 "name": "Ras Machine",
                 "type": "canonical",
@@ -428,11 +429,13 @@ class EdgeRanking(object):
                 "controls-production-of",
                 "Ubiquitination",
                 "Deubiquitination",
-                "ActivityActivity"
+                "Gef",
+                "Gap"
             ],
             EdgeEnum.unspecified_activation_inhibition: [  # 2
                 "Activation",
-                "Inhibition"
+                "Inhibition",
+                "GtpActivation"
             ],
             EdgeEnum.unspecified_state_control: [  # 3
                 "controls-state-change-of",
@@ -443,6 +446,8 @@ class EdgeRanking(object):
                 "used-to-produce"
             ],
             EdgeEnum.transcriptional_control: [  # 5
+                "IncreaseAmount",
+                "DecreaseAmount",
                 "controls-expression-of",
                 "Acetylation",
                 "Deacetylation",
@@ -461,9 +466,7 @@ class EdgeRanking(object):
                 "interacts-with"
             ],
             EdgeEnum.unspecified_topological:[  # 9
-                "neighbor-of",
-                "RasGef",
-                "RasGap"
+                "neighbor-of"
             ]
         }
 

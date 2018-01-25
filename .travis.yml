@@ -1,22 +1,17 @@
 language: python
+cache:
+  directories:
+      - $HOME/.cache/pip
 python:
   - "2.7"
 addons:
     apt:
         sources:
             - avsm
-        packages:
-            - ocaml-nox
-            - opam
 before_install:
   - sudo apt-get update
-  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh -nv;
-  - chmod +x miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="/home/travis/miniconda/bin:$PATH"
-  - conda update --yes conda
-  - conda install --yes python="$TRAVIS_PYTHON_VERSION" qt=4 numpy scipy sympy cython=0.23.5 nose lxml matplotlib=1.5.0 networkx pandas
 install:
+  - pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib==1.5.0 networkx==1.11 pandas
   # PySB and dependencies
   - wget "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz" -O bionetgen.tar.gz -nv
   - tar xzf bionetgen.tar.gz
@@ -28,13 +23,12 @@ install:
   - pip install git+https://github.com/sorgerlab/indra.git
   # Dependencies of Bioagents not covered by previous installs
   - sudo apt-get install graphviz
-  - pip install pygraphviz ndex socketIO-client
-  - wget "http://sorger.med.harvard.edu/data/bgyori/bioagents/drug_targets.db" -O drug_targets.db -nv
-  - pwd
-  - mv drug_targets.db bioagents/resources
+  - pip install pygraphviz ndex
+  - wget -nv "http://sorger.med.harvard.edu/data/bgyori/bioagents/drug_targets.db" -O bioagents/resources/drug_targets.db
   ##########
   # Kappa
   # First install ocamlfind via opam (needed to build KaSim/KaSa)
+  #- sudo apt-get install -y ocaml-nox opam aspcud
   #- opam init -a git://github.com/ocaml/opam-repository && eval $(opam config env)
   #- opam install -y conf-which base-bytes
   #- opam install -y ocamlbuild yojson

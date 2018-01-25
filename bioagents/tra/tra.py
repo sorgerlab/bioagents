@@ -381,6 +381,7 @@ def apply_condition(model, condition):
 def get_create_observable(model, agent):
     site_pattern = pa.get_site_pattern(agent)
     obs_name = pa.get_agent_rule_str(agent) + '_obs'
+    import ipdb; ipdb.set_trace()
     try:
         monomer = model.monomers[pa._n(agent.name)]
     except KeyError:

@@ -914,6 +914,39 @@ class TraMissingMonomerCondition(_IntegrationTest):
         assert reason == 'MODEL_MISSING_MONOMER', reason
 
 
+class TraMissingMonomerSite2(_IntegrationTest):
+    """Test that TRA can signal that a bound condition monomer is missing."""
+    def __init__(self, *args, **kwargs):
+        super(TraMissingMonomerSite2, self).__init__(tra_module.TRA_Module,
+                                                     no_kappa=True)
+
+    def create_message1(self):
+        txt = 'MAP2K1 phosphorylates MAPK1.'
+        model = stmts_kstring_from_text(txt)
+        entity = ekb_kstring_from_text('MAPK1-bound MAP2K1')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'sustained')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message1(self, output):
+        assert output.head() == 'FAILURE', output
+        reason = output.gets('reason')
+        assert reason == 'MODEL_MISSING_MONOMER_SITE', reason
+
+
 class TestCompareConditions(_IntegrationTest):
     def __init__(self, *args, **kwargs):
         super(TestCompareConditions, self).__init__(tra_module.TRA_Module,
@@ -1041,4 +1074,3 @@ def _get_gk_model_indra():
     stmts = [st1, st2]
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
-

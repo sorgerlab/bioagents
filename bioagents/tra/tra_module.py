@@ -179,7 +179,7 @@ def decode_indra_stmts(stmts_json_str):
 
 
 def assemble_model(stmts):
-    pa = PysbAssembler(policies='two_step')
+    pa = PysbAssembler(policies='one_step')
     pa.add_statements(stmts)
     model = pa.make_model()
     pa.add_default_initial_conditions(100.0)

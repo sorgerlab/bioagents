@@ -1074,4 +1074,3 @@ def _get_gk_model_indra():
     stmts = [st1, st2]
     stmts_json = json.dumps(stmts_to_json(stmts))
     return stmts_json
-

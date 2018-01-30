@@ -14,9 +14,11 @@ from indra.statements import Complex, Activation, IncreaseAmount, \
 from indra.databases import uniprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.assemblers import pysb_assembler, PysbAssembler
-from pysb import kappa
 from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
+from pysb.export import export
+from kappy import KappaStd
+from indra.util import kappy_json_to_graph
 
 
 logger = logging.getLogger('MRA')
@@ -272,7 +274,12 @@ def make_sbgn(pysb_model, model_id):
 def make_influence_map(pysb_model, model_id):
     """Generate a Kappa influence map."""
     try:
-        im = kappa.influence_map(pysb_model)
+        kappa = KappaStd()
+        model_str = export(pysb_model, 'kappa')
+        kappa.add_model_string(model_str)
+        kappa.project_parse()
+        imap = kappa.analyses_influence_map(pysb_model)
+        im = kappy_json_to_graph(imap)
         for param in pysb_model.parameters:
             try:
                 im.remove_node(param.name)

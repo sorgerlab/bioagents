@@ -367,7 +367,8 @@ def get_ambiguities_msg(ambiguities):
     for term_id, ambiguity in ambiguities.items():
         pr = ambiguity[0]['preferred']
         pr_dbids = '|'.join(['::'.join((k, v)) for
-                             k, v in pr['refs'].items()])
+                             k, v in sorted(pr['refs'].items(),
+                                            key=lambda x: x[0])])
         # TODO: once available, replace with real ont type
         pr_type = 'ONT::PROTEIN'
         s1 = '(term :ont-type %s :ids "%s" :name "%s")' % \

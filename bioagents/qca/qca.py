@@ -7,6 +7,7 @@ import json
 import ndex.client as nc
 import requests
 import io
+import functools
 from enum import Enum
 from bioagents import BioagentException
 
@@ -129,7 +130,7 @@ class QCA:
             #==========================================
             if prc is not None and len(prc.strip()) > 0:
                 try:
-                    result_json = json.loads(prc)
+                    result_json = json.loads(prc.decode())
                     if result_json.get('data') is not None and \
                        result_json.get("data").get("forward_english") is not None:
                         f_e = result_json.get("data").get("forward_english")
@@ -147,7 +148,8 @@ class QCA:
 
         results_list_sorted = sorted(
             results_list,
-            lambda x, y: path_scoring.cross_country_scoring(x, y)
+            key=functools.cmp_to_key(lambda x, y:
+                                     path_scoring.cross_country_scoring(x, y))
             )
 
         return results_list_sorted[:3]
@@ -335,9 +337,7 @@ class PathScoring():
         '''
         scores = A_scores + B_scores
 
-        sorted_scores = sorted(scores, lambda x,y: 1 if x[1] > y[1]
-                                                   else -1 if x[1] < y[1]
-                                                   else 0)
+        sorted_scores = sorted(scores, key=lambda x: x[1])
         res = {}
         prev = None
         for i, (k, v) in enumerate(sorted_scores):

@@ -134,7 +134,7 @@ def test_scratch():
         )
 
     r = requests.post(url)
-    result_json = json.loads(r.content)
+    result_json = json.loads(r.text)
 
     edge_results = result_json.get("data").get("forward_english")
     path_scoring = PathScoring()

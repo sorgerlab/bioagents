@@ -124,18 +124,19 @@ class _IntegrationTest(TestCase):
         # priority over like-named parent method.
         full_dict = {}
         current_class = self.__class__
-        while issubclass(current_class, _IntegrationTest) and current_class is not _IntegrationTest:
+        while issubclass(current_class, _IntegrationTest) and \
+                current_class is not _IntegrationTest:
             full_dict = dict([
                 (name, attr)
-                for name, attr in current_class.__dict__.iteritems()
+                for name, attr in current_class.__dict__.items()
                 if not name.startswith('__')
-                ] + full_dict.items())
+                ] + list(full_dict.items()))
             current_class = current_class.__base__
 
         # Create the method dict.
         method_dict = {
             name[len(prefix):]: attr
-            for name, attr in full_dict.iteritems()
+            for name, attr in full_dict.items()
             if callable(attr) and name.startswith(prefix)
             }
         return method_dict

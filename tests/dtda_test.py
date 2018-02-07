@@ -10,7 +10,7 @@ def test_mutation_statistics():
     d = DTDA()
     mutation_dict = \
         d.get_mutation_statistics('pancreatic carcinoma', 'missense')
-    assert(mutation_dict['KRAS'] > 0)
+    assert(mutation_dict['KRAS'][0] > 0)
 
 
 def test_get_disease():

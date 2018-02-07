@@ -1,1 +1,1 @@
-from bionlg_module import BioNLG_Module
+from .bionlg_module import BioNLG_Module

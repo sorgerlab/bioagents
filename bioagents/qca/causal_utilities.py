@@ -109,7 +109,7 @@ def k_shortest_paths_multi(G, source_names, target_names, npaths=20):
                     all_shortest_paths.append(path)
 
             except Exception as inst:
-                print "exception in shortest paths: " + str(inst)
+                print("exception in shortest paths: " + str(inst))
 
     return all_shortest_paths
 
@@ -188,7 +188,7 @@ def get_source_target_network(reference_network, source_names, target_names,
         target_ids
         )
     P1.set_name(new_network_name)
-    print "Created " + P1.get_name()
+    print("Created " + P1.get_name())
     forward1.sort(key=lambda s: len(s))
     reverse1.sort(key=lambda s: len(s))
     return {'forward': forward1[:npaths], 'reverse': reverse1[:npaths],
@@ -227,7 +227,7 @@ def get_source_target_network_new(network, source_names, target_names,
     for node_id in overlap_node_id_list:
         network.set_node_attribute(node_id, "st_layout", "Both")
 
-    print "computed node and edge sets"
+    print("computed node and edge sets")
 
     source_ids = get_node_ids_by_names(network, source_names)
     for node_id in source_ids:
@@ -239,7 +239,7 @@ def get_source_target_network_new(network, source_names, target_names,
     reduce_network_by_ids(network, node_id_set, edge_id_set)
 
     network.set_name(new_network_name)
-    print "path network ready "
+    print("path network ready ")
 
     forward.sort(key=lambda s: len(s))
     reverse.sort(key=lambda s: len(s))
@@ -265,7 +265,7 @@ def reduce_network_by_ids(g, node_id_set, edge_id_set):
     for node_id in node_ids_to_remove:
         g.remove_node(node_id)
 
-    print "removal done"
+    print("removal done")
 
 
 def path_element_lists(g, paths):

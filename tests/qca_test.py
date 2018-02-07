@@ -142,7 +142,7 @@ def test_scratch():
     A_all_scores = []
 
     for i, edge in enumerate(edge_results):
-        print len(edge)
+        print(len(edge))
         top_edge = None
         for ranked_edges in path_scoring.cx_edges_to_tuples(edge, "A"):
             if top_edge is None:

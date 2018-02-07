@@ -141,7 +141,7 @@ class QCA:
                         if len(results_list) > 0 and exit_on_found_path:
                             return results_list
                 except ValueError as ve:
-                    print "value is not json.  html 500?"
+                    print("value is not json.  html 500?")
 
         path_scoring = PathScoring()
 
@@ -312,8 +312,8 @@ class PathScoring():
                 else:
                     b_team_totals += k
 
-        #print a_team_totals
-        #print b_team_totals
+        #print(a_team_totals)
+        #print(b_team_totals)
 
         if a_team_totals > b_team_totals:
             return 1
@@ -492,7 +492,7 @@ class EdgeRanking(object):
 
     def print_edge_types(self):
         for et in self.edge_types:
-            print et
+            print(et)
 
 
 #==================================

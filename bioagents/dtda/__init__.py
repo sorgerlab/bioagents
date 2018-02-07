@@ -1,2 +1,2 @@
-from dtda import DTDA
-from dtda_module import DTDA_Module
+from .dtda import DTDA
+from .dtda_module import DTDA_Module

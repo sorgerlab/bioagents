@@ -1,4 +1,4 @@
-from ltl_nodes import build_tree
+from .ltl_nodes import build_tree
 
 
 class ModelChecker(object):

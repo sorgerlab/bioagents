@@ -18,7 +18,7 @@ from indra.assemblers import english_assembler
 from pysb import Observable
 from pysb.integrate import Solver
 from pysb.export.kappa import KappaExporter
-import model_checker as mc
+import bioagents.tra.model_checker as mc
 import matplotlib
 from bioagents import BioagentException
 from bioagents.tra.kappa_client import KappaRuntimeError
@@ -416,7 +416,7 @@ def get_sim_result(kappa_plot):
     tspan = []
     for i, value in enumerate(values):
         tspan.append(value[i_t])
-        for j, obs in obs_dict.iteritems():
+        for j, obs in obs_dict.items():
             yobs[obs][i] = value[j]
     return (tspan, yobs)
 

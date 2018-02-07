@@ -12,7 +12,7 @@ from indra.preassembler.hierarchy_manager import hierarchies
 
 from kqml import KQMLPerformative, KQMLList, KQMLString
 from bioagents import Bioagent, BioagentException
-from mra import MRA
+from .mra import MRA
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',

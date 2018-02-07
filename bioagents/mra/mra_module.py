@@ -375,7 +375,8 @@ def get_ambiguities_msg(ambiguities):
             (pr_type, pr_dbids, pr['name'])
         alt = ambiguity[0]['alternative']
         alt_dbids = '|'.join(['::'.join((k, v)) for
-                              k, v in alt['refs'].items()])
+                              k, v in sorted(alt['refs'].items(),
+                                             key=lambda x: x[0])])
         # TODO: once available, replace with real ont type
         alt_type = 'ONT::PROTEIN-FAMILY'
         s2 = '(term :ont-type %s :ids "%s" :name "%s")' % \

@@ -391,7 +391,7 @@ def get_create_observable(model, agent):
         msg = 'Site pattern %s invalid for monomer %s' % \
             (site_pattern, monomer.name)
         raise MissingMonomerSiteError(msg)
-    obs = Observable(obs_name.encode('utf-8'), monomer(site_pattern))
+    obs = Observable(obs_name, monomer(site_pattern))
     model.add_component(obs)
     return obs
 

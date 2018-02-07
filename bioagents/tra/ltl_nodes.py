@@ -14,7 +14,7 @@ def build_tree(formula_str, time_lim=None):
     str_r = fstr
     str_l = None
     while True:
-        parts = re.split('|', fstr)
+        parts = re.split('\|', fstr)
         if len(parts) == 1:
             break
         str_l, str_r = parts[0], '|'.join(parts[1:])

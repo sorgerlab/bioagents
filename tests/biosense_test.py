@@ -1,6 +1,6 @@
 import unittest
 from kqml import KQMLList
-from util import ekb_from_text
+from .util import ekb_from_text
 from bioagents.biosense.biosense_module import BioSense_Module
 
 mek1_ekb = ekb_from_text('MAP2K1')

@@ -3,7 +3,7 @@ cache:
   directories:
       - $HOME/.cache/pip
 python:
-  - "2.7"
+  - "3.5"
 addons:
     apt:
         sources:
@@ -18,7 +18,7 @@ install:
   - export BNGPATH=`pwd`/BioNetGen-2.2.6-stable
   - pip install git+https://github.com/pysb/pysb.git
   # PyKQML
-  - pip install git+https://github.com/bgyori/pykqml.git
+  - pip install git+https://github.com/bgyori/pykqml.git@py3
   # INDRA
   - pip install git+https://github.com/sorgerlab/indra.git
   # Dependencies of Bioagents not covered by previous installs
@@ -52,4 +52,4 @@ script:
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
   # Run standard unit tests
   - cd $TRAVIS_BUILD_DIR
-  - nosetests tests -v --with-coverage --cover-inclusive --cover-package=bioagents
+  - nosetests tests -s -v --with-coverage --cover-inclusive --cover-package=bioagents

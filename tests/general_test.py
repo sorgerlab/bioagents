@@ -18,9 +18,8 @@ def test_make_evidence_html1():
                             evidence=[ev1, ev2, ev3, ev4])
     ev_html = make_evidence_html([stmt], 'proof for a conclusion')
     assert 'Some evidence' in ev_html, ev_html
-    assert 'Entry in \'biopax\'' in ev_html, ev_html
-    assert 'Entry in \'bel\'' in ev_html, ev_html
-    assert 'Database entry' in ev_html, ev_html
+    assert 'Database entry in \'biopax\'' in ev_html, ev_html
+    assert 'Database entry in \'bel\'' in ev_html, ev_html
 
 
 class TestErrorHandling(_IntegrationTest):

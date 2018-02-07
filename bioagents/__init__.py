@@ -134,7 +134,7 @@ def make_evidence_html(stmt_list, for_what, limit=5):
         # Otherwise turn it into English
         else:
             txt = EnglishAssembler([stmt]).make_model()
-            entry = "Entry in '%s' representing: %s" % \
+            entry = "Database entry in '%s' representing: %s" % \
                 (ev.source_api, txt)
         return entry
 
@@ -156,6 +156,6 @@ def make_evidence_html(stmt_list, for_what, limit=5):
                                                      pmid=ev.pmid))
         entries.append(entry)
 
-    entries_list = ['<li>%s</li>' % entry.encode('utf-8') for entry in entries]
+    entries_list = ['<li>%s</li>' % entry for entry in entries]
     evidence_html = '<ul>%s</ul>' % ('\n'.join(entries_list))
     return evidence_html

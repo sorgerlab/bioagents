@@ -1,6 +1,6 @@
 from kqml import KQMLList
-from bioagents.dtda import DTDA
-from bioagents.dtda import DTDA_Module
+from bioagents.dtda.dtda import DTDA
+from bioagents.dtda.dtda_module import DTDA_Module
 from tests.util import ekb_from_text, ekb_kstring_from_text, get_request
 from tests.integration import _IntegrationTest
 

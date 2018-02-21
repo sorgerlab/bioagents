@@ -1,6 +1,6 @@
 from kqml import KQMLList
-from bioagents.dtda import DTDA
-from bioagents.dtda import DTDA_Module
+from bioagents.dtda.dtda import DTDA
+from bioagents.dtda.dtda_module import DTDA_Module
 from tests.util import ekb_from_text, ekb_kstring_from_text, get_request
 from tests.integration import _IntegrationTest
 
@@ -10,7 +10,7 @@ def test_mutation_statistics():
     d = DTDA()
     mutation_dict = \
         d.get_mutation_statistics('pancreatic carcinoma', 'missense')
-    assert(mutation_dict['KRAS'] > 0)
+    assert(mutation_dict['KRAS'][0] > 0)
 
 
 def test_get_disease():

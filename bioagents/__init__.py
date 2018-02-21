@@ -25,7 +25,7 @@ class Bioagent(KQMLModule):
 
         self.ready()
         self.start()
-        logger.info("%s is has started and ready." % self.name)
+        logger.info("%s has started and is ready." % self.name)
         return
 
     def receive_request(self, msg, content):
@@ -116,23 +116,15 @@ class Bioagent(KQMLModule):
                                         bioagent=self.name))
         return self.tell(content)
 
+
 def make_evidence_html(stmt_list, for_what, limit=5):
     """Creates HTML content for evidences corresponding to INDRA Statements."""
     # Create some formats
     url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'
     pmid_link_fmt = '<a href={url}{pmid} target="_blank">PMID{pmid}</a>'
-    # Extract a list of the evidence then map pmids to lists of text
-    evidence_list = [ev for stmt in stmt_list for ev in stmt.evidence]
-    evidence_with_text = [ev for ev in evidence_list if ev.text]
-    evidence_from_db = [ev for ev in evidence_list if not ev.text
-                        and ev.source_id]
-    evidence_no_ids = [ev for ev in evidence_list if (ev not in
-                       evidence_with_text) and (ev not in evidence_from_db)]
-    evidence_list = evidence_with_text + evidence_from_db + evidence_no_ids
-    entries = []
-    for i, ev in enumerate(evidence_list):
-        if limit and i >= limit:
-            break
+
+    def get_ev_desc(ev, stmt):
+        "Get a description of the evidence."
         if ev.text:
             entry = "<i>'%s'</i>" % ev.text
         # If the entry at least has a source ID in a database
@@ -142,13 +134,28 @@ def make_evidence_html(stmt_list, for_what, limit=5):
         # Otherwise turn it into English
         else:
             txt = EnglishAssembler([stmt]).make_model()
-            entry = "Entry in '%s' representing: %s" % \
+            entry = "Database entry in '%s' representing: %s" % \
                 (ev.source_api, txt)
+        return entry
+
+    # Extract a list of the evidence then map pmids to lists of text
+    evidence_list = [(ev, get_ev_desc(ev, stmt)) for stmt in stmt_list
+                     for ev in stmt.evidence]
+    evidence_with_text = [(ev, txt) for ev, txt in evidence_list if ev.text]
+    evidence_from_db = [(ev, txt) for ev, txt in evidence_list if not ev.text
+                        and ev.source_id]
+    evidence_no_ids = [(ev, txt) for ev, txt in evidence_list if (ev not in
+                       evidence_with_text) and (ev not in evidence_from_db)]
+    evidence_list = evidence_with_text + evidence_from_db + evidence_no_ids
+    entries = []
+    for i, (ev, entry) in enumerate(evidence_list):
+        if limit and i >= limit:
+            break
         if ev.pmid:
             entry += ' (%s)' % (pmid_link_fmt.format(url=url_base,
                                                      pmid=ev.pmid))
         entries.append(entry)
 
-    entries_list = ['<li>%s</li>' % entry.encode('utf-8') for entry in entries]
+    entries_list = ['<li>%s</li>' % entry for entry in entries]
     evidence_html = '<ul>%s</ul>' % ('\n'.join(entries_list))
     return evidence_html

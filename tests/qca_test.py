@@ -5,8 +5,8 @@ from tests.util import ekb_kstring_from_text, ekb_from_text, get_request
 from tests.integration import _IntegrationTest
 from indra.statements import stmts_from_json, Gef
 from kqml import KQMLList
-from bioagents.qca import QCA, QCA_Module
-from bioagents.qca.qca import PathScoring
+from bioagents.qca.qca_module import QCA_Module
+from bioagents.qca.qca import QCA, PathScoring
 
 
 def _get_qca_content(task, source, target):
@@ -134,7 +134,7 @@ def test_scratch():
         )
 
     r = requests.post(url)
-    result_json = json.loads(r.content)
+    result_json = json.loads(r.text)
 
     edge_results = result_json.get("data").get("forward_english")
     path_scoring = PathScoring()
@@ -142,7 +142,7 @@ def test_scratch():
     A_all_scores = []
 
     for i, edge in enumerate(edge_results):
-        print len(edge)
+        print(len(edge))
         top_edge = None
         for ranked_edges in path_scoring.cx_edges_to_tuples(edge, "A"):
             if top_edge is None:

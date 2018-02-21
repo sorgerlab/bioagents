@@ -172,7 +172,7 @@ def get_members(agent):
         return None
     eh = hierarchies['entity']
     uri = eh.get_uri(dbname, dbid)
-    children_uris = eh.get_children(uri)
+    children_uris = sorted(eh.get_children(uri))
     children_agents = [expand_families._agent_from_uri(uri)
                        for uri in children_uris]
     return children_agents

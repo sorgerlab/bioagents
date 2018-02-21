@@ -46,7 +46,7 @@ class DTDA(object):
     def __init__(self):
         # Build an initial set of substitution statements
         bel_corpus = _resource_dir + 'large_corpus_direct_subs.pkl'
-        with open(bel_corpus, 'r') as fh:
+        with open(bel_corpus, 'rb') as fh:
             self.sub_statements = pickle.load(fh)
         logger.info('Loaded %d mutation effect statements' %
                     len(self.sub_statements))
@@ -178,9 +178,9 @@ class DTDA(object):
                     effect_dict[mutation_effect_key] += 1.0
                     mutation_dict[g] = [1.0, effect_dict]
         # Normalize entries
-        for k, v in mutation_dict.iteritems():
+        for k, v in mutation_dict.items():
             mutation_dict[k][0] /= num_case
-            effect_sum = numpy.sum(v[1].values())
+            effect_sum = numpy.sum(list(v[1].values()))
             mutation_dict[k][1]['activate'] /= effect_sum
             mutation_dict[k][1]['deactivate'] /= effect_sum
             mutation_dict[k][1]['other'] /= effect_sum
@@ -201,7 +201,7 @@ class DTDA(object):
 
         # Return the top mutation as a possible target
         mutations_sorted = sorted(mutation_stats.items(),
-                                  key=operator.itemgetter(1),
+                                  key=lambda x: x[1][0],
                                   reverse=True)
         top_mutation = mutations_sorted[0]
         mut_protein = top_mutation[0]

@@ -5,6 +5,10 @@ from time import sleep
 from bioagents.tra import kappa_client
 from threading import Thread
 
+from unittest import SkipTest
+raise SkipTest('Kappa client currently not working, will '
+               'be replaced by kappy')
+
 
 TEST_MODEL_FILE = os.path.join(os.path.dirname(__file__), 'test_model.ka')
 

@@ -12,7 +12,7 @@ from indra.preassembler.hierarchy_manager import hierarchies
 
 from kqml import KQMLPerformative, KQMLList, KQMLString
 from bioagents import Bioagent, BioagentException
-from mra import MRA
+from .mra import MRA
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -367,14 +367,16 @@ def get_ambiguities_msg(ambiguities):
     for term_id, ambiguity in ambiguities.items():
         pr = ambiguity[0]['preferred']
         pr_dbids = '|'.join(['::'.join((k, v)) for
-                             k, v in pr['refs'].items()])
+                             k, v in sorted(pr['refs'].items(),
+                                            key=lambda x: x[0])])
         # TODO: once available, replace with real ont type
         pr_type = 'ONT::PROTEIN'
         s1 = '(term :ont-type %s :ids "%s" :name "%s")' % \
             (pr_type, pr_dbids, pr['name'])
         alt = ambiguity[0]['alternative']
         alt_dbids = '|'.join(['::'.join((k, v)) for
-                              k, v in alt['refs'].items()])
+                              k, v in sorted(alt['refs'].items(),
+                                             key=lambda x: x[0])])
         # TODO: once available, replace with real ont type
         alt_type = 'ONT::PROTEIN-FAMILY'
         s2 = '(term :ont-type %s :ids "%s" :name "%s")' % \

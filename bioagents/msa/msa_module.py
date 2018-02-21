@@ -20,7 +20,7 @@ def _read_signor_afs():
         stmts = pickle.load(pkl_file)
     if isinstance(stmts, dict):
         signor_afs = []
-        for _, stmt_list in stmts.iteritems():
+        for _, stmt_list in stmts.items():
             signor_afs += stmt_list
     else:
         signor_afs = stmts

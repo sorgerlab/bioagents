@@ -1,6 +1,6 @@
 import unittest
 from kqml import KQMLList
-from util import ekb_from_text
+from .util import ekb_from_text
 from bioagents.biosense.biosense_module import BioSense_Module
 
 mek1_ekb = ekb_from_text('MAP2K1')
@@ -76,6 +76,6 @@ def test_choose_sense_what_member():
     assert(len(res.get('members')) == 2)
     m1 = res.get('members')[0]
     m2 = res.get('members')[1]
-    assert(m1.gets('name') == 'MAP2K1')
-    assert(m2.gets('name') == 'MAP2K2')
+    assert m1.gets('name') == 'MAP2K1', m1.gets('name')
+    assert m2.gets('name') == 'MAP2K2', m2.gets('name')
 

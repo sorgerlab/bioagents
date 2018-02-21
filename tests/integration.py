@@ -56,7 +56,7 @@ class _IntegrationTest(TestCase):
 
     Methods:
     -------
-    _get_messages: creates a generator that iterates over the message methods 
+    _get_messages: creates a generator that iterates over the message methods
         given by message_funcs, or else all methods with the `create_` prefix.
     run_test: runs the test.
 
@@ -66,8 +66,8 @@ class _IntegrationTest(TestCase):
         a kqml msg and content to be input into the receive_request function of
         a bioagent.
     check_response_to_<message_func_name>: These functions contain asserts, and
-        any other similar means of checking the result of the corresponding call
-        to the bioagent, as per usual nosetest procedures.
+        any other similar means of checking the result of the corresponding
+        call to the bioagent, as per usual nosetest procedures.
 
     Example:
     -------
@@ -124,18 +124,19 @@ class _IntegrationTest(TestCase):
         # priority over like-named parent method.
         full_dict = {}
         current_class = self.__class__
-        while issubclass(current_class, _IntegrationTest) and current_class is not _IntegrationTest:
+        while issubclass(current_class, _IntegrationTest) and \
+                current_class is not _IntegrationTest:
             full_dict = dict([
                 (name, attr)
-                for name, attr in current_class.__dict__.iteritems()
+                for name, attr in current_class.__dict__.items()
                 if not name.startswith('__')
-                ] + full_dict.items())
+                ] + list(full_dict.items()))
             current_class = current_class.__base__
 
         # Create the method dict.
         method_dict = {
             name[len(prefix):]: attr
-            for name, attr in full_dict.iteritems()
+            for name, attr in full_dict.items()
             if callable(attr) and name.startswith(prefix)
             }
         return method_dict
@@ -146,8 +147,8 @@ class _IntegrationTest(TestCase):
         Yields:
         ------
         request_args: (tuple) arguements to be passed to `receive_request`.
-        check_func: (callable) a function used to check the result of a request,
-            or else None, if no such check is to be made.
+        check_func: (callable) a function used to check the result of a
+            request, or else None, if no such check is to be made.
         """
         send_dict = self._get_method_dict('create_')
         check_dict = self._get_method_dict('check_response_to_')
@@ -163,9 +164,9 @@ class _IntegrationTest(TestCase):
     def get_output_log(self, start_line=0, end_line=None):
         """Get the messages sent by the bioagent."""
         buff = self.bioagent.out
-        cur_pos = buff.pos
+        cur_pos = buff.tell()
         buff.seek(0)
-        out_lines = [line.strip() for line in buff.readlines()]
+        out_lines = [line.strip().decode('utf-8') for line in buff.readlines()]
         buff.seek(cur_pos)
         if end_line is None:
             end_line = len(out_lines)

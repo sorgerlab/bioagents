@@ -4,8 +4,8 @@ from kqml import KQMLList, KQMLPerformative
 import indra.statements as sts
 from tests.util import ekb_from_text, ekb_kstring_from_text, get_request
 from tests.integration import _IntegrationTest, _FailureTest
-from bioagents.mra import MRA, MRA_Module
-from bioagents.mra.mra_module import ekb_from_agent, get_target, \
+from bioagents.mra.mra import MRA
+from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
     _get_matching_stmts
 
 # ################

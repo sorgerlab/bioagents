@@ -4,7 +4,7 @@
 import os
 import logging
 import json
-import ndex.client as nc
+import ndex2.client as nc
 import requests
 import io
 import functools
@@ -91,7 +91,7 @@ class QCA:
         self.queries = []
 
         try:
-            self.ndex = nc.Ndex(host=self.host)
+            self.ndex = nc.Ndex2(host=self.host)
         except Exception as e:
             logger.error('QCA could not connect to %s' % self.host)
             logger.error(e)

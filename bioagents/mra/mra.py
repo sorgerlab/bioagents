@@ -8,6 +8,7 @@ import copy
 import json
 import logging
 import subprocess
+import kappy
 from indra.sources import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
                             AddModification, stmts_from_json
@@ -17,7 +18,7 @@ from indra.assemblers import pysb_assembler, PysbAssembler
 from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 from pysb.export import export
-from indra.kappa_util import im_json_to_graph, cm_json_to_graph
+from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
 
 
 logger = logging.getLogger('MRA')
@@ -249,9 +250,9 @@ def get_ambiguities(tp):
 
 def make_diagrams(pysb_model, model_id):
     sbgn = make_sbgn(pysb_model, model_id)
-    rxn = make_reaction_network(pysb_model, model_id)
-    cm = make_contact_map(pysb_model, model_id)
-    im = make_influence_map(pysb_model, model_id)
+    rxn = draw_reaction_network(pysb_model, model_id)
+    cm = draw_contact_map(pysb_model, model_id)
+    im = draw_influence_map(pysb_model, model_id)
     diagrams = {'reactionnetwork': rxn, 'contactmap': cm,
                 'influencemap': im, 'sbgn': sbgn}
     return diagrams
@@ -270,20 +271,10 @@ def make_sbgn(pysb_model, model_id):
     return sbgn_str
 
 
-def make_influence_map(pysb_model, model_id):
-    """Generate a Kappa influence map."""
+def draw_influence_map(pysb_model, model_id):
+    """Generate a Kappa influence map, draw it and save it as a PNG."""
     try:
-        kappa = KappaStd()
-        model_str = export(pysb_model, 'kappa')
-        kappa.add_model_string(model_str)
-        kappa.project_parse()
-        imap = kappa.analyses_influence_map(pysb_model)
-        im = im_json_to_graph(imap)
-        for param in pysb_model.parameters:
-            try:
-                im.remove_node(param.name)
-            except:
-                pass
+        im = make_influence_map(pysb_model)
         fname = 'model%d_im' % model_id
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
@@ -295,15 +286,25 @@ def make_influence_map(pysb_model, model_id):
     return full_path
 
 
-def make_contact_map(pysb_model, model_id):
-    """Generate a Kappa contact map."""
+def make_influence_map(pysb_model):
+    """Return a Kappa influence map."""
+    kappa = kappy.KappaStd()
+    model_str = export(pysb_model, 'kappa')
+    kappa.add_model_string(model_str)
+    kappa.project_parse()
+    imap = kappa.analyses_influence_map(pysb_model)
+    im = im_json_to_graph(imap)
+    for param in pysb_model.parameters:
+        try:
+            im.remove_node(param.name)
+        except:
+            pass
+    return im
+
+
+def draw_contact_map(pysb_model, model_id):
     try:
-        kappa = KappaStd()
-        model_str = export(pysb_model, 'kappa')
-        kappa.add_model_string(model_str)
-        kappa.project_parse()
-        cmap = kappa.analyses_contact_map(pysb_model)
-        cm = cm_json_to_graph(cmap)
+        cm = make_contact_map(pysb_model)
         fname = 'model%d_cm' % model_id
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
@@ -315,7 +316,18 @@ def make_contact_map(pysb_model, model_id):
     return full_path
 
 
-def make_reaction_network(pysb_model, model_id):
+def make_contact_map(pysb_model):
+    """Return a Kappa contact map."""
+    kappa = kappy.KappaStd()
+    model_str = export(pysb_model, 'kappa')
+    kappa.add_model_string(model_str)
+    kappa.project_parse()
+    cmap = kappa.analyses_contact_map(pysb_model)
+    cm = cm_json_to_graph(cmap)
+    return cm
+
+
+def draw_reaction_network(pysb_model, model_id):
     """Generate a PySB/BNG reaction network as a PNG file."""
     try:
         for m in pysb_model.monomers:

@@ -20,10 +20,10 @@ install:
   # PyKQML
   - pip install git+https://github.com/bgyori/pykqml.git
   # INDRA
-  - pip install git+https://github.com/sorgerlab/indra.git
+  - pip install git+https://github.com/sorgerlab/indra.git@kappy_integ
   # Dependencies of Bioagents not covered by previous installs
   - sudo apt-get install graphviz
-  - pip install pygraphviz ndex
+  - pip install pygraphviz ndex2
   - wget -nv "http://sorger.med.harvard.edu/data/bgyori/bioagents/drug_targets.db" -O bioagents/resources/drug_targets.db
   ##########
   # Kappa

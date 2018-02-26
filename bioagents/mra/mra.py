@@ -298,12 +298,19 @@ def make_influence_map(pysb_model, model_id):
 def make_contact_map(pysb_model, model_id):
     """Generate a Kappa contact map."""
     try:
-        cm = kappa.contact_map(pysb_model)
+        kappa = KappaStd()
+        model_str = export(pysb_model, 'kappa')
+        kappa.add_model_string(model_str)
+        kappa.project_parse()
+        cmap = kappa.analyses_contact_map(pysb_model)
+        cm = cm_json_to_graph(cmap)
         fname = 'model%d_cm' % model_id
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
         cm.draw(full_path, prog='dot')
-    except Exception:
+    except Exception as e:
+        logger.exception('Could not draw contact map for model.')
+        logger.exception(e)
         return None
     return full_path
 

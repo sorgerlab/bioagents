@@ -17,8 +17,7 @@ from indra.assemblers import pysb_assembler, PysbAssembler
 from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 from pysb.export import export
-from kappy import KappaStd
-from indra.util import kappy_json_to_graph
+from indra.kappa_util import im_json_to_graph, cm_json_to_graph
 
 
 logger = logging.getLogger('MRA')
@@ -279,7 +278,7 @@ def make_influence_map(pysb_model, model_id):
         kappa.add_model_string(model_str)
         kappa.project_parse()
         imap = kappa.analyses_influence_map(pysb_model)
-        im = kappy_json_to_graph(imap)
+        im = im_json_to_graph(imap)
         for param in pysb_model.parameters:
             try:
                 im.remove_node(param.name)
@@ -289,7 +288,9 @@ def make_influence_map(pysb_model, model_id):
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
         im.draw(full_path, prog='dot')
-    except Exception:
+    except Exception as e:
+        logger.exception('Could not draw influence map for model.')
+        logger.exception(e)
         return None
     return full_path
 

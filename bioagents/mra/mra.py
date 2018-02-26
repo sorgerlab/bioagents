@@ -7,6 +7,7 @@ import os
 import copy
 import json
 import logging
+import networkx
 import subprocess
 import kappy
 from indra.sources import trips
@@ -278,7 +279,8 @@ def draw_influence_map(pysb_model, model_id):
         fname = 'model%d_im' % model_id
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
-        im.draw(full_path, prog='dot')
+        im_agraph = networkx.nx_agraph.to_agraph(im)
+        im_agraph.draw(full_path, prog='dot')
     except Exception as e:
         logger.exception('Could not draw influence map for model.')
         logger.exception(e)

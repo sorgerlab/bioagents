@@ -98,6 +98,8 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 self.send_display_model(diagrams)
+        # Analyze the model for issues
+        # Report ambiguities
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
@@ -146,6 +148,9 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 self.send_display_model(diagrams)
+        # Analyze the model for issues
+
+        # Report ambiguities
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)

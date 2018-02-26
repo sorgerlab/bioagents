@@ -1,6 +1,5 @@
 """Web API client for a Kappa simulator."""
 
-import re
 import kappy
 from logging import getLogger, DEBUG
 
@@ -8,22 +7,6 @@ logger = getLogger('kappa_client')
 
 
 KAPPA_URL = 'https://api.executableknowledge.org/kappa'
-
-
-class KappaRuntimeError(Exception):
-    def __init__(self, resp):
-        self.error = resp.reason
-        self.text = re.findall(
-            'u?[\"\']text[\"\']: ?u?[\"\'](.*?)[\"\'],',
-            resp.content
-            )
-        return
-
-    def __str__(self):
-        msg = "Kappa failed with error: %s." % self.error
-        if self.text:
-            msg += "\nThe following text was found: %s." % ', '.join(self.text)
-        return msg
 
 
 class KappaRuntime(object):

@@ -292,7 +292,7 @@ def make_influence_map(pysb_model):
     model_str = export(pysb_model, 'kappa')
     kappa.add_model_string(model_str)
     kappa.project_parse()
-    imap = kappa.analyses_influence_map(pysb_model)
+    imap = kappa.analyses_influence_map()
     im = im_json_to_graph(imap)
     for param in pysb_model.parameters:
         try:
@@ -322,7 +322,7 @@ def make_contact_map(pysb_model):
     model_str = export(pysb_model, 'kappa')
     kappa.add_model_string(model_str)
     kappa.project_parse()
-    cmap = kappa.analyses_contact_map(pysb_model)
+    cmap = kappa.analyses_contact_map()
     cm = cm_json_to_graph(cmap)
     return cm
 

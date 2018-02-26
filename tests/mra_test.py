@@ -5,7 +5,7 @@ from kqml.kqml_performative import KQMLPerformative
 import indra.statements as sts
 from tests.util import ekb_from_text, ekb_kstring_from_text, get_request
 from tests.integration import _IntegrationTest, _FailureTest
-from bioagents.mra.mra import MRA
+from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
     _get_matching_stmts
 
@@ -134,9 +134,20 @@ def test_make_im():
     ekb = ekb_from_text('KRAS activates BRAF. Active BRAF binds MEK.')
     res = m.build_model_from_ekb(ekb)
     pysb_model = res['model_exec']
-    im = m.make_influence_map(pysb_model)
-    assert len(list(im.nodes())) == 2
-    assert len(list(im.edges())) == 1
+    im = make_influence_map(pysb_model)
+    assert len(list(im.nodes())) == 3
+    assert len(list(im.edges())) == 3
+
+
+def test_make_cm():
+    m = MRA()
+    ekb = ekb_from_text('MEK binds MAPK1. MEK binds MAPK3.')
+    res = m.build_model_from_ekb(ekb)
+    pysb_model = res['model_exec']
+    cm = make_contact_map(pysb_model)
+    assert len(list(cm.nodes())) == 3
+    assert len(list(cm.edges())) == 2
+
 
 # #####################
 # MRA_Module unit tests

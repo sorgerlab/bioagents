@@ -7,7 +7,6 @@ from indra.statements import stmts_from_json, Activation, Inhibition, \
     ActiveForm
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra import tra
-from bioagents.tra import kappa_client
 from bioagents import Bioagent, BioagentException
 
 # This version of logging is coming from tra...
@@ -29,22 +28,10 @@ class TRA_Module(Bioagent):
                 kwargs.pop('no_kappa')
 
         # Instantiate a singleton TRA agent
-        self.ode_mode = True
-        if use_kappa:
-            try:
-                kappa = kappa_client.KappaRuntime('TRA_simulations')
-                self.ode_mode = False
-            except Exception as e:
-                logger.error('Could not instantiate TRA with Kappa service.')
-                logger.exception(e)
-        else:
+        if not use_kappa:
             logger.warning('You have chosen to not use Kappa.')
 
-        if not self.ode_mode:
-            self.tra = tra.TRA(kappa)
-        else:
-            self.tra = tra.TRA()
-
+        self.tra = tra.TRA(use_kappa)
         return super(TRA_Module, self).__init__(**kwargs)
 
     def respond_satisfies_pattern(self, content):

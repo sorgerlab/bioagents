@@ -6,11 +6,19 @@ from bioagents import Bioagent
 from indra.sources.trips.processor import TripsProcessor
 from kqml import KQMLPerformative
 import pickle
+import requests
+from indra.db.util import make_stmts_from_db_list
+from indra.statements import stmts_from_json
+import json
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA')
+
+
+INDRA_DB_API = os.environ['INDRA_DB_API']
+INDRA_DB_API_KEY = os.environ['INDRA_DB_API_KEY']
 
 
 def _read_signor_afs():
@@ -51,9 +59,13 @@ class MSA_Module(Bioagent):
         logger.debug('Found agent (target): %s.' % agent.name)
         residue = content.gets('residue')
         position = content.gets('position')
+        resp = requests.get(INDRA_DB_API + '/statements/?other=%s&type=%s' % (agent.name, 'Phosphorylation'),
+                           headers={'x-api-key': INDRA_DB_API_KEY})
+        db_stmt_json = resp.json()
+        stmts = stmts_from_json(db_stmt_json)
         related_results = [
-            s for s in self.signor_afs
-            if self._matching(s, agent, residue, position, action, polarity)
+            s for s in stmts
+            if self._matching(s, residue, position, action, polarity)
             ]
         if not len(related_results):
             return self.make_failure(
@@ -83,9 +95,7 @@ class MSA_Module(Bioagent):
         agent = tp._get_agent_by_id(term_id, None)
         return agent
 
-    def _matching(self, stmt, agent, residue, position, action, polarity):
-        if stmt.agent.name != agent.name:
-            return False
+    def _matching(self, stmt, residue, position, action, polarity):
         if stmt.is_active is not (polarity == 'activating'):
             return False
         matching_residues = any([

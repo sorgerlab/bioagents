@@ -218,14 +218,11 @@ def test_get_matching_statements():
     braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
     matching = {}
     for fplx in ['BE', 'FPLX']:
-        raf = sts.Agent('RAF', db_refs={fplx: 'RAF'})
         map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
-        mek = sts.Agent('MEK', db_refs={fplx: 'MEK'})
-        stmts = [sts.Phosphorylation(braf, mek), sts.Phosphorylation(raf, map2k1)]
         stmt_ref = sts.Phosphorylation(braf, map2k1)
-        matching[fplx] = _get_matching_stmts(stmts, stmt_ref)
+        matching[fplx] = _get_matching_stmts(stmt_ref)
     assert any([len(matching[fplx]) == 2 for fplx in ['BE', 'FPLX']]),\
-        "Expected 2 matching for at least one name, got matching: %s" % (matching)
+        "Expected 2 matching for at least one name, got matching: %s" % matching
 
 
 # #####################

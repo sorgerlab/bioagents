@@ -1,3 +1,4 @@
+from bioagents.tra import kappa_client
 __all__ = ['TRA', 'get_ltl_from_pattern', 'apply_condition',
            'get_create_observable', 'pysb_to_kappa', 'get_sim_result',
            'get_all_patterns', 'TemporalPattern', 'TimeInterval',
@@ -21,7 +22,6 @@ from pysb.export.kappa import KappaExporter
 import bioagents.tra.model_checker as mc
 import matplotlib
 from bioagents import BioagentException
-from bioagents.tra.kappa_client import KappaRuntimeError
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -30,18 +30,19 @@ logger = logging.getLogger('TRA')
 
 
 class TRA(object):
-    def __init__(self, kappa=None):
-        if kappa is None:
+    def __init__(self, use_kappa=True, use_kappa_rest=False):
+        kappa_mode_label = 'rest' if use_kappa_rest else 'standard'
+        if not use_kappa:
             self.ode_mode = True
             logger.info('Using ODE mode in TRA.')
         else:
             self.ode_mode = False
-            self.kappa = kappa
             try:
-                kappa_ver = kappa.version()
-                logger.info('Using kappa build %s' % kappa_ver)
-            except KappaRuntimeError as e:
-                logger.error('Could not get Kappa version.')
+                self.kappa = kappa_client.KappaRuntime('TRA_simulations',
+                                                       use_rest=use_kappa_rest)
+                logger.info('Using kappa %s.' % kappa_mode_label)
+            except Exception as e:
+                logger.error('Could not use kappa %s.' % kappa_mode_label)
                 logger.exception(e)
                 self.ode_mode = True
         return

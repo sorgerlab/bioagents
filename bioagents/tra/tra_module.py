@@ -7,7 +7,6 @@ from indra.statements import stmts_from_json, Activation, Inhibition, \
     ActiveForm
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra import tra
-from bioagents.tra import kappa_client
 from bioagents import Bioagent, BioagentException
 
 # This version of logging is coming from tra...
@@ -16,35 +15,30 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('TRA')
 
 
+def get_bool_arg(arg_name, kwargs, default=True):
+    "Get the boolean value of an argument from either argv or kwarg."
+    ret = default
+    if (('argv' in kwargs.keys() and ('--%s' % arg_name) in kwargs['argv'])
+       or (arg_name in kwargs.keys() and kwargs[arg_name] is not default)):
+        ret = not default
+        if arg_name in kwargs.keys():
+            kwargs.pop(arg_name)
+    return ret
+
+
 class TRA_Module(Bioagent):
     name = "TRA"
     tasks = ['SATISFIES-PATTERN', 'MODEL-COMPARE-CONDITIONS']
 
     def __init__(self, **kwargs):
-        use_kappa = True
-        if (('argv' in kwargs.keys() and '--no_kappa' in kwargs['argv'])
-           or ('no_kappa' in kwargs.keys() and kwargs['no_kappa'])):
-            use_kappa = False
-            if 'no_kappa' in kwargs.keys():
-                kwargs.pop('no_kappa')
+        use_kappa = get_bool_arg('use_kappa', kwargs, default=True)
+        use_kappa_rest = get_bool_arg('use_kappa_rest', kwargs, default=False)
 
         # Instantiate a singleton TRA agent
-        self.ode_mode = True
-        if use_kappa:
-            try:
-                kappa = kappa_client.KappaRuntime('TRA_simulations')
-                self.ode_mode = False
-            except Exception as e:
-                logger.error('Could not instantiate TRA with Kappa service.')
-                logger.exception(e)
-        else:
+        if not use_kappa:
             logger.warning('You have chosen to not use Kappa.')
 
-        if not self.ode_mode:
-            self.tra = tra.TRA(kappa)
-        else:
-            self.tra = tra.TRA()
-
+        self.tra = tra.TRA(use_kappa, use_kappa_rest)
         return super(TRA_Module, self).__init__(**kwargs)
 
     def respond_satisfies_pattern(self, content):

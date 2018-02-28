@@ -4,10 +4,6 @@ cache:
       - $HOME/.cache/pip
 python:
   - "3.5"
-addons:
-    apt:
-        sources:
-            - avsm
 before_install:
   - sudo apt-get update
 install:
@@ -23,24 +19,8 @@ install:
   - pip install git+https://github.com/sorgerlab/indra.git
   # Dependencies of Bioagents not covered by previous installs
   - sudo apt-get install graphviz
-  - pip install pygraphviz ndex
+  - pip install pygraphviz ndex2
   - wget -nv "http://sorger.med.harvard.edu/data/bgyori/bioagents/drug_targets.db" -O bioagents/resources/drug_targets.db
-  ##########
-  # Kappa
-  # First install ocamlfind via opam (needed to build KaSim/KaSa)
-  #- sudo apt-get install -y ocaml-nox opam aspcud
-  #- opam init -a git://github.com/ocaml/opam-repository && eval $(opam config env)
-  #- opam install -y conf-which base-bytes
-  #- opam install -y ocamlbuild yojson
-  # Install KaSim/KaSa
-  #- git clone https://github.com/Kappa-Dev/KaSim.git
-  #- cd KaSim
-  # KaSim as of 5/1/2017
-  #- git checkout 0733210
-  #- make all
-  #- export KAPPAPATH=`pwd`
-  #- cd ../
-  ############
   # Install utilities for running tests
   - pip install coverage
 before_script:

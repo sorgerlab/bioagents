@@ -19,7 +19,7 @@ def get_bool_arg(arg_name, kwargs, default=True):
     "Get the boolean value of an argument from either argv or kwarg."
     ret = default
     if (('argv' in kwargs.keys() and ('--%s' % arg_name) in kwargs['argv'])
-       or (arg_name in kwargs.keys() and kwargs[arg_name])):
+       or (arg_name in kwargs.keys() and kwargs[arg_name] is not default)):
         ret = not default
         if arg_name in kwargs.keys():
             kwargs.pop(arg_name)

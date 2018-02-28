@@ -453,13 +453,13 @@ class TraTestModel1_NoKappa(_TraTestModel1):
     """Test that the tra can run a model without using Kappa"""
     def __init__(self, *args):
         super(TraTestModel1_NoKappa, self).__init__(tra_module.TRA_Module,
-                                                    no_kappa=True)
+                                                    use_kappa=False)
 
 
 class TraTestModel2(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel2, self).__init__(tra_module.TRA_Module, no_kappa=True)
+        super(TraTestModel2, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
         model = stmts_kstring_from_text('MEK binds ERK')
@@ -490,7 +490,7 @@ class TraTestModel2(_IntegrationTest):
 class TraTestModel3(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel3, self).__init__(tra_module.TRA_Module, no_kappa=True)
+        super(TraTestModel3, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
         model = stmts_kstring_from_text('MEK phosphorylates ERK')
@@ -520,7 +520,7 @@ class TraTestModel3(_IntegrationTest):
 class TraTestModel4(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel4, self).__init__(tra_module.TRA_Module, no_kappa=True)
+        super(TraTestModel4, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
         model = stmts_kstring_from_text('MEK binds ERK')
@@ -550,7 +550,7 @@ class TraTestModel4(_IntegrationTest):
 class TraTestModel5(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel5, self).__init__(tra_module.TRA_Module, no_kappa=True)
+        super(TraTestModel5, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
         txt = 'MEK phosphorylates ERK. DUSP dephosphorylates ERK.'
@@ -584,7 +584,7 @@ class TraTestModel5(_IntegrationTest):
 class TraTestModel6(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel6, self).__init__(tra_module.TRA_Module, no_kappa=True)
+        super(TraTestModel6, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
         txt = 'ELK1 transcribes FOS.'
@@ -615,7 +615,7 @@ class TraTestModel6(_IntegrationTest):
 class TraTestModel7(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel7, self).__init__(tra_module.TRA_Module, no_kappa=True)
+        super(TraTestModel7, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message1(self):
         txt = 'ERK activates ELK1. DUSP inactivates ELK1. ' + \
@@ -688,7 +688,7 @@ class TraTestModel7(_IntegrationTest):
 class TraTestModel8(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel8, self).__init__(tra_module.TRA_Module, no_kappa=True)
+        super(TraTestModel8, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
         txt = 'MEK not bound to Selumetinib phosphorylates ERK. DUSP dephosphorylates ERK. ' + \
@@ -733,7 +733,7 @@ class TraTestModel8(_IntegrationTest):
 class TraTestModel9(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel9, self).__init__(tra_module.TRA_Module, no_kappa=True)
+        super(TraTestModel9, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message1(self):
         txt = 'Active ELK1 transcribes FOS.'
@@ -805,7 +805,7 @@ class TraTestMissingMonomer(_IntegrationTest):
     """Test that TRA can signal that a monomer is missing."""
     def __init__(self, *args, **kwargs):
         super(TraTestMissingMonomer, self).__init__(tra_module.TRA_Module,
-                                                    no_kappa=True)
+                                                    use_kappa=False)
 
     def create_message1(self):
         txt = 'KRAS activates BRAF.'
@@ -838,7 +838,7 @@ class TraTestMissingMonomerSite(_IntegrationTest):
     """Test that TRA can signal that a monomer is missing."""
     def __init__(self, *args, **kwargs):
         super(TraTestMissingMonomerSite, self).__init__(tra_module.TRA_Module,
-                                                        no_kappa=True)
+                                                        use_kappa=False)
 
     def create_message1(self):
         txt = 'KRAS activates BRAF.'
@@ -871,7 +871,7 @@ class TraMissingMonomerCondition(_IntegrationTest):
     """Test that TRA can signal that a condition monomer is missing."""
     def __init__(self, *args, **kwargs):
         super(TraMissingMonomerCondition, self).__init__(tra_module.TRA_Module,
-                                                         no_kappa=True)
+                                                         use_kappa=False)
 
     def create_message1(self):
         txt = 'ELK1 transcribes FOS.'
@@ -918,7 +918,7 @@ class TraMissingMonomerSite2(_IntegrationTest):
     """Test that TRA can signal that a bound condition monomer is missing."""
     def __init__(self, *args, **kwargs):
         super(TraMissingMonomerSite2, self).__init__(tra_module.TRA_Module,
-                                                     no_kappa=True)
+                                                     use_kappa=False)
 
     def create_message1(self):
         txt = 'MAP2K1 phosphorylates MAPK1.'
@@ -950,7 +950,7 @@ class TraMissingMonomerSite2(_IntegrationTest):
 class TestCompareConditions(_IntegrationTest):
     def __init__(self, *args, **kwargs):
         super(TestCompareConditions, self).__init__(tra_module.TRA_Module,
-                                                    no_kappa=True)
+                                                    use_kappa=False)
         model_txt = 'Vemurafenib inhibits ERK. MEK activates ERK.'
         self.model = \
             stmts_kstring_from_text(model_txt)
@@ -1004,7 +1004,7 @@ class TestCompareConditions(_IntegrationTest):
 class TestCompareConditionsMissing(_IntegrationTest):
     def __init__(self, *args, **kwargs):
         super(TestCompareConditionsMissing, self).__init__(
-            tra_module.TRA_Module, no_kappa=True)
+            tra_module.TRA_Module, use_kappa=False)
         model_txt = 'Vemurafenib inhibits ERK.'
         self.model = stmts_kstring_from_text(model_txt)
 

@@ -8,26 +8,14 @@ import logging
 from kqml import KQMLPerformative
 
 from indra.sources.trips.processor import TripsProcessor
-from indra.statements import stmts_from_json
 
 from bioagents import Bioagent
+from bioagents.resources.indra_knowledge_client import query_database
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA')
-
-
-INDRA_DB_API = os.environ['INDRA_DB_API']
-INDRA_DB_API_KEY = os.environ['INDRA_DB_API_KEY']
-
-
-def _query_database(*args, **kwargs):
-    query_str = '&'.join(['%s=%s' % (k, v) for k, v in kwargs.items()]
-                         + list(args))
-    resp = requests.get(INDRA_DB_API + '/statements/?%s' % query_str,
-                        headers={'x-api-key': INDRA_DB_API_KEY})
-    return stmts_from_json(resp.json())
 
 
 def _read_signor_afs():
@@ -69,7 +57,7 @@ class MSA_Module(Bioagent):
         residue = content.gets('residue')
         position = content.gets('position')
         related_results = [
-            s for s in _query_database(agent=agent.name, type='ActiveForm')
+            s for s in query_database(agent=agent.name, type='ActiveForm')
             if self._matching(s, residue, position, action, polarity)
             ]
         if not len(related_results):

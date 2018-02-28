@@ -10,12 +10,19 @@ from kqml import KQMLPerformative
 from indra.sources.trips.processor import TripsProcessor
 
 from bioagents import Bioagent
-from bioagents.resources.indra_knowledge_client import query_database
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA')
+
+
+try:
+    from bioagents.resources.indra_knowledge_client import query_database
+    CAN_CHECK_STATEMENTS = True
+except Exception as e:
+    logger.warning("Database web api not specified. Cannot get background.")
+    CAN_CHECK_STATEMENTS = False
 
 
 def _read_signor_afs():
@@ -44,6 +51,11 @@ class MSA_Module(Bioagent):
 
     def respond_phosphorylation_activating(self, content):
         """Return response content to phosphorylation_activating request."""
+        if not CAN_CHECK_STATEMENTS:
+            return self.make_failure(
+                'NO_KNOWLEDGE_ACCESS',
+                'Cannot access the database through the web api.'
+                )
         heading = content.head()
         m = re.match('(\w+)-(\w+)', heading)
         if m is None:

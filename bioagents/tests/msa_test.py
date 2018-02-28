@@ -3,6 +3,11 @@ from bioagents.msa import msa_module
 from kqml.kqml_list import KQMLList
 from bioagents.tests.util import ekb_from_text, get_request
 from bioagents.tests.integration import _IntegrationTest
+from nose.plugins.skip import SkipTest
+
+
+if not msa_module.CAN_CHECK_STATEMENTS:
+    raise SkipTest("Database web api is not available.")
 
 
 def _get_message(heading, target=None, residue=None, position=None):

@@ -9,17 +9,23 @@ from indra.sources.trips.processor import TripsProcessor
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.statements import stmts_to_json, Complex, SelfModification,\
     ActiveForm
-
 from kqml import KQMLPerformative, KQMLList, KQMLString
-from bioagents import Bioagent, BioagentException
-from bioagents.resources.indra_knowledge_client import query_database
-
-from .mra import MRA
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MRA')
+
+
+from bioagents import Bioagent, BioagentException
+try:
+    from bioagents.resources.indra_knowledge_client import query_database
+    CAN_CHECK_STATEMENTS = True
+except Exception as e:
+    logger.warning("Database web api not specified. Cannot get background.")
+    CAN_CHECK_STATEMENTS = False
+
+from .mra import MRA
 
 
 class MRA_Module(Bioagent):
@@ -395,6 +401,8 @@ def _get_agent_comp(agent):
 
 
 def _get_matching_stmts(stmt_ref):
+    if not CAN_CHECK_STATEMENTS:
+        return None
     # Filter by statement type.
     stmt_type = stmt_ref.__class__.__name__
     agent_name_list = [ag.name if ag is not None else None

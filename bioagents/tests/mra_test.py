@@ -7,7 +7,8 @@ from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, get_reque
 from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
-    _get_matching_stmts
+    _get_matching_stmts, CAN_CHECK_STATEMENTS
+from nose.plugins.skip import SkipTest
 
 # ################
 # MRA unit tests
@@ -215,6 +216,8 @@ def test_respond_model_undo():
 
 
 def test_get_matching_statements():
+    if not CAN_CHECK_STATEMENTS:
+        raise SkipTest("Database api not accessible.")
     braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
     matching = {}
     for fplx in ['BE', 'FPLX']:

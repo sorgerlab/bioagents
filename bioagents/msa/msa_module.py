@@ -1,15 +1,16 @@
 import os
 import sys
-import logging
 import re
-from bioagents import Bioagent
-from indra.sources.trips.processor import TripsProcessor
-from kqml import KQMLPerformative
 import pickle
 import requests
-from indra.db.util import make_stmts_from_db_list
+import logging
+
+from kqml import KQMLPerformative
+
+from indra.sources.trips.processor import TripsProcessor
 from indra.statements import stmts_from_json
-import json
+
+from bioagents import Bioagent
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -19,6 +20,14 @@ logger = logging.getLogger('MSA')
 
 INDRA_DB_API = os.environ['INDRA_DB_API']
 INDRA_DB_API_KEY = os.environ['INDRA_DB_API_KEY']
+
+
+def _query_database(*args, **kwargs):
+    query_str = '&'.join(['%s=%s' % (k, v) for k, v in kwargs.items()]
+                         + list(args))
+    resp = requests.get(INDRA_DB_API + '/statements/?%s' % query_str,
+                        headers={'x-api-key': INDRA_DB_API_KEY})
+    return stmts_from_json(resp.json())
 
 
 def _read_signor_afs():
@@ -59,12 +68,8 @@ class MSA_Module(Bioagent):
         logger.debug('Found agent (target): %s.' % agent.name)
         residue = content.gets('residue')
         position = content.gets('position')
-        resp = requests.get(INDRA_DB_API + '/statements/?other=%s&type=%s' % (agent.name, 'Phosphorylation'),
-                           headers={'x-api-key': INDRA_DB_API_KEY})
-        db_stmt_json = resp.json()
-        stmts = stmts_from_json(db_stmt_json)
         related_results = [
-            s for s in stmts
+            s for s in _query_database(agent=agent.name, type='ActiveForm')
             if self._matching(s, residue, position, action, polarity)
             ]
         if not len(related_results):

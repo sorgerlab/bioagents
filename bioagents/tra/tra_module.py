@@ -31,7 +31,7 @@ class TRA_Module(Bioagent):
     tasks = ['SATISFIES-PATTERN', 'MODEL-COMPARE-CONDITIONS']
 
     def __init__(self, **kwargs):
-        use_kappa = get_bool_arg('use_kappa', kwargs, default=True)
+        use_kappa = get_bool_arg('use_kappa', kwargs, default=False)
         use_kappa_rest = get_bool_arg('use_kappa_rest', kwargs, default=False)
 
         # Instantiate a singleton TRA agent

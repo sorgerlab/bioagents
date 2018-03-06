@@ -1,6 +1,8 @@
+import re
 from unittest import TestCase
 from difflib import SequenceMatcher
 import logging
+from kqml.kqml_performative import KQMLPerformative
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('integration_tests')
@@ -166,11 +168,11 @@ class _IntegrationTest(TestCase):
         buff = self.bioagent.out
         cur_pos = buff.tell()
         buff.seek(0)
-        out_lines = [line.strip().decode('utf-8') for line in buff.readlines()]
+        out_lines = re.findall('^(\(.*?\))$', buff.read().decode(),
+                               re.MULTILINE | re.DOTALL)
+        out_msgs = [KQMLPerformative.from_string(line) for line in out_lines]
         buff.seek(cur_pos)
-        if end_line is None:
-            end_line = len(out_lines)
-        return out_lines[start_line:end_line]
+        return out_msgs[start_line:end_line]
 
     def run_test(self):
         for request_args, check_resp in self._get_messages():

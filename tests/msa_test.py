@@ -1,6 +1,7 @@
 from bioagents.msa import msa_module
 from kqml.kqml_list import KQMLList
-from tests.util import ekb_from_text
+from tests.util import ekb_from_text, get_request
+from tests.integration import _IntegrationTest
 
 
 def _get_message(heading, target=None, residue=None, position=None):
@@ -55,3 +56,24 @@ def test_not_activating():
 def test_no_activity_given():
     msg = _get_message('')
     _check_failure(msg, 'getting no activity type', 'UNKNOWN_ACTION')
+
+
+class TestMsaProvenance(_IntegrationTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TestMsaProvenance, self).__init__(msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('PHOSPHORYLATION-ACTIVATING')
+        content.sets('target', ekb_from_text('MAP2K1'))
+        for name, value in [('residue', 'S'), ('position', '222')]:
+            if value is not None:
+                content.sets(name, value)
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('is-activating') == 'TRUE'
+        logs = self.get_output_log()
+        return

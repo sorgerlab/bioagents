@@ -95,8 +95,8 @@ class ProvenanceTest(_IntegrationTest):
             raise SkipTest('QCA could not find path, so there won\'t be '
                            'any provenance.')
         output_log = self.get_output_log()
-        assert any([('tell' in line and 'add-provenance' in line)
-                    for line in output_log])
+        assert any([(msg.head() == 'tell' and msg.get('content').head() == 'add-provenance')
+                    for msg in output_log])
         return
 
 

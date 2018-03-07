@@ -15,7 +15,7 @@ def test_make_evidence_html1():
     # No evidence other than the source API
     ev4 = Evidence(source_api='bel', pmid=None, text=None, source_id=None)
     stmt = Phosphorylation(Agent('A'), Agent('B'),
-                            evidence=[ev1, ev2, ev3, ev4])
+                           evidence=[ev1, ev2, ev3, ev4])
     ev_html = make_evidence_html([stmt], 'proof for a conclusion')
     assert 'Some evidence' in ev_html, ev_html
     assert 'Database entry in \'biopax\'' in ev_html, ev_html
@@ -23,7 +23,7 @@ def test_make_evidence_html1():
 
 
 class TestErrorHandling(_IntegrationTest):
-    reason = 'Found it!'
+    reason = 'FOUND-IT'
 
     def __init__(self, *args):
         class FindMe(BioagentException):
@@ -34,14 +34,13 @@ class TestErrorHandling(_IntegrationTest):
             tasks = ['TEST']
 
             def receive_request(self, msg, content):
-                ret = None
                 try:
-                    ret = Bioagent.receive_request(self, msg, content)
+                    Bioagent.receive_request(self, msg, content)
+                    return
                 except FindMe:
                     reply_content = self.make_failure(TestErrorHandling.reason)
-                if ret is None:
-                    ret = self.reply_with_content(msg, reply_content)
-                return ret
+                    self.reply_with_content(msg, reply_content)
+                    return
 
             def respond_test(self, content):
                 raise FindMe()
@@ -60,4 +59,5 @@ class TestErrorHandling(_IntegrationTest):
         assert head == "FAILURE",\
             "Got wrong output head: %s instead of FAILURE." % head
         assert output.get('reason') == self.reason,\
-            "Exception caught too soon."
+            ("Exception caught too soon (wrong reason: %s)."
+             % output.get('reason'))

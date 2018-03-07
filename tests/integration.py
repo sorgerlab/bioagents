@@ -186,7 +186,8 @@ class _IntegrationTest(TestCase):
 
     def run_test(self):
         for request_args, check_resp in self._get_messages():
-            _, output = self.bioagent.receive_request(*request_args)
+            self.bioagent.receive_request(*request_args)
+            output = self.get_output_log()[-1].get('content')
             if check_resp is not None:
                 check_resp(self, output)
         return

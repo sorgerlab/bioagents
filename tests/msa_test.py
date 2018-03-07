@@ -93,6 +93,6 @@ class TestMsaProvenance(_IntegrationTest):
         ev_duplicates = ['%d x \"%s\" with pmid %s' % (num, ev_str, pmid)
                          for (ev_str, pmid), num in ev_counts if num > 1]
         assert not ev_duplicates,\
-            ("Some evidence listed multiple times:\n    %s\n"
-             % ('\n    '.join(ev_duplicates)))
+            ("Some evidence listed multiple times:\n    %s\nFull html:\n%s"
+             % ('\n    '.join(ev_duplicates), html.to_string()))
         return

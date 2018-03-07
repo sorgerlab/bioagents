@@ -1,3 +1,4 @@
+import re
 from bioagents.msa import msa_module
 from kqml.kqml_list import KQMLList
 from tests.util import ekb_from_text, get_request
@@ -65,15 +66,33 @@ class TestMsaProvenance(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('PHOSPHORYLATION-ACTIVATING')
-        content.sets('target', ekb_from_text('MAP2K1'))
-        for name, value in [('residue', 'S'), ('position', '222')]:
+        content.sets('target', ekb_from_text('MAPK1'))
+        for name, value in [('residue', 'T'), ('position', '185')]:
             if value is not None:
                 content.sets(name, value)
         msg = get_request(content)
         return (msg, content)
 
     def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS'
-        assert output.get('is-activating') == 'TRUE'
+        assert output.head() == 'SUCCESS',\
+            'Query failed: %s.' % output.to_string()
+        assert output.get('is-activating') == 'TRUE',\
+            'Wrong result: %s.' % output.to_string()
         logs = self.get_output_log()
+        provs = [msg for msg in logs
+                if msg.head() == 'tell'
+                and msg.get('content').head() == 'add-provenance']
+        assert len(provs) == 1, 'Too much provenance: %d vs. 1.' % len(provs)
+        html = provs[0].get('content').get('html')
+        evs = re.findall("<i>[\"\'](.*?)[\"\']</i>.*?<a.*?>PMID(\d+)</a>",
+                         html.to_string())
+        assert len(evs),\
+            ("Unexpectedly formatted provenance (got no regex extractions): %s"
+             % html.to_string())
+        ev_counts = [(ev, evs.count(ev)) for ev in set(evs)]
+        ev_duplicates = ['%d x \"%s\" with pmid %s' % (num, ev_str, pmid)
+                         for (ev_str, pmid), num in ev_counts if num > 1]
+        assert not ev_duplicates,\
+            ("Some evidence listed multiple times:\n    %s\n"
+             % ('\n    '.join(ev_duplicates)))
         return

@@ -86,8 +86,15 @@ class TestFindTargetDrug2(_TestFindTargetDrug):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('drugs')) == 1, output
-        assert output.get('drugs')[0].gets('name') == 'PF-3758309'
-        assert output.get('drugs')[0].get('pubchem_id') == 25227462
+        drug_name = output.get('drugs')[0].gets('name')
+        exp_drug_name = 'PF-3758309'
+        assert drug_name == exp_drug_name,\
+            "Got %s as drug name; expected %s." % (drug_name, exp_drug_name)
+        pubchem_id = int(output.get('drugs')[0].get('pubchem_id').to_string())
+        exp_pubchem_id = 25227462
+        assert pubchem_id == exp_pubchem_id,\
+            ("Got %d as pubchem id for %s; expected %d."
+             % (pubchem_id, drug_name, exp_pubchem_id))
 
 
 class TestFindTargetDrug3(_TestFindTargetDrug):

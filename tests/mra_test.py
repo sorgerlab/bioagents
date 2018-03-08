@@ -222,7 +222,8 @@ def test_get_matching_statements():
     stmts = [sts.Phosphorylation(braf, mek), sts.Phosphorylation(raf, map2k1)]
     stmt_ref = sts.Phosphorylation(braf, map2k1)
     matching = _get_matching_stmts(stmts, stmt_ref)
-    assert len(matching) == 2
+    assert len(matching) == 2,\
+        "Expected 2 matching, got %d; matching: %s" % (len(matching), matching)
 
 
 # #####################
@@ -252,20 +253,27 @@ class TestBuildModelAmbiguity(_IntegrationTest):
         return _get_build_model_request('MEK1 phosphorylates ERK2')
 
     def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS'
-        assert output.get('model-id') == '1'
-        assert output.get('model') is not None
+        assert output.head() == 'SUCCESS',\
+            'Expected head SUCCESS, got %s.' % output.to_string()
+        assert output.get('model-id') == '1',\
+            'Expected model id of \'1\', got \'%s\'' % output.get('model-id')
+        assert output.get('model') is not None, 'Got None model.'
         ambiguities = output.get('ambiguities')
-        assert len(ambiguities) == 1
+        assert len(ambiguities) == 1,\
+            "Expcected 1 ambiguity, got %d." % len(ambiguities)
         assert ambiguities[0].get('preferred').to_string() == \
             '(term :ont-type ONT::PROTEIN ' + \
             ':ids "HGNC::6840|NCIT::C52823|UP::Q02750" :name "MAP2K1")'
-        assert ambiguities[0].get('alternative').to_string() == \
-            '(term :ont-type ONT::PROTEIN-FAMILY ' + \
-            ':ids "BE::MAP2K|NCIT::C105947" ' + \
-            ':name "mitogen-activated protein kinase kinase")'
-        assert output.get('diagram') is not None
-        assert output.gets('diagram').endswith('png')
+        expected_string = ('(term :ont-type ONT::PROTEIN-FAMILY '
+                           ':ids "BE::MAP2K|NCIT::C105947" '
+                           ':name "mitogen-activated protein kinase kinase")')
+        actual_string = ambiguities[0].get('alternative').to_string()
+        assert actual_string == expected_string,\
+            ("Unexpected ambiguities: expected \"%s\", got \"%s\""
+             % (expected_string, actual_string))
+        assert output.get('diagram') is not None, 'Got None for diagram.'
+        assert output.gets('diagram').endswith('png'), \
+            'Wrong format for diagram.'
 
 
 class TestBuildModelBoundCondition(_IntegrationTest):

@@ -216,14 +216,16 @@ def test_respond_model_undo():
 
 def test_get_matching_statements():
     braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
-    raf = sts.Agent('RAF', db_refs={'BE': 'RAF'})
-    map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
-    mek = sts.Agent('MEK', db_refs={'BE': 'MEK'})
-    stmts = [sts.Phosphorylation(braf, mek), sts.Phosphorylation(raf, map2k1)]
-    stmt_ref = sts.Phosphorylation(braf, map2k1)
-    matching = _get_matching_stmts(stmts, stmt_ref)
-    assert len(matching) == 2,\
-        "Expected 2 matching, got %d; matching: %s" % (len(matching), matching)
+    matching = {}
+    for fplx in ['BE', 'FPLX']:
+        raf = sts.Agent('RAF', db_refs={fplx: 'RAF'})
+        map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
+        mek = sts.Agent('MEK', db_refs={fplx: 'MEK'})
+        stmts = [sts.Phosphorylation(braf, mek), sts.Phosphorylation(raf, map2k1)]
+        stmt_ref = sts.Phosphorylation(braf, map2k1)
+        matching[fplx] = _get_matching_stmts(stmts, stmt_ref)
+    assert any([len(matching[fplx]) == 2 for fplx in ['BE', 'FPLX']]),\
+        "Expected 2 matching for at least one name, got matching: %s" % (matching)
 
 
 # #####################
@@ -264,13 +266,14 @@ class TestBuildModelAmbiguity(_IntegrationTest):
         assert ambiguities[0].get('preferred').to_string() == \
             '(term :ont-type ONT::PROTEIN ' + \
             ':ids "HGNC::6840|NCIT::C52823|UP::Q02750" :name "MAP2K1")'
-        expected_string = ('(term :ont-type ONT::PROTEIN-FAMILY '
-                           ':ids "BE::MAP2K|NCIT::C105947" '
+        expected_fmt = ('(term :ont-type ONT::PROTEIN-FAMILY '
+                           ':ids "%s::MAP2K|NCIT::C105947" '
                            ':name "mitogen-activated protein kinase kinase")')
         actual_string = ambiguities[0].get('alternative').to_string()
-        assert actual_string == expected_string,\
+        assert any([actual_string == expected_fmt % fplx
+                    for fplx in ['BE', 'FPLX']]),\
             ("Unexpected ambiguities: expected \"%s\", got \"%s\""
-             % (expected_string, actual_string))
+             % (expected_fmt % '<BE or FPLX>', actual_string))
         assert output.get('diagram') is not None, 'Got None for diagram.'
         assert output.gets('diagram').endswith('png'), \
             'Wrong format for diagram.'

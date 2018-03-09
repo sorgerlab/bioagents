@@ -1,8 +1,8 @@
 from kqml import KQMLList
 from bioagents.dtda.dtda import DTDA
 from bioagents.dtda.dtda_module import DTDA_Module
-from tests.util import ekb_from_text, ekb_kstring_from_text, get_request
-from tests.integration import _IntegrationTest
+from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, get_request
+from bioagents.tests.integration import _IntegrationTest
 
 # DTDA unit tests
 

@@ -1,6 +1,6 @@
 import re
 from indra.statements import Phosphorylation, Agent, Evidence
-from tests.integration import _IntegrationTest
+from bioagents.tests.integration import _IntegrationTest
 from bioagents import Bioagent, BioagentException, make_evidence_html
 from kqml import KQMLList, KQMLPerformative
 

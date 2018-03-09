@@ -1,8 +1,8 @@
 import re
 from bioagents.msa import msa_module
 from kqml.kqml_list import KQMLList
-from tests.util import ekb_from_text, get_request
-from tests.integration import _IntegrationTest
+from bioagents.tests.util import ekb_from_text, get_request
+from bioagents.tests.integration import _IntegrationTest
 
 
 def _get_message(heading, target=None, residue=None, position=None):

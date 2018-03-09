@@ -8,9 +8,9 @@ from indra.statements import stmts_to_json, Agent, Phosphorylation, \
                              Dephosphorylation, Activation, Inhibition, \
                              ActivityCondition, ModCondition
 from kqml import KQMLPerformative, KQMLList
-from tests.integration import _StringCompareTest, _IntegrationTest
-from tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
-                       get_request
+from bioagents.tests.integration import _StringCompareTest, _IntegrationTest
+from bioagents.tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
+                                get_request
 
 
 ekb_map2k1 = ekb_kstring_from_text('MAP2K1')

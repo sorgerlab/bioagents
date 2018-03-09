@@ -168,7 +168,7 @@ def get_ambiguities(tp):
 
 def get_members(agent):
     dbname, dbid = agent.get_grounding()
-    if dbname != 'BE':
+    if dbname not in ['FPLX', 'BE']:
         return None
     eh = hierarchies['entity']
     uri = eh.get_uri(dbname, dbid)

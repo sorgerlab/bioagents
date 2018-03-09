@@ -78,7 +78,7 @@ class Bioagent(KQMLModule):
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
-        return (msg, reply_content)
+        return
 
     def tell(self, content):
         """Send a tell message."""
@@ -139,22 +139,22 @@ def make_evidence_html(stmt_list, for_what, limit=5):
         return entry
 
     # Extract a list of the evidence then map pmids to lists of text
-    evidence_list = [(ev, get_ev_desc(ev, stmt)) for stmt in stmt_list
-                     for ev in stmt.evidence]
-    evidence_with_text = [(ev, txt) for ev, txt in evidence_list if ev.text]
-    evidence_from_db = [(ev, txt) for ev, txt in evidence_list if not ev.text
-                        and ev.source_id]
-    evidence_no_ids = [(ev, txt) for ev, txt in evidence_list if (ev not in
-                       evidence_with_text) and (ev not in evidence_from_db)]
-    evidence_list = evidence_with_text + evidence_from_db + evidence_no_ids
-    entries = []
+    evidence_list = {(ev, get_ev_desc(ev, stmt)) for stmt in stmt_list
+                     for ev in stmt.evidence}
+    evidence_with_text = {(ev, txt) for ev, txt in evidence_list if ev.text}
+    evidence_from_db = {(ev, txt) for ev, txt in evidence_list if not ev.text
+                        and ev.source_id}
+    evidence_no_ids = {(ev, txt) for ev, txt in evidence_list if (ev not in
+                       evidence_with_text) and (ev not in evidence_from_db)}
+    evidence_list = evidence_with_text | evidence_from_db | evidence_no_ids
+    entries = set()
     for i, (ev, entry) in enumerate(evidence_list):
         if limit and i >= limit:
             break
         if ev.pmid:
             entry += ' (%s)' % (pmid_link_fmt.format(url=url_base,
                                                      pmid=ev.pmid))
-        entries.append(entry)
+        entries.add(entry)
 
     entries_list = ['<li>%s</li>' % entry for entry in entries]
     evidence_html = '<ul>%s</ul>' % ('\n'.join(entries_list))

@@ -216,13 +216,16 @@ def test_respond_model_undo():
 
 def test_get_matching_statements():
     braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
-    raf = sts.Agent('RAF', db_refs={'BE': 'RAF'})
-    map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
-    mek = sts.Agent('MEK', db_refs={'BE': 'MEK'})
-    stmts = [sts.Phosphorylation(braf, mek), sts.Phosphorylation(raf, map2k1)]
-    stmt_ref = sts.Phosphorylation(braf, map2k1)
-    matching = _get_matching_stmts(stmts, stmt_ref)
-    assert len(matching) == 2
+    matching = {}
+    for fplx in ['BE', 'FPLX']:
+        raf = sts.Agent('RAF', db_refs={fplx: 'RAF'})
+        map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
+        mek = sts.Agent('MEK', db_refs={fplx: 'MEK'})
+        stmts = [sts.Phosphorylation(braf, mek), sts.Phosphorylation(raf, map2k1)]
+        stmt_ref = sts.Phosphorylation(braf, map2k1)
+        matching[fplx] = _get_matching_stmts(stmts, stmt_ref)
+    assert any([len(matching[fplx]) == 2 for fplx in ['BE', 'FPLX']]),\
+        "Expected 2 matching for at least one name, got matching: %s" % (matching)
 
 
 # #####################
@@ -252,20 +255,28 @@ class TestBuildModelAmbiguity(_IntegrationTest):
         return _get_build_model_request('MEK1 phosphorylates ERK2')
 
     def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS'
-        assert output.get('model-id') == '1'
-        assert output.get('model') is not None
+        assert output.head() == 'SUCCESS',\
+            'Expected head SUCCESS, got %s.' % output.to_string()
+        assert output.get('model-id') == '1',\
+            'Expected model id of \'1\', got \'%s\'' % output.get('model-id')
+        assert output.get('model') is not None, 'Got None model.'
         ambiguities = output.get('ambiguities')
-        assert len(ambiguities) == 1
+        assert len(ambiguities) == 1,\
+            "Expcected 1 ambiguity, got %d." % len(ambiguities)
         assert ambiguities[0].get('preferred').to_string() == \
             '(term :ont-type ONT::PROTEIN ' + \
             ':ids "HGNC::6840|NCIT::C52823|UP::Q02750" :name "MAP2K1")'
-        assert ambiguities[0].get('alternative').to_string() == \
-            '(term :ont-type ONT::PROTEIN-FAMILY ' + \
-            ':ids "BE::MAP2K|NCIT::C105947" ' + \
-            ':name "mitogen-activated protein kinase kinase")'
-        assert output.get('diagram') is not None
-        assert output.gets('diagram').endswith('png')
+        expected_fmt = ('(term :ont-type ONT::PROTEIN-FAMILY '
+                           ':ids "%s::MAP2K|NCIT::C105947" '
+                           ':name "mitogen-activated protein kinase kinase")')
+        actual_string = ambiguities[0].get('alternative').to_string()
+        assert any([actual_string == expected_fmt % fplx
+                    for fplx in ['BE', 'FPLX']]),\
+            ("Unexpected ambiguities: expected \"%s\", got \"%s\""
+             % (expected_fmt % '<BE or FPLX>', actual_string))
+        assert output.get('diagram') is not None, 'Got None for diagram.'
+        assert output.gets('diagram').endswith('png'), \
+            'Wrong format for diagram.'
 
 
 class TestBuildModelBoundCondition(_IntegrationTest):
@@ -324,9 +335,10 @@ class TestModelUndo(_IntegrationTest):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
         assert output.gets('model') == '[]'
-        output_log = self.get_output_log()
-        assert any([('tell' in line and 'display' in line)
-                    for line in output_log])
+        output_log = self.get_output_log(get_full_log=True)
+        print(output_log)
+        assert any([(msg.head() == 'tell') #and 'display' in line)
+                    for msg in output_log])
 
 
 class TestMissingDescriptionFailure(_FailureTest):

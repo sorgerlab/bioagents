@@ -48,9 +48,9 @@ class MRA_Module(Bioagent):
         and call the appropriate function to prepare the response. A reply
         message is then sent back.
         """
-        ret = None
         try:
-            ret = super(MRA_Module, self).receive_request(msg, content)
+            super(MRA_Module, self).receive_request(msg, content)
+            return
         except InvalidModelDescriptionError as e:
             logger.error('Invalid model description.')
             logger.error(e)
@@ -59,9 +59,8 @@ class MRA_Module(Bioagent):
             logger.error('Invalid model ID.')
             logger.error(e)
             reply_content = self.make_failure('INVALID_MODEL_ID')
-        if ret is None:
-            ret = self.reply_with_content(msg, reply_content)
-        return ret
+        self.reply_with_content(msg, reply_content)
+        return
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""

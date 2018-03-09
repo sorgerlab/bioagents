@@ -1,6 +1,8 @@
+import re
 from unittest import TestCase
 from difflib import SequenceMatcher
 import logging
+from kqml.kqml_performative import KQMLPerformative
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('integration_tests')
@@ -107,6 +109,7 @@ class _IntegrationTest(TestCase):
 
     def __init__(self, bioagent, **kwargs):
         self.bioagent = bioagent(testing=True, **kwargs)
+        self.this_test_log_start = None
         return TestCase.__init__(self, 'run_test')
 
     def __getattribute__(self, attr_name):
@@ -161,22 +164,37 @@ class _IntegrationTest(TestCase):
         for msg in msg_list:
             yield send_dict[msg](self), check_dict.get(msg)
 
-    def get_output_log(self, start_line=0, end_line=None):
+    def get_output_log(self, start_line=0, end_line=None, get_full_log=False):
         """Get the messages sent by the bioagent."""
         buff = self.bioagent.out
         cur_pos = buff.tell()
-        buff.seek(0)
-        out_lines = [line.strip().decode('utf-8') for line in buff.readlines()]
+        if get_full_log:
+            buff.seek(0)
+        elif self.this_test_log_start is not None:
+            buff.seek(self.this_test_log_start)
+        else:
+            return []
+        out_lines = re.findall('^(\(.*?\))$', buff.read().decode(),
+                               re.MULTILINE | re.DOTALL)
+        out_msgs = [KQMLPerformative.from_string(line) for line in out_lines]
         buff.seek(cur_pos)
-        if end_line is None:
-            end_line = len(out_lines)
-        return out_lines[start_line:end_line]
+        return out_msgs[start_line:end_line]
+
+    def setUp(self):
+        """Set the start of the logs"""
+        self.this_test_log_start = self.bioagent.out.tell()
 
     def run_test(self):
         for request_args, check_resp in self._get_messages():
-            _, output = self.bioagent.receive_request(*request_args)
+            self.bioagent.receive_request(*request_args)
+            output = self.get_output_log()[-1].get('content')
             if check_resp is not None:
                 check_resp(self, output)
+        return
+
+    def tearDown(self):
+        """Unset the start of the log."""
+        self.this_test_log_start = None
 
 
 class _StringCompareTest(_IntegrationTest):

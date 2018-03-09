@@ -1,8 +1,8 @@
 import json
 import requests
 from nose import SkipTest
-from tests.util import ekb_kstring_from_text, ekb_from_text, get_request
-from tests.integration import _IntegrationTest
+from bioagents.tests.util import ekb_kstring_from_text, ekb_from_text, get_request
+from bioagents.tests.integration import _IntegrationTest
 from indra.statements import stmts_from_json, Gef
 from kqml import KQMLList
 from bioagents.qca.qca_module import QCA_Module

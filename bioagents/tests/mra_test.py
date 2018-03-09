@@ -3,8 +3,8 @@ import xml.etree.ElementTree as ET
 from kqml.kqml_list import KQMLList
 from kqml.kqml_performative import KQMLPerformative
 import indra.statements as sts
-from tests.util import ekb_from_text, ekb_kstring_from_text, get_request
-from tests.integration import _IntegrationTest, _FailureTest
+from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, get_request
+from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
     _get_matching_stmts

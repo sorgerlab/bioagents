@@ -24,6 +24,16 @@ def test_choose_sense():
     assert ont_type == 'ONT::GENE'
 
 
+def test_choose_nonsense():
+    bs = BioSense_Module(testing=True)
+    msg_content = KQMLList('CHOOSE-SENSE')
+    msg_content.sets('ekb-term', ekb_from_text('bagel'))
+    res = bs.respond_choose_sense(msg_content)
+    print(res)
+    assert res.head() == 'SUCCESS'
+    assert res.get('agents')[0].gets('ont-type') == None
+
+
 @unittest.skip('No ambiguity reported here yet')
 def test_choose_sense_ambiguity():
     bs = BioSense_Module(testing=True)

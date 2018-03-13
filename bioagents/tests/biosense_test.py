@@ -8,6 +8,7 @@ mek_ekb = ekb_from_text('MEK')
 
 # BioSense module unit tests
 
+
 def test_choose_sense():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE')
@@ -21,6 +22,7 @@ def test_choose_sense():
     assert name == 'MAP2K1'
     ont_type = agent.get('ont-type')
     assert ont_type == 'ONT::GENE'
+
 
 @unittest.skip('No ambiguity reported here yet')
 def test_choose_sense_ambiguity():
@@ -50,6 +52,12 @@ def test_choose_sense_category():
         print(res.head())
         assert(res.head() == 'SUCCESS')
         assert(res.get('in-category') == 'TRUE')
+    msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
+    msg_content.sets('ekb-term', ekb_from_text('BRAF'))
+    msg_content.sets('category', 'kinase')
+    res = bs.respond_choose_sense_category(msg_content)
+    print(res)
+    assert res.head() == 'SUCCESS'
 
 
 def test_choose_sense_is_member():

@@ -55,14 +55,16 @@ def test_choose_sense_category():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
     msg_content.sets('ekb-term', mek1_ekb)
-    for cat in ['kinase activity', 'enzyme', 'kinase', 'transcription-factor']:
-        print('Testing: %s' % cat)
+    for cat, result in [('kinase activity', 'TRUE'), ('enzyme', 'TRUE'),
+                        ('kinase', 'TRUE'), ('transcription-factor', 'FALSE'),
+                        ('W::KINASE', 'TRUE')]:
+        print('Testing: %s. Excpet result %s.' % (cat, result))
         msg_content.sets('category', cat)
         res = bs.respond_choose_sense_category(msg_content)
         print(res)
         print(res.head())
         assert(res.head() == 'SUCCESS')
-        assert(res.get('in-category') == 'TRUE')
+        assert(res.get('in-category') == result)
     msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
     msg_content.sets('ekb-term', ekb_from_text('BRAF'))
     msg_content.sets('category', 'kinase')

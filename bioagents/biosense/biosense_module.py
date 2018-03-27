@@ -55,6 +55,7 @@ class BioSense_Module(Bioagent):
         category = content.gets('category')
         logger.info("Checking %s for category %s." % (agent, category))
         reg_cat = category.lower().replace('-', ' ').replace('W::', '')
+        logger.info("Regularized category to \"%s\"." % reg_cat)
         if reg_cat in ['kinase', 'kinase activity', 'enzyme']:
             msg = KQMLList('SUCCESS')
             if agent.name in kinase_list:
@@ -69,6 +70,9 @@ class BioSense_Module(Bioagent):
                 msg.set('in-category', 'FALSE')
         else:
             msg = make_failure('UNKNOWN_CATEGORY')
+            logger.info("Regularized category \"%s\" not recognized: options "
+                        "are %s." % (reg_cat, ['kinase', 'kinase activity',
+                                               'enzyme', 'transcription factor']))
         return msg
 
     def respond_choose_sense_is_member(self, content):

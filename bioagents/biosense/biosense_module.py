@@ -53,13 +53,15 @@ class BioSense_Module(Bioagent):
             return make_failure('INVALID_AGENT')
         agent = list(agents.values())[0][0]
         category = content.gets('category')
-        if category.lower() in ['kinase', 'kinase activity', 'enzyme']:
+        logger.info("Checking %s for category %s." % (agent, category))
+        reg_cat = category.lower().replace('-', ' ')
+        if reg_cat in ['kinase', 'kinase activity', 'enzyme']:
             msg = KQMLList('SUCCESS')
             if agent.name in kinase_list:
                 msg.set('in-category', 'TRUE')
             else:
                 msg.set('in-category', 'FALSE')
-        elif category == 'transcription factor':
+        elif reg_cat == 'transcription factor':
             msg = KQMLList('SUCCESS')
             if agent.name in tf_list:
                 msg.set('in-category', 'TRUE')

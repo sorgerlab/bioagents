@@ -54,7 +54,7 @@ class BioSense_Module(Bioagent):
         agent = list(agents.values())[0][0]
         category = content.gets('category')
         logger.info("Checking %s for category %s." % (agent, category))
-        reg_cat = category.lower().replace('-', ' ').replace('W::', '')
+        reg_cat = category.lower().replace('-', ' ').replace('W::', '').replace('w::', '')
         logger.info("Regularized category to \"%s\"." % reg_cat)
         if reg_cat in ['kinase', 'kinase activity', 'enzyme']:
             msg = KQMLList('SUCCESS')

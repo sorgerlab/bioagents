@@ -68,6 +68,12 @@ class BioSense_Module(Bioagent):
                 msg.set('in-category', 'TRUE')
             else:
                 msg.set('in-category', 'FALSE')
+        elif category == 'phosphatase':
+            msg = KQMLList('SUCCESS')
+            if agent.name in phosphatase_list:
+                msg.set('in-category', 'TRUE')
+            else:
+                msg.set('in-category', 'FALSE')
         else:
             msg = make_failure('UNKNOWN_CATEGORY')
             logger.info("Regularized category \"%s\" not recognized: options "
@@ -218,6 +224,15 @@ def make_failure(reason):
     msg.set('reason', reason)
     return msg
 
+def _read_phosphatases():
+    path = os.path.dirname(os.path.abspath(__file__))
+    p_table = read_unicode_csv(_indra_path + 
+            '/resources/phosphatases.tsv', delimiter='\t')
+    # First column is phosphatase names
+    # Second column is HGNC ids
+    p_names = [row[0] for row in p_table]
+    return p_names
+
 
 def _read_kinases():
     path = os.path.dirname(os.path.abspath(__file__))
@@ -237,6 +252,7 @@ def _read_tfs():
 
 kinase_list = _read_kinases()
 tf_list = _read_tfs()
+phosphatase_list = _read_phosphatases()
 
 
 if __name__ == "__main__":

@@ -57,7 +57,7 @@ def test_choose_sense_category():
     msg_content.sets('ekb-term', mek1_ekb)
     for cat, result in [('kinase activity', 'TRUE'), ('enzyme', 'TRUE'),
                         ('kinase', 'TRUE'), ('transcription-factor', 'FALSE'),
-                        ('W::KINASE', 'TRUE')]:
+                        ('W::KINASE', 'TRUE'), ('phosphatase', 'FALSE')]:
         print('Testing: %s. Excpet result %s.' % (cat, result))
         msg_content.sets('category', cat)
         res = bs.respond_choose_sense_category(msg_content)

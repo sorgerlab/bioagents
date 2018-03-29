@@ -4,6 +4,7 @@ from .util import ekb_from_text
 from bioagents.biosense.biosense_module import BioSense_Module
 
 mek1_ekb = ekb_from_text('MAP2K1')
+dusp_ekb = ekb_from_text('DUSP6')
 mek_ekb = ekb_from_text('MEK')
 
 # BioSense module unit tests
@@ -53,24 +54,26 @@ def test_choose_sense_ambiguity():
 
 def test_choose_sense_category():
     bs = BioSense_Module(testing=True)
-    msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
-    msg_content.sets('ekb-term', mek1_ekb)
-    for cat, result in [('kinase activity', 'TRUE'), ('enzyme', 'TRUE'),
-                        ('kinase', 'TRUE'), ('transcription-factor', 'FALSE'),
-                        ('W::KINASE', 'TRUE')]:
-        print('Testing: %s. Excpet result %s.' % (cat, result))
-        msg_content.sets('category', cat)
-        res = bs.respond_choose_sense_category(msg_content)
-        print(res)
-        print(res.head())
-        assert(res.head() == 'SUCCESS')
-        assert(res.get('in-category') == result)
-    msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
-    msg_content.sets('ekb-term', ekb_from_text('BRAF'))
-    msg_content.sets('category', 'kinase')
-    res = bs.respond_choose_sense_category(msg_content)
-    print(res)
-    assert res.head() == 'SUCCESS'
+    cases = [(mek1_ekb, [('kinase activity', 'TRUE'),
+                         ('enzyme', 'TRUE'),
+                         ('kinase', 'TRUE'),
+                         ('transcription-factor', 'FALSE'),
+                         ('W::KINASE', 'TRUE'),
+                         ('phosphatase', 'FALSE')]),
+              (dusp_ekb, [('phosphatase', 'TRUE'), ('enzyme', 'TRUE')]),
+              (ekb_from_text('BRAF'), [('kinase', 'TRUE')])
+              ]
+    for ekb, result_tuples in cases:
+        msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
+        msg_content.sets('ekb-term', ekb)
+        for cat, result in result_tuples:
+            print('Testing: %s. Excpet result %s.' % (cat, result))
+            msg_content.sets('category', cat)
+            res = bs.respond_choose_sense_category(msg_content)
+            print(res)
+            print(res.head())
+            assert(res.head() == 'SUCCESS')
+            assert(res.get('in-category') == result)
 
 
 def test_choose_sense_is_member():

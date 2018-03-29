@@ -60,7 +60,7 @@ def test_choose_sense_category():
                          ('transcription-factor', 'FALSE'),
                          ('W::KINASE', 'TRUE'),
                          ('phosphatase', 'FALSE')]),
-              (dusp_ekb, [('phosphatase', 'TRUE')]),
+              (dusp_ekb, [('phosphatase', 'TRUE'), ('enzyme', 'TRUE')]),
               (ekb_from_text('BRAF'), [('kinase', 'TRUE')])
               ]
     for ekb, result_tuples in cases:

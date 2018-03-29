@@ -56,7 +56,7 @@ class BioSense_Module(Bioagent):
         logger.info("Checking %s for category %s." % (agent, category))
         reg_cat = category.lower().replace('-', ' ').replace('W::', '').replace('w::', '')
         logger.info("Regularized category to \"%s\"." % reg_cat)
-        if reg_cat in ['kinase', 'kinase activity', 'enzyme']:
+        if reg_cat in ['kinase', 'kinase activity']:
             msg = KQMLList('SUCCESS')
             if agent.name in kinase_list:
                 msg.set('in-category', 'TRUE')
@@ -71,6 +71,12 @@ class BioSense_Module(Bioagent):
         elif reg_cat == 'phosphatase':
             msg = KQMLList('SUCCESS')
             if agent.name in phosphatase_list:
+                msg.set('in-category', 'TRUE')
+            else:
+                msg.set('in-category', 'FALSE')
+        elif reg_cat == 'enzyme':
+            msg = KQMLList('SUCCESS')
+            if agent.name in phosphatase_list or agent.name in kinase_list:
                 msg.set('in-category', 'TRUE')
             else:
                 msg.set('in-category', 'FALSE')

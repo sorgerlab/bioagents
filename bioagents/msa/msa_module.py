@@ -17,10 +17,11 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('MSA')
 
 
-try:
-    from bioagents.resources.indra_knowledge_client import query_database
+from indra import has_config
+if has_config('INDRA_DB_REST_URL') and has_config('INDRADB_REST_API_KEY'):
     CAN_CHECK_STATEMENTS = True
-except Exception as e:
+    from indra.sources.indra_db_rest import get_statements
+else:
     logger.warning("Database web api not specified. Cannot get background.")
     CAN_CHECK_STATEMENTS = False
 
@@ -68,11 +69,17 @@ class MSA_Module(Bioagent):
         logger.debug('Found agent (target): %s.' % agent.name)
         residue = content.gets('residue')
         position = content.gets('position')
-        related_results = [
-            s for s in query_database(agent=agent.name, type='ActiveForm')
-            if self._matching(s, residue, position, action, polarity)
-            ]
-        if not len(related_results):
+        related_result_dict = {}
+        for namespace, name in agent.db_refs.items():
+            # TODO: Remove this eventually, as it is a temporary work-around.
+            if namespace == 'FPLX':
+                namespace = 'BE'
+            stmts = get_statements(agents=['%s@%s' % (name, namespace)],
+                                   stmt_type='ActiveForm')
+            for s in stmts:
+                if self._matching(s, residue, position, action, polarity):
+                    related_result_dict[s.matches_key()] = s
+        if not len(related_result_dict):
             return self.make_failure(
                 'MISSING_MECHANISM',
                 "Could not find statement matching phosphorylation activating "
@@ -81,7 +88,7 @@ class MSA_Module(Bioagent):
                 )
         else:
             self.send_provenance_for_stmts(
-                related_results,
+                related_result_dict.values(),
                 "Phosphorylation at %s%s activates %s." % (
                     residue,
                     position,

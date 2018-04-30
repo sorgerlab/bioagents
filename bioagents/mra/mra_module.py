@@ -85,7 +85,7 @@ class MRA_Module(Bioagent):
         msg.set('model-id', str(model_id))
         # Add the INDRA model json
         model = res.get('model')
-        if model:
+        if model and descr_format == 'ekb' or not descr_format:
             self.send_background_support(model)
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
@@ -288,6 +288,7 @@ class MRA_Module(Bioagent):
 
     def send_background_support(self, stmts):
         logger.info('Sending support for %d statements' % len(stmts))
+        for_what = 'the mechanism you added'
         for stmt in stmts:
             try:
                 matched = _get_matching_stmts(stmt)
@@ -297,10 +298,13 @@ class MRA_Module(Bioagent):
                 logger.error("Got exception while looking for support for %s"
                              % stmt)
                 logger.exception(e)
+                self.send_null_provenance(stmt, for_what,
+                                          'due to an internal error')
                 continue
             if matched:
-                self.send_provenance_for_stmts(matched,
-                                               "the mechanism you added")
+                self.send_provenance_for_stmts(matched, for_what)
+            else:
+                self.send_null_provenance(stmt, for_what)
 
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')

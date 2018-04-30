@@ -6,6 +6,7 @@ import logging
 import pysb.export
 
 from indra.sources.trips.processor import TripsProcessor
+from indra.databases import hgnc_client
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.statements import stmts_to_json, Complex, SelfModification,\
     ActiveForm
@@ -396,13 +397,29 @@ def _get_agent_comp(agent):
     return comp_id
 
 
+def _get_agent_ref(agent):
+    """Get the preferred ref for an agent for db web api."""
+    if agent is None:
+        return None
+    ag_hgnc_id = hgnc_client.get_hgnc_id(agent.name)
+    if ag_hgnc_id is not None:
+        return ag_hgnc_id + "@HGNC"
+    db_refs = agent.db_refs
+    for namespace in ['HGNC', 'FPLX', 'CHEBI', 'TEXT']:
+        if namespace in db_refs.keys():
+            # TODO: Remove. This is a temporary workaround.
+            if namespace == 'FPLX':
+                return '%s@%s' % (db_refs[namespace], 'BE')
+            return '%s@%s' % (db_refs[namespace], namespace)
+    return '%s@%s' % (agent.name, 'TEXT')
+
+
 def _get_matching_stmts(stmt_ref):
     if not CAN_CHECK_STATEMENTS:
         return None
     # Filter by statement type.
     stmt_type = stmt_ref.__class__.__name__
-    agent_name_list = [ag.name if ag is not None else None
-                       for ag in stmt_ref.agent_list()]
+    agent_name_list = [_get_agent_ref(ag) for ag in stmt_ref.agent_list()]
     non_binary_statements = [Complex, SelfModification, ActiveForm]
     # TODO: We should look at more than just the agent name.
     # Doing so efficiently may require changes to the web api.
@@ -412,8 +429,10 @@ def _get_matching_stmts(stmt_ref):
         kwargs = {}
     else:
         agent_list = []
-        kwargs = {k: v for k, v in zip(['subject', 'object'], agent_name_list)
-                  if v is not None}
+        kwargs = {k: v for k, v in zip(['subject', 'object'], agent_name_list)}
+        if not any(kwargs.values()):
+            raise BioagentException('Either subject or object must be '
+                                    'something other than None.')
     return get_statements(agents=agent_list, stmt_type=stmt_type, **kwargs)
 
 

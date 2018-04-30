@@ -40,11 +40,6 @@ class MRA_Module(Bioagent):
         self.mra = MRA()
         super(MRA_Module, self).__init__(**kwargs)
 
-    def receive_tell(self, msg, content):
-        tell_content = content.head().upper()
-        if tell_content == 'START-CONVERSATION':
-            logger.info('MRA resetting')
-
     def receive_request(self, msg, content):
         """Handle request messages and respond.
 

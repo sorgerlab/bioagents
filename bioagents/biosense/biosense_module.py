@@ -24,11 +24,6 @@ class BioSense_Module(Bioagent):
     tasks = ['CHOOSE-SENSE', 'CHOOSE-SENSE-CATEGORY',
              'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER']
 
-    def receive_tell(self, msg, content):
-        tell_content = content[0].to_string().upper()
-        if tell_content == 'START-CONVERSATION':
-            logger.info('BioSense resetting')
-
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""
         ekb = content.gets('ekb-term')

@@ -39,6 +39,11 @@ class Bioagent(KQMLModule):
         logger.addHandler(handler)
         return log_file_name
 
+    def receive_tell(self, msg, content):
+        tell_content = content[0].to_string().upper()
+        if tell_content == 'START-CONVERSATION':
+            logger.info('%s resetting' % self.name)
+
     def receive_request(self, msg, content):
         """Handle request messages and respond.
 

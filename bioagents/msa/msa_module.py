@@ -43,11 +43,6 @@ class MSA_Module(Bioagent):
     tasks = ['PHOSPHORYLATION-ACTIVATING']
     signor_afs = _read_signor_afs()
 
-    def receive_tell(self, msg, content):
-        tell_content = content[0].to_string().upper()
-        if tell_content == 'START-CONVERSATION':
-            logger.info('MSA resetting')
-
     def respond_phosphorylation_activating(self, content):
         """Return response content to phosphorylation_activating request."""
         if not CAN_CHECK_STATEMENTS:

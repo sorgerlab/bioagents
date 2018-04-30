@@ -38,6 +38,7 @@ class Bioagent(KQMLModule):
         try:
             content = msg.get('content')
             task = content.head().upper()
+            logger.info("%s received request with task: %s" % (self.name, task))
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)
@@ -59,6 +60,8 @@ class Bioagent(KQMLModule):
         resp_name = "respond_" + task.replace('-', '_').lower()
         try:
             resp = getattr(self, resp_name)
+            logger.info("%s responding to task %s with method %s."
+                        % (self.name, task, resp_name))
         except AttributeError:
             logger.error("Tried to execute unimplemented task.")
             logger.error("Did not find response method %s." % resp_name)
@@ -90,7 +93,7 @@ class Bioagent(KQMLModule):
         if not self.testing:
             return KQMLModule.error_reply(self, msg, comment)
         else:
-            return (msg, comment)
+            return msg, comment
 
     def make_failure(self, reason=None, description=None):
         msg = KQMLList('FAILURE')

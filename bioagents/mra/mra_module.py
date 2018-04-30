@@ -289,7 +289,13 @@ class MRA_Module(Bioagent):
     def send_background_support(self, stmts):
         logger.info('Sending support for %d statements' % len(stmts))
         for stmt in stmts:
-            matched = _get_matching_stmts(stmt)
+            try:
+                matched = _get_matching_stmts(stmt)
+            except BioagentException as e:
+                logger.error("Got exception while looking for support for %s"
+                             % stmt)
+                logger.exception(e)
+                continue
             if matched:
                 self.send_provenance_for_stmts(matched,
                                                "the mechanism you added")

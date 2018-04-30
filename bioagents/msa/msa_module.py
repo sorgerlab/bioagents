@@ -2,12 +2,12 @@ import os
 import sys
 import re
 import pickle
-import requests
 import logging
 
 from kqml import KQMLPerformative
 
 from indra.sources.trips.processor import TripsProcessor
+from indra import has_config
 
 from bioagents import Bioagent
 
@@ -17,10 +17,12 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('MSA')
 
 
-from indra import has_config
-if has_config('INDRA_DB_REST_URL') and has_config('INDRADB_REST_API_KEY'):
-    CAN_CHECK_STATEMENTS = True
-    from indra.sources.indra_db_rest import get_statements
+if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
+    try:
+        from indra.sources.indra_db_rest import get_statements
+        CAN_CHECK_STATEMENTS = True
+    except:
+        CAN_CHECK_STATEMENTS = False
 else:
     logger.warning("Database web api not specified. Cannot get background.")
     CAN_CHECK_STATEMENTS = False

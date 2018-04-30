@@ -68,15 +68,19 @@ class MSA_Module(Bioagent):
         residue = content.gets('residue')
         position = content.gets('position')
         related_result_dict = {}
+        logger.info("Looking for statements with agent %s of type %s."
+                    % (str(agent), 'ActiveForm'))
         for namespace, name in agent.db_refs.items():
             # TODO: Remove this eventually, as it is a temporary work-around.
             if namespace == 'FPLX':
                 namespace = 'BE'
+            logger.info("Checking namespace: %s" % namespace)
             stmts = get_statements(agents=['%s@%s' % (name, namespace)],
                                    stmt_type='ActiveForm')
             for s in stmts:
                 if self._matching(s, residue, position, action, polarity):
                     related_result_dict[s.matches_key()] = s
+        logger.info("Found %d matching statements." % len(related_result_dict))
         if not len(related_result_dict):
             return self.make_failure(
                 'MISSING_MECHANISM',

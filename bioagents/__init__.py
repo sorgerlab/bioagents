@@ -1,10 +1,9 @@
-import sys
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('Bioagents')
-from itertools import groupby
-from collections import defaultdict
+
+
 from indra.assemblers import EnglishAssembler
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
@@ -20,6 +19,7 @@ class Bioagent(KQMLModule):
 
     def __init__(self, **kwargs):
         super(Bioagent, self).__init__(name=self.name, **kwargs)
+        self.my_log_file = self._add_log_file()
         for task in self.tasks:
             self.subscribe_request(task)
 
@@ -27,6 +27,17 @@ class Bioagent(KQMLModule):
         self.start()
         logger.info("%s has started and is ready." % self.name)
         return
+
+    @classmethod
+    def _add_log_file(cls):
+        log_file_name = '%s.log' % cls.name
+        handler = logging.FileHandler(log_file_name)
+        handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s: '
+                                      '%(name)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        return log_file_name
 
     def receive_request(self, msg, content):
         """Handle request messages and respond.

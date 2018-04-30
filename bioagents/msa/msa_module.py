@@ -4,17 +4,16 @@ import re
 import pickle
 import logging
 
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger('MSA')
+
 from kqml import KQMLPerformative
 
 from indra.sources.trips.processor import TripsProcessor
 from indra import has_config
 
 from bioagents import Bioagent
-
-
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger('MSA')
 
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):

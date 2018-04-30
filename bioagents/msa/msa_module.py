@@ -1,16 +1,27 @@
 import os
 import sys
-import logging
 import re
-from bioagents import Bioagent
-from indra.sources.trips.processor import TripsProcessor
-from kqml import KQMLPerformative
 import pickle
-
+import logging
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA')
+
+from kqml import KQMLPerformative
+
+from indra.sources.trips.processor import TripsProcessor
+from indra import has_config
+
+from bioagents import Bioagent
+
+
+if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
+    from indra.sources.indra_db_rest import get_statements
+    CAN_CHECK_STATEMENTS = True
+else:
+    logger.warning("Database web api not specified. Cannot get background.")
+    CAN_CHECK_STATEMENTS = False
 
 
 def _read_signor_afs():
@@ -39,6 +50,11 @@ class MSA_Module(Bioagent):
 
     def respond_phosphorylation_activating(self, content):
         """Return response content to phosphorylation_activating request."""
+        if not CAN_CHECK_STATEMENTS:
+            return self.make_failure(
+                'NO_KNOWLEDGE_ACCESS',
+                'Cannot access the database through the web api.'
+                )
         heading = content.head()
         m = re.match('(\w+)-(\w+)', heading)
         if m is None:
@@ -51,11 +67,17 @@ class MSA_Module(Bioagent):
         logger.debug('Found agent (target): %s.' % agent.name)
         residue = content.gets('residue')
         position = content.gets('position')
-        related_results = [
-            s for s in self.signor_afs
-            if self._matching(s, agent, residue, position, action, polarity)
-            ]
-        if not len(related_results):
+        related_result_dict = {}
+        for namespace, name in agent.db_refs.items():
+            # TODO: Remove this eventually, as it is a temporary work-around.
+            if namespace == 'FPLX':
+                namespace = 'BE'
+            stmts = get_statements(agents=['%s@%s' % (name, namespace)],
+                                   stmt_type='ActiveForm')
+            for s in stmts:
+                if self._matching(s, residue, position, action, polarity):
+                    related_result_dict[s.matches_key()] = s
+        if not len(related_result_dict):
             return self.make_failure(
                 'MISSING_MECHANISM',
                 "Could not find statement matching phosphorylation activating "
@@ -64,7 +86,7 @@ class MSA_Module(Bioagent):
                 )
         else:
             self.send_provenance_for_stmts(
-                related_results,
+                related_result_dict.values(),
                 "Phosphorylation at %s%s activates %s." % (
                     residue,
                     position,
@@ -83,9 +105,7 @@ class MSA_Module(Bioagent):
         agent = tp._get_agent_by_id(term_id, None)
         return agent
 
-    def _matching(self, stmt, agent, residue, position, action, polarity):
-        if stmt.agent.name != agent.name:
-            return False
+    def _matching(self, stmt, residue, position, action, polarity):
         if stmt.is_active is not (polarity == 'activating'):
             return False
         matching_residues = any([

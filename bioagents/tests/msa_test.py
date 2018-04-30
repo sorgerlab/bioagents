@@ -3,6 +3,11 @@ from bioagents.msa import msa_module
 from kqml.kqml_list import KQMLList
 from bioagents.tests.util import ekb_from_text, get_request
 from bioagents.tests.integration import _IntegrationTest
+from nose.plugins.skip import SkipTest
+
+
+if not msa_module.CAN_CHECK_STATEMENTS:
+    raise SkipTest("Database web api is not available.")
 
 
 def _get_message(heading, target=None, residue=None, position=None):
@@ -84,11 +89,13 @@ class TestMsaProvenance(_IntegrationTest):
                 and msg.get('content').head() == 'add-provenance']
         assert len(provs) == 1, 'Too much provenance: %d vs. 1.' % len(provs)
         html = provs[0].get('content').get('html')
-        evs = re.findall("<i>[\"\'](.*?)[\"\']</i>.*?<a.*?>PMID(\d+)</a>",
-                         html.to_string())
+        html_str = html.to_string()
+        evs = re.findall("<i>[\"\'](.*?)[\"\']</i>.*?<a.*?>(?:pmid|PMID)(\d+)</a>",
+                         html_str)
+        evs += re.findall("<li>(.*?):.*?\(<a.*?>PMID(\d+)</a>\)</li>", html_str)
         assert len(evs),\
-            ("Unexpectedly formatted provenance (got no regex extractions): %s"
-             % html.to_string())
+            ("unexpectedly formatted provenance (got no regex extractions): %s"
+             % html_str)
         ev_counts = [(ev, evs.count(ev)) for ev in set(evs)]
         ev_duplicates = ['%d x \"%s\" with pmid %s' % (num, ev_str, pmid)
                          for (ev_str, pmid), num in ev_counts if num > 1]

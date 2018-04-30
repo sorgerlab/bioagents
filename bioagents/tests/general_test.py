@@ -16,7 +16,7 @@ def test_make_evidence_html1():
     ev4 = Evidence(source_api='bel', pmid=None, text=None, source_id=None)
     stmt = Phosphorylation(Agent('A'), Agent('B'),
                            evidence=[ev1, ev2, ev3, ev4])
-    ev_html = make_evidence_html([stmt], 'proof for a conclusion')
+    ev_html = make_evidence_html([stmt])
     assert 'Some evidence' in ev_html, ev_html
     assert 'Database entry in \'biopax\'' in ev_html, ev_html
     assert 'Database entry in \'bel\'' in ev_html, ev_html

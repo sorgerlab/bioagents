@@ -107,7 +107,7 @@ class Bioagent(KQMLModule):
         """
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
-        evidence_html = make_evidence_html(stmt_list, for_what, limit)
+        evidence_html = make_evidence_html(stmt_list, limit)
         # Actually create the content.
         content = KQMLList('add-provenance')
         content.sets('html',
@@ -117,7 +117,7 @@ class Bioagent(KQMLModule):
         return self.tell(content)
 
 
-def make_evidence_html(stmt_list, for_what, limit=5):
+def make_evidence_html(stmt_list, limit=5):
     """Creates HTML content for evidences corresponding to INDRA Statements."""
     # Create some formats
     url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'

@@ -1,10 +1,9 @@
-import sys
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('Bioagents')
-from itertools import groupby
-from collections import defaultdict
+
+
 from indra.assemblers import EnglishAssembler
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
@@ -20,6 +19,7 @@ class Bioagent(KQMLModule):
 
     def __init__(self, **kwargs):
         super(Bioagent, self).__init__(name=self.name, **kwargs)
+        self.my_log_file = self._add_log_file()
         for task in self.tasks:
             self.subscribe_request(task)
 
@@ -27,6 +27,22 @@ class Bioagent(KQMLModule):
         self.start()
         logger.info("%s has started and is ready." % self.name)
         return
+
+    @classmethod
+    def _add_log_file(cls):
+        log_file_name = '%s.log' % cls.name
+        handler = logging.FileHandler(log_file_name)
+        handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s: '
+                                      '%(name)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        return log_file_name
+
+    def receive_tell(self, msg, content):
+        tell_content = content[0].to_string().upper()
+        if tell_content == 'START-CONVERSATION':
+            logger.info('%s resetting' % self.name)
 
     def receive_request(self, msg, content):
         """Handle request messages and respond.
@@ -38,6 +54,7 @@ class Bioagent(KQMLModule):
         try:
             content = msg.get('content')
             task = content.head().upper()
+            logger.info("%s received request with task: %s" % (self.name, task))
         except Exception as e:
             logger.error('Could not get task string from request.')
             logger.error(e)
@@ -59,6 +76,8 @@ class Bioagent(KQMLModule):
         resp_name = "respond_" + task.replace('-', '_').lower()
         try:
             resp = getattr(self, resp_name)
+            logger.info("%s will perform task %s with method %s."
+                        % (self.name, task, resp_name))
         except AttributeError:
             logger.error("Tried to execute unimplemented task.")
             logger.error("Did not find response method %s." % resp_name)
@@ -90,7 +109,7 @@ class Bioagent(KQMLModule):
         if not self.testing:
             return KQMLModule.error_reply(self, msg, comment)
         else:
-            return (msg, comment)
+            return msg, comment
 
     def make_failure(self, reason=None, description=None):
         msg = KQMLList('FAILURE')

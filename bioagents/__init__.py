@@ -76,7 +76,7 @@ class Bioagent(KQMLModule):
         resp_name = "respond_" + task.replace('-', '_').lower()
         try:
             resp = getattr(self, resp_name)
-            logger.info("%s responding to task %s with method %s."
+            logger.info("%s will perform task %s with method %s."
                         % (self.name, task, resp_name))
         except AttributeError:
             logger.error("Tried to execute unimplemented task.")

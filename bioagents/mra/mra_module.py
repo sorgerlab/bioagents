@@ -291,6 +291,8 @@ class MRA_Module(Bioagent):
         for stmt in stmts:
             try:
                 matched = _get_matching_stmts(stmt)
+                logger.info("Found %d statements supporting %s"
+                            % (len(matched), stmt))
             except BioagentException as e:
                 logger.error("Got exception while looking for support for %s"
                              % stmt)

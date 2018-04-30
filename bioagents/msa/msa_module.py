@@ -17,11 +17,8 @@ from bioagents import Bioagent
 
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
-    try:
-        from indra.sources.indra_db_rest import get_statements
-        CAN_CHECK_STATEMENTS = True
-    except:
-        CAN_CHECK_STATEMENTS = False
+    from indra.sources.indra_db_rest import get_statements
+    CAN_CHECK_STATEMENTS = True
 else:
     logger.warning("Database web api not specified. Cannot get background.")
     CAN_CHECK_STATEMENTS = False

@@ -424,7 +424,7 @@ def _get_agent_ref(agent):
 
 def _get_matching_stmts(stmt_ref):
     if not CAN_CHECK_STATEMENTS:
-        return None
+        return []
     # Filter by statement type.
     stmt_type = stmt_ref.__class__.__name__
     agent_name_list = [_get_agent_ref(ag) for ag in stmt_ref.agent_list()]

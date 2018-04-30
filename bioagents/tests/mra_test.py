@@ -219,13 +219,11 @@ def test_get_matching_statements():
     if not CAN_CHECK_STATEMENTS:
         raise SkipTest("Database api not accessible.")
     braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
-    matching = {}
-    for fplx in ['BE', 'FPLX']:
-        map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
-        stmt_ref = sts.Phosphorylation(braf, map2k1)
-        matching[fplx] = _get_matching_stmts(stmt_ref)
-    assert any([len(matching[fplx]) == 2 for fplx in ['BE', 'FPLX']]),\
-        "Expected 2 matching for at least one name, got matching: %s" % matching
+    map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
+    stmt_ref = sts.Phosphorylation(braf, map2k1)
+    matching = _get_matching_stmts(stmt_ref)
+    assert len(matching) > 1, \
+        "Expected > 1 matching, got matching: %s" % matching
 
 
 # #####################

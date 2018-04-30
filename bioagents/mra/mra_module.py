@@ -9,23 +9,27 @@ from indra.sources.trips.processor import TripsProcessor
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.statements import stmts_to_json, Complex, SelfModification,\
     ActiveForm
-from kqml import KQMLPerformative, KQMLList, KQMLString
+from indra import has_config
 
+from kqml import KQMLPerformative, KQMLList, KQMLString
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MRA')
 
-
 from bioagents import Bioagent, BioagentException
-try:
-    from bioagents.resources.indra_knowledge_client import query_database
-    CAN_CHECK_STATEMENTS = True
-except Exception as e:
+from .mra import MRA
+
+
+if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
+    try:
+        from indra.sources.indra_db_rest import get_statements
+        CAN_CHECK_STATEMENTS = True
+    except:
+        CAN_CHECK_STATEMENTS = False
+else:
     logger.warning("Database web api not specified. Cannot get background.")
     CAN_CHECK_STATEMENTS = False
-
-from .mra import MRA
 
 
 class MRA_Module(Bioagent):
@@ -408,15 +412,17 @@ def _get_matching_stmts(stmt_ref):
     agent_name_list = [ag.name if ag is not None else None
                        for ag in stmt_ref.agent_list()]
     non_binary_statements = [Complex, SelfModification, ActiveForm]
+    # TODO: We should look at more than just the agent name.
+    # Doing so efficiently may require changes to the web api.
     if any([isinstance(stmt_ref, tp) for tp in non_binary_statements]):
-        args = ['agent=%s' % ag_name for ag_name in agent_name_list
-                if ag_name is not None]
+        agent_list = [ag_name for ag_name in agent_name_list
+                      if ag_name is not None]
         kwargs = {}
     else:
-        args = []
+        agent_list = []
         kwargs = {k: v for k, v in zip(['subject', 'object'], agent_name_list)
                   if v is not None}
-    return query_database(*args, type=stmt_type, **kwargs)
+    return get_statements(agents=agent_list, stmt_type=stmt_type, **kwargs)
 
 
 _resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'

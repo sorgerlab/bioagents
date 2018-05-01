@@ -68,12 +68,27 @@ class QCA_Module(Bioagent):
         if not results_list:
             reply = self.make_failure('NO_PATH_FOUND')
             return reply
-        first_result = results_list[0]
-        first_edges = first_result[1::2]
-        indra_edges = [fe[0]['INDRA json'] for fe in first_edges]
-        indra_edges = [json.loads(e) for e in indra_edges]
-        indra_edges = _fix_indra_edges(indra_edges)
+
+        def get_path_statements(results_list):
+            stmts_list = []
+            for res in results_list:
+                # Edges of the first result
+                edges = res[1::2]
+                # INDRA JSON of the edges of the result
+                indra_edges = [fe[0]['INDRA json'] for fe in edges]
+                # Make the JSONs dicts from strings
+                indra_edges = [json.loads(e) for e in indra_edges]
+                # Now fix the edges if needed due to INDRA Statement changes
+                indra_edges = _fix_indra_edges(indra_edges)
+                stmts_list.append(indra_edges)
+            return stmts_list
+
+        paths_list = get_path_statements(results_list)
+        # Take the first one to report
+        indra_edges = paths_list[0]
+        # Get the INDRA Statement objects
         indra_edge_stmts = stmts_from_json(indra_edges)
+        # Assemble into English
         for stmt in indra_edge_stmts:
             txt = EnglishAssembler([stmt]).make_model()
             self.send_provenance_for_stmts(

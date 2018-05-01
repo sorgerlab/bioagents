@@ -115,6 +115,8 @@ class MSA_Module(Bioagent):
                 logger.exception(e)
                 return self.make_failure('MISSING_TARGET')
         stmt_type = content.gets('type')
+        if stmt_type == 'unknown':
+            stmt_type = None
         logger.info("Got a query for {subject} {verb} {object}."
                     .format(verb=stmt_type, **agent_dict))
         # Try to get related statements.
@@ -147,7 +149,7 @@ class MSA_Module(Bioagent):
 
         # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
-        resp.set('relations-found', len(stmts))
+        resp.set('relations-found', str(len(stmts)))
         return resp
 
     @staticmethod

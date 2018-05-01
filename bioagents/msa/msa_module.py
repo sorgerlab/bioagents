@@ -4,11 +4,15 @@ import re
 import pickle
 import logging
 
+from pysb.bng import BngInterfaceError
+
+from indra.assemblers import PysbAssembler, pysb_assembler
+
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.DEBUG)
 logger = logging.getLogger('MSA')
 
-from kqml import KQMLPerformative
+from kqml import KQMLPerformative, KQMLList
 
 from indra.sources.trips.processor import TripsProcessor
 from indra import has_config
@@ -117,8 +121,10 @@ class MSA_Module(Bioagent):
         stmt_type = content.gets('type')
         if stmt_type == 'unknown':
             stmt_type = None
-        logger.info("Got a query for {subject} {verb} {object}."
-                    .format(verb=stmt_type, **agent_dict))
+        nl_question = ('{subject} {verb} of {object}'
+                       .format(verb=stmt_type,
+                               **{k: v['name'] for k, v in agent_dict.items()}))
+        logger.info("Got a query for %s." % nl_question)
         # Try to get related statements.
         try:
             input_dict = {'stmt_type': stmt_type}
@@ -142,7 +148,7 @@ class MSA_Module(Bioagent):
         # For now just list the statements in the provenance tab. Only captures
         # the top 5.
         try:
-            self.send_provenance_for_stmts(stmts, 'Found some!')
+            self.send_display_stmts(stmts, nl_question)
         except Exception as e:
             logger.warning("Failed to send provenance.")
             logger.exception(e)
@@ -151,6 +157,14 @@ class MSA_Module(Bioagent):
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', str(len(stmts)))
         return resp
+
+    def send_display_stmts(self, stmts, nl_question):
+        self.send_provenance_for_stmts(stmts, nl_question)
+        resource = _make_sbgn(stmts)
+        content = KQMLList('open-query-window')
+        content.set('cyld', '0')
+        content.sets('graph', resource)
+        return self.tell(content)
 
     @staticmethod
     def _get_agent(agent_ekb):
@@ -172,6 +186,21 @@ class MSA_Module(Bioagent):
             and m.mod_type == action
             for m in stmt.agent.mods])
         return matching_residues
+
+
+def _make_sbgn(stmts):
+    pa = PysbAssembler()
+    pa.add_statements(stmts)
+    pa.make_model()
+    pa.add_default_initial_conditions(10)
+    for m in pa.model.monomers:
+        pysb_assembler.set_extended_initial_condition(pa.model, m, 0)
+    try:
+        sbgn_str = pa.export_model('sbgn')
+    except BngInterfaceError:
+        logger.error('Reaction network could not be generated for SBGN.')
+        return None
+    return sbgn_str
 
 
 if __name__ == "__main__":

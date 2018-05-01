@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import logging
@@ -113,7 +114,12 @@ class QCA_Module(Bioagent):
         all_stmts = flatten(path_stmts)
         ga = GraphAssembler(all_stmts)
         ga.make_model()
-        ga.save_pdf('qca_paths.png')
+        resource = os.path.abspath('qca_paths.png')
+        ga.save_pdf(resource)
+        content = KQMLList('display-image')
+        content.set('type', 'simulation')
+        content.sets('path', resource)
+        self.tell(content)
 
     def respond_has_qca_path(self, content):
         """Response content to find-qca-path request."""

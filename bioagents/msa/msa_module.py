@@ -98,14 +98,20 @@ class MSA_Module(Bioagent):
 
     def respond_find_immediate_relation(self, content):
         """Find statements matching a query for FIND-IMMEDIATE-RELATION task."""
-        source = content.gets('source')
-        subj_agent = self._get_agent(source)
-        target = content.gets('target')
-        obj_agent = self._get_agent(target)
+        agent_dict = dict.fromkeys(['subject', 'object'])
+        for pos, loc in [('subject', 'source'), ('object', 'target')]:
+            ekb = content.gets(loc)
+            try:
+                agent_dict[pos] = self._get_agent(ekb)
+            except Exception as e:
+                logger.error("Got exception while converting ekb for %s (%s) "
+                             "into an agent." % (pos, ekb))
+                logger.exception(e)
+                self.make_failure('MISSING_TARGET')
         stmt_type = content.gets('type')
-        logger.info("Got a query for %s %s %s."
-                    % (subj_agent.name, stmt_type, obj_agent.name))
-        stmts = get_statements(subj_agent, obj_agent, stmt_type=stmt_type)
+        logger.info("Got a query for %{subject} {verb} {object}."
+                    .format(verb=stmt_type, **agent_dict))
+        stmts = get_statements(stmt_type=stmt_type, **agent_dict)
         self.send_provenance_for_stmts(stmts, 'Found some!')
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', len(stmts))

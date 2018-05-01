@@ -134,6 +134,8 @@ class Bioagent(KQMLModule):
 
         The message is used to provide evidence supporting a conclusion.
         """
+        logger.info("Sending provenance for %d statements for \"%s\"."
+                    % (len(stmt_list), for_what))
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
         evidence_html = make_evidence_html(stmt_list, limit)

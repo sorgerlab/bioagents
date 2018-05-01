@@ -103,8 +103,13 @@ class MSA_Module(Bioagent):
         target = content.gets('target')
         obj_agent = self._get_agent(target)
         stmt_type = content.gets('type')
+        logger.info("Got a query for %s %s %s."
+                    % (subj_agent.name, stmt_type, obj_agent.name))
         stmts = get_statements(subj_agent, obj_agent, stmt_type=stmt_type)
         self.send_provenance_for_stmts(stmts, 'Found some!')
+        resp = KQMLPerformative('SUCCESS')
+        resp.set('relations-found', len(stmts))
+        return resp
 
     @staticmethod
     def _get_agent(agent_ekb):

@@ -47,9 +47,11 @@ class QCA:
             #    "server": "public.ndexbio.org"
             #}
             {
-                "id": "04020c47-4cfd-11e8-a4bf-0ac135e8bacf",
+                # Large network from preassembled DB
+                #"id": "04020c47-4cfd-11e8-a4bf-0ac135e8bacf",
+                # The RAS Machine network
+                "id": "50e3dff7-133e-11e6-a039-06603eb7f303",
                 #"id": "d68677b8-173d-11e7-b39e-0ac135e8bacf",
-                #"id": "50e3dff7-133e-11e6-a039-06603eb7f303",
                 #"id": "89274295-1730-11e7-b39e-0ac135e8bacf",
                 "name": "Ras Machine",
                 "type": "canonical",
@@ -131,6 +133,9 @@ class QCA:
             #==========================================
             if prc is not None and len(prc.strip()) > 0:
                 try:
+                    # Dump the QCA result for debugging purposes
+                    with open('qca_result.json', 'w') as fh:
+                        json.dump(prc.decode(), fh)
                     result_json = json.loads(prc.decode())
                     if result_json.get('data') is not None and \
                        result_json.get("data").get("forward_english") is not None:
@@ -143,6 +148,7 @@ class QCA:
                         if len(results_list) > 0 and exit_on_found_path:
                             return results_list
                 except ValueError as ve:
+                    print(ve)
                     print("value is not json.  html 500?")
 
         path_scoring = PathScoring()

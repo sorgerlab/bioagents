@@ -102,19 +102,17 @@ class MSA_Module(Bioagent):
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
             ekb = content.gets(loc)
-            logger.debug('%s:\n%s' % (pos, ekb))
-            if 'none' in ekb.lower():
+            try:
+                agent_dict[pos] = self._get_agent(ekb)
+            except Exception as e:
+                logger.error("Got exception while converting ekb for %s "
+                             "(%s) into an agent." % (pos, ekb))
+                logger.exception(e)
+                return self.make_failure('MISSING_TARGET')
+            if str(agent_dict[pos]) == 'None':
                 agent_dict[pos] = None
-            else:
-                try:
-                    agent_dict[pos] = self._get_agent(ekb)
-                except Exception as e:
-                    logger.error("Got exception while converting ekb for %s "
-                                 "(%s) into an agent." % (pos, ekb))
-                    logger.exception(e)
-                    return self.make_failure('MISSING_TARGET')
         stmt_type = content.gets('type')
-        logger.info("Got a query for %{subject} {verb} {object}."
+        logger.info("Got a query for {subject} {verb} {object}."
                     .format(verb=stmt_type, **agent_dict))
         try:
             stmts = get_statements(stmt_type=stmt_type, **agent_dict)

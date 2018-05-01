@@ -1,8 +1,8 @@
 import json
 import xml.etree.ElementTree as ET
 from kqml.kqml_list import KQMLList
-from kqml.kqml_performative import KQMLPerformative
 import indra.statements as sts
+from indra.sources import trips
 from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, get_request
 from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
@@ -154,6 +154,12 @@ def test_make_cm():
 # MRA_Module unit tests
 # #####################
 
+def _get_statement_via_trips(stmt_text):
+    tp = trips.process_text(stmt_text)
+    assert tp is not None, "Bad text: %s." % stmt_text
+    return tp.statements[0]
+
+
 def test_respond_build_model_from_json():
     mm = MRA_Module(testing=True)
     st = sts.Phosphorylation(sts.Agent('MEK'), sts.Agent('ERK'))
@@ -167,14 +173,15 @@ def test_respond_build_model_from_json():
 
 def test_respond_expand_model_from_json():
     mm = MRA_Module(testing=True)
-    st = sts.Phosphorylation(sts.Agent('MEK'), sts.Agent('ERK'))
+    st = _get_statement_via_trips('MEK phosphorylates ERK')
     msg = KQMLList('BUILD-MODEL')
     msg.sets('description', json.dumps(sts.stmts_to_json([st])))
     msg.sets('format', 'indra_json')
     reply = mm.respond_build_model(msg)
     assert(reply.get('model'))
     assert(reply.get('model-id') == '1')
-    st = sts.Phosphorylation(sts.Agent('RAF'), sts.Agent('MEK'))
+
+    st = _get_statement_via_trips('RAF phosphorylates MEK')
     msg = KQMLList('EXPAND-MODEL')
     msg.sets('description', json.dumps(sts.stmts_to_json([st])))
     msg.sets('format', 'indra_json')

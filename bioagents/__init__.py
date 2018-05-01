@@ -119,6 +119,16 @@ class Bioagent(KQMLModule):
             msg.sets('description', description)
         return msg
 
+    def send_null_provenance(self, stmt, for_what, reason=''):
+        """Send out that no provenance could be found for a given Statement."""
+        content_fmt = ('<h4>No supporting evidence found for {statement} from '
+                       '{cause}{reason}.</h4>')
+        content = KQMLList('add-provenance')
+        stmt_txt = EnglishAssembler([stmt]).make_model()
+        content.sets('html', content_fmt.format(statement=stmt_txt,
+                                                cause=for_what, reason=reason))
+        return self.tell(content)
+
     def send_provenance_for_stmts(self, stmt_list, for_what, limit=5):
         """Send out a provenance tell for a list of INDRA Statements.
 

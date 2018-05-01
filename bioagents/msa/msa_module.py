@@ -103,7 +103,9 @@ class MSA_Module(Bioagent):
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
             ekb = content.gets(loc)
             try:
-                agent_dict[pos] = self._get_agent(ekb)
+                agent = self._get_agent(ekb)
+                agent_dict[pos] = {'name': agent.name}
+                agent_dict[pos].update(agent.db_refs)
             except Exception as e:
                 logger.error("Got exception while converting ekb for %s "
                              "(%s) into an agent." % (pos, ekb))
@@ -114,13 +116,32 @@ class MSA_Module(Bioagent):
         stmt_type = content.gets('type')
         logger.info("Got a query for {subject} {verb} {object}."
                     .format(verb=stmt_type, **agent_dict))
+        # Try to get related statements.
         try:
-            stmts = get_statements(stmt_type=stmt_type, **agent_dict)
+            input_dict = {'stmt_type': stmt_type}
+
+            # Use the best available db ref for each agent.
+            for pos, ref_dict in agent_dict.items():
+                for key in ['HGNC', 'FPLX', 'CHEBI', 'name', 'TEXT']:
+                    if key in ref_dict:
+                        input_dict[pos] = ref_dict[key]
+
+            # Actually get the statements.
+            stmts = get_statements(**input_dict)
         except IndraDBRestError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
             return self.make_failure('MISSING_MECHANISM')
-        self.send_provenance_for_stmts(stmts, 'Found some!')
+
+        # For now just list the statements in the provenance tab. Only captures
+        # the top 5.
+        try:
+            self.send_provenance_for_stmts(stmts, 'Found some!')
+        except Exception as e:
+            logger.warning("Failed to send provenance.")
+            logger.exception(e)
+
+        # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', len(stmts))
         return resp

@@ -9,7 +9,7 @@ from pysb.bng import BngInterfaceError
 from indra.assemblers import PysbAssembler, pysb_assembler
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.DEBUG)
+                    level=logging.INFO)
 logger = logging.getLogger('MSA')
 
 from kqml import KQMLPerformative, KQMLList
@@ -123,7 +123,8 @@ class MSA_Module(Bioagent):
             stmt_type = None
         nl_question = ('{subject} {verb} of {object}'
                        .format(verb=stmt_type,
-                               **{k: v['name'] for k, v in agent_dict.items()}))
+                               **{k: None if v is None else v['name']
+                                  for k, v in agent_dict.items()}))
         logger.info("Got a query for %s." % nl_question)
         # Try to get related statements.
         try:
@@ -162,7 +163,7 @@ class MSA_Module(Bioagent):
         self.send_provenance_for_stmts(stmts, nl_question)
         resource = _make_sbgn(stmts)
         content = KQMLList('open-query-window')
-        content.set('cyld', '0')
+        content.sets('cyld', '0')
         content.sets('graph', resource)
         return self.tell(content)
 

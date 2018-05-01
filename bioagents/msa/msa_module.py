@@ -102,7 +102,8 @@ class MSA_Module(Bioagent):
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
             ekb = content.gets(loc)
-            if ekb == '%None':
+            logger.debug('%s:\n%s' % (pos, ekb))
+            if 'none' in ekb.lower():
                 agent_dict[pos] = None
             else:
                 try:
@@ -111,7 +112,7 @@ class MSA_Module(Bioagent):
                     logger.error("Got exception while converting ekb for %s "
                                  "(%s) into an agent." % (pos, ekb))
                     logger.exception(e)
-                    self.make_failure('MISSING_TARGET')
+                    return self.make_failure('MISSING_TARGET')
         stmt_type = content.gets('type')
         logger.info("Got a query for %{subject} {verb} {object}."
                     .format(verb=stmt_type, **agent_dict))
@@ -120,7 +121,7 @@ class MSA_Module(Bioagent):
         except IndraDBRestError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
-            self.make_failure()
+            return self.make_failure('MISSING_MECHANISM')
         self.send_provenance_for_stmts(stmts, 'Found some!')
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', len(stmts))

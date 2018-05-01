@@ -25,8 +25,12 @@ class QCA_Module(Bioagent):
     tasks = ['FIND-QCA-PATH', 'HAS-QCA-PATH']
 
     def __init__(self, **kwargs):
+        # For local testing use
+        # qca_args = {'path_host': 'localhost',
+        #            'network_uuid': '04020c47-4cfd-11e8-a4bf-0ac135e8bacf'}
+        qca_args = {}
         # Instantiate a singleton QCA agent
-        self.qca = QCA()
+        self.qca = QCA(**qca_args)
         # Call the constructor of Bioagent
         super(QCA_Module, self).__init__(**kwargs)
 

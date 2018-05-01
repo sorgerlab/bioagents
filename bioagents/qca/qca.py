@@ -20,15 +20,24 @@ class PathNotFoundException(BioagentException):
             Exception.__init__(self, *args, **kwargs)
 
 
-class QCA:
-    def __init__(self):
+class QCA(object):
+    def __init__(self, path_host=None, network_uuid=None):
         logger.debug('Starting QCA')
+
+        if not path_host:
+            path_host = 'general.bigmech.ndexbio.org'
+
+        if not network_uuid:
+            network_uuid = '50e3dff7-133e-11e6-a039-06603eb7f303'
+
+        logger.info('Using host %s and network %s' % (path_host, network_uuid))
+
         self.host = "http://www.ndexbio.org"
 
         self.results_directory = "qca_results"
 
         self.directed_path_query_url = \
-            'http://general.bigmech.ndexbio.org:5603/directedpath/query'
+            ('http://%s:5603/directedpath/query' % path_host)
 
         self.context_expression_query_url = \
             'http://general.bigmech.ndexbio.org:8081' + \
@@ -48,11 +57,12 @@ class QCA:
             #}
             {
                 # Large network from preassembled DB
-                #"id": "04020c47-4cfd-11e8-a4bf-0ac135e8bacf",
+                # "id": "04020c47-4cfd-11e8-a4bf-0ac135e8bacf",
                 # The RAS Machine network
-                "id": "50e3dff7-133e-11e6-a039-06603eb7f303",
+                #"id": "50e3dff7-133e-11e6-a039-06603eb7f303",
                 #"id": "d68677b8-173d-11e7-b39e-0ac135e8bacf",
                 #"id": "89274295-1730-11e7-b39e-0ac135e8bacf",
+                'id': network_uuid,
                 "name": "Ras Machine",
                 "type": "canonical",
                 "server": "public.ndexbio.org"
@@ -135,7 +145,7 @@ class QCA:
                 try:
                     # Dump the QCA result for debugging purposes
                     with open('qca_result.json', 'w') as fh:
-                        json.dump(prc.decode(), fh)
+                        json.dump(json.loads(prc.decode()), fh, indent=2)
                     result_json = json.loads(prc.decode())
                     if result_json.get('data') is not None and \
                        result_json.get("data").get("forward_english") is not None:
@@ -159,7 +169,7 @@ class QCA:
                                      path_scoring.cross_country_scoring(x, y))
             )
 
-        return results_list_sorted[:3]
+        return results_list_sorted
 
     def has_path(self, source_names, target_names):
         '''
@@ -459,6 +469,7 @@ class EdgeRanking(object):
                 "Acetylation",
                 "Deacetylation",
                 "Sumoylation",
+                "Desumoylation",
                 "Ribosylation",
                 "Deribosylation"
             ],

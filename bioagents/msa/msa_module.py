@@ -154,8 +154,11 @@ class MSA_Module(Bioagent):
     def _get_agent(agent_ekb):
         tp = TripsProcessor(agent_ekb)
         terms = tp.tree.findall('TERM')
-        term_id = terms[0].attrib['id']
-        agent = tp._get_agent_by_id(term_id, None)
+        if len(terms):
+            term_id = terms[0].attrib['id']
+            agent = tp._get_agent_by_id(term_id, None)
+        else:
+            agent = None
         return agent
 
     def _matching(self, stmt, residue, position, action, polarity):

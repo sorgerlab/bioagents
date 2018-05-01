@@ -17,7 +17,8 @@ from bioagents import Bioagent
 
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
-    from indra.sources.indra_db_rest import get_statements
+    from indra.sources.indra_db_rest import get_statements, IndraDBRestError
+
     CAN_CHECK_STATEMENTS = True
 else:
     logger.warning("Database web api not specified. Cannot get background.")
@@ -101,17 +102,25 @@ class MSA_Module(Bioagent):
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
             ekb = content.gets(loc)
-            try:
-                agent_dict[pos] = self._get_agent(ekb)
-            except Exception as e:
-                logger.error("Got exception while converting ekb for %s (%s) "
-                             "into an agent." % (pos, ekb))
-                logger.exception(e)
-                self.make_failure('MISSING_TARGET')
+            if ekb == '%None':
+                agent_dict[pos] = None
+            else:
+                try:
+                    agent_dict[pos] = self._get_agent(ekb)
+                except Exception as e:
+                    logger.error("Got exception while converting ekb for %s "
+                                 "(%s) into an agent." % (pos, ekb))
+                    logger.exception(e)
+                    self.make_failure('MISSING_TARGET')
         stmt_type = content.gets('type')
         logger.info("Got a query for %{subject} {verb} {object}."
                     .format(verb=stmt_type, **agent_dict))
-        stmts = get_statements(stmt_type=stmt_type, **agent_dict)
+        try:
+            stmts = get_statements(stmt_type=stmt_type, **agent_dict)
+        except IndraDBRestError as e:
+            logger.error("Failed to get statements.")
+            logger.exception(e)
+            self.make_failure()
         self.send_provenance_for_stmts(stmts, 'Found some!')
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', len(stmts))

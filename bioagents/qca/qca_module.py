@@ -84,6 +84,11 @@ class QCA_Module(Bioagent):
             return stmts_list
 
         paths_list = get_path_statements(results_list)
+
+
+        self.report_paths_graph(paths_list)
+
+
         # Take the first one to report
         indra_edges = paths_list[0]
         # Get the INDRA Statement objects
@@ -100,6 +105,15 @@ class QCA_Module(Bioagent):
         reply.set('paths', KQMLList([ks]))
 
         return reply
+
+    def report_paths_graph(self, paths_list):
+        from indra.assemblers import GraphAssembler
+        from indra.util import flatten
+        path_stmts = [stmts_from_json(l) for l in paths_list]
+        all_stmts = flatten(path_stmts)
+        ga = GraphAssembler(all_stmts)
+        ga.make_model()
+        ga.save_pdf('qca_paths.png')
 
     def respond_has_qca_path(self, content):
         """Response content to find-qca-path request."""

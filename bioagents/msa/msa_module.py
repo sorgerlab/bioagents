@@ -104,15 +104,16 @@ class MSA_Module(Bioagent):
             ekb = content.gets(loc)
             try:
                 agent = self._get_agent(ekb)
-                agent_dict[pos] = {'name': agent.name}
-                agent_dict[pos].update(agent.db_refs)
+                if agent is None or agent == 'None':
+                    agent_dict[pos] = None
+                else:
+                    agent_dict[pos] = {'name': agent.name}
+                    agent_dict[pos].update(agent.db_refs)
             except Exception as e:
                 logger.error("Got exception while converting ekb for %s "
                              "(%s) into an agent." % (pos, ekb))
                 logger.exception(e)
                 return self.make_failure('MISSING_TARGET')
-            if str(agent_dict[pos]) == 'None':
-                agent_dict[pos] = None
         stmt_type = content.gets('type')
         logger.info("Got a query for {subject} {verb} {object}."
                     .format(verb=stmt_type, **agent_dict))
@@ -122,9 +123,12 @@ class MSA_Module(Bioagent):
 
             # Use the best available db ref for each agent.
             for pos, ref_dict in agent_dict.items():
-                for key in ['HGNC', 'FPLX', 'CHEBI', 'name', 'TEXT']:
-                    if key in ref_dict:
-                        input_dict[pos] = ref_dict[key]
+                if ref_dict is None:
+                    input_dict[pos] = None
+                else:
+                    for key in ['HGNC', 'FPLX', 'CHEBI', 'name', 'TEXT']:
+                        if key in ref_dict.keys():
+                            input_dict[pos] = ref_dict[key]
 
             # Actually get the statements.
             stmts = get_statements(**input_dict)

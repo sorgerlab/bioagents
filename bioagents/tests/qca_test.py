@@ -52,7 +52,7 @@ class TestSosKras(_IntegrationTest):
 
 
 def test_find_qca_path():
-    content = _get_qca_content('FIND-QCA-PATH', 'MAP2K1', 'BRAF')
+    content = _get_qca_content('FIND-QCA-PATH', 'BRAF', 'ELK1')
     qca_mod = QCA_Module(testing=True)
     resp = qca_mod.respond_find_qca_path(content)
     assert resp is not None, "No response received."

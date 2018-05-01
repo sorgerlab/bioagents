@@ -163,9 +163,9 @@ class MSA_Module(Bioagent):
         self.send_provenance_for_stmts(stmts, nl_question)
         resource = _make_sbgn(stmts)
         content = KQMLList('open-query-window')
-        content.sets('cyld', '0')
+        content.sets('cyld', '#1')
         content.sets('graph', resource)
-        return self.tell(content)
+        self.tell(content)
 
     @staticmethod
     def _get_agent(agent_ekb):

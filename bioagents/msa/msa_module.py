@@ -5,7 +5,7 @@ import pickle
 import logging
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                    level=logging.INFO)
+                    level=logging.DEBUG)
 logger = logging.getLogger('MSA')
 
 from kqml import KQMLPerformative

@@ -40,7 +40,7 @@ def _read_signor_afs():
 
 class MSA_Module(Bioagent):
     name = 'MSA'
-    tasks = ['PHOSPHORYLATION-ACTIVATING']
+    tasks = ['PHOSPHORYLATION-ACTIVATING', 'FIND-IMMEDIATE-RELATION']
     signor_afs = _read_signor_afs()
 
     def respond_phosphorylation_activating(self, content):
@@ -95,6 +95,16 @@ class MSA_Module(Bioagent):
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
             return msg
+
+    def respond_find_immediate_relation(self, content):
+        """Find statements matching a query for FIND-IMMEDIATE-RELATION task."""
+        source = content.gets('source')
+        subj_agent = self._get_agent(source)
+        target = content.gets('target')
+        obj_agent = self._get_agent(target)
+        stmt_type = content.gets('type')
+        stmts = get_statements(subj_agent, obj_agent, stmt_type=stmt_type)
+        self.send_provenance_for_stmts(stmts, 'Found some!')
 
     @staticmethod
     def _get_agent(agent_ekb):

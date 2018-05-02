@@ -4,9 +4,8 @@ import re
 import pickle
 import logging
 
-from pysb.bng import BngInterfaceError
 
-from indra.assemblers import PysbAssembler, pysb_assembler
+from indra.assemblers import SBGNAssembler
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -160,14 +159,31 @@ class MSA_Module(Bioagent):
         return resp
 
     def send_display_stmts(self, stmts, nl_question):
-        #self.send_provenance_for_stmts(stmts, nl_question)
+        self.send_table_to_provenance(stmts, nl_question)
         logger.info('Sending display statements')
-        resource = _make_sbgn(stmts)
+        resource = _make_sbgn(stmts[10:])
         logger.info(resource)
         content = KQMLList('open-query-window')
         content.sets('cyld', '#1')
         content.sets('graph', resource)
         self.tell(content)
+
+    def send_table_to_provenance(self, stmts, nl_question):
+        """Post a concise table listing statements found."""
+        html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
+        html_str += '<table style="width:100%">\n'
+        row_list = ['<th>Source</th><th>Target</th><th>Interaction</th>']
+        for stmt in stmts:
+            sub_ag, obj_ag = stmt.agent_list()
+            row_list.append('<td>{subject}</td><td>{verb}</td><td>{object}</td>'
+                            .format(subject=sub_ag.name, object=obj_ag.name,
+                                    verb=type(stmt)))
+        html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
+                               for row_str in row_list])
+        html_str += '</table>'
+        content = KQMLList('add-provenance')
+        content.sets('html', html_str)
+        return self.tell(content)
 
     @staticmethod
     def _get_agent(agent_ekb):

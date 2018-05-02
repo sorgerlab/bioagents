@@ -159,10 +159,10 @@ class MSA_Module(Bioagent):
         return resp
 
     def send_display_stmts(self, stmts, nl_question):
-        self.send_table_to_provenance(stmts, nl_question)
         logger.info('Sending display statements')
-        resource = _make_sbgn(stmts[:10])
-        logger.info(resource)
+        self.send_table_to_provenance(stmts, nl_question)
+        # resource = _make_sbgn(stmts[:10])
+        # logger.info(resource)
         content = KQMLList('open-query-window')
         content.sets('cyld', '#1')
         content.sets('graph', resource)

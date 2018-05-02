@@ -4,8 +4,11 @@ import re
 import pickle
 import logging
 
-
-from indra.assemblers import SBGNAssembler
+from bioagents.mra.mra import make_diagrams
+from indra.assemblers import SBGNAssembler, PysbAssembler
+from indra.db import get_primary_db
+from indra.db.preassembly_script import process_statements
+from indra.db.util import make_stmts_from_db_list
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -148,7 +151,7 @@ class MSA_Module(Bioagent):
         # For now just list the statements in the provenance tab. Only captures
         # the top 5.
         try:
-            self.send_display_stmts(stmts, nl_question)
+            self._send_display_stmts(stmts, nl_question)
         except Exception as e:
             logger.warning("Failed to send provenance.")
             logger.exception(e)
@@ -158,17 +161,73 @@ class MSA_Module(Bioagent):
         resp.set('relations-found', str(len(stmts)))
         return resp
 
-    def send_display_stmts(self, stmts, nl_question):
+    def respond_get_paper_model(self, content):
+        """Get and display the model from a paper, indicated by pmid."""
+        pmid = content.gets('pmid')
+        db = get_primary_db()
+        trid_tpl = db.select_one(db.TextRef.id, db.TextRef.pmid == pmid)
+        if not trid_tpl:
+            logger.info("PMID \"%s\" not found in the database." % pmid)
+            return self.make_failure("MISSING_PMID")
+        trid = trid_tpl[0]
+        tcids = db.select_all(db.TextContent.id,
+                              db.TextContent.text_ref_id == trid)
+        if not tcids:
+            resp = KQMLPerformative('SUCCESS')
+            resp.set('relations-found', 0)
+            return resp
+        reading_ids = []
+        for tcid, in tcids:
+            reading_ids.extend(db.select_all(db.Readings.id,
+                                             db.Readings.text_content_id == tcid))
+        if not reading_ids:
+            resp = KQMLPerformative('SUCCESS')
+            resp.set('relations-found', 0)
+            return resp
+
+        db_stmts = []
+        for rid, in reading_ids:
+            db_stmts.extend(db.select_all(db.Statements,
+                                          db.Statements.reader_ref == rid))
+
+        if not db_stmts:
+            resp = KQMLPerformative('SUCCESS')
+            resp.set('relations-found', 0)
+            return resp
+        stmts = make_stmts_from_db_list(db_stmts)
+        unique_stmts, _ = process_statements(stmts)
+        pysb_model = _assemble_pysb(unique_stmts)
+        diagrams = make_diagrams(pysb_model)
+        self.send_display_model(diagrams)
+        resp = KQMLPerformative('SUCCESS')
+        resp.set('relations-found', len(unique_stmts))
+        return resp
+
+    def send_display_model(self, diagrams):
+        for diagram_type, resource in diagrams.items():
+            if not resource:
+                continue
+            if diagram_type == 'sbgn':
+                content = KQMLList('display-sbgn')
+                content.set('type', diagram_type)
+                content.sets('graph', resource)
+            else:
+                content = KQMLList('display-image')
+                content.set('type', diagram_type)
+                content.sets('path', resource)
+            self.tell(content)
+
+    def _send_display_stmts(self, stmts, nl_question):
         logger.info('Sending display statements')
-        self.send_table_to_provenance(stmts, nl_question)
+        self._send_table_to_provenance(stmts, nl_question)
         # resource = _make_sbgn(stmts[:10])
         # logger.info(resource)
-        content = KQMLList('open-query-window')
-        content.sets('cyld', '#1')
-        content.sets('graph', resource)
-        self.tell(content)
+        # content = KQMLList('open-query-window')
+        # content.sets('cyld', '#1')
+        # content.sets('graph', resource)
+        # self.tell(content)
 
-    def send_table_to_provenance(self, stmts, nl_question):
+    def _send_table_to_provenance(self, stmts, nl_question):
         """Post a concise table listing statements found."""
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
@@ -213,6 +272,14 @@ def _make_sbgn(stmts):
     sbgn_str = sa.print_model()
     logger.info(sbgn_str)
     return sbgn_str
+
+
+def _assemble_pysb(stmts):
+    pa = PysbAssembler()
+    pa.add_statements(stmts)
+    pa.make_model()
+    pa.add_default_initial_conditions(100)
+    return pa.model
 
 
 if __name__ == "__main__":

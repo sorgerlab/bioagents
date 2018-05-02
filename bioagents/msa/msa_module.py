@@ -160,8 +160,10 @@ class MSA_Module(Bioagent):
         return resp
 
     def send_display_stmts(self, stmts, nl_question):
-        self.send_provenance_for_stmts(stmts, nl_question)
+        #self.send_provenance_for_stmts(stmts, nl_question)
+        logger.info('Sending display statements')
         resource = _make_sbgn(stmts)
+        logger.info(resource)
         content = KQMLList('open-query-window')
         content.sets('cyld', '#1')
         content.sets('graph', resource)
@@ -190,17 +192,11 @@ class MSA_Module(Bioagent):
 
 
 def _make_sbgn(stmts):
-    pa = PysbAssembler()
-    pa.add_statements(stmts)
-    pa.make_model()
-    pa.add_default_initial_conditions(10)
-    for m in pa.model.monomers:
-        pysb_assembler.set_extended_initial_condition(pa.model, m, 0)
-    try:
-        sbgn_str = pa.export_model('sbgn')
-    except BngInterfaceError:
-        logger.error('Reaction network could not be generated for SBGN.')
-        return None
+    sa = SBGNAssembler()
+    sa.add_statements(stmts)
+    sa.make_model()
+    sbgn_str = sa.print_model()
+    logger.info(sbgn_str)
     return sbgn_str
 
 

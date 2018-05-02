@@ -175,9 +175,8 @@ class MSA_Module(Bioagent):
         row_list = ['<th>Source</th><th>Target</th><th>Interaction</th>']
         for stmt in stmts:
             sub_ag, obj_ag = stmt.agent_list()
-            row_list.append('<td>{subject}</td><td>{verb}</td><td>{object}</td>'
-                            .format(subject=sub_ag.name, object=obj_ag.name,
-                                    verb=type(stmt)))
+            row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
+                            % (sub_ag, type(stmt), obj_ag))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'

@@ -161,7 +161,7 @@ class MSA_Module(Bioagent):
     def send_display_stmts(self, stmts, nl_question):
         self.send_table_to_provenance(stmts, nl_question)
         logger.info('Sending display statements')
-        resource = _make_sbgn(stmts[10:])
+        resource = _make_sbgn(stmts[:10])
         logger.info(resource)
         content = KQMLList('open-query-window')
         content.sets('cyld', '#1')
@@ -172,11 +172,11 @@ class MSA_Module(Bioagent):
         """Post a concise table listing statements found."""
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
-        row_list = ['<th>Source</th><th>Target</th><th>Interaction</th>']
+        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>']
         for stmt in stmts:
             sub_ag, obj_ag = stmt.agent_list()
             row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
-                            % (sub_ag, type(stmt), obj_ag))
+                            % (sub_ag, type(stmt).__name__, obj_ag))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'

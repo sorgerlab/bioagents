@@ -47,7 +47,8 @@ def _read_signor_afs():
 
 class MSA_Module(Bioagent):
     name = 'MSA'
-    tasks = ['PHOSPHORYLATION-ACTIVATING', 'FIND-IMMEDIATE-RELATION']
+    tasks = ['PHOSPHORYLATION-ACTIVATING', 'FIND-IMMEDIATE-RELATION',
+             'GET-PAPER-MODEL']
     signor_afs = _read_signor_afs()
 
     def respond_phosphorylation_activating(self, content):

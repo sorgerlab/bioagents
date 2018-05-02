@@ -64,6 +64,22 @@ def test_no_activity_given():
     _check_failure(msg, 'getting no activity type', 'UNKNOWN_ACTION')
 
 
+class TestMsaPaperGraph(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaPaperGraph, self).__init__(msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-PAPER-MODEL')
+        content.set('pmid', 'PMID-8436299')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        logs = self.get_output_log()
+        tells = [msg for msg in logs if msg.head() == 'tell']
+        assert tells
+        return
+
+
 class TestMsaProvenance(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
@@ -76,7 +92,7 @@ class TestMsaProvenance(_IntegrationTest):
             if value is not None:
                 content.sets(name, value)
         msg = get_request(content)
-        return (msg, content)
+        return msg, content
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS',\
@@ -85,8 +101,8 @@ class TestMsaProvenance(_IntegrationTest):
             'Wrong result: %s.' % output.to_string()
         logs = self.get_output_log()
         provs = [msg for msg in logs
-                if msg.head() == 'tell'
-                and msg.get('content').head() == 'add-provenance']
+                 if msg.head() == 'tell'
+                 and msg.get('content').head() == 'add-provenance']
         assert len(provs) == 1, 'Too much provenance: %d vs. 1.' % len(provs)
         html = provs[0].get('content').get('html')
         html_str = html.to_string()

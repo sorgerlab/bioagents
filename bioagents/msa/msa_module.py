@@ -165,7 +165,7 @@ class MSA_Module(Bioagent):
     def respond_get_paper_model(self, content):
         """Get and display the model from a paper, indicated by pmid."""
         pmid_raw = content.gets('pmid')
-        prefix = 'W::PMID-'
+        prefix = 'PMID-'
         if pmid_raw.startswith(prefix) and pmid_raw[len(prefix):].isdigit():
             pmid = pmid_raw[len(prefix):]
         else:

@@ -164,7 +164,13 @@ class MSA_Module(Bioagent):
 
     def respond_get_paper_model(self, content):
         """Get and display the model from a paper, indicated by pmid."""
-        pmid = content.gets('pmid')
+        pmid_raw = content.gets('pmid')
+        prefix = 'W::PMID-'
+        if pmid_raw.startswith(prefix) and pmid_raw[len(prefix):].isdigit():
+            pmid = pmid_raw[len(prefix):]
+        else:
+            return self.make_failure('BAD_INPUT')
+
         db = get_primary_db()
         trid_tpl = db.select_one(db.TextRef.id, db.TextRef.pmid == pmid)
         if not trid_tpl:

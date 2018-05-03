@@ -47,7 +47,7 @@ def _read_signor_afs():
 
 class MSA_Module(Bioagent):
     name = 'MSA'
-    tasks = ['PHOSPHORYLATION-ACTIVATING', 'FIND-IMMEDIATE-RELATION',
+    tasks = ['PHOSPHORYLATION-ACTIVATING', 'FIND-RELATIONS-FROM-LITERATURE',
              'GET-PAPER-MODEL']
     signor_afs = _read_signor_afs()
 
@@ -104,7 +104,7 @@ class MSA_Module(Bioagent):
             msg.set('is-activating', 'TRUE')
             return msg
 
-    def respond_find_immediate_relation(self, content):
+    def respond_find_relations_from_literature(self, content):
         """Find statements matching a query for FIND-IMMEDIATE-RELATION task."""
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:

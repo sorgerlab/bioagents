@@ -97,7 +97,7 @@ class _TestMsaGeneralLookup(_IntegrationTest):
 
 class TestMSATypeAndTarget(_TestMsaGeneralLookup):
     def create_type_and_target(self):
-        return self._get_content('FIND-IMMEDIATE-RELATION',
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  source=ekb_from_text('None'),
                                  type='Phosphorylation',
                                  target=ekb_from_text('BRAF'))
@@ -108,7 +108,7 @@ class TestMSATypeAndTarget(_TestMsaGeneralLookup):
 
 class TestMSATypeAndSource(_TestMsaGeneralLookup):
     def create_type_and_source(self):
-        return self._get_content('FIND-IMMEDIATE-RELATION',
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  type='Phosphorylation',
                                  source=ekb_from_text('BRAF'),
                                  target=ekb_from_text('None'))

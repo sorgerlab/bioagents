@@ -64,6 +64,59 @@ def test_no_activity_given():
     _check_failure(msg, 'getting no activity type', 'UNKNOWN_ACTION')
 
 
+class _TestMsaGeneralLookup(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(_TestMsaGeneralLookup, self).__init__(msa_module.MSA_Module)
+
+    def _get_content(self, task, **contents):
+        content = KQMLList(task)
+        for key, value in contents.items():
+            content.set(key, value)
+        msg = get_request(content)
+        return msg, content
+
+    def _get_tells(self, logs):
+        return [msg for msg in logs if msg.head() == 'tell']
+
+    def _get_provenance_tells(self, logs):
+        provenance_tells = []
+        for msg in logs:
+            if msg.head() == 'tell' and msg.get('content'):
+                content = msg.get('content')
+                if content.head() == 'add-provenance':
+                    html = content.gets('html')
+                    provenance_tells.append(html.splitlines()[0])
+        return provenance_tells
+
+    def _check_find_response(self, output):
+        assert output.head() == 'SUCCESS', str(output)
+        logs = self.get_output_log()
+        prov_tells = self._get_provenance_tells(logs)
+        assert len(prov_tells) == 1, prov_tells
+
+
+class TestMSATypeAndTarget(_TestMsaGeneralLookup):
+    def create_type_and_target(self):
+        return self._get_content('FIND-IMMEDIATE-RELATION',
+                                 source=ekb_from_text('None'),
+                                 type='Phosphorylation',
+                                 target=ekb_from_text('BRAF'))
+
+    def check_response_to_type_and_target(self, output):
+        return self._check_find_response(output)
+
+
+class TestMSATypeAndSource(_TestMsaGeneralLookup):
+    def create_type_and_source(self):
+        return self._get_content('FIND-IMMEDIATE-RELATION',
+                                 type='Phosphorylation',
+                                 source=ekb_from_text('BRAF'),
+                                 target=ekb_from_text('None'))
+
+    def check_response_to_type_and_source(self, output):
+        return self._check_find_response(output)
+
+
 class TestMsaPaperGraph(_IntegrationTest):
     def __init__(self, *args, **kwargs):
         super(TestMsaPaperGraph, self).__init__(msa_module.MSA_Module)

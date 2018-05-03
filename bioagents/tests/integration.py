@@ -110,7 +110,8 @@ class _IntegrationTest(TestCase):
     def __init__(self, bioagent, **kwargs):
         self.bioagent = bioagent(testing=True, **kwargs)
         self.this_test_log_start = None
-        return TestCase.__init__(self, 'run_test')
+        TestCase.__init__(self, 'run_test')
+        return
 
     def __getattribute__(self, attr_name):
         "Ensure that all attributes are implemented."
@@ -183,6 +184,7 @@ class _IntegrationTest(TestCase):
     def setUp(self):
         """Set the start of the logs"""
         self.this_test_log_start = self.bioagent.out.tell()
+        logger.debug("Set log start to: %d" % self.this_test_log_start)
 
     def run_test(self):
         for request_args, check_resp in self._get_messages():

@@ -45,10 +45,14 @@ def _read_signor_afs():
     return signor_afs
 
 
+class MSALookupError(Exception):
+    pass
+
+
 class MSA_Module(Bioagent):
     name = 'MSA'
     tasks = ['PHOSPHORYLATION-ACTIVATING', 'FIND-RELATIONS-FROM-LITERATURE',
-             'GET-PAPER-MODEL']
+             'GET-PAPER-MODEL', 'CONFIRM-RELATION-FROM-LITERATURE']
     signor_afs = _read_signor_afs()
 
     def respond_phosphorylation_activating(self, content):
@@ -104,8 +108,8 @@ class MSA_Module(Bioagent):
             msg.set('is-activating', 'TRUE')
             return msg
 
-    def respond_find_relations_from_literature(self, content):
-        """Find statements matching a query for FIND-IMMEDIATE-RELATION task."""
+    def _lookup_from_source_type_target(self, content):
+        """Look up statement given format received by find/confirm relations."""
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
             ekb = content.gets(loc)
@@ -120,7 +124,7 @@ class MSA_Module(Bioagent):
                 logger.error("Got exception while converting ekb for %s "
                              "(%s) into an agent." % (pos, ekb))
                 logger.exception(e)
-                return self.make_failure('MISSING_TARGET')
+                raise MSALookupError('MISSING_TARGET')
         stmt_type = content.gets('type')
         if stmt_type == 'unknown':
             stmt_type = None
@@ -147,7 +151,15 @@ class MSA_Module(Bioagent):
         except IndraDBRestError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
-            return self.make_failure('MISSING_MECHANISM')
+            raise MSALookupError('MISSING_MECHANISM')
+        return nl_question, stmts
+
+    def respond_find_relations_from_literature(self, content):
+        """Find statements matching a query for FIND-IMMEDIATE-RELATION task."""
+        try:
+            nl_question, stmts = self._lookup_from_source_type_target(content)
+        except MSALookupError as mle:
+            return self.make_failure(mle.args[0])
 
         # For now just list the statements in the provenance tab. Only captures
         # the top 5.
@@ -160,6 +172,17 @@ class MSA_Module(Bioagent):
         # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', str(len(stmts)))
+        return resp
+
+    def respond_confirm_relation_from_literature(self, content):
+        try:
+            nl_question, stmts = self._lookup_from_source_type_target(content)
+        except MSALookupError as mle:
+            return self.make_failure(mle.args[0])
+        if len(stmts):
+            self._send_display_stmts(stmts, nl_question)
+        resp = KQMLPerformative('SUCCESS')
+        resp.set('relations-found', len(stmts) > 0)
         return resp
 
     def respond_get_paper_model(self, content):

@@ -203,8 +203,7 @@ class MSA_Module(Bioagent):
             return resp
         stmts = make_stmts_from_db_list(db_stmts)
         unique_stmts, _ = process_statements(stmts)
-        pysb_model = _assemble_pysb(unique_stmts)
-        diagrams = make_diagrams(pysb_model)
+        diagrams = make_diagrams(stmts)
         self.send_display_model(diagrams)
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', len(unique_stmts))
@@ -279,6 +278,17 @@ def _make_sbgn(stmts):
     sbgn_str = sa.print_model()
     logger.info(sbgn_str)
     return sbgn_str
+
+
+def make_diagrams(stmts):
+    sbgn = _make_sbgn(stmts)
+    # rxn = draw_reaction_network(pysb_model, model_id)
+    # cm = draw_contact_map(pysb_model, model_id)
+    # im = draw_influence_map(pysb_model, model_id)
+    # diagrams = {'reactionnetwork': rxn, 'contactmap': cm,
+    #             'influencemap': im, 'sbgn': sbgn}
+    diagrams = {'sbgn': sbgn.decode('utf-8')}
+    return diagrams
 
 
 def _assemble_pysb(stmts):

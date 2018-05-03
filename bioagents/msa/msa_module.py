@@ -200,26 +200,10 @@ class MSA_Module(Bioagent):
             logger.info("PMID \"%s\" not found in the database." % pmid)
             return self.make_failure("MISSING_PMID")
         trid = trid_tpl[0]
-        tcids = db.select_all(db.TextContent.id,
-                              db.TextContent.text_ref_id == trid)
-        if not tcids:
-            resp = KQMLPerformative('SUCCESS')
-            resp.set('relations-found', 0)
-            return resp
-        reading_ids = []
-        for tcid, in tcids:
-            reading_ids.extend(db.select_all(db.Readings.id,
-                                             db.Readings.text_content_id == tcid))
-        if not reading_ids:
-            resp = KQMLPerformative('SUCCESS')
-            resp.set('relations-found', 0)
-            return resp
-
-        db_stmts = []
-        for rid, in reading_ids:
-            db_stmts.extend(db.select_all(db.Statements,
-                                          db.Statements.reader_ref == rid))
-
+        db_stmts = db.select_all(db.Statements,
+                                 db.TextContent.text_ref_id == trid,
+                                 db.TextContent.id == db.Readings.text_content_id,
+                                 db.Readings.id == db.Statements.reader_ref)
         if not db_stmts:
             resp = KQMLPerformative('SUCCESS')
             resp.set('relations-found', 0)

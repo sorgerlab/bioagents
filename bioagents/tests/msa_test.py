@@ -117,6 +117,28 @@ class TestMSATypeAndSource(_TestMsaGeneralLookup):
         return self._check_find_response(output)
 
 
+class TestMSAConfirm1(_TestMsaGeneralLookup):
+    def create_message(self):
+        return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
+                                 type='phosphorylation',
+                                 source=ekb_from_text('MEK'),
+                                 target=ekb_from_text('ERK'))
+
+    def check_response_to_message(self, output):
+        return self._check_find_response(output)
+
+
+class TestMSAConfirm2(_TestMsaGeneralLookup):
+    def create_message(self):
+        return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
+                                 type='phosphorylation',
+                                 source=ekb_from_text('MAP2K1'),
+                                 target=ekb_from_text('MAPK1'))
+
+    def check_response_to_message(self, output):
+        return self._check_find_response(output)
+
+
 class TestMsaPaperGraph(_IntegrationTest):
     def __init__(self, *args, **kwargs):
         super(TestMsaPaperGraph, self).__init__(msa_module.MSA_Module)

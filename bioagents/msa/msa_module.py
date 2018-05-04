@@ -142,12 +142,19 @@ class MSA_Module(Bioagent):
                 if ref_dict is None:
                     input_dict[pos] = None
                 else:
-                    for key in ['HGNC', 'FPLX', 'CHEBI', 'name', 'TEXT']:
+                    for key in ['HGNC', 'FPLX', 'CHEBI', 'TEXT']:
                         if key in ref_dict.keys():
-                            input_dict[pos] = ref_dict[key]
+                            if key == 'FPLX':
+                                flag = 'BE'
+                            else:
+                                flag = key
+                            inp = r'%s@%s' % (ref_dict[key], flag)
+                            input_dict[pos] = inp
+                            break
 
             # Actually get the statements.
             stmts = get_statements(**input_dict)
+            logger.info("Found %d stmts" % len(stmts))
         except IndraDBRestError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)

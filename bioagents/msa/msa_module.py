@@ -201,7 +201,19 @@ class MSA_Module(Bioagent):
             pmid = pmid_raw[len(prefix):]
         else:
             return self.make_failure('BAD_INPUT')
-        stmts = get_statements_for_paper(pmid, id_type='pmid')
+        try:
+            stmts = get_statements_for_paper(pmid, id_type='pmid')
+        except IndraDBRestError as e:
+            if e.status_code == 404 and 'Invalid or unavailable' in e.reason:
+                logger.error("Could not find pmid: %s" % e.reason)
+                return self.make_failure('MISSING_TARGET')
+            else:
+                raise e
+
+        if not stmts:
+            resp = KQMLPerformative('SUCCESS')
+            resp.set('relations-found', 0)
+            return resp
         unique_stmts, _ = process_statements(stmts)
         diagrams = make_diagrams(stmts)
         self.send_display_model(diagrams)

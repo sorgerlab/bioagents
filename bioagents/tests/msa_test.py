@@ -207,3 +207,12 @@ class TestMsaProvenance(_IntegrationTest):
             ("Some evidence listed multiple times:\n    %s\nFull html:\n%s"
              % ('\n    '.join(ev_duplicates), html.to_string()))
         return
+
+
+def test_msa_paper_retrieval_failure():
+    content = KQMLList('GET-PAPER-MODEL')
+    content.sets('pmid', 'PMID-00000123')
+    msa = msa_module.MSA_Module(testing=True)
+    resp = msa.respond_get_paper_model(content)
+    assert resp.head() == 'FAILURE', str(resp)
+    assert resp.get('reason') == 'MISSING_TARGET'

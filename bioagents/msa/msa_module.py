@@ -25,7 +25,6 @@ else:
     CAN_CHECK_STATEMENTS = False
 
 from bioagents import Bioagent
-from bioagents.mra.mra import make_diagrams
 
 
 def _read_signor_afs():
@@ -211,7 +210,7 @@ class MSA_Module(Bioagent):
             resp.set('relations-found', 0)
             return resp
         unique_stmts, _ = process_statements(stmts)
-        diagrams = make_diagrams(stmts)
+        diagrams = _make_diagrams(stmts)
         self.send_display_model(diagrams)
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', len(unique_stmts))
@@ -288,7 +287,7 @@ def _make_sbgn(stmts):
     return sbgn_str
 
 
-def make_diagrams(stmts):
+def _make_diagrams(stmts):
     sbgn = _make_sbgn(stmts)
     # rxn = draw_reaction_network(pysb_model, model_id)
     # cm = draw_contact_map(pysb_model, model_id)

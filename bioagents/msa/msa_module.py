@@ -23,7 +23,8 @@ from bioagents import Bioagent
 
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
-    from indra.sources.indra_db_rest import get_statements, IndraDBRestError
+    from indra.sources.indra_db_rest import get_statements, IndraDBRestError, \
+    get_statements_for_paper
 
     CAN_CHECK_STATEMENTS = True
 else:
@@ -200,22 +201,7 @@ class MSA_Module(Bioagent):
             pmid = pmid_raw[len(prefix):]
         else:
             return self.make_failure('BAD_INPUT')
-
-        db = get_primary_db()
-        trid_tpl = db.select_one(db.TextRef.id, db.TextRef.pmid == pmid)
-        if not trid_tpl:
-            logger.info("PMID \"%s\" not found in the database." % pmid)
-            return self.make_failure("MISSING_PMID")
-        trid = trid_tpl[0]
-        db_stmts = db.select_all(db.Statements,
-                                 db.TextContent.text_ref_id == trid,
-                                 db.TextContent.id == db.Readings.text_content_id,
-                                 db.Readings.id == db.Statements.reader_ref)
-        if not db_stmts:
-            resp = KQMLPerformative('SUCCESS')
-            resp.set('relations-found', 0)
-            return resp
-        stmts = make_stmts_from_db_list(db_stmts)
+        stmts = get_statements_for_paper(pmid, id_type='pmid')
         unique_stmts, _ = process_statements(stmts)
         diagrams = make_diagrams(stmts)
         self.send_display_model(diagrams)

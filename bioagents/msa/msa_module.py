@@ -4,32 +4,28 @@ import re
 import pickle
 import logging
 
-from bioagents.mra.mra import make_diagrams
-from indra.assemblers import SBGNAssembler, PysbAssembler
-from indra.db import get_primary_db
-from indra.db.preassembly_script import process_statements
-from indra.db.util import make_stmts_from_db_list
-
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA')
 
 from kqml import KQMLPerformative, KQMLList
 
-from indra.sources.trips.processor import TripsProcessor
 from indra import has_config
-
-from bioagents import Bioagent
-
+from indra.sources.trips.processor import TripsProcessor
+from indra.assemblers import SBGNAssembler, PysbAssembler
+from indra.db.preassembly_script import process_statements
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
     from indra.sources.indra_db_rest import get_statements, IndraDBRestError, \
-    get_statements_for_paper
+                                            get_statements_for_paper
 
     CAN_CHECK_STATEMENTS = True
 else:
     logger.warning("Database web api not specified. Cannot get background.")
     CAN_CHECK_STATEMENTS = False
+
+from bioagents import Bioagent
+from bioagents.mra.mra import make_diagrams
 
 
 def _read_signor_afs():

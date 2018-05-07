@@ -13,7 +13,7 @@ from kqml import KQMLPerformative, KQMLList
 from indra import has_config
 from indra.sources.trips.processor import TripsProcessor
 from indra.assemblers import SBGNAssembler, PysbAssembler
-from indra.db.preassembly_script import process_statements
+from indra.tools import assemble_corpus as ac
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
     from indra.sources.indra_db_rest import get_statements, IndraDBRestError, \
@@ -209,7 +209,9 @@ class MSA_Module(Bioagent):
             resp = KQMLPerformative('SUCCESS')
             resp.set('relations-found', 0)
             return resp
-        unique_stmts, _ = process_statements(stmts)
+        stmts = ac.map_grounding(stmts)
+        stmts = ac.map_sequence(stmts)
+        unique_stmts = ac.run_preassembly(stmts, return_toplevel=False)
         diagrams = _make_diagrams(stmts)
         self.send_display_model(diagrams)
         resp = KQMLPerformative('SUCCESS')

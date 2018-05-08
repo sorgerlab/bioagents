@@ -12,7 +12,7 @@ from kqml import KQMLPerformative, KQMLList
 
 from indra import has_config
 from indra.sources.trips.processor import TripsProcessor
-from indra.assemblers import SBGNAssembler, PysbAssembler
+from indra.assemblers import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
@@ -298,14 +298,6 @@ def _make_diagrams(stmts):
     #             'influencemap': im, 'sbgn': sbgn}
     diagrams = {'sbgn': sbgn.decode('utf-8')}
     return diagrams
-
-
-def _assemble_pysb(stmts):
-    pa = PysbAssembler()
-    pa.add_statements(stmts)
-    pa.make_model()
-    pa.add_default_initial_conditions(100)
-    return pa.model
 
 
 if __name__ == "__main__":

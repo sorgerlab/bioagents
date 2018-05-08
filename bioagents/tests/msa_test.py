@@ -7,7 +7,8 @@ from nose.plugins.skip import SkipTest
 
 
 if not msa_module.CAN_CHECK_STATEMENTS:
-    raise SkipTest("Database web api is not available.")
+    raise SkipTest("Database web api is not available (%s)." %
+                   msa_module.CAN_CHECK_STATEMENTS)
 
 
 def _get_message(heading, target=None, residue=None, position=None):

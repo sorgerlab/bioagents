@@ -111,7 +111,7 @@ class MSA_Module(Bioagent):
             ekb = content.gets(loc)
             try:
                 agent = self._get_agent(ekb)
-                if agent is None or agent == 'None':
+                if agent is None:
                     agent_dict[pos] = None
                 else:
                     agent_dict[pos] = {'name': agent.name}
@@ -158,7 +158,7 @@ class MSA_Module(Bioagent):
         return nl_question, stmts
 
     def respond_find_relations_from_literature(self, content):
-        """Find statements matching a query for FIND-IMMEDIATE-RELATION task."""
+        """Find statements matching some subject, verb, object information."""
         try:
             nl_question, stmts = self._lookup_from_source_type_target(content)
         except MSALookupError as mle:
@@ -178,6 +178,7 @@ class MSA_Module(Bioagent):
         return resp
 
     def respond_confirm_relation_from_literature(self, content):
+        """Confirm a protein-protein interaction given subject, object, verb."""
         try:
             nl_question, stmts = self._lookup_from_source_type_target(content)
         except MSALookupError as mle:
@@ -185,7 +186,7 @@ class MSA_Module(Bioagent):
         if len(stmts):
             self._send_display_stmts(stmts, nl_question)
         resp = KQMLPerformative('SUCCESS')
-        resp.set('relations-found', len(stmts) > 0)
+        resp.set('relations-found', 'TRUE' if len(stmts) > 0 else 'FALSE')
         return resp
 
     def respond_get_paper_model(self, content):
@@ -201,7 +202,7 @@ class MSA_Module(Bioagent):
         except IndraDBRestError as e:
             if e.status_code == 404 and 'Invalid or unavailable' in e.reason:
                 logger.error("Could not find pmid: %s" % e.reason)
-                return self.make_failure('MISSING_TARGET')
+                return self.make_failure('MISSING_MECHANISM')
             else:
                 raise e
 
@@ -211,7 +212,7 @@ class MSA_Module(Bioagent):
             return resp
         stmts = ac.map_grounding(stmts)
         stmts = ac.map_sequence(stmts)
-        unique_stmts = ac.run_preassembly(stmts, return_toplevel=False)
+        unique_stmts = ac.run_preassembly(stmts, return_toplevel=True)
         diagrams = _make_diagrams(stmts)
         self.send_display_model(diagrams)
         resp = KQMLPerformative('SUCCESS')

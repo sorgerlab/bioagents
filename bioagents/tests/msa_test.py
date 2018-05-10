@@ -216,4 +216,4 @@ def test_msa_paper_retrieval_failure():
     msa = msa_module.MSA_Module(testing=True)
     resp = msa.respond_get_paper_model(content)
     assert resp.head() == 'FAILURE', str(resp)
-    assert resp.get('reason') == 'MISSING_TARGET'
+    assert resp.get('reason') == 'MISSING_MECHANISM'

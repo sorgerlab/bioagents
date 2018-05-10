@@ -104,7 +104,15 @@ class MSA_Module(Bioagent):
             msg.set('is-activating', 'TRUE')
             return msg
 
-    def _lookup_from_source_type_target(self, content):
+    def _make_nl_description(self, subject='unknown', object='unknown',
+                             stmt_type='unkown'):
+        """Make a human-readable description of a query."""
+        fmt = ('subject: {subject}, statement type: {stmt_type}, '
+               'object: {object}')
+        ret = fmt.format(subject=subject, object=object, stmt_type=stmt_type)
+        return ret
+
+    def _lookup_from_source_type_target(self, content, desc):
         """Look up statement given format received by find/confirm relations."""
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
@@ -124,11 +132,11 @@ class MSA_Module(Bioagent):
         stmt_type = content.gets('type')
         if stmt_type == 'unknown':
             stmt_type = None
-        nl_question = ('{subject} {verb} of {object}'
-                       .format(verb=stmt_type,
-                               **{k: None if v is None else v['name']
-                                  for k, v in agent_dict.items()}))
-        logger.info("Got a query for %s." % nl_question)
+        question_input = {k: v['name'] if v else 'unknown'
+                          for k, v in agent_dict.items()}
+        nl = self._make_nl_description(stmt_type=stmt_type, **question_input)
+        nl = "%s: %s" % (desc, nl)
+        logger.info("Got a query for %s." % nl)
         # Try to get related statements.
         try:
             input_dict = {'stmt_type': stmt_type}
@@ -155,12 +163,13 @@ class MSA_Module(Bioagent):
             logger.error("Failed to get statements.")
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
-        return nl_question, stmts
+        return nl, stmts
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            nl_question, stmts = self._lookup_from_source_type_target(content)
+            nl_question, stmts =\
+                self._lookup_from_source_type_target(content, 'Find')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
 
@@ -180,7 +189,8 @@ class MSA_Module(Bioagent):
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb."""
         try:
-            nl_question, stmts = self._lookup_from_source_type_target(content)
+            nl_question, stmts = \
+                self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
         if len(stmts):

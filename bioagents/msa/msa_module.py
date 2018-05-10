@@ -291,11 +291,6 @@ def _make_sbgn(stmts):
 
 def _make_diagrams(stmts):
     sbgn = _make_sbgn(stmts)
-    # rxn = draw_reaction_network(pysb_model, model_id)
-    # cm = draw_contact_map(pysb_model, model_id)
-    # im = draw_influence_map(pysb_model, model_id)
-    # diagrams = {'reactionnetwork': rxn, 'contactmap': cm,
-    #             'influencemap': im, 'sbgn': sbgn}
     diagrams = {'sbgn': sbgn.decode('utf-8')}
     return diagrams
 

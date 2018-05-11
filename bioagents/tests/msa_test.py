@@ -7,7 +7,8 @@ from nose.plugins.skip import SkipTest
 
 
 if not msa_module.CAN_CHECK_STATEMENTS:
-    raise SkipTest("Database web api is not available.")
+    raise SkipTest("Database web api is not available (%s)." %
+                   msa_module.CAN_CHECK_STATEMENTS)
 
 
 def _get_message(heading, target=None, residue=None, position=None):
@@ -64,6 +65,110 @@ def test_no_activity_given():
     _check_failure(msg, 'getting no activity type', 'UNKNOWN_ACTION')
 
 
+class _TestMsaGeneralLookup(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(_TestMsaGeneralLookup, self).__init__(msa_module.MSA_Module)
+
+    def _get_content(self, task, **contents):
+        content = KQMLList(task)
+        for key, value in contents.items():
+            content.set(key, value)
+        msg = get_request(content)
+        return msg, content
+
+    def _get_tells(self, logs):
+        return [msg for msg in logs if msg.head() == 'tell']
+
+    def _get_provenance_tells(self, logs):
+        provenance_tells = []
+        for msg in logs:
+            if msg.head() == 'tell' and msg.get('content'):
+                content = msg.get('content')
+                if content.head() == 'add-provenance':
+                    html = content.gets('html')
+                    provenance_tells.append(html.splitlines()[0])
+        return provenance_tells
+
+    def _check_find_response(self, output):
+        assert output.head() == 'SUCCESS', str(output)
+        logs = self.get_output_log()
+        prov_tells = self._get_provenance_tells(logs)
+        assert len(prov_tells) == 1, prov_tells
+
+
+class TestMSATypeAndTarget(_TestMsaGeneralLookup):
+    def create_type_and_target(self):
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
+                                 source=ekb_from_text('None'),
+                                 type='Phosphorylation',
+                                 target=ekb_from_text('BRAF'))
+
+    def check_response_to_type_and_target(self, output):
+        return self._check_find_response(output)
+
+
+class TestMSATypeAndSource(_TestMsaGeneralLookup):
+    def create_type_and_source(self):
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
+                                 type='Phosphorylation',
+                                 source=ekb_from_text('BRAF'),
+                                 target=ekb_from_text('None'))
+
+    def check_response_to_type_and_source(self, output):
+        return self._check_find_response(output)
+
+
+class TestMSAConfirm1(_TestMsaGeneralLookup):
+    def create_message(self):
+        return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
+                                 type='phosphorylation',
+                                 source=ekb_from_text('MEK'),
+                                 target=ekb_from_text('ERK'))
+
+    def check_response_to_message(self, output):
+        return self._check_find_response(output)
+
+
+class TestMSAConfirm2(_TestMsaGeneralLookup):
+    def create_message(self):
+        return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
+                                 type='phosphorylation',
+                                 source=ekb_from_text('MAP2K1'),
+                                 target=ekb_from_text('MAPK1'))
+
+    def check_response_to_message(self, output):
+        return self._check_find_response(output)
+
+
+class TestMsaPaperGraph(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaPaperGraph, self).__init__(msa_module.MSA_Module)
+
+    def _is_sbgn(self, tell):
+        content = tell.get('content')
+        if not content:
+            return False
+        header = content.head()
+        graph_type = content.gets('type')
+        graph = content.gets('graph')
+        if 'xmlns' not in graph or 'glyph' not in graph:
+            return False
+        return header == 'display-sbgn' and graph_type == 'sbgn'
+
+    def create_message(self):
+        content = KQMLList('GET-PAPER-MODEL')
+        content.set('pmid', 'PMID-8436299')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        logs = self.get_output_log()
+        tells = [msg for msg in logs if msg.head() == 'tell']
+        assert tells
+        assert any([self._is_sbgn(tell) for tell in tells]),\
+            "No recognized display commands."
+        return
+
+
 class TestMsaProvenance(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
@@ -76,7 +181,7 @@ class TestMsaProvenance(_IntegrationTest):
             if value is not None:
                 content.sets(name, value)
         msg = get_request(content)
-        return (msg, content)
+        return msg, content
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS',\
@@ -85,8 +190,8 @@ class TestMsaProvenance(_IntegrationTest):
             'Wrong result: %s.' % output.to_string()
         logs = self.get_output_log()
         provs = [msg for msg in logs
-                if msg.head() == 'tell'
-                and msg.get('content').head() == 'add-provenance']
+                 if msg.head() == 'tell'
+                 and msg.get('content').head() == 'add-provenance']
         assert len(provs) == 1, 'Too much provenance: %d vs. 1.' % len(provs)
         html = provs[0].get('content').get('html')
         html_str = html.to_string()
@@ -103,3 +208,12 @@ class TestMsaProvenance(_IntegrationTest):
             ("Some evidence listed multiple times:\n    %s\nFull html:\n%s"
              % ('\n    '.join(ev_duplicates), html.to_string()))
         return
+
+
+def test_msa_paper_retrieval_failure():
+    content = KQMLList('GET-PAPER-MODEL')
+    content.sets('pmid', 'PMID-00000123')
+    msa = msa_module.MSA_Module(testing=True)
+    resp = msa.respond_get_paper_model(content)
+    assert resp.head() == 'FAILURE', str(resp)
+    assert resp.get('reason') == 'MISSING_MECHANISM'

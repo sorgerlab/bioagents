@@ -20,6 +20,7 @@ from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 from pysb.export import export
 from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
+from indra.assemblers.english_assembler import EnglishAssembler
 
 
 logger = logging.getLogger('MRA')
@@ -64,7 +65,8 @@ class MRA(object):
         res['ambiguities'] = ambiguities
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, model_id,
+                                        self.models[model_id])
         return res
 
     def build_model_from_json(self, model_json):
@@ -77,7 +79,8 @@ class MRA(object):
             return res
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, model_id,
+                                        self.models[model_id])
         return res
 
     def expand_model_from_ekb(self, model_ekb, model_id):
@@ -99,7 +102,8 @@ class MRA(object):
         res['model_new'] = new_stmts
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, new_model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                        self.models[model_id])
         return res
 
     def expand_model_from_json(self, model_json, model_id):
@@ -116,7 +120,8 @@ class MRA(object):
         res['model_new'] = new_stmts
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, new_model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                        self.models[model_id])
         return res
 
     def has_mechanism(self, mech_ekb, model_id):
@@ -159,7 +164,8 @@ class MRA(object):
         res['model_exec'] = model_exec
         if removed_stmts:
             res['removed'] = removed_stmts
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, model_id,
+                                        self.models[model_id])
         self.new_model(new_stmts)
         return res
 
@@ -181,7 +187,8 @@ class MRA(object):
         if not stmts:
             return res
         res['ambiguities'] = []
-        res['diagrams'] = make_diagrams(model_exec, new_model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                        self.models[new_model_id])
         return res
 
     def get_upstream(self, target, model_id):
@@ -249,11 +256,11 @@ def get_ambiguities(tp):
     return all_ambiguities
 
 
-def make_diagrams(pysb_model, model_id):
+def make_diagrams(pysb_model, model_id, indra_model):
     sbgn = make_sbgn(pysb_model, model_id)
     rxn = draw_reaction_network(pysb_model, model_id)
     cm = draw_contact_map(pysb_model, model_id)
-    im = draw_influence_map(pysb_model, model_id)
+    im = draw_influence_map(pysb_model, model_id, indra_model)
     diagrams = {'reactionnetwork': rxn, 'contactmap': cm,
                 'influencemap': im, 'sbgn': sbgn}
     return diagrams
@@ -272,10 +279,12 @@ def make_sbgn(pysb_model, model_id):
     return sbgn_str
 
 
-def draw_influence_map(pysb_model, model_id):
+def draw_influence_map(pysb_model, model_id, indra_model):
     """Generate a Kappa influence map, draw it and save it as a PNG."""
     try:
         im = make_influence_map(pysb_model)
+        im =  make_influence_map_labels_natural_language(im, pysb_model,
+                                                         indra_model)
         fname = 'model%d_im' % model_id
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
@@ -301,6 +310,46 @@ def make_influence_map(pysb_model):
             im.remove_node(param.name)
         except:
             pass
+    return im
+
+
+def get_statement_by_uuid(statements, uuid):
+    """Returns the first statement in statements with the given uuid, or None
+    if no such statements are in the provided list."""
+    for statement in statements:
+        if statement.uuid == uuid:
+            return statement
+    return None
+
+
+def make_unique_label(labels_so_far, new_label):
+    """Make new_label a unique label by appeneding spaces."""
+    while new_label in labels_so_far:
+        new_label += ' '
+    return new_label
+
+
+def make_influence_map_labels_natural_language(im, pysb_model, indra_model):
+    """Replaces the labels of the influence map with natural language labels.
+    """
+    # Get the name of all the rules in the pysb model
+    rule_names = [rule.name for rule in pysb_model.rules]
+
+    relabel_map = {}
+    for annotation in pysb_model.annotations:
+        if annotation.subject in rule_names:
+            name = annotation.subject
+            if annotation.predicate == 'from_indra_statement':
+                # We found the INDRA statement uuid corresponding to a rule
+                statement_uuid = annotation.object
+                s = get_statement_by_uuid(indra_model, statement_uuid)
+
+                # Convert the statement into English
+                assembler = EnglishAssembler([s])
+                text = assembler.make_model()
+                text = make_unique_label(relabel_map.values(), text)
+                relabel_map[name] = text
+    im = networkx.relabel_nodes(im, relabel_map)
     return im
 
 

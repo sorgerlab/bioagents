@@ -348,6 +348,7 @@ def make_influence_map_labels_natural_language(im, pysb_model, indra_model):
                 assembler = EnglishAssembler([s])
                 text = assembler.make_model()
                 text = make_unique_label(relabel_map.values(), text)
+                text += '\n' + name
                 relabel_map[name] = text
     im = networkx.relabel_nodes(im, relabel_map)
     return im

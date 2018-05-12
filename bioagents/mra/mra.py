@@ -322,12 +322,14 @@ def get_statement_by_uuid(statements, uuid):
     return None
 
 
-def make_unique_label(labels_so_far, new_label):
-    """Make new_label a unique label by appeneding spaces."""
-    while new_label in labels_so_far:
-        new_label += ' '
-    return new_label
-
+def dict_value_appears_multiple_times(d, value):
+    """Returns True iff the given value is mapped to multiple times in this
+    dictionary."""
+    count = 0
+    for k, v in d.items():
+        if v == value:
+            count += 1
+    return count > 1
 
 def make_influence_map_labels_natural_language(im, pysb_model, indra_model):
     """Replaces the labels of the influence map with natural language labels.
@@ -335,7 +337,8 @@ def make_influence_map_labels_natural_language(im, pysb_model, indra_model):
     # Get the name of all the rules in the pysb model
     rule_names = [rule.name for rule in pysb_model.rules]
 
-    relabel_map = {}
+    relabel_map_english = {}
+    relabel_map_english_and_rule = {}
     for annotation in pysb_model.annotations:
         if annotation.subject in rule_names:
             name = annotation.subject
@@ -346,10 +349,24 @@ def make_influence_map_labels_natural_language(im, pysb_model, indra_model):
 
                 # Convert the statement into English
                 assembler = EnglishAssembler([s])
-                text = assembler.make_model()
-                text = make_unique_label(relabel_map.values(), text)
-                text += '\n' + name
-                relabel_map[name] = text
+
+                english_text = assembler.make_model()
+                english_and_rule = english_text + ' (' + name + ')'
+
+                relabel_map_english[name] = english_text
+                relabel_map_english_and_rule[name] = english_and_rule
+
+    # Use only the English text if that is unambiguous, otherwise include
+    # the rule name too
+    relabel_map = {}
+    for before in relabel_map_english:
+        english_text = relabel_map_english[before]
+        if dict_value_appears_multiple_times(relabel_map_english,
+                                             english_text):
+            relabel_map[before] = relabel_map_english_and_rule[before]
+        else:
+            relabel_map[before] = english_text
+
     im = networkx.relabel_nodes(im, relabel_map)
     return im
 

@@ -4,7 +4,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('Bioagents')
 
 
-from indra.assemblers import EnglishAssembler
+from indra.assemblers.english import EnglishAssembler
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 
 

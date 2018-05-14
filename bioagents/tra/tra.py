@@ -14,8 +14,8 @@ from time import sleep
 from copy import deepcopy
 import sympy.physics.units as units
 import indra.statements as ist
-import indra.assemblers.pysb_assembler as pa
-from indra.assemblers import english_assembler
+import indra.assemblers.pysb.assembler as pa
+from indra.assemblers.english import assembler as english_assembler
 from pysb import Observable
 from pysb.integrate import Solver
 from pysb.export.kappa import KappaExporter

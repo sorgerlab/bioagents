@@ -13,7 +13,7 @@ logger = logging.getLogger('BSB')
 from socketIO_client import SocketIO
 
 from indra.statements import stmts_from_json
-from indra.assemblers import SBGNAssembler
+from indra.assemblers.sbgn import SBGNAssembler
 
 from kqml import *
 

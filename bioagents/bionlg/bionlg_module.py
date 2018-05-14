@@ -3,7 +3,7 @@ import json
 import logging
 from bioagents import Bioagent
 from indra.statements import stmts_from_json
-from indra.assemblers import EnglishAssembler
+from indra.assemblers.english import EnglishAssembler
 from kqml import KQMLList, KQMLPerformative, KQMLString
 
 

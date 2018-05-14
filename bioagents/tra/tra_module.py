@@ -2,7 +2,8 @@ import sys
 import json
 import logging
 from kqml import KQMLList, KQMLPerformative
-from indra.assemblers import pysb_assembler, PysbAssembler
+from indra.assemblers.pysb import assembler as pysb_assembler
+from indra.assemblers.pysb import PysbAssembler
 from indra.statements import stmts_from_json, Activation, Inhibition, \
     ActiveForm
 from indra.sources.trips import processor as trips_processor

@@ -13,7 +13,7 @@ from kqml import KQMLPerformative, KQMLList
 
 from indra import has_config
 from indra.sources.trips.processor import TripsProcessor
-from indra.assemblers import SBGNAssembler
+from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):

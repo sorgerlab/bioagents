@@ -6,7 +6,7 @@ from bioagents import Bioagent
 from kqml import KQMLList, KQMLString
 from .qca import QCA
 from indra.statements import stmts_from_json
-from indra.assemblers import EnglishAssembler
+from indra.assemblers.english import EnglishAssembler
 from indra.sources.trips.processor import TripsProcessor
 
 

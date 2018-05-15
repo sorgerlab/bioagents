@@ -20,6 +20,7 @@ from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 from pysb.export import export
 from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
+from bioagents.mra.sbgn_colorizer import SbgnColorizer
 
 
 logger = logging.getLogger('MRA')
@@ -292,6 +293,11 @@ def get_ambiguities(tp):
 
 def make_diagrams(pysb_model, model_id):
     sbgn = make_sbgn(pysb_model, model_id)
+    if sbgn is not None:
+        colorizer = SbgnColorizer(sbgn)
+        colorizer.set_style('RAF', '#ff0000', '#00ff00')
+        # sbgn = colorizer.generate_xml()
+
     rxn = draw_reaction_network(pysb_model, model_id)
     cm = draw_contact_map(pysb_model, model_id)
     im = draw_influence_map(pysb_model, model_id)

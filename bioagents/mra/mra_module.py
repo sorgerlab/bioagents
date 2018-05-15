@@ -34,7 +34,7 @@ class MRA_Module(Bioagent):
     name = "MRA"
     tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
              'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
-             'MODEL-UNDO', 'MODEL-GET-UPSTREAM']
+             'MODEL-UNDO', 'MODEL-GET-UPSTREAM', 'MODEL-GET-JSON']
 
     def __init__(self, **kwargs):
         # Instantiate a singleton MRA agent
@@ -265,6 +265,21 @@ class MRA_Module(Bioagent):
         reply = KQMLList('SUCCESS')
         reply.set('upstream', KQMLList(terms))
         reply.set('upstream-names', KQMLList(names))
+        return reply
+
+    def respond_model_get_json(self, content):
+        """Return response content to model-get-json request."""
+        try:
+            model_id = self._get_model_id(content)
+        except Exception:
+            model_id = None
+        model = self.mra.get_model_by_id(model_id)
+        if model is not None:
+            model_msg = encode_indra_stmts(model)
+            reply = KQMLList('SUCCESS')
+            reply.sets('model', model_msg)
+        else:
+            reply = self.make_failure('MISSING_MODEL')
         return reply
 
     def send_display_model(self, diagrams):

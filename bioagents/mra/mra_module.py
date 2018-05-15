@@ -190,7 +190,7 @@ class MRA_Module(Bioagent):
                 self.send_display_model(diagrams)
         return msg
 
-    def respond_has_mechanism(self, content):
+    def respond_model_has_mechanism(self, content):
         """Return response content to model-has-mechanism request."""
         ekb = content.gets('description')
         model_id = self._get_model_id(content)

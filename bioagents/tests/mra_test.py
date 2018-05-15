@@ -455,6 +455,45 @@ class TestGetModelJsonNoID(_IntegrationTest):
         assert jd[0]['type'] == 'Activation'
 
 
+class TestModelBuildExpandRemove(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+
+    message_funcs = ['build', 'expand', 'remove']
+
+    def create_build(self):
+        return _get_build_model_request('KRAS activates BRAF')
+
+    def check_response_to_build(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
+    def create_expand(self):
+        return _get_expand_model_request('NRAS activates BRAF', '1')
+
+    def check_response_to_expand(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '2'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 2
+
+    def create_remove(self):
+        content = KQMLList('MODEL-REMOVE-MECHANISM')
+        content.set('model-id', '2')
+        content.sets('description', ekb_kstring_from_text('KRAS activates BRAF'))
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_remove(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '3'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
+
+
 '''
 def test_replace_agent_one():
     m = MRA()

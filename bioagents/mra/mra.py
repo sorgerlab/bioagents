@@ -140,6 +140,7 @@ class MRA(object):
         """Return a new model with the given mechanism having been removed."""
         tp = trips.process_xml(mech_ekb)
         rem_stmts = tp.statements
+        logger.info('Removing statements: %s' % rem_stmts)
         new_stmts = []
         removed_stmts = []
         model_stmts = self.models[model_id]
@@ -153,14 +154,14 @@ class MRA(object):
                 new_stmts.append(model_st)
             else:
                 removed_stmts.append(model_st)
-        res = {'model_id': model_id,
-               'model': new_stmts}
+        new_model_id = self.new_model(new_stmts)
         model_exec = self.assemble_pysb(new_stmts)
+        res = {'model_id': new_model_id,
+               'model': new_stmts}
         res['model_exec'] = model_exec
         if removed_stmts:
             res['removed'] = removed_stmts
         res['diagrams'] = make_diagrams(model_exec, model_id)
-        self.new_model(new_stmts)
         return res
 
     def model_undo(self):

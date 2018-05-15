@@ -211,7 +211,7 @@ class MRA_Module(Bioagent):
             msg.sets('query', query_msg)
         return msg
 
-    def respond_remove_mechanism(self, content):
+    def respond_model_remove_mechanism(self, content):
         """Return response content to model-remove-mechanism request."""
         ekb = content.gets('description')
         model_id = self._get_model_id(content)
@@ -238,12 +238,13 @@ class MRA_Module(Bioagent):
             msg.sets('removed', removed_msg)
         # Add the diagram
         diagrams = res.get('diagrams')
+        logger.info(diagrams)
         if not no_display:
             if diagrams:
                 rxn_diagram = diagrams.get('reactionnetwork')
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
-                self.send_display_model(rxn_diagram)
+                self.send_display_model(diagrams)
         return msg
 
     def respond_model_get_upstream(self, content):

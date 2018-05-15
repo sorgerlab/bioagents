@@ -395,6 +395,66 @@ class TestModelBuildExpandUndo(_IntegrationTest):
         assert len(model) == 1
 
 
+
+class TestGetModelJson(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestGetModelJson, self).__init__(MRA_Module)
+
+    message_funcs = ['build', 'get_json']
+
+    def create_build(self):
+        return _get_build_model_request('KRAS activates BRAF')
+
+    def check_response_to_build(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
+    def create_get_json(self):
+        content = KQMLList('MODEL-GET-JSON')
+        content.sets('model-id', '1')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_get_json(self, output):
+        assert output.head() == 'SUCCESS'
+        model_json = output.gets('model')
+        assert model_json
+        jd = json.loads(model_json)
+        assert len(jd) == 1
+        assert jd[0]['type'] == 'Activation'
+
+
+class TestGetModelJsonNoID(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+
+    message_funcs = ['build', 'get_json']
+
+    def create_build(self):
+        return _get_build_model_request('KRAS activates BRAF')
+
+    def check_response_to_build(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
+    def create_get_json(self):
+        content = KQMLList('MODEL-GET-JSON')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_get_json(self, output):
+        assert output.head() == 'SUCCESS'
+        model_json = output.gets('model')
+        assert model_json
+        jd = json.loads(model_json)
+        assert len(jd) == 1
+        assert jd[0]['type'] == 'Activation'
+
+
 '''
 def test_replace_agent_one():
     m = MRA()

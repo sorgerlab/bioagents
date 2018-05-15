@@ -237,6 +237,16 @@ class MRA(object):
         pa.add_default_initial_conditions(self.default_initial_amount)
         return model
 
+    def get_model_by_id(self, model_id=None):
+        """Return model given the ID or the latest if None."""
+        if model_id is None:
+            model_id = self.id_counter
+        try:
+            model = self.models[model_id]
+        except KeyError:
+            return None
+        return model
+
 
 def get_ambiguities(tp):
     terms = tp.tree.findall('TERM')

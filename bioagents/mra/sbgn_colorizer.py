@@ -17,6 +17,8 @@ class SbgnColorizer(object):
         Root node for the XML tree of the original SBGN-ML document,
         incrementally modified with colors as functions of this object are
         called to do so
+    glyph_ids: set
+        All glyph ids (whether for nodes, processes, etc)
     label_to_glyph_ids : dict
         Dictionary mapping a label to the set of glyph ids that have that label
     label_to_style : dict
@@ -42,16 +44,22 @@ class SbgnColorizer(object):
 
         # Create a dictionary mapping glyph ids to the corresponding label
         # More than one glyph might have the same label
+        self.element_ids = set()
         self.label_to_glyph_ids = collections.defaultdict(set)
         last_id = None
         for element in self.root.iter():
             if element.tag.endswith('glyph'):
                 last_id = element.get('id')
+                self.element_ids.add(last_id)
             elif element.tag.endswith('label'):
                 if last_id is not None:
-                    label = element.get('text')
-                    if label is not None:
-                        self.label_to_glyph_ids[label].add(last_id)
+                    label = element.get('text')  # May be None or empty
+                    self.label_to_glyph_ids[label].add(last_id)
+
+        # Add ids from non-glyph top-level children
+        for element in self.root[0]:
+            if 'id' in element.attrib:
+                self.element_ids.add(element.attrib['id'])
 
     def get_nodes(self):
         """Returns the labels of the nodes that can be colorized;
@@ -63,6 +71,21 @@ class SbgnColorizer(object):
             The labels of the nodes in the diagram
         """
         return set(self.label_to_glyph_ids.keys())
+    
+    def ids_without_specified_style(self):
+        """Returns a list of ids without a specified style.
+
+        Returns
+        -------
+        ids: list<str>
+            A list of glyph ids for which no style has been specified with
+            set_style
+        """
+        styled_ids = set()
+        for label, id_list in self.label_to_glyph_ids.items():
+            if label in self.label_to_style:
+                styled_ids.update(id_list)
+        return self.element_ids.difference(styled_ids)
 
     def set_style(self, label, border_color, fill_color):
         """Colorizes all nodes with the specified label with the specified
@@ -102,7 +125,7 @@ class SbgnColorizer(object):
 
         # Assign each color and style an id
         color_to_id = {}
-        id_number = 1
+        id_number = 2
         for color in all_colors:
             id_str = 'color_' + str(id_number)
             color_to_id[color] = id_str
@@ -110,6 +133,17 @@ class SbgnColorizer(object):
 
         # Encode each color and its corresponding id as XML
         list_of_color_definitions = etree.Element('listOfColorDefinitions')
+        # Default stroke
+        color_def_default_stroke = etree.Element('colorDefinition')
+        color_def_default_stroke.attrib['id'] = 'color_1'
+        color_def_default_stroke.attrib['value'] = '#555555'
+        list_of_color_definitions.append(color_def_default_stroke)
+        # Default fill
+        # color_def_default_fill = etree.Element('colorDefinition')
+        # color_def_default_fill.attrib['id'] = 'color_default_fill'
+        # color_def_default_fill.attrib['value'] = '#ffffff7f'
+        # list_of_color_definitions.append(color_def_default_fill)
+        # Custom colors
         for color, color_id in color_to_id.items():
             color_definition = etree.Element('colorDefinition')
             color_definition.attrib['id'] = color_id
@@ -121,7 +155,7 @@ class SbgnColorizer(object):
         # is assigned to
         style_to_id = {}
         style_to_assigned_labels = collections.defaultdict(set)
-        style_id_number = 1
+        style_id_number = 2
         for label, style in self.label_to_style.items():
             style_id_str = 'style_' + str(style_id_number)
             style_to_id[style] = style_id_str
@@ -130,6 +164,18 @@ class SbgnColorizer(object):
 
         # Encode each style and the nodes that use it as XML
         list_of_styles = etree.Element('listOfStyles')
+        # Default style
+        default_style = etree.Element('style')
+        default_style.attrib['id'] = 'style_1'
+        default_style.attrib['idList'] = \
+                ' '.join(self.ids_without_specified_style())
+        default_g = etree.Element('g')
+        default_g.attrib['stroke'] = 'color_1'
+        default_g.attrib['strokeWidth'] = '1.25'
+        # default_g.attrib['fill'] = 'color_default_fill'
+        default_style.append(default_g)
+        list_of_styles.append(default_style)
+        # Custom styules
         for style, style_id in style_to_id.items():
             style_xml = etree.Element('style')
             style_xml.attrib['id'] = style_id
@@ -176,7 +222,8 @@ class SbgnColorizer(object):
         <fitLabelsToInfoboxes>false</fitLabelsToInfoboxes>
         <rearrangeAfterExpandCollapse>true</rearrangeAfterExpandCollapse>
         <animateOnDrawingChanges>true</animateOnDrawingChanges>
-        <adjustNodeLabelFontSizeAutomatically>false</adjustNodeLabelFontSizeAutomatically>
+        <adjustNodeLabelFontSizeAutomatically>false
+        </adjustNodeLabelFontSizeAutomatically>
         <enablePorts>true</enablePorts>
         <allowCompoundNodeResize>false</allowCompoundNodeResize>
         <mapColorScheme>black_white</mapColorScheme>

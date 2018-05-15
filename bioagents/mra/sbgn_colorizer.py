@@ -2,6 +2,7 @@ from lxml import etree
 import os
 import collections
 import copy
+import re
 
 # How a node should be colorized
 Style = collections.namedtuple('Style', ['border_color', 'fill_color'])
@@ -188,9 +189,16 @@ class SbgnColorizer(object):
 
         # Generate an SBGN-ML document with this extension information
         root_copy = copy.deepcopy(self.root)
-        root_copy.attrib['xmlns'] = 'http://sbgn.org/libsbgn/0.3'
         root_copy[0].insert(0, extension)
-        return etree.tostring(root_copy, pretty_print=True).decode('utf-8')
+        xml_txt = etree.tostring(root_copy, pretty_print=True,
+                                 encoding='UTF-8', standalone=True).decode(
+                                         'utf-8')
+
+        # Change the namespace
+        ns_re = """xmlns=['"][^'"]+['"]"""
+        xml_txt = re.sub(ns_re, 'xmlns="http://sbgn.org/libsbgn/0.3"', xml_txt)
+
+        return xml_txt
 
 if __name__ == '__main__':
     this_dir = os.path.dirname(__file__)

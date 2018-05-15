@@ -1,0 +1,119 @@
+﻿<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<sbgn 
+  xmlns="http://sbgn.org/libsbgn/0.3">
+  <map id="original.sbgnml" language="unknown">
+    <extension>
+      <renderInformation 
+        xmlns="http://www.sbml.org/sbml/level3/version1/render/version1" id="renderInformation" programName="sbgnviz" programVersion="4.0.2" backgroundColor="#000000">
+        <listOfColorDefinitions>
+          <colorDefinition id="color_1" value="#ffffff7f"/>
+          <colorDefinition id="color_2" value="#555555"/>
+        </listOfColorDefinitions>
+        <listOfStyles>
+          <style id="nodeffffff0.55551.2511normalnormalHelvetica" idList="id_0 id_1 id_4 id_4id_2 id_4id_3">
+            <g fontSize="11" fontFamily="Helvetica" fontWeight="normal" fontStyle="normal" stroke="color_2" strokeWidth="1.25" fill="color_1"/>
+          </style>
+          <style id="nodeffffff0.55551.25" idList="id_5 id_9">
+            <g stroke="color_2" strokeWidth="1.25" fill="color_1"/>
+          </style>
+          <style id="edge5551.25" idList="id_6 id_7 id_8 id_10 id_11 id_12">
+            <g stroke="color_2" strokeWidth="1.25"/>
+          </style>
+        </listOfStyles>
+      </renderInformation>
+      <mapProperties>
+        <compoundPadding>10</compoundPadding>
+        <extraCompartmentPadding>14</extraCompartmentPadding>
+        <extraComplexPadding>10</extraComplexPadding>
+        <arrowScale>1.25</arrowScale>
+        <showComplexName>true</showComplexName>
+        <dynamicLabelSize>regular</dynamicLabelSize>
+        <fitLabelsToNodes>false</fitLabelsToNodes>
+        <fitLabelsToInfoboxes>false</fitLabelsToInfoboxes>
+        <rearrangeAfterExpandCollapse>true</rearrangeAfterExpandCollapse>
+        <animateOnDrawingChanges>true</animateOnDrawingChanges>
+        <adjustNodeLabelFontSizeAutomatically>false</adjustNodeLabelFontSizeAutomatically>
+        <enablePorts>true</enablePorts>
+        <allowCompoundNodeResize>false</allowCompoundNodeResize>
+        <mapColorScheme>black_white</mapColorScheme>
+        <defaultInfoboxHeight>12</defaultInfoboxHeight>
+        <defaultInfoboxWidth>30</defaultInfoboxWidth>
+        <mapName/>
+        <mapDescription/>
+      </mapProperties>
+    </extension>
+    <glyph id="id_0" class="macromolecule">
+      <label text="FRK"/>
+      <bbox x="47.45949519083361" y="-20.962124649927727" w="60" h="30"/>
+    </glyph>
+    <glyph id="id_1" class="macromolecule">
+      <label text="RAF1"/>
+      <bbox x="-43.04961070511289" y="-56.72354085942207" w="60" h="30"/>
+    </glyph>
+    <glyph id="id_4" class="complex">
+      <bbox x="-9.219846420797126" y="55.1083192981061" w="63.25" h="71.10000000000001"/>
+      <glyph id="id_4id_2" class="macromolecule">
+        <label text="FRK"/>
+        <bbox x="-7.594846420797122" y="56.733319298106096" w="60" h="30"/>
+      </glyph>
+      <glyph id="id_4id_3" class="macromolecule">
+        <label text="RAF1"/>
+        <bbox x="-7.594846420797122" y="94.5833192981061" w="60" h="30"/>
+      </glyph>
+    </glyph>
+    <glyph id="id_5" class="process">
+      <bbox x="13.499830886572134" y="10.017381556599714" w="10" h="10"/>
+    </glyph>
+    <glyph id="id_9" class="process">
+      <bbox x="-11.939868951495743" y="4.584964654643951" w="10" h="10"/>
+    </glyph>
+    <arc id="id_6" class="consumption" source="id_0" target="id_5">
+      <glyph id="id_6_card" class="cardinality">
+        <label text="0"/>
+        <bbox x="0" y="0" w="0" h="0"/>
+      </glyph>
+      <start x="47.595683405609776" y="4.664259202352563"/>
+      <end x="24.124830886572127" y="13.015848410095906"/>
+    </arc>
+    <arc id="id_7" class="consumption" source="id_1" target="id_5">
+      <glyph id="id_7_card" class="cardinality">
+        <label text="0"/>
+        <bbox x="0" y="0" w="0" h="0"/>
+      </glyph>
+      <start x="-4.43120402702484" y="-26.223540859422066"/>
+      <end x="15.372183301782119" y="9.392381556599716"/>
+    </arc>
+    <arc id="id_8" class="production" source="id_5" target="id_4">
+      <glyph id="id_8_card" class="cardinality">
+        <label text="0"/>
+        <bbox x="0" y="0" w="0" h="0"/>
+      </glyph>
+      <start x="18.790248229375564" y="20.642381556599716"/>
+      <end x="20.124623991839897" y="46.48747603824117"/>
+    </arc>
+    <arc id="id_10" class="consumption" source="id_4" target="id_9">
+      <glyph id="id_10_card" class="cardinality">
+        <label text="0"/>
+        <bbox x="0" y="0" w="0" h="0"/>
+      </glyph>
+      <start x="7.546841866523307" y="49.60831929810611"/>
+      <end x="-4.903863996956826" y="15.209964654643954"/>
+    </arc>
+    <arc id="id_11" class="production" source="id_9" target="id_0">
+      <glyph id="id_11_card" class="cardinality">
+        <label text="0"/>
+        <bbox x="0" y="0" w="0" h="0"/>
+      </glyph>
+      <start x="-1.3148689514957397" y="8.548791239987203"/>
+      <end x="43.88620292559949" y="0.22236475233655995"/>
+    </arc>
+    <arc id="id_12" class="production" source="id_9" target="id_1">
+      <glyph id="id_12_card" class="cardinality">
+        <label text="0"/>
+        <bbox x="0" y="0" w="0" h="0"/>
+      </glyph>
+      <start x="-7.6096857200756585" y="3.9599646546439544"/>
+      <end x="-10.83438350786819" y="-23.120463765787353"/>
+    </arc>
+  </map>
+</sbgn>

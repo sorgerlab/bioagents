@@ -102,7 +102,9 @@ class SbgnColorizer(object):
         """
         assert(border_color.startswith('#'))
         assert(fill_color.startswith('#'))
-        self.label_to_style[label] = Style(border_color, fill_color)
+        labels = self.label_to_glyph_ids.keys()
+        if label in labels:
+            self.label_to_style[label] = Style(border_color, fill_color)
 
     def generate_xml(self):
         """Generates XML that colorizes the nodes previously specified with
@@ -195,7 +197,8 @@ class SbgnColorizer(object):
             g.attrib['fill'] = color_to_id[style.fill_color]
             style_xml.append(g)
 
-            list_of_styles.append(style_xml)
+            if len(style_xml.attrib['idList']) > 0:
+                list_of_styles.append(style_xml)
 
         # Create an extension element giving the coloring information
         extension = etree.Element('extension')
@@ -237,9 +240,9 @@ class SbgnColorizer(object):
         # Generate an SBGN-ML document with this extension information
         root_copy = copy.deepcopy(self.root)
         root_copy[0].insert(0, extension)
-        xml_txt = etree.tostring(root_copy, pretty_print=True,
-                                 encoding='UTF-8', standalone=True).decode(
-                                         'utf-8')
+        xml_txt = etree.tostring(root_copy, pretty_print=True).decode('utf-8')
+                                 #encoding='UTF-8', standalone=True).decode(
+                                 #        'utf-8')
 
         # Change the namespace
         ns_re = """xmlns=['"][^'"]+['"]"""

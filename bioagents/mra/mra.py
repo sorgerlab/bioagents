@@ -295,8 +295,8 @@ def make_diagrams(pysb_model, model_id):
     sbgn = make_sbgn(pysb_model, model_id)
     if sbgn is not None:
         colorizer = SbgnColorizer(sbgn)
-        colorizer.set_style('RAF', '#ff0000', '#00ff00')
-        # sbgn = colorizer.generate_xml()
+        colorizer.set_style('RAS', '#ff0000', '#00ff00')
+        sbgn = colorizer.generate_xml()
 
     rxn = draw_reaction_network(pysb_model, model_id)
     cm = draw_contact_map(pysb_model, model_id)

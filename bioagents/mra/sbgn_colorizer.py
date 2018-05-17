@@ -3,6 +3,13 @@ import os
 import collections
 import copy
 import re
+from indra.statements import *
+
+from indra.tools.expand_families import Expander
+from indra.preassembler.hierarchy_manager import hierarchies
+from indra.databases import context_client
+from matplotlib import cm
+from matplotlib import colors
 
 # How a node should be colorized
 Style = collections.namedtuple('Style', ['border_color', 'fill_color'])
@@ -94,7 +101,7 @@ class SbgnColorizer(object):
         Parameters
         ----------
         label : str
-            Add a styel to nodes with this label
+            Add a style to nodes with this label
         border_color : str
             The border color, starting with # and followed by six hex digits
         fill_color : str
@@ -105,6 +112,116 @@ class SbgnColorizer(object):
         labels = self.label_to_glyph_ids.keys()
         if label in labels:
             self.label_to_style[label] = Style(border_color, fill_color)
+
+    def _choose_stroke_color_from_mutation_status(self, gene_name, cell_line):
+        """Chooses the stroke color based on whether the gene is mutated
+        in the given cell line.
+
+        Parameters
+        ----------
+        gene_name: str
+            The name of the gene
+        cell_line: str
+            The name of the cell line
+
+        Returns
+        -------
+        color: str
+            The hex color string for the chosen stroke color
+        """
+        mut_statuses = context_client.get_mutations([gene_name], [cell_line])
+        assert len(mut_statuses.keys()) == 1, mut_statuses
+
+        mut_status = mut_statuses[cell_line][gene_name]
+        if len(mut_status) > 0:
+            return '#ff0000'
+        else:
+            return '#555555'
+
+    def set_style_expression_mutation(self, model, cell_line='A375_SKIN'):
+        """Sets the fill color of each node based on its expression level
+        on the given cell line, and the stroke color based on whether it is
+        a mutation.
+
+        Parameters
+        ----------
+        model: list<indra.statements.Statement>
+            A list of INDRA statements
+        cell_line: str
+            A cell line for which we're interested in protein expression level
+        """
+        labels = self.label_to_glyph_ids.keys()
+
+        label_to_agent = {}
+        for label in labels:
+            for statement in model:
+                for agent in statement.agent_list():
+                    if agent.name == label:
+                        label_to_agent[label] = agent
+
+        agent_to_expression_level = {}
+        for agent in label_to_agent.values():
+            expander = Expander(hierarchies)
+            expanded_families = expander.get_children(agent, ns_filter='HGNC')
+
+            # Does this refer to a single protein or a family of proteins?
+            if len(expanded_families) == 0:
+                # No family expansion; assume that this agent is a protein,
+                # not a family
+                gene_names = [agent.name]
+            else:
+                gene_names = [t[1] for t in expanded_families]
+
+            # Compute mean expression level
+            expression_levels = []
+            l = context_client.get_protein_expression(gene_names, [cell_line])
+            for line in l:
+                for element in l[line]:
+                    level = l[line][element]
+                    if level is not None:
+                        expression_levels.append(l[line][element])
+            if len(expression_levels) == 0:
+                mean_level = None
+            else:
+                mean_level = sum(expression_levels) / len(expression_levels)
+
+            agent_to_expression_level[agent] = mean_level
+
+        # Create a normalized expression score between 0 and 1
+        # Compute min and maximum levels
+        min_level = None
+        max_level = None
+        for agent, level in agent_to_expression_level.items():
+            if level is None:
+                continue
+            if min_level is None:
+                min_level = level
+            if max_level is None:
+                max_level = level
+            if level < min_level:
+                min_level = level
+            if level > max_level:
+                max_level = level
+        # Compute scores
+        agent_to_score = {}
+        if max_level is not None:
+            level_span = max_level - min_level
+        for agent, level in agent_to_expression_level.items():
+            if level is None:
+                agent_to_score[agent] = 0
+            else:
+                agent_to_score[agent] = (level - min_level) / level_span
+
+        # Map scores to colors and assign colors to labels
+        agent_to_color = {}
+        for agent, score in agent_to_score.items():
+            color = cm.plasma(score)
+            color_str = colors.to_hex(color[:3])
+            assert(len(color_str) == 7)
+            stroke_color = \
+                    self._choose_stroke_color_from_mutation_status(agent.name,
+                                                                   cell_line)
+            self.set_style(agent.name, stroke_color, color_str)
 
     def generate_xml(self):
         """Generates XML that colorizes the nodes previously specified with
@@ -248,6 +365,9 @@ class SbgnColorizer(object):
         ns_re = """xmlns=['"][^'"]+['"]"""
         xml_txt = re.sub(ns_re, 'xmlns="http://sbgn.org/libsbgn/0.3"', xml_txt)
 
+        with open('xml_txt.xml', 'w') as f:
+            f.write(xml_txt)
+
         return xml_txt
 
 if __name__ == '__main__':
@@ -256,6 +376,7 @@ if __name__ == '__main__':
                              'original.sbgnml')
     with open(path_test, 'r') as f:
         content = f.read()
+
 
     colorizer = SbgnColorizer(content)
     colorizer.set_style('RAF', '#ff0000', '#00ff00')

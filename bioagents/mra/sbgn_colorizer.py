@@ -215,7 +215,8 @@ class SbgnColorizer(object):
         # Map scores to colors and assign colors to labels
         agent_to_color = {}
         for agent, score in agent_to_score.items():
-            color = cm.plasma(score)
+            # color = cm.plasma(score)
+            color = cm.Greens(0.2*score + 0.2)
             color_str = colors.to_hex(color[:3])
             assert(len(color_str) == 7)
             stroke_color = \

@@ -231,11 +231,13 @@ class MRA_Module(Bioagent):
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
-        # Add the removed statements
+
+        # Get the action and add it to the message
         removed = res.get('removed')
-        if removed:
-            removed_msg = encode_indra_stmts(removed)
-            msg.sets('removed', removed_msg)
+        actionl = KQMLList('remove_stmts')
+        actionl.sets('statements', encode_indra_stmts(removed))
+        msg.set('action', actionl)
+
         # Add the diagram
         diagrams = res.get('diagrams')
         logger.info(diagrams)

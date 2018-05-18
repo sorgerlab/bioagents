@@ -491,6 +491,11 @@ class TestModelBuildExpandRemove(_IntegrationTest):
         assert output.get('model-id') == '3'
         model = json.loads(output.gets('model'))
         assert len(model) == 1
+        action  = output.get('action')
+        assert action.head() == 'remove_stmts'
+        rem_stmts_str = action.gets('statements')
+        rem_stmts = sts.stmts_from_json(json.loads(rem_stmts_str))
+        assert len(rem_stmts) == 1
 
 
 class TestModelHasMechanism(_IntegrationTest):

@@ -459,7 +459,7 @@ class TestModelBuildExpandRemove(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(MRA_Module)
 
-    message_funcs = ['build', 'expand', 'remove']
+    message_funcs = ['build', 'expand', 'remove', 'remove2']
 
     def create_build(self):
         return _get_build_model_request('KRAS activates BRAF')
@@ -491,6 +491,24 @@ class TestModelBuildExpandRemove(_IntegrationTest):
         assert output.get('model-id') == '3'
         model = json.loads(output.gets('model'))
         assert len(model) == 1
+        action  = output.get('action')
+        assert action.head() == 'remove_stmts'
+        rem_stmts_str = action.gets('statements')
+        rem_stmts = sts.stmts_from_json(json.loads(rem_stmts_str))
+        assert len(rem_stmts) == 1
+
+    def create_remove2(self):
+        content = KQMLList('MODEL-REMOVE-MECHANISM')
+        content.set('model-id', '3')
+        content.sets('description', ekb_kstring_from_text('NRAS activates BRAF'))
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_remove2(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '4'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 0
         action  = output.get('action')
         assert action.head() == 'remove_stmts'
         rem_stmts_str = action.gets('statements')

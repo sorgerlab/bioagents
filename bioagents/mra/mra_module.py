@@ -232,6 +232,10 @@ class MRA_Module(Bioagent):
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
 
+        # Handle empty model
+        if not model:
+            self.send_clean_model()
+
         # Get the action and add it to the message
         removed = res.get('removed')
         actionl = KQMLList('remove_stmts')

@@ -216,10 +216,10 @@ class MRA_Module(Bioagent):
         ekb = content.gets('description')
         model_id = self._get_model_id(content)
         no_display = content.get('no-display')
-        try:
-            res = self.mra.remove_mechanism(ekb, model_id)
-        except Exception as e:
-            raise InvalidModelDescriptionError(e)
+        #try:
+        res = self.mra.remove_mechanism(ekb, model_id)
+        #except Exception as e:
+        #raise InvalidModelDescriptionError(e)
         model_id = res.get('model_id')
         if model_id is None:
             raise InvalidModelDescriptionError('Could not find model id.')
@@ -231,6 +231,10 @@ class MRA_Module(Bioagent):
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
+
+        # Handle empty model
+        if not model:
+            self.send_clean_model()
 
         # Get the action and add it to the message
         removed = res.get('removed')

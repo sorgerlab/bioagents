@@ -161,6 +161,8 @@ class MRA(object):
         res['model_exec'] = model_exec
         if removed_stmts:
             res['removed'] = removed_stmts
+        if not new_stmts:
+            return res
         res['diagrams'] = make_diagrams(model_exec, model_id)
         return res
 

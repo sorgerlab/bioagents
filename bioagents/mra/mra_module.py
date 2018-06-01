@@ -85,8 +85,8 @@ class MRA_Module(Bioagent):
         msg.set('model-id', str(model_id))
         # Add the INDRA model json
         model = res.get('model')
-        if model and (descr_format == 'ekb' or not descr_format):
-            self.send_background_support(model)
+        #if model and (descr_format == 'ekb' or not descr_format):
+        #    self.send_background_support(model)
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
         # Add the diagrams
@@ -132,8 +132,8 @@ class MRA_Module(Bioagent):
         msg.sets('model', model_msg)
         # Add the INDRA model new json
         model_new = res.get('model_new')
-        if model_new and (descr_format == 'ekb' or not descr_format):
-            self.send_background_support(model_new)
+        #if model_new and (descr_format == 'ekb' or not descr_format):
+        #    self.send_background_support(model_new)
         if model_new:
             model_new_msg = encode_indra_stmts(model_new)
             msg.sets('model-new', model_new_msg)

@@ -21,7 +21,7 @@ from pysb.tools import render_reactions
 from pysb.export import export
 from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
 from bioagents.mra.sbgn_colorizer import SbgnColorizer
-
+import pickle
 
 logger = logging.getLogger('MRA')
 

@@ -4,6 +4,7 @@ import collections
 import copy
 import re
 from indra.statements import *
+from indra.sources.indra_db_rest import get_statements
 
 from indra.tools.expand_families import Expander
 from indra.preassembler.hierarchy_manager import hierarchies
@@ -13,6 +14,31 @@ from matplotlib import colors
 
 # How a node should be colorized
 Style = collections.namedtuple('Style', ['border_color', 'fill_color'])
+
+def is_mutation_activating(gene_name, mutation_status):
+    """Checks the database for whether a mutation is activating.
+
+    Parameters
+    ----------
+    agent_name: str
+        The name of the gene
+    mutation_status: list<str>
+        Mutations
+
+    Returns
+    -------
+    is_activing: bool
+        True if the database says the mutation is activating, False if the
+        database says the mutation is inhibiting, None if the database doesn't
+        say
+    """
+    statements = get_statements(agents=[gene_name], stmt_type='ActiveForm')
+    print('Hello')
+    print('ActiveForm statements involving', gene_name)
+    for statement in statements:
+        print(statement)
+    import ipdb;ipdb.set_trace()
+
 
 class SbgnColorizer(object):
     """Adds border color and fill colors to an SBGNviz diagram via extensions
@@ -133,6 +159,9 @@ class SbgnColorizer(object):
         assert len(mut_statuses.keys()) == 1, mut_statuses
 
         mut_status = mut_statuses[cell_line][gene_name]
+
+        if len(mut_status) > 0:
+            is_activating = is_mutation_activating(gene_name, mut_status)
         if len(mut_status) > 0:
             return '#ff0000'
         else:

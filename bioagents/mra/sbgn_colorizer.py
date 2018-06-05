@@ -33,11 +33,9 @@ def is_mutation_activating(gene_name, mutation_status):
         say
     """
     statements = get_statements(agents=[gene_name], stmt_type='ActiveForm')
-    print('Hello')
     print('ActiveForm statements involving', gene_name)
     for statement in statements:
         print(statement)
-    import ipdb;ipdb.set_trace()
 
 
 class SbgnColorizer(object):
@@ -160,8 +158,10 @@ class SbgnColorizer(object):
 
         mut_status = mut_statuses[cell_line][gene_name]
 
-        if len(mut_status) > 0:
-            is_activating = is_mutation_activating(gene_name, mut_status)
+        # Remove this for now to avoid DB query
+        # if len(mut_status) > 0:
+        #   is_activating = is_mutation_activating(gene_name, mut_status)
+
         if len(mut_status) > 0:
             return '#ff0000'
         else:
@@ -399,15 +399,3 @@ class SbgnColorizer(object):
             f.write(xml_txt)
 
         return xml_txt
-
-if __name__ == '__main__':
-    this_dir = os.path.dirname(__file__)
-    path_test = os.path.join(this_dir, '..', 'tests', 'sbgn_color_test_files',
-                             'original.sbgnml')
-    with open(path_test, 'r') as f:
-        content = f.read()
-
-
-    colorizer = SbgnColorizer(content)
-    colorizer.set_style('RAF', '#ff0000', '#00ff00')
-    print(colorizer.generate_xml())

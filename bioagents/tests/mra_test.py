@@ -568,7 +568,8 @@ class TestUserGoal(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS'
-
+        assert self.bioagent.mra.context is not None
+        assert self.bioagent.mra.explain is not None
 
 '''
 def test_replace_agent_one():

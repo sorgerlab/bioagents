@@ -293,9 +293,7 @@ class MRA_Module(Bioagent):
     def respond_user_goal(self, content):
         """Record user goal and return success if possible"""
         explain = content.gets('explain')
-        from indra.sources import trips
-        tp = trips.process_xml(explain)
-        print(tp.statements)
+        self.mra.set_user_goal(explain)
         reply = KQMLList('SUCCESS')
         return reply
 

@@ -34,7 +34,8 @@ class MRA_Module(Bioagent):
     name = "MRA"
     tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
              'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
-             'MODEL-UNDO', 'MODEL-GET-UPSTREAM', 'MODEL-GET-JSON']
+             'MODEL-UNDO', 'MODEL-GET-UPSTREAM', 'MODEL-GET-JSON',
+             'USER-GOAL']
 
     def __init__(self, **kwargs):
         # Instantiate a singleton MRA agent
@@ -287,6 +288,13 @@ class MRA_Module(Bioagent):
             reply.sets('model', model_msg)
         else:
             reply = self.make_failure('MISSING_MODEL')
+        return reply
+
+    def respond_user_goal(self, content):
+        """Record user goal and return success if possible"""
+        explain = content.gets('explain')
+        self.mra.set_user_goal(explain)
+        reply = KQMLList('SUCCESS')
         return reply
 
     def send_display_model(self, diagrams):

@@ -554,6 +554,22 @@ class TestModelHasMechanism(_IntegrationTest):
         assert output.get('has-mechanism') == 'FALSE'
 
 
+class TestUserGoal(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestUserGoal, self).__init__(MRA_Module)
+
+    def create_message(self):
+        txt = 'Selumetinib decreases FOS in BT20 cells'
+        explain = ekb_kstring_from_text(txt)
+        content = KQMLList('USER-GOAL')
+        content.set('explain', explain)
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        assert self.bioagent.mra.context is not None
+        assert self.bioagent.mra.explain is not None
 
 '''
 def test_replace_agent_one():

@@ -32,6 +32,8 @@ class MRA(object):
         self.id_counter = 0
         self.default_policy = 'one_step'
         self.default_initial_amount = 100.0
+        self.explain = None
+        self.context = None
 
     def get_new_id(self):
         self.id_counter += 1
@@ -196,6 +198,32 @@ class MRA(object):
                      (st.obj.name == target.name)]
         upstream_agents = [st.subj for st in rel_stmts]
         return upstream_agents
+
+    def set_user_goal(self, explain):
+        # Get the event itself
+        tp = trips.process_xml(explain)
+        if tp is None:
+            return {'error': 'Failed to process EKB.'}
+        print(tp.statements)
+        if not tp.statements:
+            return
+        self.explain = tp.statements[0]
+
+        # Look for a term representing a cell line
+        def get_context(explain_xml):
+            import xml.etree.ElementTree as ET
+            et = ET.fromstring(explain_xml)
+            cl_tag = et.find("TERM/[type='ONT::CELL-LINE']/text")
+            if cl_tag is not None:
+                cell_line = cl_tag.text
+                cell_line.replace('-', '')
+                return cell_line
+            return None
+        try:
+            self.context = get_context(explain)
+        except Exception as e:
+            logger.error('MRA could not set context from USER-GOAL')
+            logger.error(e)
 
     def new_model(self, stmts):
         model_id = self.get_new_id()

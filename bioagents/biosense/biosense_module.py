@@ -125,6 +125,24 @@ class BioSense_Module(Bioagent):
         msg.set('members', KQMLList(kagents))
         return msg
 
+    def respond_get_synonyms(self, content):
+        """Respond to a query looking for synonyms of a gene."""
+        ekb = content.gets('gene')
+        agents, _ = process_ekb(ekb)
+        if len(agents) != 1:
+            return self.make_failure('INVALID_COLLECTION')
+
+        agent = agents[0]
+        up_id = agent.db_refs['UP']
+        gene_name = up_client.get_gene_name(up_id)
+        gene_synonyms = up_client.get_gene_alt_labels(up_id)
+        protein_names = up_client.get_gene_alt_names(up_id)
+        msg = KQMLList('SUCCESS')
+        msg.set('gene_name', gene_name)
+        msg.set('gene_synonyms', gene_synonyms)
+        msg.set('protein_names', protein_names)
+        return msg
+
 
 def get_kagent(agent_tuple, term_id=None):
     agent, ont_type, urls = agent_tuple

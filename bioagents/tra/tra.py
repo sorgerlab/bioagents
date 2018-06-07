@@ -298,22 +298,23 @@ def get_ltl_from_pattern(pattern, obs):
         fstr = mc.transient_formula(obs.name)
     elif pattern.pattern_type == 'sustained':
         fstr = mc.sustained_formula(obs.name)
-    elif pattern.pattern_type == 'no_change':
-        fstr = mc.noact_formula(obs.name)
-    elif pattern.pattern_type == 'always_value':
-        if not pattern.value.quant_type == 'qualitative':
+    elif pattern.pattern_type in ('no_change', 'always_value'):
+        if not hasattr(pattern, 'value') or pattern.value is None:
+            fstr = mc.noact_formula(obs.name)
+        elif not pattern.value.quant_type == 'qualitative':
             msg = 'Cannot handle always value of "%s" type.' % \
                 pattern.value.quant_type
             raise InvalidTemporalPatternError(msg)
-        if pattern.value.value == 'low':
-            val = 0
-        elif pattern.value.value == 'high':
-            val = 1
         else:
-            msg = 'Cannot handle always value of "%s".' % \
-                pattern.value.value
-            raise InvalidTemporalPatternError(msg)
-        fstr = mc.always_formula(obs.name, val)
+            if pattern.value.value == 'low':
+                val = 0
+            elif pattern.value.value == 'high':
+                val = 1
+            else:
+                msg = 'Cannot handle always value of "%s".' % \
+                    pattern.value.value
+                raise InvalidTemporalPatternError(msg)
+            fstr = mc.always_formula(obs.name, val)
     elif pattern.pattern_type == 'eventual_value':
         if not pattern.value.quant_type == 'qualitative':
             msg = 'Cannot handle eventual value of "%s" type.' % \
@@ -427,7 +428,7 @@ def get_all_patterns(obs_name):
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.always_formula(obs_name, val_num)
         pattern = (
-            '(:type "always_value" '
+            '(:type "no_change" '
             ':value (:type "qualitative" :value "%s"))' % val_str
             )
         patterns.append((fstr, pattern))
@@ -469,11 +470,13 @@ class TemporalPattern(object):
         self.time_limit = time_limit
         # TODO: handle extra arguments by pattern type
         if self.pattern_type in \
-           ('always_value', 'eventual_value', 'sometime_value'):
+           ('always_value', 'no_change', 'eventual_value', 'sometime_value'):
             value = kwargs.get('value')
             if value is None:
-                msg = 'Missing molecular quantity'
-                raise InvalidTemporalPatternError(msg)
+                # Value is optional for no_change
+                if self.pattern_type != 'no_change':
+                    msg = 'Missing molecular quantity'
+                    raise InvalidTemporalPatternError(msg)
             self.value = value
 
 

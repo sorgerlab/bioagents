@@ -270,12 +270,12 @@ def test_get_temporal_pattern():
 
 
 def test_get_temporal_pattern_always():
-    pattern_msg = '(:type "always_value" :entities ((:description ' + \
+    pattern_msg = '(:type "no_change" :entities ((:description ' + \
                     '%s)) :value (:type "qualitative" :value "low"))' % \
                     ekb_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
-    assert pattern.pattern_type == 'always_value'
+    assert pattern.pattern_type == 'no_change'
     assert pattern.value is not None
     assert pattern.value.quant_type == 'qualitative'
     assert pattern.value.value == 'low'
@@ -406,7 +406,7 @@ class _TraTestModel1(_IntegrationTest):
     def __init__(self, *args, **kwargs):
         super(_TraTestModel1, self).__init__(*args, **kwargs)
         self.expected = '(SUCCESS :content (:satisfies-rate 0.0 ' + \
-            ':num-sim 10 :suggestion (:type "always_value" ' + \
+            ':num-sim 10 :suggestion (:type "no_change" ' + \
             ':value (:type "qualitative" :value "low"))))'
 
     def create_message(self):
@@ -417,7 +417,7 @@ class _TraTestModel1(_IntegrationTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
-        pattern.sets('type', 'always_value')
+        pattern.sets('type', 'no_change')
         value = KQMLList()
         value.sets('type', 'qualitative')
         value.sets('value', 'high')
@@ -468,7 +468,7 @@ class TraTestModel2(_IntegrationTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
-        pattern.sets('type', 'always_value')
+        pattern.sets('type', 'no_change')
         value = KQMLList()
         value.sets('type', 'qualitative')
         value.sets('value', 'low')
@@ -529,7 +529,7 @@ class TraTestModel4(_IntegrationTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
-        pattern.sets('type', 'always_value')
+        pattern.sets('type', 'no_change')
         value = KQMLList()
         value.sets('type', 'qualitative')
         value.sets('value', 'low')
@@ -560,7 +560,7 @@ class TraTestModel5(_IntegrationTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
-        pattern.sets('type', 'always_value')
+        pattern.sets('type', 'no_change')
         value = KQMLList()
         value.sets('type', 'qualitative')
         value.sets('value', 'low')
@@ -652,7 +652,7 @@ class TraTestModel7(_IntegrationTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
-        pattern.sets('type', 'always_value')
+        pattern.sets('type', 'no_change')
         value = KQMLList()
         value.sets('type', 'qualitative')
         value.sets('value', 'low')
@@ -699,7 +699,7 @@ class TraTestModel8(_IntegrationTest):
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
         pattern.set('entities', entities)
-        pattern.sets('type', 'always_value')
+        pattern.sets('type', 'no_change')
         value = KQMLList()
         value.sets('type', 'qualitative')
         value.sets('value', 'low')

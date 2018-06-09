@@ -7,7 +7,7 @@ from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
 from indra.statements import stmts_to_json, Agent, Phosphorylation, \
                              Dephosphorylation, Activation, Inhibition, \
                              ActivityCondition, ModCondition
-from kqml import KQMLPerformative, KQMLList
+from kqml import KQMLPerformative, KQMLList, KQMLToken
 from bioagents.tests.integration import _StringCompareTest, _IntegrationTest
 from bioagents.tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
                                 get_request
@@ -1023,6 +1023,54 @@ class TestCompareConditionsMissing(_IntegrationTest):
         reason = output.gets('reason')
         assert reason == 'MODEL_MISSING_MONOMER'
 
+# Testing an issue with a specific message from the BA
+# the bug ended up being in the BA's message but this test is still useful
+class TestConditionNotInvalid(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestConditionNotInvalid, self).__init__(
+            tra_module.TRA_Module, use_kappa=False)
+        model_txt = 'MAP2K1 phosphorylates MAPK1. DUSP6 dephosphorylates MAPK1.'
+        self.model = stmts_kstring_from_text(model_txt)
+
+    def create_message(self):
+        content = KQMLPerformative('SATISFIES-PATTERN')
+        content.set('model', self.model)
+        patt = KQMLList()
+        patt.sets('type', 'eventual_value')
+        ents = KQMLList()
+        ent = KQMLList()
+        ent.sets('description', ekb_kstring_from_text('phosphorylated MAPK1'))
+        ents.append(ent)
+        patt.set('entities', ents)
+        val = KQMLList()
+        val.sets('type', 'qualitative')
+        val.sets('value', 'low')
+        patt.set('value', val)
+        content.set('pattern', patt)
+
+        conds = KQMLList()
+        cond = KQMLList()
+        cond.sets('type', 'multiple')
+        quant = KQMLList()
+        quant.sets('type', 'total')
+        ent = KQMLList()
+        ent.sets('description', ekb_kstring_from_text('DUSP6'))
+        quant.set('entity', ent)
+        cond.sets('quantity', quant)
+        #val = KQMLList()
+        #val.sets('type', 'number')
+        cond.set('value', KQMLToken('10'))
+        #cond.set('value', val)
+        conds.append(cond)
+        content.set('conditions', conds)
+
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        cont = output.get('content')
+        cont.gets('satisfies-rate') == '1.0'
 
 def _get_gk_model():
     SelfExporter.do_export = True

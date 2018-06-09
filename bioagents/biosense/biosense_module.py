@@ -23,7 +23,8 @@ _indra_path = indra.__path__[0]
 class BioSense_Module(Bioagent):
     name = 'BioSense'
     tasks = ['CHOOSE-SENSE', 'CHOOSE-SENSE-CATEGORY',
-             'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER']
+             'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER',
+             'GET-SYNONYMS']
 
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""

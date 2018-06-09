@@ -1,6 +1,6 @@
 import unittest
 from kqml import KQMLList
-from .util import ekb_from_text
+from bioagents.tests.util import ekb_from_text
 from bioagents.biosense.biosense_module import BioSense_Module
 
 mek1_ekb = ekb_from_text('MAP2K1')
@@ -103,3 +103,17 @@ def test_choose_sense_what_member():
     m2 = res.get('members')[1]
     assert m1.gets('name') == 'MAP2K1', m1.gets('name')
     assert m2.gets('name') == 'MAP2K2', m2.gets('name')
+
+
+def test_get_synonym():
+    bs = BioSense_Module(testing=True)
+    msg_content = KQMLList('GET-SYNONYMS')
+    msg_content.sets('protein', mek1_ekb)
+    res = bs.respond_get_synonyms(msg_content)
+    assert res.head() == 'SUCCESS'
+    syns = res.get('synonyms')
+    syn_strs = [s.string_value() for s in syns]
+    assert 'MAP2K1' in syn_strs
+    assert 'MEK1' in syn_strs
+    assert 'MKK1' in syn_strs
+

@@ -5,8 +5,9 @@ import indra
 from indra.util import read_unicode_csv
 from indra.tools import expand_families
 from indra.sources import trips
+from indra.sources.trips.processor import TripsProcessor
 from bioagents import Bioagent
-from indra.databases import get_identifiers_url
+from indra.databases import get_identifiers_url, uniprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
 from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
 
@@ -22,7 +23,8 @@ _indra_path = indra.__path__[0]
 class BioSense_Module(Bioagent):
     name = 'BioSense'
     tasks = ['CHOOSE-SENSE', 'CHOOSE-SENSE-CATEGORY',
-             'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER']
+             'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER',
+             'GET-SYNONYMS']
 
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""
@@ -124,6 +126,34 @@ class BioSense_Module(Bioagent):
         msg = KQMLList('SUCCESS')
         msg.set('members', KQMLList(kagents))
         return msg
+
+    def respond_get_synonyms(self, content):
+        """Respond to a query looking for synonyms of a protein."""
+        ekb = content.gets('protein')
+        try:
+            agent = self._get_agent(ekb)
+        except Exception as e:
+            return self.make_failure('INVALID_AGENT')
+        if agent is None:
+            return self.make_failure('INVALID_AGENT')
+
+        up_id = agent.db_refs.get('UP')
+        if not up_id:
+            return self.make_failure('INVALID_AGENT')
+
+        synonyms = uniprot_client.get_synonyms(up_id)
+        syns = KQMLList([KQMLString(s) for s in synonyms])
+        msg = KQMLList('SUCCESS')
+        msg.set('synonyms', syns)
+        return msg
+
+    @staticmethod
+    def _get_agent(agent_ekb):
+        tp = TripsProcessor(agent_ekb)
+        terms = tp.tree.findall('TERM')
+        term_id = terms[0].attrib['id']
+        agent = tp._get_agent_by_id(term_id, None)
+        return agent
 
 
 def get_kagent(agent_tuple, term_id=None):

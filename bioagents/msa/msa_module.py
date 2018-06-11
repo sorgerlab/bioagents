@@ -41,6 +41,9 @@ def _read_signor_afs():
     return signor_afs
 
 
+DUMP_LIMIT = 20
+
+
 class MSALookupError(Exception):
     pass
 
@@ -163,6 +166,10 @@ class MSA_Module(Bioagent):
             logger.error("Failed to get statements.")
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
+
+        # Sort statements by support and evidence
+        stmts.sort(key=lambda s: len(s.evidence) + len(s.supported_by))
+
         return nl, stmts
 
     def respond_find_relations_from_literature(self, content):
@@ -184,6 +191,7 @@ class MSA_Module(Bioagent):
         # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', str(len(stmts)))
+        resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def respond_confirm_relation_from_literature(self, content):
@@ -197,6 +205,7 @@ class MSA_Module(Bioagent):
             self._send_display_stmts(stmts, nl_question)
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', 'TRUE' if len(stmts) > 0 else 'FALSE')
+        resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def respond_get_paper_model(self, content):
@@ -227,6 +236,7 @@ class MSA_Module(Bioagent):
         self.send_display_model(diagrams)
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', len(unique_stmts))
+        resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def send_display_model(self, diagrams):
@@ -258,7 +268,7 @@ class MSA_Module(Bioagent):
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>']
-        for stmt in stmts:
+        for stmt in stmts[:DUMP_LIMIT]:
             sub_ag, obj_ag = stmt.agent_list()
             row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
                             % (sub_ag, type(stmt).__name__, obj_ag))

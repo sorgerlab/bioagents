@@ -204,7 +204,8 @@ class MSA_Module(Bioagent):
         if len(stmts):
             self._send_display_stmts(stmts, nl_question)
         resp = KQMLPerformative('SUCCESS')
-        resp.set('relations-found', 'TRUE' if len(stmts) > 0 else 'FALSE')
+        resp.set('some-relations-found', 'TRUE' if len(stmts) > 0 else 'FALSE')
+        resp.set('num-relations-found', str(len(stmts)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 

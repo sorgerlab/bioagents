@@ -3,6 +3,7 @@ import sys
 import re
 import pickle
 import logging
+from itertools import groupby
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -256,7 +257,14 @@ class MSA_Module(Bioagent):
 
     def _send_display_stmts(self, stmts, nl_question):
         logger.info('Sending display statements')
-        self._send_table_to_provenance(stmts, nl_question)
+        display_stmts = []
+        for stmt_type, stmt_grp in groupby(stmts, key=lambda s: str(type(s))):
+            stmt_sublist = list(stmt_grp)
+            logger.info("There are %d statements of type %s."
+                        % (len(stmt_sublist), stmt_type))
+            stmt_sublist.sort(key=lambda s: len(s.evidence)+len(s.supported_by))
+            display_stmts.extend(stmt_sublist[:5])
+        self._send_table_to_provenance(display_stmts, nl_question)
         # resource = _make_sbgn(stmts[:10])
         # logger.info(resource)
         # content = KQMLList('open-query-window')

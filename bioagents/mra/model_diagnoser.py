@@ -3,8 +3,10 @@ from indra.mechlinker import MechLinker
 from indra.statements import *
 
 class ModelDiagnoser(object):
-    def __init__(self, statements):
+    def __init__(self, statements, model=None, explain=None):
         self.statements = statements
+        self.model = model
+        self.explain = explain
 
     def get_missing_activities(self):
         ml = MechLinker(self.statements)
@@ -27,3 +29,6 @@ class ModelDiagnoser(object):
                     suggestion.set_agent_list([new_subj, obj])
                     suggestions.append(suggestion)
         return suggestions
+
+    def check_explanation(self):
+        pass

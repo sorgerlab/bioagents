@@ -33,6 +33,7 @@ def test_missing_activity3():
     suggs = md.get_missing_activities()
     assert len(suggs) == 0
 
+
 def test_check_model():
     explain = Activation(raf, erk)
     mek_active = Agent('MEK', db_refs={'FPLX': 'MEK'},
@@ -45,7 +46,10 @@ def test_check_model():
     md = ModelDiagnoser(model_stmts, pa.model, explain)
     result = md.check_explanation()
     assert result['has_explanation'] is True
-
+    path = result['explanation_path']
+    assert len(path) == 2
+    assert path[0] == model_stmts[0]
+    assert path[1] == model_stmts[1]
 
 if __name__ == '__main__':
     test_check_model()

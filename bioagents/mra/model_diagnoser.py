@@ -1,7 +1,12 @@
+import logging
 from copy import deepcopy
 from indra.mechlinker import MechLinker
 from indra.statements import *
-from indra.explanation.model_checker import ModelChecker
+from indra.explanation.model_checker import ModelChecker, stmts_for_path
+
+
+logger = logging.getLogger('model_diagnoser')
+
 
 class ModelDiagnoser(object):
     def __init__(self, statements, model=None, explain=None):
@@ -38,6 +43,20 @@ class ModelDiagnoser(object):
             raise ValueError('check_explanation requires an explanation goal.')
         result = {}
         mc = ModelChecker(self.model, [self.explain])
-        pr = mc.check_statement(self.explain, max_paths=0)
-        result['has_explanation'] = pr.path_found
+        try:
+            pr = mc.check_statement(self.explain, max_paths=0)
+            result['has_explanation'] = pr.path_found
+        except Exception as e:
+            logger.error("Error checking statement for paths: %s" % str(e))
+            result['has_explanation'] = False
+        # If we found a path get a path
+        if result['has_explanation']:
+            try:
+                pr = mc.check_statement(self.explain, max_paths=1,
+                                        max_path_length=8)
+                path_stmts = stmts_for_path(pr.paths[0], self.model,
+                                            self.statements)
+                result['explanation_path'] = path_stmts
+            except Exception as e:
+                logger.error("Error getting paths for statement: %s" % str(e))
         return result

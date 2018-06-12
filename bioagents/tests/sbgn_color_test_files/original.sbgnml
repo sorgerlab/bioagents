@@ -1,0 +1,30 @@
+<sbgn xmlns="http://sbgn.org/libsbgn/pd/0.1">
+  <map>
+    <glyph id="id_0" class="macromolecule">
+      <label text="HRAS"/>
+      <bbox x="0" y="0" w="60" h="30"/>
+    </glyph>
+    <glyph id="id_1" class="macromolecule">
+      <label text="RAF"/>
+      <bbox x="0" y="0" w="60" h="30"/>
+      <glyph id="id_2" class="state variable">
+        <state variable="act" value="i"/>
+        <bbox x="1" y="1" w="28" h="12"/>
+      </glyph>
+    </glyph>
+    <glyph id="id_3" class="macromolecule">
+      <label text="RAF"/>
+      <bbox x="0" y="0" w="60" h="30"/>
+      <glyph id="id_4" class="state variable">
+        <state variable="act" value="a"/>
+        <bbox x="1" y="1" w="28" h="12"/>
+      </glyph>
+    </glyph>
+    <glyph id="id_5" class="process">
+      <bbox x="0" y="0" w="10" h="10"/>
+    </glyph>
+    <arc source="id_1" target="id_5" id="id_6" class="consumption"/>
+    <arc source="id_5" target="id_3" id="id_7" class="production"/>
+    <arc source="id_0" target="id_5" id="id_8" class="catalysis"/>
+  </map>
+</sbgn>

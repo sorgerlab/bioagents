@@ -107,13 +107,13 @@ def test_sbgn():
     sbgn = res['diagrams']['sbgn']
     tree = ET.fromstring(sbgn)
     glyphs = tree.findall('s:map/s:glyph',
-                          namespaces={'s': 'http://sbgn.org/libsbgn/pd/0.1'})
+                          namespaces={'s': 'http://sbgn.org/libsbgn/0.3'})
     assert len(glyphs) == 6
     res = m.model_undo()
     sbgn = res['diagrams']['sbgn']
     tree = ET.fromstring(sbgn)
     glyphs = tree.findall('s:map/s:glyph',
-                          namespaces={'s': 'http://sbgn.org/libsbgn/pd/0.1'})
+                          namespaces={'s': 'http://sbgn.org/libsbgn/0.3'})
     assert len(glyphs) == 4
 
 

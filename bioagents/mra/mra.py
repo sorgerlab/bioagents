@@ -20,7 +20,8 @@ from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 from pysb.export import export
 from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
-
+from bioagents.mra.sbgn_colorizer import SbgnColorizer
+import pickle
 
 logger = logging.getLogger('MRA')
 
@@ -66,7 +67,8 @@ class MRA(object):
         res['ambiguities'] = ambiguities
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, model_id,
+                                        self.models[model_id], self.context)
         return res
 
     def build_model_from_json(self, model_json):
@@ -79,7 +81,8 @@ class MRA(object):
             return res
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, model_id,
+                                        self.models[model_id], self.context)
         return res
 
     def expand_model_from_ekb(self, model_ekb, model_id):
@@ -101,7 +104,9 @@ class MRA(object):
         res['model_new'] = new_stmts
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, new_model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                        self.models[new_model_id],
+                                        self.context)
         return res
 
     def expand_model_from_json(self, model_json, model_id):
@@ -118,7 +123,8 @@ class MRA(object):
         res['model_new'] = new_stmts
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, new_model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                        self.models[model_id], self.context)
         return res
 
     def has_mechanism(self, mech_ekb, model_id):
@@ -165,7 +171,9 @@ class MRA(object):
             res['removed'] = removed_stmts
         if not new_stmts:
             return res
-        res['diagrams'] = make_diagrams(model_exec, model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                        self.models[new_model_id],
+                                        self.context)
         return res
 
     def model_undo(self):
@@ -186,7 +194,9 @@ class MRA(object):
         if not stmts:
             return res
         res['ambiguities'] = []
-        res['diagrams'] = make_diagrams(model_exec, new_model_id)
+        res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                        self.models[new_model_id],
+                                        self.context)
         return res
 
     def get_upstream(self, target, model_id):
@@ -290,8 +300,25 @@ def get_ambiguities(tp):
     return all_ambiguities
 
 
-def make_diagrams(pysb_model, model_id):
+def make_diagrams(pysb_model, model_id, current_model, context=None):
     sbgn = make_sbgn(pysb_model, model_id)
+    if sbgn is not None:
+        if context:
+            try:
+                cell_line = ccle_map[context]
+            except KeyError:
+                cell_line = 'A375_SKIN'
+        else:
+            cell_line = 'A375_SKIN'
+        try:
+            colorizer = SbgnColorizer(sbgn)
+            colorizer.set_style_expression_mutation(current_model,
+                                                    cell_line=cell_line)
+            sbgn = colorizer.generate_xml()
+        except Exception as e:
+            logger.error('Could not set SBGN colors')
+            logger.error(e)
+
     rxn = draw_reaction_network(pysb_model, model_id)
     cm = draw_contact_map(pysb_model, model_id)
     im = draw_influence_map(pysb_model, model_id)
@@ -402,3 +429,14 @@ def stmt_exists(stmts, stmt):
         if st1.matches(stmt):
             return True
     return False
+
+def make_ccle_map():
+    fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         '../resources/ccle_lines.txt')
+    with open(fname, 'r') as fh:
+        clines = [l.strip() for l in fh.readlines()]
+
+    ccle_map = {c.split('_')[0]: c for c in clines}
+    return ccle_map
+
+ccle_map = make_ccle_map()

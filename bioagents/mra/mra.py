@@ -20,6 +20,7 @@ from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 from pysb.export import export
 from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
+from bioagents.mra.model_diagnoser import ModelDiagnoser
 
 
 logger = logging.getLogger('MRA')
@@ -104,9 +105,11 @@ class MRA(object):
         res['diagrams'] = make_diagrams(model_exec, new_model_id)
         # Use a model diagnoser to identify explanations given the executable
         # model, the current statements, and the explanation goal
-        md = ModelDiagnoser(model_stmts, model=model_exec, explain=self.explain)
-        md_result = md.check_explanation()
-        res.update(md_result)
+        if self.explain:
+            md = ModelDiagnoser(model_stmts, model=model_exec,
+                                explain=self.explain)
+            md_result = md.check_explanation()
+            res.update(md_result)
         return res
 
     def expand_model_from_json(self, model_json, model_id):

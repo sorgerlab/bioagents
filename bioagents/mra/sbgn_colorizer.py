@@ -3,6 +3,7 @@ import os
 import collections
 import copy
 import re
+import json
 from indra.statements import *
 from indra.sources.indra_db_rest import get_statements
 
@@ -92,6 +93,16 @@ class SbgnColorizer(object):
             if 'id' in element.attrib:
                 self.element_ids.add(element.attrib['id'])
 
+        # Load caches
+        with open(os.path.join(os.path.abspath(__file__),
+                            '../resources/expression_cache.json', 'r')) as fh:
+
+            self.expr = json.load(fh)
+        with open(os.path.join(os.path.abspath(__file__),
+                            '../resources/mutation_cache.json', 'r')):
+            self.mut = json.load(fh)
+
+
     def get_nodes(self):
         """Returns the labels of the nodes that can be colorized;
         duplicate labels are possible.
@@ -102,7 +113,7 @@ class SbgnColorizer(object):
             The labels of the nodes in the diagram
         """
         return set(self.label_to_glyph_ids.keys())
-    
+
     def ids_without_specified_style(self):
         """Returns a list of ids without a specified style.
 
@@ -137,6 +148,23 @@ class SbgnColorizer(object):
         if label in labels:
             self.label_to_style[label] = Style(border_color, fill_color)
 
+
+    def get_mutations(self, gene, cell_line):
+        if cell_line in self.muts:
+            mut = self.mut[cell_line].get(gene, [])
+            return {cell_line: {gene: mut}}
+        else:
+            return context_client.get_mutations([gene], [cell_line])
+
+    def get_expression(self, genes, cell_line):
+        if cell_line in self.expr:
+            ret = {cell_line: {g: None for g in genes}}
+            for gene in genes:
+                ret[cell_line][gene] = self.expr.get(gene, None)
+            return ret
+        else:
+            return context_client.get_protein_expression(genes, [cell_line])
+
     def _choose_stroke_color_from_mutation_status(self, gene_name, cell_line):
         """Chooses the stroke color based on whether the gene is mutated
         in the given cell line.
@@ -153,7 +181,7 @@ class SbgnColorizer(object):
         color: str
             The hex color string for the chosen stroke color
         """
-        mut_statuses = context_client.get_mutations([gene_name], [cell_line])
+        mut_statuses = self.get_mutations(gene_name, cell_line)
         assert len(mut_statuses.keys()) == 1, mut_statuses
 
         mut_status = mut_statuses[cell_line][gene_name]
@@ -203,7 +231,7 @@ class SbgnColorizer(object):
 
             # Compute mean expression level
             expression_levels = []
-            l = context_client.get_protein_expression(gene_names, [cell_line])
+            l = self.get_expression(gene_names, [cell_line])
             for line in l:
                 for element in l[line]:
                     level = l[line][element]

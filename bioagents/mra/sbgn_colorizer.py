@@ -157,12 +157,10 @@ class SbgnColorizer(object):
             return context_client.get_mutations([gene], [cell_line])
 
     def get_expression(self, genes, cell_line):
-        print(genes)
-        print(cell_line)
         if cell_line in self.expr:
             ret = {cell_line: {g: None for g in genes}}
             for gene in genes:
-                ret[cell_line][gene] = self.expr.get(gene, None)
+                ret[cell_line][gene] = self.expr[cell_line].get(gene, None)
             return ret
         else:
             return context_client.get_protein_expression(genes, [cell_line])
@@ -279,9 +277,13 @@ class SbgnColorizer(object):
         # Map scores to colors and assign colors to labels
         agent_to_color = {}
         for agent, score in agent_to_score.items():
-            # color = cm.plasma(score)
-            color = cm.Greens(0.5*score + 0.2)
-            color_str = colors.to_hex(color[:3])
+            if 'HGNC' not in agent.db_refs and 'FPLX' not in agent.db_refs:
+                color = cm.Blues(0.3)
+                color_str = colors.to_hex(color[:3])
+            else:
+                # color = cm.plasma(score)
+                color = cm.Greens(0.6*score + 0.2)
+                color_str = colors.to_hex(color[:3])
             assert(len(color_str) == 7)
             stroke_color = \
                     self._choose_stroke_color_from_mutation_status(agent.name,

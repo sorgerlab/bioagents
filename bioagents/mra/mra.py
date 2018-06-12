@@ -68,7 +68,7 @@ class MRA(object):
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, model_id,
-                                        self.models[model_id])
+                                        self.models[model_id], self.context)
         return res
 
     def build_model_from_json(self, model_json):
@@ -82,7 +82,7 @@ class MRA(object):
         model_exec = self.assemble_pysb(stmts)
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, model_id,
-                                        self.models[model_id])
+                                        self.models[model_id], self.context)
         return res
 
     def expand_model_from_ekb(self, model_ekb, model_id):
@@ -105,7 +105,8 @@ class MRA(object):
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, new_model_id,
-                                        self.models[new_model_id])
+                                        self.models[new_model_id],
+                                        self.context)
         return res
 
     def expand_model_from_json(self, model_json, model_id):
@@ -123,7 +124,7 @@ class MRA(object):
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, new_model_id,
-                                        self.models[model_id])
+                                        self.models[model_id], self.context)
         return res
 
     def has_mechanism(self, mech_ekb, model_id):
@@ -171,7 +172,8 @@ class MRA(object):
         if not new_stmts:
             return res
         res['diagrams'] = make_diagrams(model_exec, new_model_id,
-                                        self.models[new_model_id])
+                                        self.models[new_model_id],
+                                        self.context)
         return res
 
     def model_undo(self):
@@ -193,7 +195,8 @@ class MRA(object):
             return res
         res['ambiguities'] = []
         res['diagrams'] = make_diagrams(model_exec, new_model_id,
-                                        self.models[new_model_id])
+                                        self.models[new_model_id],
+                                        self.context)
         return res
 
     def get_upstream(self, target, model_id):
@@ -297,11 +300,19 @@ def get_ambiguities(tp):
     return all_ambiguities
 
 
-def make_diagrams(pysb_model, model_id, current_model):
+def make_diagrams(pysb_model, model_id, current_model, context=None):
     sbgn = make_sbgn(pysb_model, model_id)
     if sbgn is not None:
+        if context:
+            try:
+                cell_line = ccle_map[context]
+            except KeyError:
+                cell_line = 'A375_SKIN'
+        else:
+            cell_line = 'A375_SKIN'
         colorizer = SbgnColorizer(sbgn)
-        colorizer.set_style_expression_mutation(current_model)
+        colorizer.set_style_expression_mutation(current_model,
+                                                cell_line=cell_line)
         sbgn = colorizer.generate_xml()
 
     rxn = draw_reaction_network(pysb_model, model_id)

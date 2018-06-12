@@ -310,10 +310,14 @@ def make_diagrams(pysb_model, model_id, current_model, context=None):
                 cell_line = 'A375_SKIN'
         else:
             cell_line = 'A375_SKIN'
-        colorizer = SbgnColorizer(sbgn)
-        colorizer.set_style_expression_mutation(current_model,
-                                                cell_line=cell_line)
-        sbgn = colorizer.generate_xml()
+        try:
+            colorizer = SbgnColorizer(sbgn)
+            colorizer.set_style_expression_mutation(current_model,
+                                                    cell_line=cell_line)
+            sbgn = colorizer.generate_xml()
+        except Exception as e:
+            logger.error('Could not set SBGN colors')
+            logger.error(e)
 
     rxn = draw_reaction_network(pysb_model, model_id)
     cm = draw_contact_map(pysb_model, model_id)

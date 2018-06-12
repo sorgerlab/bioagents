@@ -5,8 +5,9 @@ import random
 import logging
 import pysb.export
 
-from indra.sources.trips.processor import TripsProcessor
 from indra.databases import hgnc_client
+from indra.assemblers import EnglishAssembler
+from indra.sources.trips.processor import TripsProcessor
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.statements import stmts_to_json, Complex, SelfModification,\
     ActiveForm
@@ -140,8 +141,9 @@ class MRA_Module(Bioagent):
         if has_expl is not None:
             msg.set('has_explanation', str(has_expl).upper())
         # If there is an explanation, english assemble it
-        if res['explanation_path']:
-            ea_path = EnglishAssembler(res['explanation_path'])
+        expl_path = res.get('explanation_path')
+        if expl_path:
+            ea_path = EnglishAssembler(expl_path)
             path_str = ea_path.make_model()
             ea_goal = EnglishAssembler([self.mra.explain])
             goal_str = ea_goal.make_model()

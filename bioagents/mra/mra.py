@@ -102,6 +102,11 @@ class MRA(object):
         model_exec = self.assemble_pysb(model_stmts)
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, new_model_id)
+        # Use a model diagnoser to identify explanations given the executable
+        # model, the current statements, and the explanation goal
+        md = ModelDiagnoser(model_stmts, model=model_exec, explain=self.explain)
+        md_result = md.check_explanation()
+        res.update(md_result)
         return res
 
     def expand_model_from_json(self, model_json, model_id):

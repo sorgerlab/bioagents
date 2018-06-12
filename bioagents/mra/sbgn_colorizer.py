@@ -94,12 +94,12 @@ class SbgnColorizer(object):
                 self.element_ids.add(element.attrib['id'])
 
         # Load caches
-        with open(os.path.join(os.path.abspath(__file__),
-                            '../resources/expression_cache.json', 'r')) as fh:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            '../resources/expression_cache.json'), 'r') as fh:
 
             self.expr = json.load(fh)
-        with open(os.path.join(os.path.abspath(__file__),
-                            '../resources/mutation_cache.json', 'r')):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            '../resources/mutation_cache.json'), 'r') as fh:
             self.mut = json.load(fh)
 
 
@@ -150,13 +150,15 @@ class SbgnColorizer(object):
 
 
     def get_mutations(self, gene, cell_line):
-        if cell_line in self.muts:
+        if cell_line in self.mut:
             mut = self.mut[cell_line].get(gene, [])
             return {cell_line: {gene: mut}}
         else:
             return context_client.get_mutations([gene], [cell_line])
 
     def get_expression(self, genes, cell_line):
+        print(genes)
+        print(cell_line)
         if cell_line in self.expr:
             ret = {cell_line: {g: None for g in genes}}
             for gene in genes:
@@ -236,7 +238,7 @@ class SbgnColorizer(object):
             expression_levels = []
             logger.info('Getting expression status of proteins: %s' %
                         str(gene_names))
-            l = self.get_expression(gene_names, [cell_line])
+            l = self.get_expression(gene_names, cell_line)
             for line in l:
                 for element in l[line]:
                     level = l[line][element]
@@ -269,7 +271,7 @@ class SbgnColorizer(object):
         if max_level is not None:
             level_span = max_level - min_level
         for agent, level in agent_to_expression_level.items():
-            if level is None:
+            if level is None or level_span == 0:
                 agent_to_score[agent] = 0
             else:
                 agent_to_score[agent] = (level - min_level) / level_span

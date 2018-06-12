@@ -606,10 +606,10 @@ class TestModelMeetsGoal(_IntegrationTest):
     message_funcs = ['build', 'expand']
 
     def create_build(self):
-        return _get_build_model_request('KRAS activates BRAF')
         self.bioagent.mra.explain = \
-            sts.Inhibit(sts.Agent('KRAS', db_refs={'HGNC': '6407'}),
-                        sts.Agent('MEK', db_refs={'FPLX': 'MEK'}))
+            sts.Inhibition(sts.Agent('KRAS', db_refs={'HGNC': '6407'}),
+                           sts.Agent('MEK', db_refs={'FPLX': 'MEK'}))
+        return _get_build_model_request('KRAS activates BRAF')
 
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
@@ -618,7 +618,8 @@ class TestModelMeetsGoal(_IntegrationTest):
         assert len(model) == 1
 
     def create_expand(self):
-        return _get_expand_model_request('Active BRAF inhibits MEK.', '1')
+        msg = _get_expand_model_request('Active BRAF inhibits MEK.', '1')
+        return msg
 
     def check_response_to_expand(self, output):
         assert output.head() == 'SUCCESS'

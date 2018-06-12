@@ -3,9 +3,9 @@ from bioagents.mra.model_diagnoser import ModelDiagnoser
 from indra.assemblers import PysbAssembler
 
 drug = Agent('PLX4720')
-raf = Agent('RAF')
-mek = Agent('MEK')
-erk = Agent('ERK')
+raf = Agent('RAF', db_refs={'FPLX': 'RAF'})
+mek = Agent('MEK', db_refs={'FPLX': 'MEK'})
+erk = Agent('ERK', db_refs={'FPLX': 'ERK'})
 
 def test_missing_activity1():
     stmts = [Activation(raf, mek), Phosphorylation(mek, erk)]
@@ -35,11 +35,17 @@ def test_missing_activity3():
 
 def test_check_model():
     explain = Activation(raf, erk)
-    mek_active = Agent('MAP2K1', activity=ActivityCondition('activity', True))
+    mek_active = Agent('MEK', db_refs={'FPLX': 'MEK'},
+                       activity=ActivityCondition('activity', True))
     model_stmts = [Activation(raf, mek), Activation(mek_active, erk)]
     # Build the pysb model
     pa = PysbAssembler(policies='one_step')
     pa.add_statements(model_stmts)
     pa.make_model()
     md = ModelDiagnoser(model_stmts, pa.model, explain)
-    md.check_explanation()
+    result = md.check_explanation()
+    assert result['has_explanation'] is True
+
+
+if __name__ == '__main__':
+    test_check_model()

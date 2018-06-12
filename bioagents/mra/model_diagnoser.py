@@ -1,6 +1,7 @@
 from copy import deepcopy
 from indra.mechlinker import MechLinker
 from indra.statements import *
+from indra.explanation.model_checker import ModelChecker
 
 class ModelDiagnoser(object):
     def __init__(self, statements, model=None, explain=None):
@@ -31,4 +32,12 @@ class ModelDiagnoser(object):
         return suggestions
 
     def check_explanation(self):
-        pass
+        if self.model is None:
+            raise ValueError('check_explanation requires a PySB model.')
+        if self.explain is None:
+            raise ValueError('check_explanation requires an explanation goal.')
+        result = {}
+        mc = ModelChecker(self.model, [self.explain])
+        pr = mc.check_statement(self.explain, max_paths=0)
+        result['has_explanation'] = pr.path_found
+        return result

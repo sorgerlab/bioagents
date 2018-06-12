@@ -181,6 +181,7 @@ class SbgnColorizer(object):
         color: str
             The hex color string for the chosen stroke color
         """
+        logger.info('Getting mutation status of proteins')
         mut_statuses = self.get_mutations(gene_name, cell_line)
         assert len(mut_statuses.keys()) == 1, mut_statuses
 
@@ -218,19 +219,23 @@ class SbgnColorizer(object):
 
         agent_to_expression_level = {}
         for agent in label_to_agent.values():
-            expander = Expander(hierarchies)
-            expanded_families = expander.get_children(agent, ns_filter='HGNC')
+            if 'HGNC' not in agent.db_refs and 'FPLX' not in agent.db_refs:
+                # This is not a gene
+                agent_to_expression_level[agent] = 0
+                continue
 
-            # Does this refer to a single protein or a family of proteins?
-            if len(expanded_families) == 0:
-                # No family expansion; assume that this agent is a protein,
-                # not a family
+            if 'FPLX' not in agent.db_refs:
                 gene_names = [agent.name]
             else:
+                expander = Expander(hierarchies)
+                expanded_families = expander.get_children(agent,
+                                                          ns_filter='HGNC')
                 gene_names = [t[1] for t in expanded_families]
 
             # Compute mean expression level
             expression_levels = []
+            logger.info('Getting expression status of proteins: %s' %
+                        str(gene_names))
             l = self.get_expression(gene_names, [cell_line])
             for line in l:
                 for element in l[line]:
@@ -273,7 +278,7 @@ class SbgnColorizer(object):
         agent_to_color = {}
         for agent, score in agent_to_score.items():
             # color = cm.plasma(score)
-            color = cm.Greens(0.2*score + 0.2)
+            color = cm.Greens(0.5*score + 0.2)
             color_str = colors.to_hex(color[:3])
             assert(len(color_str) == 7)
             stroke_color = \

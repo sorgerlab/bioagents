@@ -139,6 +139,19 @@ class MRA_Module(Bioagent):
         has_expl = res.get('has_explanation')
         if has_expl is not None:
             msg.set('has_explanation', str(has_expl).upper())
+        # If there is an explanation, english assemble it
+        if res['explanation_path']:
+            ea_path = EnglishAssembler(res['explanation_path'])
+            path_str = ea_path.make_model()
+            ea_goal = EnglishAssembler([self.mra.explain])
+            goal_str = ea_goal.make_model()
+            if path_str and goal_str:
+                explanation_str = ('Your model can now explain how %s: %s' %
+                                   (goal_str, path_str))
+                # English-assemble the explanation path statements, if present
+                content = KQMLList('SPOKEN')
+                content.sets('WHAT', explanation_str)
+                self.tell(content)
         #if model_new and (descr_format == 'ekb' or not descr_format):
         #    self.send_background_support(model_new)
         if model_new:

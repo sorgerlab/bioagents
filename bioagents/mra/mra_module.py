@@ -239,9 +239,13 @@ class MRA_Module(Bioagent):
 
         # Get the action and add it to the message
         removed = res.get('removed')
-        actionl = KQMLList('remove_stmts')
-        actionl.sets('statements', encode_indra_stmts(removed))
-        msg.set('action', actionl)
+        if not removed:
+            msg = self.make_failure('REMOVE_FAILED')
+            return msg
+        else:
+            actionl = KQMLList('remove_stmts')
+            actionl.sets('statements', encode_indra_stmts(removed))
+            msg.set('action', actionl)
 
         # Add the diagram
         diagrams = res.get('diagrams')

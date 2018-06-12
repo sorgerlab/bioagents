@@ -414,3 +414,14 @@ def stmt_exists(stmts, stmt):
         if st1.matches(stmt):
             return True
     return False
+
+def make_ccle_map():
+    fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         '../resources/ccle_lines.txt')
+    with open(fname, 'r') as fh:
+        clines = [l.strip() for l in fh.readlines()]
+
+    ccle_map = {c.split('_')[0]: c for c in clines}
+    return ccle_map
+
+ccle_map = make_ccle_map()

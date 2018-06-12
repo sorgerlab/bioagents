@@ -627,7 +627,7 @@ class TestModelMeetsGoal(_IntegrationTest):
         model = json.loads(output.gets('model'))
         assert len(model) == 2
         has_explanation = output.gets('has_explanation')
-        assert has_explanation, has_explanation
+        assert has_explanation == 'TRUE'
 
 '''
 def test_replace_agent_one():

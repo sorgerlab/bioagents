@@ -135,6 +135,8 @@ class MRA_Module(Bioagent):
         msg.sets('model', model_msg)
         # Add the INDRA model new json
         model_new = res.get('model_new')
+        # Indicate whether the goal has been explained
+        msg.set('has_explanation', str(res['has_explanation']).upper())
         #if model_new and (descr_format == 'ekb' or not descr_format):
         #    self.send_background_support(model_new)
         if model_new:

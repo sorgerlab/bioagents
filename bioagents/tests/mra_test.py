@@ -607,6 +607,9 @@ class TestModelMeetsGoal(_IntegrationTest):
 
     def create_build(self):
         return _get_build_model_request('KRAS activates BRAF')
+        self.bioagent.mra.explain = \
+            sts.Inhibit(sts.Agent('KRAS', db_refs={'HGNC': '6407'}),
+                        sts.Agent('MEK', db_refs={'FPLX': 'MEK'}))
 
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
@@ -623,7 +626,7 @@ class TestModelMeetsGoal(_IntegrationTest):
         model = json.loads(output.gets('model'))
         assert len(model) == 2
         has_explanation = output.gets('has_explanation')
-        assert has_explanation
+        assert has_explanation, has_explanation
 
 '''
 def test_replace_agent_one():

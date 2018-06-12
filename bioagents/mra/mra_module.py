@@ -138,7 +138,7 @@ class MRA_Module(Bioagent):
         # Indicate whether the goal has been explained
         has_expl = res.get('has_explanation')
         if has_expl is not None:
-            msg.set('has_explanation', has_expl.upper())
+            msg.set('has_explanation', str(has_expl).upper())
         #if model_new and (descr_format == 'ekb' or not descr_format):
         #    self.send_background_support(model_new)
         if model_new:

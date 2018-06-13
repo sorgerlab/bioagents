@@ -114,6 +114,7 @@ class MRA(object):
             # recommendation
             connect_stmts = res.get('connect_stmts')
             if connect_stmts:
+                u_stmt, v_stmt = connect_stmts
                 stmt_suggestions = md.suggest_statements(u_stmt, v_stmt)
                 if stmt_suggestions:
                     res['stmt_suggestions'] = stmt_suggestions

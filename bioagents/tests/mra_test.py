@@ -602,6 +602,35 @@ class TestModelMeetsGoal(_IntegrationTest):
         has_explanation = output.gets('has_explanation')
         assert has_explanation == 'TRUE'
 
+
+class TestModelGapSuggest(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+
+    message_funcs = ['build', 'expand']
+
+    def create_build(self):
+        self.bioagent.mra.explain = \
+            sts.Activation(sts.Agent('KRAS', db_refs={'HGNC': '6407'}),
+                           sts.Agent('JUN', db_refs={'HGNC': '6204'}))
+        return _get_build_model_request('KRAS activates MEK.')
+
+    def check_response_to_build(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
+    def create_expand(self):
+        msg = _get_expand_model_request('Active ERK activates JUN.', '1')
+        return msg
+
+    def check_response_to_expand(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '2'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 2
+
 '''
 def test_replace_agent_one():
     m = MRA()

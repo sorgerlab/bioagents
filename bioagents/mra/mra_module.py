@@ -136,6 +136,8 @@ class MRA_Module(Bioagent):
         msg.sets('model', model_msg)
         # Add the INDRA model new json
         model_new = res.get('model_new')
+
+        # SUGGESTIONS
         # Indicate whether the goal has been explained
         has_expl = res.get('has_explanation')
         if has_expl is not None:
@@ -148,12 +150,26 @@ class MRA_Module(Bioagent):
             ea_goal = EnglishAssembler([self.mra.explain])
             goal_str = ea_goal.make_model()
             if path_str and goal_str:
-                explanation_str = ('Our model can now explain how %s: %s' %
-                                   (goal_str, path_str))
-                # English-assemble the explanation path statements, if present
+                explanation_str = (
+                    'Our model can now explain how %s: <i>%s</i>' %
+                    (goal_str[:-1], path_str))
                 content = KQMLList('SPOKEN')
                 content.sets('WHAT', explanation_str)
                 self.tell(content)
+
+        # If there is a suggestion, say it
+        suggs = res.get('stmt_suggestions')
+        if suggs:
+            say = 'I have some suggestions on how to complete our model.'
+            say += ' We could try modeling one of:<br>'
+            stmt_str = '<ul>%s</ul>' % \
+                ''.join([('<li>%s</li>' %
+                        EnglishAssembler([stmt]).make_model()) for stmt in suggs)]
+            say += stmt_str
+            content = KQMLList('SPOKEN')
+            content.sets('WHAT', say)
+            self.tell(content)
+
         if model_new and (descr_format == 'ekb' or not descr_format):
             self.send_background_support(model_new)
         if model_new:

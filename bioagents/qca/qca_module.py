@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import logging
@@ -24,8 +25,12 @@ class QCA_Module(Bioagent):
     tasks = ['FIND-QCA-PATH', 'HAS-QCA-PATH']
 
     def __init__(self, **kwargs):
+        # For local testing use
+        # qca_args = {'path_host': 'localhost',
+        #            'network_uuid': '04020c47-4cfd-11e8-a4bf-0ac135e8bacf'}
+        qca_args = {'path_host': '10.119.88.95'}
         # Instantiate a singleton QCA agent
-        self.qca = QCA()
+        self.qca = QCA(**qca_args)
         # Call the constructor of Bioagent
         super(QCA_Module, self).__init__(**kwargs)
 
@@ -68,12 +73,32 @@ class QCA_Module(Bioagent):
         if not results_list:
             reply = self.make_failure('NO_PATH_FOUND')
             return reply
-        first_result = results_list[0]
-        first_edges = first_result[1::2]
-        indra_edges = [fe[0]['INDRA json'] for fe in first_edges]
-        indra_edges = [json.loads(e) for e in indra_edges]
-        indra_edges = _fix_indra_edges(indra_edges)
+
+        def get_path_statements(results_list):
+            stmts_list = []
+            for res in results_list:
+                # Edges of the first result
+                edges = res[1::2]
+                # INDRA JSON of the edges of the result
+                indra_edges = [fe[0]['INDRA json'] for fe in edges]
+                # Make the JSONs dicts from strings
+                indra_edges = [json.loads(e) for e in indra_edges]
+                # Now fix the edges if needed due to INDRA Statement changes
+                indra_edges = _fix_indra_edges(indra_edges)
+                stmts_list.append(indra_edges)
+            return stmts_list
+
+        paths_list = get_path_statements(results_list)
+
+
+        self.report_paths_graph(paths_list)
+
+
+        # Take the first one to report
+        indra_edges = paths_list[0]
+        # Get the INDRA Statement objects
         indra_edge_stmts = stmts_from_json(indra_edges)
+        # Assemble into English
         for stmt in indra_edge_stmts:
             txt = EnglishAssembler([stmt]).make_model()
             self.send_provenance_for_stmts(
@@ -85,6 +110,20 @@ class QCA_Module(Bioagent):
         reply.set('paths', KQMLList([ks]))
 
         return reply
+
+    def report_paths_graph(self, paths_list):
+        from indra.assemblers import GraphAssembler
+        from indra.util import flatten
+        path_stmts = [stmts_from_json(l) for l in paths_list]
+        all_stmts = flatten(path_stmts)
+        ga = GraphAssembler(all_stmts)
+        ga.make_model()
+        resource = os.path.abspath('qca_paths.png')
+        ga.save_pdf(resource)
+        content = KQMLList('display-image')
+        content.set('type', 'simulation')
+        content.sets('path', resource)
+        self.tell(content)
 
     def respond_has_qca_path(self, content):
         """Response content to find-qca-path request."""

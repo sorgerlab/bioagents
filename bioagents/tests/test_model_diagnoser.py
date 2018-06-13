@@ -55,8 +55,6 @@ def test_check_model():
 def test_propose_statement():
     jun = Agent('JUN', db_refs={'HGNC':'6204', 'UP': 'P05412'})
     explain = Activation(raf, jun)
-    #mek_active = Agent('MEK', db_refs={'FPLX': 'MEK'},
-    #                   activity=ActivityCondition('activity', True))
     erk_active = Agent('ERK', db_refs={'FPLX': 'ERK'},
                        activity=ActivityCondition('activity', True))
     # Leave out MEK activates ERK
@@ -69,11 +67,13 @@ def test_propose_statement():
     result = md.check_explanation()
     assert result['has_explanation'] is False
     assert result.get('explanation_path') is None
-    inf_prop = result.get('influence_proposal')
+    inf_prop = result.get('connect_rules')
     assert inf_prop == ('RAF_activates_MEK_activity',
                         'ERK_activates_JUN_activity')
-    stmt_prop = result.get('stmt_proposal')
+    stmt_prop = result.get('connect_stmts')
     assert stmt_prop == (model_stmts[0], model_stmts[1])
+    stmt_suggestions = md.suggest_statements(*stmt_prop)
+
 
 if __name__ == '__main__':
     test_propose_statement()

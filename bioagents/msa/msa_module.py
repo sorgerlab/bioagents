@@ -263,7 +263,7 @@ class MSA_Module(Bioagent):
             logger.info("There are %d statements of type %s."
                         % (len(stmt_sublist), stmt_type))
             stmt_sublist.sort(key=lambda s: len(s.evidence)+len(s.supported_by))
-            display_stmts.extend(stmt_sublist[:5])
+            display_stmts.extend(stmt_sublist[:20])
         self._send_table_to_provenance(display_stmts, nl_question)
         # resource = _make_sbgn(stmts[:10])
         # logger.info(resource)

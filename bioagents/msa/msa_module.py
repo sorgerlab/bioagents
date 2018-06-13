@@ -3,6 +3,7 @@ import sys
 import re
 import pickle
 import logging
+from itertools import groupby
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -39,6 +40,9 @@ def _read_signor_afs():
     else:
         signor_afs = stmts
     return signor_afs
+
+
+DUMP_LIMIT = 20
 
 
 class MSALookupError(Exception):
@@ -163,6 +167,10 @@ class MSA_Module(Bioagent):
             logger.error("Failed to get statements.")
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
+
+        # Sort statements by support and evidence
+        stmts.sort(key=lambda s: len(s.evidence) + len(s.supported_by))
+
         return nl, stmts
 
     def respond_find_relations_from_literature(self, content):
@@ -184,6 +192,7 @@ class MSA_Module(Bioagent):
         # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', str(len(stmts)))
+        resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def respond_confirm_relation_from_literature(self, content):
@@ -196,7 +205,9 @@ class MSA_Module(Bioagent):
         if len(stmts):
             self._send_display_stmts(stmts, nl_question)
         resp = KQMLPerformative('SUCCESS')
-        resp.set('relations-found', 'TRUE' if len(stmts) > 0 else 'FALSE')
+        resp.set('some-relations-found', 'TRUE' if len(stmts) > 0 else 'FALSE')
+        resp.set('num-relations-found', str(len(stmts)))
+        resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def respond_get_paper_model(self, content):
@@ -227,6 +238,7 @@ class MSA_Module(Bioagent):
         self.send_display_model(diagrams)
         resp = KQMLPerformative('SUCCESS')
         resp.set('relations-found', len(unique_stmts))
+        resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def send_display_model(self, diagrams):
@@ -245,7 +257,14 @@ class MSA_Module(Bioagent):
 
     def _send_display_stmts(self, stmts, nl_question):
         logger.info('Sending display statements')
-        self._send_table_to_provenance(stmts, nl_question)
+        display_stmts = []
+        for stmt_type, stmt_grp in groupby(stmts, key=lambda s: str(type(s))):
+            stmt_sublist = list(stmt_grp)
+            logger.info("There are %d statements of type %s."
+                        % (len(stmt_sublist), stmt_type))
+            stmt_sublist.sort(key=lambda s: len(s.evidence)+len(s.supported_by))
+            display_stmts.extend(stmt_sublist[:5])
+        self._send_table_to_provenance(display_stmts, nl_question)
         # resource = _make_sbgn(stmts[:10])
         # logger.info(resource)
         # content = KQMLList('open-query-window')
@@ -258,7 +277,7 @@ class MSA_Module(Bioagent):
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>']
-        for stmt in stmts:
+        for stmt in stmts[:DUMP_LIMIT]:
             sub_ag, obj_ag = stmt.agent_list()
             row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
                             % (sub_ag, type(stmt).__name__, obj_ag))

@@ -163,8 +163,8 @@ class MRA_Module(Bioagent):
             say = 'I have some suggestions on how to complete our model.'
             say += ' We could try modeling one of:<br>'
             stmt_str = '<ul>%s</ul>' % \
-                ''.join([('<li>%s</li>' %
-                        EnglishAssembler([stmt]).make_model()) for stmt in suggs)]
+                ''.join([('<li>%s</li>' % EnglishAssembler([stmt]).make_model())
+                         for stmt in suggs])
             say += stmt_str
             content = KQMLList('SPOKEN')
             content.sets('WHAT', say)

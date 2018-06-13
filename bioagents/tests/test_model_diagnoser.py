@@ -51,5 +51,24 @@ def test_check_model():
     assert path[0] == model_stmts[0]
     assert path[1] == model_stmts[1]
 
+
+def test_propose_statement():
+    jun = Agent('JUN', db_refs={'HGNC':'6204', 'UP': 'P05412'})
+    explain = Activation(raf, jun)
+    #mek_active = Agent('MEK', db_refs={'FPLX': 'MEK'},
+    #                   activity=ActivityCondition('activity', True))
+    erk_active = Agent('ERK', db_refs={'FPLX': 'ERK'},
+                       activity=ActivityCondition('activity', True))
+    # Leave out MEK activates ERK
+    model_stmts = [Activation(raf, mek), Activation(erk_active, jun)]
+    # Build the pysb model
+    pa = PysbAssembler(policies='one_step')
+    pa.add_statements(model_stmts)
+    pa.make_model()
+    md = ModelDiagnoser(model_stmts, pa.model, explain)
+    result = md.check_explanation()
+    assert result['has_explanation'] is False
+    assert result.get('explanation_path') is None
+
 if __name__ == '__main__':
-    test_check_model()
+    test_propose_statement()

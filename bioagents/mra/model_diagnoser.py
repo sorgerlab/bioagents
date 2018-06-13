@@ -3,7 +3,7 @@ from copy import deepcopy
 from indra.mechlinker import MechLinker
 from indra.statements import *
 from indra.explanation.model_checker import ModelChecker, stmts_for_path
-
+from indra.assemblers.pysb_assembler import grounded_monomer_patterns
 
 logger = logging.getLogger('model_diagnoser')
 
@@ -59,4 +59,16 @@ class ModelDiagnoser(object):
                 result['explanation_path'] = path_stmts
             except Exception as e:
                 logger.error("Error getting paths for statement: %s" % str(e))
+        # If we don't already have an explanation, see if we can propose one
+        else:
+            # Get the source rules associated with the statement to explain
+            source_rules = []
+            subj_mps = grounded_monomer_patterns(self.model,
+                                                 self.explain.agent_list()[0])
+            for subj_mp in subj_mps:
+                source_rules += mc._get_input_rules(subj_mp)
+            obs_names = mc.stmt_to_obs[self.explain]
+            if source_rules and obs_names:
+                print("SR, ON", source_rules, obs_names)
+
         return result

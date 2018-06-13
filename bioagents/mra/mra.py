@@ -117,6 +117,13 @@ class MRA(object):
                                 explain=self.explain)
             md_result = md.check_explanation()
             res.update(md_result)
+            # If we got a proposal for a statement, get a specific
+            # recommendation
+            connect_stmts = res.get('connect_stmts')
+            if connect_stmts:
+                stmt_suggestions = md.suggest_statements(u_stmt, v_stmt)
+                if stmt_suggestions:
+                    res['stmt_suggestions'] = stmt_suggestions
         return res
 
     def expand_model_from_json(self, model_json, model_id):

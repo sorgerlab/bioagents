@@ -2,8 +2,10 @@ import logging
 import itertools
 from copy import deepcopy
 import networkx as nx
+from indra.databases import hgnc_client
 from indra.mechlinker import MechLinker
 from indra.statements import *
+from indra.sources.indra_db_rest import get_statements
 from indra.explanation.model_checker import ModelChecker, stmts_for_path, \
                                             _stmt_from_rule
 from indra.assemblers.pysb_assembler import grounded_monomer_patterns
@@ -98,14 +100,34 @@ class ModelDiagnoser(object):
                     # Now remove the edge we added before going on to the next
                     im.remove_edge(u, v)
                 if best_edge[0]:
-                    result['influence_proposal'] = best_edge[0]
+                    result['connect_rules'] = best_edge[0]
                     u_stmt = _stmt_from_rule(self.model, best_edge[0][0],
                                              self.statements)
                     v_stmt = _stmt_from_rule(self.model, best_edge[0][1],
                                              self.statements)
                     if u_stmt and v_stmt:
-                        result['stmt_proposal'] = (u_stmt, v_stmt)
+                        result['connect_stmts'] = (u_stmt, v_stmt)
                         print("Model statements: %s" % str(self.statements))
                         print("To explain %s, try connecting %s and %s" %
                                 (self.explain, u_stmt, v_stmt))
         return result
+
+    def suggest_statements(self, u_stmt, v_stmt, num_statements=5):
+        def query_agent(ag):
+            ns = None
+            if 'HGNC' in ag.db_refs:
+                (ns, id) = ('HGNC', ag.db_refs['HGNC'])
+            elif 'FPLX' in ag.db_refs:
+                (ns, id) = ('FPLX', ag.db_refs['FPLX'])
+            elif 'CHEBI' in ag.db_refs:
+                (ns, id) = ('CHEBI', ag.db_refs['CHEBI'])
+            ag_str = ('%s@%s' % (id, ns)) if ns else None
+            return ag_str
+        subj = query_agent(u_stmt.agent_list()[1])
+        obj = query_agent(v_stmt.agent_list()[0])
+        if not (subj and obj):
+            return []
+        stmts = get_statements(subject=subj, object=obj)
+        stmts.sort(key=lambda s: len(s.evidence), reverse=True)
+        end_ix = len(stmts) if len(stmts) < num_statements else num_statements
+        return stmts[0:end_ix]

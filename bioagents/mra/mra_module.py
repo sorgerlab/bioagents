@@ -148,7 +148,7 @@ class MRA_Module(Bioagent):
             ea_goal = EnglishAssembler([self.mra.explain])
             goal_str = ea_goal.make_model()
             if path_str and goal_str:
-                explanation_str = ('Your model can now explain how %s: %s' %
+                explanation_str = ('Our model can now explain how %s: %s' %
                                    (goal_str, path_str))
                 # English-assemble the explanation path statements, if present
                 content = KQMLList('SPOKEN')

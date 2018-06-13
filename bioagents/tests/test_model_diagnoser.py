@@ -69,6 +69,11 @@ def test_propose_statement():
     result = md.check_explanation()
     assert result['has_explanation'] is False
     assert result.get('explanation_path') is None
+    inf_prop = result.get('influence_proposal')
+    assert inf_prop == ('RAF_activates_MEK_activity',
+                        'ERK_activates_JUN_activity')
+    stmt_prop = result.get('stmt_proposal')
+    assert stmt_prop == (model_stmts[0], model_stmts[1])
 
 if __name__ == '__main__':
     test_propose_statement()

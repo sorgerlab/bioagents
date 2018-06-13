@@ -1,9 +1,13 @@
 import logging
+import itertools
 from copy import deepcopy
+import networkx as nx
 from indra.mechlinker import MechLinker
 from indra.statements import *
-from indra.explanation.model_checker import ModelChecker, stmts_for_path
+from indra.explanation.model_checker import ModelChecker, stmts_for_path, \
+                                            _stmt_from_rule
 from indra.assemblers.pysb_assembler import grounded_monomer_patterns
+
 
 logger = logging.getLogger('model_diagnoser')
 
@@ -68,7 +72,40 @@ class ModelDiagnoser(object):
             for subj_mp in subj_mps:
                 source_rules += mc._get_input_rules(subj_mp)
             obs_names = mc.stmt_to_obs[self.explain]
+            # If we've got both source rules and observable names, add dummy
+            # nodes for the source (connected to all input rules) and the 
+            # target (connected to all observables) so we only have to deal
+            # with a single source and a single target
             if source_rules and obs_names:
-                print("SR, ON", source_rules, obs_names)
-
+                new_edges = [('SOURCE', sr) for sr in source_rules]
+                new_edges += [(on, 'TARGET') for on in obs_names]
+                im = mc.get_im()
+                im.add_edges_from(new_edges)
+                # Now, we know that there is no path between SOURCE and TARGET.
+                # Instead, we consider connections among all possible pairs
+                # of nodes in the graph and count the number of nodes in
+                # the path between source and target:
+                best_edge = (None, 0)
+                for u, v in itertools.permutations(im.nodes(), 2):
+                    # Add the edge to the graph
+                    im.add_edge(u, v)
+                    # Find longest path between source and target
+                    simple_paths = list(nx.all_simple_paths(im, 'SOURCE',
+                                                            'TARGET'))
+                    simple_paths.sort(key=lambda p: len(p), reverse=True)
+                    if simple_paths and len(simple_paths[0]) > best_edge[1]:
+                        best_edge = ((u, v), len(simple_paths[0]))
+                    # Now remove the edge we added before going on to the next
+                    im.remove_edge(u, v)
+                if best_edge[0]:
+                    result['influence_proposal'] = best_edge[0]
+                    u_stmt = _stmt_from_rule(self.model, best_edge[0][0],
+                                             self.statements)
+                    v_stmt = _stmt_from_rule(self.model, best_edge[0][1],
+                                             self.statements)
+                    if u_stmt and v_stmt:
+                        result['stmt_proposal'] = (u_stmt, v_stmt)
+                        print("Model statements: %s" % str(self.statements))
+                        print("To explain %s, try connecting %s and %s" %
+                                (self.explain, u_stmt, v_stmt))
         return result

@@ -107,8 +107,8 @@ class ModelDiagnoser(object):
                                              self.statements)
                     if u_stmt and v_stmt:
                         result['connect_stmts'] = (u_stmt, v_stmt)
-                        print("Model statements: %s" % str(self.statements))
-                        print("To explain %s, try connecting %s and %s" %
+                        logger.info("Model statements: %s" % str(self.statements))
+                        logger.info("To explain %s, try connecting %s and %s" %
                                 (self.explain, u_stmt, v_stmt))
         return result
 

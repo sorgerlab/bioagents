@@ -123,6 +123,10 @@ class MRA(object):
                 stmt_suggestions = md.suggest_statements(u_stmt, v_stmt)
                 if stmt_suggestions:
                     res['stmt_suggestions'] = stmt_suggestions
+        md = ModelDiagnoser(model_stmts)
+        acts = md.get_missing_activities()
+        if acts:
+            res['stmt_corrections'] = acts
         return res
 
     def expand_model_from_json(self, model_json, model_id):

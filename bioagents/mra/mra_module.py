@@ -170,6 +170,17 @@ class MRA_Module(Bioagent):
             content.sets('WHAT', say)
             self.tell(content)
 
+        # If there are corrections
+        corrs = res.get('stmt_corrections')
+        if corrs:
+            stmt = corrs[0]
+            say = 'It looks like a required activity is missing,'
+            say += ' consider revising to <i>%s</i>' % \
+                    (EnglishAssembler([stmt]).make_model())
+            content = KQMLList('SPOKEN')
+            content.sets('WHAT', say)
+            self.tell(content)
+
         if model_new and (descr_format == 'ekb' or not descr_format):
             self.send_background_support(model_new)
         if model_new:

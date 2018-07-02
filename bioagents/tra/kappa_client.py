@@ -72,7 +72,7 @@ class KappaRuntime(object):
             'store_trace': True
             }
         sim_params = kappy.SimulationParameter(**complete_params)
-        self.kappa_instance.simulaiton_start(sim_params)
+        self.kappa_instance.simulation_start(sim_params)
         resp = complete_params.update(parameters)
         return resp.json()
 

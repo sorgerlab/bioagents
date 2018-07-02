@@ -142,9 +142,13 @@ class BioSense_Module(Bioagent):
             return self.make_failure('INVALID_AGENT')
 
         synonyms = uniprot_client.get_synonyms(up_id)
-        syns = KQMLList([KQMLString(s) for s in synonyms])
+        syns_kqml = KQMLList()
+        for s in synonyms:
+            entry = KQMLList()
+            entry.sets(':name', s)
+            syns_kqml.append(entry)
         msg = KQMLList('SUCCESS')
-        msg.set('synonyms', syns)
+        msg.set('synonyms', syns_kqml)
         return msg
 
     @staticmethod

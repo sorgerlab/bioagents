@@ -108,11 +108,11 @@ def test_choose_sense_what_member():
 def test_get_synonym():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('GET-SYNONYMS')
-    msg_content.sets('protein', mek1_ekb)
+    msg_content.sets('entity', mek1_ekb)
     res = bs.respond_get_synonyms(msg_content)
     assert res.head() == 'SUCCESS'
     syns = res.get('synonyms')
-    syn_strs = [s.string_value() for s in syns]
+    syn_strs = [s.gets(':name') for s in syns]
     assert 'MAP2K1' in syn_strs
     assert 'MEK1' in syn_strs
     assert 'MKK1' in syn_strs

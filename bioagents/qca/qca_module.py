@@ -28,7 +28,8 @@ class QCA_Module(Bioagent):
         # For local testing use
         # qca_args = {'path_host': 'localhost',
         #            'network_uuid': '04020c47-4cfd-11e8-a4bf-0ac135e8bacf'}
-        qca_args = {'path_host': '10.119.88.95'}
+        # qca_args = {'path_host': '10.119.88.95'}
+        qca_args = {}
         # Instantiate a singleton QCA agent
         self.qca = QCA(**qca_args)
         # Call the constructor of Bioagent

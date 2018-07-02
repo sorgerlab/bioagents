@@ -129,7 +129,7 @@ class BioSense_Module(Bioagent):
 
     def respond_get_synonyms(self, content):
         """Respond to a query looking for synonyms of a protein."""
-        ekb = content.gets('protein')
+        ekb = content.gets('entity')
         try:
             agent = self._get_agent(ekb)
         except Exception as e:

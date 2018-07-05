@@ -72,8 +72,8 @@ class MSA_Module(Bioagent):
             return self.make_failure('MISSING_TARGET')
         agent = self._get_agent(target_ekb)
         logger.debug('Found agent (target): %s.' % agent.name)
-        residue = content.gets('residue')
-        position = content.gets('position')
+        site = content.gets('site')
+        residue, position = site.split('-')
         related_result_dict = {}
         logger.info("Looking for statements with agent %s of type %s."
                     % (str(agent), 'ActiveForm'))

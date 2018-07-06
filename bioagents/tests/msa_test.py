@@ -210,6 +210,7 @@ class TestMsaProvenance(_IntegrationTest):
 
 
 def test_msa_paper_retrieval_failure():
+    raise SkipTest("This feature is currently not available.")
     content = KQMLList('GET-PAPER-MODEL')
     content.sets('pmid', 'PMID-00000123')
     msa = msa_module.MSA_Module(testing=True)

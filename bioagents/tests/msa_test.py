@@ -16,9 +16,8 @@ def _get_message(heading, target=None, residue=None, position=None):
     content = KQMLList(heading)
     if target is not None:
         content.sets('target', ekb_from_text(target))
-    for name, value in [('residue', residue), ('position', position)]:
-        if value is not None:
-            content.sets(name, value)
+    if residue and position:
+        content.sets('site', '%s-%s' % (residue, position))
     return msa.respond_phosphorylation_activating(content)
 
 

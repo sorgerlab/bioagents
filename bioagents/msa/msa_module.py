@@ -73,7 +73,14 @@ class MSA_Module(Bioagent):
         agent = self._get_agent(target_ekb)
         logger.debug('Found agent (target): %s.' % agent.name)
         site = content.gets('site')
-        residue, position = site.split('-')
+        if site is None:
+            residue = None
+            position = None
+        else:
+            try:
+                residue, position = site.split('-')
+            except:
+                return self.make_failure('INVALID_SITE')
         related_result_dict = {}
         logger.info("Looking for statements with agent %s of type %s."
                     % (str(agent), 'ActiveForm'))

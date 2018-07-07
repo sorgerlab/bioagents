@@ -214,7 +214,7 @@ class SbgnColorizer(object):
         for label in labels:
             for statement in model:
                 for agent in statement.agent_list():
-                    if agent.name == label:
+                    if agent is not None and agent.name == label:
                         label_to_agent[label] = agent
 
         agent_to_expression_level = {}

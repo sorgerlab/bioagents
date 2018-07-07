@@ -29,6 +29,8 @@ class ModelDiagnoser(object):
                                  RegulateAmount)):
                 # The subj here is in an "active" position
                 subj, obj = stmt.agent_list()
+                if subj is None:
+                    continue
                 subj_base = ml._get_base(subj)
                 # If it has any activities but isn't in an active state
                 # here

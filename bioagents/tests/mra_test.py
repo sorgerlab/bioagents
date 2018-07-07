@@ -658,6 +658,30 @@ class TestModelGapSuggest(_IntegrationTest):
         model = json.loads(output.gets('model'))
         assert len(model) == 2
 
+
+class TestDegradeSbgn(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+
+    message_funcs = ['build', 'expand']
+
+    def create_build(self):
+        return _get_build_model_request('BRAF is degraded.')
+
+    def check_response_to_build(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
+    def create_expand(self):
+        return _get_expand_model_request('KRAS is degraded.', '1')
+
+    def check_response_to_expand(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '2'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 2
 '''
 def test_replace_agent_one():
     m = MRA()

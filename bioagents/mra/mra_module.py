@@ -5,8 +5,9 @@ import random
 import logging
 import pysb.export
 
-from indra.sources.trips.processor import TripsProcessor
 from indra.databases import hgnc_client
+from indra.assemblers import EnglishAssembler
+from indra.sources.trips.processor import TripsProcessor
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.statements import stmts_to_json, Complex, SelfModification,\
     ActiveForm
@@ -86,8 +87,8 @@ class MRA_Module(Bioagent):
         msg.set('model-id', str(model_id))
         # Add the INDRA model json
         model = res.get('model')
-        #if model and (descr_format == 'ekb' or not descr_format):
-        #    self.send_background_support(model)
+        if model and (descr_format == 'ekb' or not descr_format):
+            self.send_background_support(model)
         model_msg = encode_indra_stmts(model)
         msg.sets('model', model_msg)
         # Add the diagrams
@@ -98,6 +99,8 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 self.send_display_model(diagrams)
+        # Analyze the model for issues
+        # Report ambiguities
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)
@@ -133,8 +136,53 @@ class MRA_Module(Bioagent):
         msg.sets('model', model_msg)
         # Add the INDRA model new json
         model_new = res.get('model_new')
-        #if model_new and (descr_format == 'ekb' or not descr_format):
-        #    self.send_background_support(model_new)
+
+        # SUGGESTIONS
+        # Indicate whether the goal has been explained
+        has_expl = res.get('has_explanation')
+        if has_expl is not None:
+            msg.set('has_explanation', str(has_expl).upper())
+        # If there is an explanation, english assemble it
+        expl_path = res.get('explanation_path')
+        if expl_path:
+            ea_path = EnglishAssembler(expl_path)
+            path_str = ea_path.make_model()
+            ea_goal = EnglishAssembler([self.mra.explain])
+            goal_str = ea_goal.make_model()
+            if path_str and goal_str:
+                explanation_str = (
+                    'Our model can now explain how %s: <i>%s</i>' %
+                    (goal_str[:-1], path_str))
+                content = KQMLList('SPOKEN')
+                content.sets('WHAT', explanation_str)
+                self.tell(content)
+
+        # If there is a suggestion, say it
+        suggs = res.get('stmt_suggestions')
+        if suggs:
+            say = 'I have some suggestions on how to complete our model.'
+            say += ' We could try modeling one of:<br>'
+            stmt_str = '<ul>%s</ul>' % \
+                ''.join([('<li>%s</li>' % EnglishAssembler([stmt]).make_model())
+                         for stmt in suggs])
+            say += stmt_str
+            content = KQMLList('SPOKEN')
+            content.sets('WHAT', say)
+            self.tell(content)
+
+        # If there are corrections
+        corrs = res.get('stmt_corrections')
+        if corrs:
+            stmt = corrs[0]
+            say = 'It looks like a required activity is missing,'
+            say += ' consider revising to <i>%s</i>' % \
+                    (EnglishAssembler([stmt]).make_model())
+            content = KQMLList('SPOKEN')
+            content.sets('WHAT', say)
+            self.tell(content)
+
+        if model_new and (descr_format == 'ekb' or not descr_format):
+            self.send_background_support(model_new)
         if model_new:
             model_new_msg = encode_indra_stmts(model_new)
             msg.sets('model-new', model_new_msg)
@@ -146,6 +194,9 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 self.send_display_model(diagrams)
+        # Analyze the model for issues
+
+        # Report ambiguities
         ambiguities = res.get('ambiguities')
         if ambiguities:
             ambiguities_msg = get_ambiguities_msg(ambiguities)

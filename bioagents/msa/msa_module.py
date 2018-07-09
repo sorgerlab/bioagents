@@ -42,7 +42,7 @@ def _read_signor_afs():
     return signor_afs
 
 
-DUMP_LIMIT = 20
+DUMP_LIMIT = 100
 
 
 class MSALookupError(Exception):

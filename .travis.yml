@@ -7,7 +7,7 @@ python:
 before_install:
   - sudo apt-get update
 install:
-  - pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib networkx==1.11 pandas kappy
+  - pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas kappy
   # PySB and dependencies
   - wget "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz" -O bionetgen.tar.gz -nv
   - tar xzf bionetgen.tar.gz
@@ -20,6 +20,7 @@ install:
   # Dependencies of Bioagents not covered by previous installs
   - sudo apt-get install graphviz
   - pip install pygraphviz ndex2
+  - pip install -U networkx>=2
   - wget -nv "http://sorger.med.harvard.edu/data/bgyori/bioagents/drug_targets.db" -O bioagents/resources/drug_targets.db
   # Install utilities for running tests
   - pip install coverage

@@ -69,7 +69,7 @@ def test_propose_statement():
     assert result.get('explanation_path') is None
     inf_prop = result.get('connect_rules')
     assert inf_prop == ('RAF_activates_MEK_activity',
-                        'ERK_activates_JUN_activity')
+                        'ERK_act_activates_JUN_activity'), inf_prop
     stmt_prop = result.get('connect_stmts')
     assert stmt_prop == (model_stmts[0], model_stmts[1])
     stmt_suggestions = md.suggest_statements(*stmt_prop)

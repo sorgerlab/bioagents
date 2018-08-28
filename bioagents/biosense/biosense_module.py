@@ -1,19 +1,11 @@
-import os
 import sys
 import logging
 import indra
-from indra.util import read_unicode_csv
-from indra.tools import expand_families
-from indra.sources import trips
-from indra.sources.trips.processor import TripsProcessor
 from .biosense import BioSense, _get_urls
 from .biosense import InvalidAgentError, UnknownCategoryError
 from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
-
 from bioagents import Bioagent
-from indra.databases import get_identifiers_url, uniprot_client
-from indra.preassembler.hierarchy_manager import hierarchies
-from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
+from kqml import KQMLPerformative, KQMLList, KQMLString
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',

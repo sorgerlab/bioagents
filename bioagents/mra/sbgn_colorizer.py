@@ -1,17 +1,21 @@
 from lxml import etree
 import os
-import collections
-import copy
 import re
 import json
+import copy
+import logging
+import collections
+from matplotlib import cm
+from matplotlib import colors
+
 from indra.statements import *
 from indra.sources.indra_db_rest import get_statements
-
 from indra.tools.expand_families import Expander
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.databases import context_client
-from matplotlib import cm
-from matplotlib import colors
+
+
+logger = logging.getLogger('sbgn_colorizer')
 
 # How a node should be colorized
 Style = collections.namedtuple('Style', ['border_color', 'fill_color'])

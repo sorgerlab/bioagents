@@ -1,14 +1,16 @@
 import json
+import unittest
 import xml.etree.ElementTree as ET
 from kqml.kqml_list import KQMLList
 import indra.statements as sts
-from indra.sources import trips
-from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, get_request
+from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
+        get_request, stmts_json_from_text
 from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
     _get_matching_stmts, CAN_CHECK_STATEMENTS
 from nose.plugins.skip import SkipTest
+
 
 # ################
 # MRA unit tests
@@ -154,12 +156,6 @@ def test_make_cm():
 # MRA_Module unit tests
 # #####################
 
-def _get_statement_via_trips(stmt_text):
-    tp = trips.process_text(stmt_text)
-    assert tp is not None, "Bad text: %s." % stmt_text
-    return tp.statements[0]
-
-
 def test_respond_build_model_from_json():
     mm = MRA_Module(testing=True)
     st = sts.Phosphorylation(sts.Agent('MEK'), sts.Agent('ERK'))
@@ -173,17 +169,17 @@ def test_respond_build_model_from_json():
 
 def test_respond_expand_model_from_json():
     mm = MRA_Module(testing=True)
-    st = _get_statement_via_trips('MEK phosphorylates ERK')
+    st = stmts_json_from_text('MEK phosphorylates ERK')
     msg = KQMLList('BUILD-MODEL')
-    msg.sets('description', json.dumps(sts.stmts_to_json([st])))
+    msg.sets('description', json.dumps(st))
     msg.sets('format', 'indra_json')
     reply = mm.respond_build_model(msg)
     assert(reply.get('model'))
     assert(reply.get('model-id') == '1')
 
-    st = _get_statement_via_trips('RAF phosphorylates MEK')
+    st = stmts_json_from_text('Active BRAF inhibits MEK.')
     msg = KQMLList('EXPAND-MODEL')
-    msg.sets('description', json.dumps(sts.stmts_to_json([st])))
+    msg.sets('description', json.dumps(st))
     msg.sets('format', 'indra_json')
     msg.set('model-id', '1')
     reply = mm.respond_expand_model(msg)

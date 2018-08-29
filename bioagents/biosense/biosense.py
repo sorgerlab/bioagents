@@ -31,7 +31,8 @@ class BioSense(object):
 
         Returns
         -------
-        dict: (dict of dict: tuple|list) example given below
+        agents, ambiguities: tuple[dict]
+        example:
         {'agents': {'V11519860': (MAP2K1(),
         'ONT::GENE',
         {'HGNC': 'http://identifiers.org/hgnc/HGNC:6840',
@@ -46,9 +47,9 @@ class BioSense(object):
         If agent_ekb does not correspond to a recognized agent
         """
         agents, ambiguities = _process_ekb(agent_ekb)
-        if len(agents) != 1:
-            raise InvalidAgentError("agent not recognized")
-        return {'agents': agents, 'ambiguities': ambiguities}
+        if len(agents) == 0:
+            raise InvalidAgentError
+        return agents, ambiguities
 
     def choose_sense_category(self, agent_ekb, category):
         """Determine if an agent belongs to a particular category
@@ -129,8 +130,10 @@ class BioSense(object):
         agents, _ = _process_ekb(collection_ekb)
         if len(agents) != 1:
             raise InvalidCollectionError("collection not recognized")
-        collection_agent = list(agents.values())[0][0]
-        return member_agent.isa(collection_agent, hierarchies)
+        agent, ont_type, _ = list(agents.values())[0]
+        if ont_type != 'ONT::PROTEIN-FAMILY':
+            raise CollectionNotFamilyOrComplexError
+        return member_agent.isa(agent, hierarchies)
 
     def choose_sense_what_member(self, collection_ekb):
         """Get members of a collection.

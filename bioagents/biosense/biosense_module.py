@@ -21,7 +21,7 @@ class BioSense_Module(Bioagent):
         # Instantiate a singleton BioSense agent
         self.bs = BioSense()
         super(BioSense_Module, self).__init__(**kwargs)
-        
+
     name = 'BioSense'
     tasks = ['CHOOSE-SENSE', 'CHOOSE-SENSE-CATEGORY',
              'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER',
@@ -30,10 +30,12 @@ class BioSense_Module(Bioagent):
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""
         ekb = content.gets('ekb-term')
-        groundings = self.bs.choose_sense(ekb)
-        agents, ambiguities = (groundings['agents'], groundings['ambiguities'])
         msg = KQMLPerformative('SUCCESS')
-        if agents:
+        try:
+            agents, ambiguities = self.bs.choose_sense(ekb)
+        except InvalidAgentError:
+            logger.info("agent not recognized:\n{}\n".format(ekb))
+        else:
             kagents = []
             for term_id, agent_tuple in agents.items():
                 kagent = get_kagent(agent_tuple, term_id)
@@ -67,8 +69,13 @@ class BioSense_Module(Bioagent):
         try:
             is_member = self.bs.choose_sense_is_member(agent_ekb,
                                                        collection_ekb)
+        except InvalidAgentError:
+            msg = make_failure('INVALID_AGENT')
         except InvalidCollectionError:
             msg = make_failure('INVALID_COLLECTION')
+        except CollectionNotFamilyOrComplexError:
+            msg = KQMLList('SUCCESS')
+            msg.set('is-member', 'FALSE')
         else:
             msg = KQMLList('SUCCESS')
             msg.set('is-member', 'TRUE' if is_member else 'FALSE')
@@ -107,14 +114,6 @@ class BioSense_Module(Bioagent):
             msg = KQMLList('SUCCESS')
             msg.set('synonyms', syns_kqml)
         return msg
-
-    @staticmethod
-    def _get_agent(agent_ekb):
-        tp = TripsProcessor(agent_ekb)
-        terms = tp.tree.findall('TERM')
-        term_id = terms[0].attrib['id']
-        agent = tp._get_agent_by_id(term_id, None)
-        return agent
 
 
 def get_kagent(agent_tuple, term_id=None):

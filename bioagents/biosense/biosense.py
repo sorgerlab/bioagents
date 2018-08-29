@@ -9,7 +9,6 @@ from indra.preassembler.hierarchy_manager import hierarchies
 
 
 logger = logging.getLogger('BioSense')
-
 _indra_path = _indra_path[0]
 
 
@@ -22,13 +21,16 @@ class BioSense(object):
         self._tf_list = _read_tfs()
         self._phosphatase_list = _read_phosphatases()
 
-    def choose_sense(self, ekb):
+    def choose_sense(self, agent_ekb):
         """Find possible groundings and potential ambiguities for an ekb-term.
 
-        Args:
-        ekb (string): XML for an extraction knowledge base (ekb) term
+        Parameters
+        ----------
+        ekb : string
+        XML for an extraction knowledge base (ekb) term
 
-        Returns:
+        Returns
+        -------
         dict: (dict of dict: tuple|list) example given below
         {'agents': {'V11519860': (MAP2K1(),
         'ONT::GENE',
@@ -36,24 +38,45 @@ class BioSense(object):
         'UP': 'http://identifiers.org/uniprot/Q02750',
         'NCIT': 'http://identifiers.org/ncit/C17808'})},
         'ambiguities': {}}
+
+        Raises
+        ------
+
+        InvalidAgentError
+        If agent_ekb does not correspond to a recognized agent
         """
-        agents, ambiguities = _process_ekb(ekb)
+        agents, ambiguities = _process_ekb(agent_ekb)
+        if len(agents) != 1:
+            raise InvalidAgentError("agent not recognized")
         return {'agents': agents, 'ambiguities': ambiguities}
 
-    def choose_sense_category(self, ekb, category):
+    def choose_sense_category(self, agent_ekb, category):
         """Determine if an agent belongs to a particular category
 
-        Args:
-        ekb (string): XML for an extraction knowledge base (ekb) term
-        category (string): name of a category. one of 'kinase',
-        'kinase activity', 'enzyme', 'transcription factor', 'phosphatase'.
+        Parameters
+        ----------
+        agent_ekb : string
+        XML for an extraction knowledge base (ekb) term
+        category : string
+        name of a category. one of 'kinase', 'kinase activity', 'enzyme',
+        'transcription factor', 'phosphatase'.
 
-        Returns:
-        bool: True if agent is a member of category
+        Returns
+        -------
+        bool: True if agent is a member of category False otherwise
+
+        Raises
+        ------
+        InvalidAgentError
+        If agent_ekb does not correspond to a recognized agent
+
+        UnknownCategoryError
+        -------------------
+        If category is not from recognized list
         """
-        agents, _ = _process_ekb(ekb)
+        agents, _ = _process_ekb(agent_ekb)
         if len(agents) != 1:
-            raise InvalidAgentError
+            raise InvalidAgentError("agent not recognized")
         agent = list(agents.values())[0][0]
         logger.info("Checking {} for category {}".format(agent, category))
         reg_cat = category.lower().replace('-', ' ')
@@ -74,51 +97,100 @@ class BioSense(object):
                                          ['kinase', 'kinase activity',
                                           'enzyme', 'transcription factor',
                                           'phosphatase']))
-            raise UnknownCategoryError
+            raise UnknownCategoryError("category not recognized")
         return output
 
-    def choose_sense_is_member(self, ekb, collection):
+    def choose_sense_is_member(self, agent_ekb, collection_ekb):
         """Determine if an agent is a member of a collection
 
-        Args:
-        ekb (string): XML for an extraction knowledge base (ekb) term.
-        collection (string): XML for an ekb term of collection for which
-        method tests membership.
+        Parameters
+        ----------
+        agent_ekb : string
+        XML for an extraction knowledge base (ekb) term.
+        collection_ekb : string
+        XML for the ekb term for a collection method tests for membership
+
+        Returns
+        -------
+        bool: True is agent is a member of the collection
+
+        Raises
+        ------
+        InvalidAgentError
+        If agent_ekb does not correspond to a recognized agent
+
+        InvalidCollectionError
+        If collection_ekb does not correspond to a recognized category
         """
-        agents, _ = _process_ekb(ekb)
+        agents, _ = _process_ekb(agent_ekb)
         if len(agents) != 1:
-            raise InvalidAgentError
+            raise InvalidAgentError("agent not recognized")
         member_agent = list(agents.values())[0][0]
-        agents, _ = _process_ekb(collection)
+        agents, _ = _process_ekb(collection_ekb)
         if len(agents) != 1:
-            raise InvalidCollectionError
+            raise InvalidCollectionError("collection not recognized")
         collection_agent = list(agents.values())[0][0]
         return member_agent.isa(collection_agent, hierarchies)
 
-    def choose_sense_what_member(self, collection):
+    def choose_sense_what_member(self, collection_ekb):
+        """Get members of a collection.
+
+        Parameters
+        ----------
+        collection_ekb : string
+        XML for an extraction knowledge base (ekb) term for a family or
+        complex (from 'FMPLX' or 'BE')
+
+        Returns
+        -------
+        members : list[indra.statements.Agent]
+        List of agents in collection
+
+        Raises
+        ------
+        InvalidCollectionError
+        If collection_ekb does not correspond to a recognized collection
+
+        CollectionNotFamilyOrComplexError
+        collection is not from 'FMPLX' or 'BE'
         """
-        """
-        agents, _ = _process_ekb(collection)
+        agents, _ = _process_ekb(collection_ekb)
         if len(agents) != 1:
-            raise InvalidCollectionError
+            raise InvalidCollectionError("collection not recognized")
         term_id, (agent, ont_type, urls) = list(agents.items())[0]
         members = _get_members(agent)
         if members is None:
-            raise CollectionNotFamilyOrComplexError
+            raise CollectionNotFamilyOrComplexError("collection not in 'FMPLX'"
+                                                    " or 'BE'")
         return members
 
-    def get_synonyms(self, ekb):
-        """
+    def get_synonyms(self, agent_ekb):
+        """ Get synonyms of an agent
+
+        Parameters:
+        -----------
+        agent_ekb : string
+        XML for an extraction knowledge base (ekb) term for an agent
+
+        Returns:
+        -------
+        synonyms : list[string]
+        list of synonyms for the agent
+
+        Raises
+        ------
+        InvalidAgentError
+        agent_ekb does not correspond to a recognized agent
         """
         try:
-            agent = self._get_agent(ekb)
-        except Exception as e:
-            raise InvalidAgentError
+            agent = self._get_agent(agent_ekb)
+        except (TypeError, AttributeError, IndexError):
+            raise InvalidAgentError("agent_ekb not readable by Trips")
         if agent is None:
-            raise InvalidAgentError
+            raise InvalidAgentError("agent not recognized")
         up_id = agent.db_refs.get('UP')
         if not up_id:
-            raise InvalidAgentError
+            raise InvalidAgentError("agent not recognized")
         synonyms = uniprot_client.get_synonyms(up_id)
         return synonyms
 
@@ -203,16 +275,22 @@ def _read_tfs():
 
 
 class InvalidAgentError(ValueError):
+    """raised if agent not recognized"""
     pass
 
 
 class InvalidCollectionError(ValueError):
+    """raised if collection not recognized"""
     pass
 
 
 class UnknownCategoryError(ValueError):
+    """raised if category not one of one of 'kinase', 'kinase activity',
+    'enzyme', 'transcription factor', 'phosphatase'."""
+
     pass
 
 
 class CollectionNotFamilyOrComplexError(ValueError):
+    """raised if a collection is not in 'FMPLX' or 'BE'"""
     pass

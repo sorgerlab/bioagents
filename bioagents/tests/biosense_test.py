@@ -1,4 +1,5 @@
 import unittest
+from nose.tools import raises
 from kqml import KQMLList
 from bioagents.tests.util import ekb_from_text
 from bioagents.biosense.biosense_module import BioSense_Module
@@ -9,34 +10,39 @@ from bioagents.biosense.biosense import UnknownCategoryError
 from bioagents.biosense.biosense import CollectionNotFamilyOrComplexError
 
 
-mek1_ekb = ekb_from_text('MAP2K1')
-dusp_ekb = ekb_from_text('DUSP6')
-mek_ekb = ekb_from_text('MEK')
-foo_ekb = ekb_from_text('FOO')
+# example ekb terms
+mek1_ekb = ekb_from_text('MAP2K1')  # agent
+dusp_ekb = ekb_from_text('DUSP6')  # agent
+mek_ekb = ekb_from_text('MEK')  # family
+foo_ekb = ekb_from_text('foo')  # invalid
+
 
 # BioSense python API unit tests
-
-
 def test_choose_sense():
     bs = BioSense()
-    valid_cases = [(mek1_ekb, 'MAP2K1', 'ONT::GENE'),
-                   (dusp_ekb, 'DUSP6', 'ONT::GENE'),
-                   (mek_ekb, 'MEK', 'ONT::PROTEIN-FAMILY')]
-    for case in valid_cases:
+    cases = [(mek1_ekb, 'MAP2K1', 'ONT::GENE'),
+             (dusp_ekb, 'DUSP6', 'ONT::GENE'),
+             (mek_ekb, 'MEK', 'ONT::PROTEIN-FAMILY')]
+    for case in cases:
         agents, _ = bs.choose_sense(case[0])
         agent, ont_type, _ = list(agents.values())[0]
         assert agent.name == case[1]
         assert ont_type == case[2]
+
+
+@raises(InvalidAgentError)
+def test_choose_sense_invalid_agent():
+    """should raise InvalidAgentError if the agent is not recognized"""
+    bs = BioSense()
     invalid_case = foo_ekb
-    passed = 0
-    try:
-        agents, _ = bs.choose_sense(invalid_case)
-    except InvalidAgentError:
-        passed = 1
-    assert passed == 1
+    bs.choose_sense(invalid_case)
 
 
 def test_choose_nonsense():
+    """ekb terms that aren't biological agents should have ont-type None
+
+    BAGEL is from ONT::BAGELS-BISCUITS
+    """
     bs = BioSense()
     case = ekb_from_text('bagel')
     agents, _ = bs.choose_sense(case)
@@ -46,65 +52,66 @@ def test_choose_nonsense():
 
 def test_choose_sense_category():
     bs = BioSense()
-    valid_cases = [(mek1_ekb, [('kinase activity', 'TRUE'),
-                               ('enzyme', 'TRUE'),
-                               ('kinase', 'TRUE'),
-                               ('transcription-factor', 'FALSE'),
-                               ('W::KINASE', 'TRUE'),
-                               ('phosphatase', 'FALSE')]),
-                   (dusp_ekb, [('phosphatase', 'TRUE'), ('enzyme', 'TRUE')]),
-                   (ekb_from_text('BRAF'), [('kinase', 'TRUE')])]
-    for ekb, result_tuples in valid_cases:
+    cases = [(mek1_ekb, [('kinase activity', 'TRUE'),
+                         ('enzyme', 'TRUE'),
+                         ('kinase', 'TRUE'),
+                         ('transcription-factor', 'FALSE'),
+                         ('W::KINASE', 'TRUE'),
+                         ('phosphatase', 'FALSE')]),
+             (dusp_ekb, [('phosphatase', 'TRUE'), ('enzyme', 'TRUE')]),
+             (ekb_from_text('BRAF'), [('kinase', 'TRUE')])]
+    for ekb, result_tuples in cases:
         for cat, result in result_tuples:
             print('Testing: %s. Expect result %s.' % (cat, result))
             in_category = bs.choose_sense_category(ekb, cat)
             assert in_category == (result == 'TRUE')
 
-    # test if correct exceptions are raised for for invalid agents and
-    # categories
-    passed = 0
-    try:
-        bs.choose_sense_category(mek1_ekb, 'foo')
-    except UnknownCategoryError:
-        passed = 1
-    assert passed == 1
 
-    passed = 0
-    try:
-        bs.choose_sense_category(foo_ekb, 'kinase activity')
-    except InvalidAgentError:
-        passed = 1
-    assert passed == 1
+@raises(InvalidAgentError)
+def test_choose_sense_category_invalid_agent():
+    """should raise InvalidAgentError if the agent is not recognized"""
+    bs = BioSense()
+    bs.choose_sense_category(foo_ekb, 'kinase activity')
+
+
+@raises(UnknownCategoryError)
+def test_choose_sense_category_unknown_category():
+    """should raise UnknownCategoryError if the category is not recognized"""
+    bs = BioSense()
+    bs.choose_sense_category(mek1_ekb, 'foo')
 
 
 def test_choose_sense_is_member():
     bs = BioSense()
-    valid_cases = [(mek1_ekb, mek_ekb, True),
-                   (dusp_ekb, mek_ekb, False)]
-    for (agent, collection, result) in valid_cases:
+    cases = [(mek1_ekb, mek_ekb, True),
+             (dusp_ekb, mek_ekb, False)]
+    for (agent, collection, result) in cases:
         assert bs.choose_sense_is_member(agent, collection) == result
 
-    # test if proper exceptions are raised for invalid cases
-    passed = 0
-    try:
-        bs.choose_sense_is_member(mek_ekb, mek1_ekb)
-    except CollectionNotFamilyOrComplexError:
-        passed = 1
-    assert passed == 1
 
-    passed = 0
-    try:
-        bs.choose_sense_is_member(foo_ekb, mek_ekb)
-    except InvalidAgentError:
-        passed = 1
-    assert passed == 1
+@raises(CollectionNotFamilyOrComplexError)
+def test_choose_sense_is_member_not_family_or_complex():
+    """raises CollectionNotFamilyOrComplexError if the collection we test
+    membership in is not a family or complex
+    """
+    bs = BioSense()
+    bs.choose_sense_is_member(mek_ekb, mek1_ekb)
 
-    passed = 0
-    try:
-        bs.choose_sense_is_member(mek1_ekb, foo_ekb)
-    except InvalidCollectionError:
-        passed = 1
-    assert passed == 1
+
+@raises(InvalidAgentError)
+def test_choose_sense_is_member_invalid_agent():
+    """raises InvalidAgentError if the agent is not recognized"""
+    bs = BioSense()
+    bs.choose_sense_is_member(foo_ekb, mek_ekb)
+
+
+@raises(InvalidCollectionError)
+def test_choose_sense_is_member_invalid_collection():
+    """raises InvalidCollectionError if the collection we are testing
+    membership in is not recognized
+    """
+    bs = BioSense()
+    bs.choose_sense_is_member(mek1_ekb, foo_ekb)
 
 
 def test_choose_sense_what_member():
@@ -114,19 +121,17 @@ def test_choose_sense_what_member():
     result = ['MAP2K1', 'MAP2K2']
     assert member_names == result
 
-    passed = 0
-    try:
-        bs.choose_sense_what_member(mek1_ekb)
-    except CollectionNotFamilyOrComplexError:
-        passed = 1
-    assert passed == 1
 
-    passed = 0
-    try:
-        bs.choose_sense_what_member(foo_ekb)
-    except InvalidCollectionError:
-        passed = 1
-    assert passed == 1
+@raises(CollectionNotFamilyOrComplexError)
+def test_choose_sense_what_member_not_family_or_complex():
+    bs = BioSense()
+    bs.choose_sense_what_member(mek1_ekb)
+
+
+@raises(InvalidCollectionError)
+def test_choose_sense_what_member_invalid_collection():
+    bs = BioSense()
+    bs.choose_sense_what_member(foo_ekb)
 
 
 def test_get_synonyms():
@@ -139,6 +144,14 @@ def test_get_synonyms():
                             'MEK 1'])
     synonyms = set(bs.get_synonyms(mek1_ekb))
     assert example_synonyms.issubset(synonyms)
+
+
+@raises(InvalidAgentError)
+def test_get_synonyms_invalid_agent():
+    """raises InvalidAgentError when the agent is not recognized or if the
+    input submitted is not valid XML or is not in the correct format
+    """
+    bs = BioSense()
     # xml missing TERM attribute
     invalid1 = mek1_ekb.replace('TERM', 'TREM')
     # xml not an ekb
@@ -166,31 +179,12 @@ def test_get_synonyms():
     """
     # string not xml
     invalid3 = ""
-    
-    passed = 0
-    try:
-        bs.get_synonyms(invalid1)
-    except InvalidAgentError:
-        passed = 1
-    assert passed == 1
+    bs.get_synonyms(invalid1)
+    bs.get_synonyms(invalid2)
+    bs.get_synonyms(invalid3)
 
-    passed = 0
-    try:
-        bs.get_synonyms(invalid2)
-    except InvalidAgentError:
-        passed = 1
-    assert passed == 1
-
-    passed = 0
-    try:
-        bs.get_synonyms(invalid3)
-    except InvalidAgentError:
-        passed = 1
-    assert passed == 1
 
 # BioSense module unit tests
-
-
 def test_respond_choose_sense():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE')

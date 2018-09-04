@@ -44,7 +44,7 @@ def test_no_target_failure():
 
 
 def test_invalid_target_failure():
-    msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'MEK')
+    msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'JUND')
     _check_failure(msg, 'missing mechanism', 'MISSING_MECHANISM')
 
 

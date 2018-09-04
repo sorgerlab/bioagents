@@ -161,7 +161,6 @@ class MSA_Module(Bioagent):
                             break
 
             # Actually get the statements.
-            logger.error(input_dict)
             stmts = get_statements(**input_dict)
             logger.info("Found %d stmts" % len(stmts))
         except IndraDBRestError as e:

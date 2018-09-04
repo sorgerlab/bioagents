@@ -1,6 +1,6 @@
 from indra.statements import *
 from bioagents.mra.model_diagnoser import ModelDiagnoser
-from indra.assemblers import PysbAssembler
+from indra.assemblers.pysb import PysbAssembler
 
 drug = Agent('PLX4720')
 raf = Agent('RAF', db_refs={'FPLX': 'RAF'})

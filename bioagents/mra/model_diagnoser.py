@@ -8,7 +8,7 @@ from indra.statements import *
 from indra.sources.indra_db_rest import get_statements
 from indra.explanation.model_checker import ModelChecker, stmts_for_path, \
                                             _stmt_from_rule
-from indra.assemblers.pysb_assembler import grounded_monomer_patterns
+from indra.assemblers.pysb.assembler import grounded_monomer_patterns
 
 
 logger = logging.getLogger('model_diagnoser')

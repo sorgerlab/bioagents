@@ -6,7 +6,7 @@ import logging
 import pysb.export
 
 from indra.databases import hgnc_client
-from indra.assemblers import EnglishAssembler
+from indra.assemblers.english import EnglishAssembler
 from indra.sources.trips.processor import TripsProcessor
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.statements import stmts_to_json, Complex, SelfModification,\

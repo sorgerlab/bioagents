@@ -2,7 +2,7 @@ import glob
 import pickle
 from indra.db import get_primary_db
 from indra.db.util import make_stmts_from_db_list
-from indra.assemblers import CxAssembler
+from indra.assemblers.cx import CxAssembler
 
 data_path = '/pmc/data/db_ndex'
 

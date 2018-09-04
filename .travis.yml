@@ -16,7 +16,7 @@ install:
   # PyKQML
   - pip install git+https://github.com/bgyori/pykqml.git
   # INDRA
-  - pip install git+https://github.com/bgyori/indra.git@assembler_refactor
+  - pip install git+https://github.com/sorgerlab/indra.git
   # Dependencies of Bioagents not covered by previous installs
   - sudo apt-get install graphviz
   - pip install pygraphviz ndex2

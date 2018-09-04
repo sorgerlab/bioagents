@@ -156,7 +156,7 @@ class TestMsaPaperGraph(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-PAPER-MODEL')
-        content.set('pmid', 'PMID-8436299')
+        content.set('pmid', 'PMID-27906130')
         return get_request(content), content
 
     def check_response_to_message(self, output):

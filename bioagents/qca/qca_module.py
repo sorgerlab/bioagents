@@ -6,7 +6,7 @@ from bioagents import Bioagent
 from kqml import KQMLList, KQMLString
 from .qca import QCA
 from indra.statements import stmts_from_json
-from indra.assemblers import EnglishAssembler
+from indra.assemblers.english import EnglishAssembler
 from indra.sources.trips.processor import TripsProcessor
 
 
@@ -114,7 +114,7 @@ class QCA_Module(Bioagent):
         return reply
 
     def report_paths_graph(self, paths_list):
-        from indra.assemblers import GraphAssembler
+        from indra.assemblers.graph import GraphAssembler
         from indra.util import flatten
         path_stmts = [stmts_from_json(l) for l in paths_list]
         all_stmts = flatten(path_stmts)

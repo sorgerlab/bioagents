@@ -15,7 +15,8 @@ from indra.statements import Complex, Activation, IncreaseAmount, \
                             AddModification, stmts_from_json
 from indra.databases import uniprot_client
 from indra.preassembler.hierarchy_manager import hierarchies
-from indra.assemblers import pysb_assembler, PysbAssembler
+from indra.assemblers.pysb import assembler as pysb_assembler
+from indra.assemblers.pysb import PysbAssembler
 from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 from pysb.export import export

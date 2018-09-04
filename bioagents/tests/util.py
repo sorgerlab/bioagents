@@ -50,8 +50,8 @@ ekb_cache = _load_ekb_cache()
 
 def read_or_load(text, force_rewrite=False):
     if force_rewrite or text not in ekb_cache:
-        html = trips.trips_client.send_query(text)
-        ekb_xml = trips.trips_client.get_xml(html)
+        html = trips.client.send_query(text)
+        ekb_xml = trips.client.get_xml(html)
         ekb_cache[text] = ekb_xml
         ekb_cache_items = sorted(ekb_cache.items(), key=lambda x: x[0])
         ekb_cache_ordered = OrderedDict(ekb_cache_items)

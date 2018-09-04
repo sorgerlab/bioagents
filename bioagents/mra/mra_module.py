@@ -505,9 +505,6 @@ def _get_agent_ref(agent):
     db_refs = agent.db_refs
     for namespace in ['HGNC', 'FPLX', 'CHEBI', 'TEXT']:
         if namespace in db_refs.keys():
-            # TODO: Remove. This is a temporary workaround.
-            if namespace == 'FPLX':
-                return '%s@%s' % (db_refs[namespace], 'BE')
             return '%s@%s' % (db_refs[namespace], namespace)
     return '%s@%s' % (agent.name, 'TEXT')
 

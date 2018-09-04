@@ -85,9 +85,6 @@ class MSA_Module(Bioagent):
         logger.info("Looking for statements with agent %s of type %s."
                     % (str(agent), 'ActiveForm'))
         for namespace, name in agent.db_refs.items():
-            # TODO: Remove this eventually, as it is a temporary work-around.
-            if namespace == 'FPLX':
-                namespace = 'BE'
             logger.info("Checking namespace: %s" % namespace)
             stmts = get_statements(agents=['%s@%s' % (name, namespace)],
                                    stmt_type='ActiveForm')
@@ -159,11 +156,7 @@ class MSA_Module(Bioagent):
                 else:
                     for key in ['HGNC', 'FPLX', 'CHEBI', 'TEXT']:
                         if key in ref_dict.keys():
-                            if key == 'FPLX':
-                                flag = 'BE'
-                            else:
-                                flag = key
-                            inp = r'%s@%s' % (ref_dict[key], flag)
+                            inp = r'%s@%s' % (ref_dict[key], key)
                             input_dict[pos] = inp
                             break
 

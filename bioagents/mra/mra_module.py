@@ -518,17 +518,18 @@ def _get_matching_stmts(stmt_ref):
     non_binary_statements = [Complex, SelfModification, ActiveForm]
     # TODO: We should look at more than just the agent name.
     # Doing so efficiently may require changes to the web api.
+    kwargs = {}
     if any([isinstance(stmt_ref, tp) for tp in non_binary_statements]):
-        agent_list = [ag_name for ag_name in agent_name_list
-                      if ag_name is not None]
-        kwargs = {}
+        kwargs['agents'] = [ag_name for ag_name in agent_name_list
+                            if ag_name is not None]
     else:
-        agent_list = []
         kwargs = {k: v for k, v in zip(['subject', 'object'], agent_name_list)}
         if not any(kwargs.values()):
             raise BioagentException('Either subject or object must be '
                                     'something other than None.')
-    return get_statements(agents=agent_list, stmt_type=stmt_type, **kwargs)
+    kwargs['ev_limit'] = 2
+    kwargs['max_stmts'] = 1000
+    return get_statements(stmt_type=stmt_type, **kwargs)
 
 
 _resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'

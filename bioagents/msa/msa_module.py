@@ -88,7 +88,7 @@ class MSA_Module(Bioagent):
             logger.info("Checking namespace: %s" % namespace)
             stmts = get_statements(agents=['%s@%s' % (name, namespace)],
                                    stmt_type='ActiveForm', ev_limit=2,
-                                   max_stmts=5000, persist=True)
+                                   persist=True)
             for s in stmts:
                 if self._matching(s, residue, position, action, polarity):
                     related_result_dict[s.matches_key()] = s
@@ -150,7 +150,6 @@ class MSA_Module(Bioagent):
         try:
             input_dict = {'stmt_type': stmt_type,
                           'ev_limit': 3,
-                          'max_stmts': 3000,
                           'persist': False}
 
             # Use the best available db ref for each agent.

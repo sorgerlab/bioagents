@@ -528,7 +528,7 @@ def _get_matching_stmts(stmt_ref):
             raise BioagentException('Either subject or object must be '
                                     'something other than None.')
     kwargs['ev_limit'] = 2
-    kwargs['max_stmts'] = 1000
+    kwargs['persist'] = False
     return get_statements(stmt_type=stmt_type, **kwargs)
 
 

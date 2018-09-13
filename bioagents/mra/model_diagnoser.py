@@ -129,7 +129,8 @@ class ModelDiagnoser(object):
         obj = query_agent(v_stmt.agent_list()[0])
         if not (subj and obj):
             return []
-        stmts = get_statements(subject=subj, object=obj)
+        stmts = get_statements(subject=subj, object=obj, persist=False,
+                               ev_limit=100)
         stmts.sort(key=lambda s: len(s.evidence), reverse=True)
         end_ix = len(stmts) if len(stmts) < num_statements else num_statements
         return stmts[0:end_ix]

@@ -136,12 +136,8 @@ def test_choose_sense_what_member_invalid_collection():
 
 def test_get_synonyms():
     bs = BioSense()
-    example_synonyms = set(['PRKMK1',
-                            'MEK1',
-                            'MAP2K1',
-                            'ERK activator kinase 1',
-                            'MKK1',
-                            'MEK 1'])
+    example_synonyms = {'PRKMK1', 'MEK1', 'MAP2K1', 'ERK activator kinase 1',
+                        'MKK1', 'MEK 1'}
     synonyms = set(bs.get_synonyms(mek1_ekb))
     assert example_synonyms.issubset(synonyms)
 

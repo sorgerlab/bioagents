@@ -1,2 +1,0 @@
-(register :name init)
-(tell :content (status ready))

@@ -3,7 +3,7 @@ import json
 from kqml import KQMLList
 
 from indra.statements import Agent, Activation, BoundCondition, stmts_to_json, \
-    ActivityCondition
+    ActivityCondition, Phosphorylation
 
 from bioagents.tests.util import get_request
 from bioagents.bionlg.bionlg_module import BioNLG_Module
@@ -13,6 +13,7 @@ from bioagents.tests.integration import _IntegrationTest
 kras = Agent('KRAS')
 braf = Agent('BRAF')
 map2k1 = Agent('MAP2K1')
+mapk3 = Agent('MAPK3')
 gtp = Agent('GTP')
 active_braf = Agent('BRAF', activity=ActivityCondition('activity', True))
 kras_bound = Agent("KRAS", bound_conditions=[BoundCondition(gtp, True)])
@@ -45,3 +46,20 @@ class _NlgTestBase(_IntegrationTest):
 class TestActiveFlag(_NlgTestBase):
     statements = [Activation(active_braf, map2k1)]
     sentences = ["Active BRAF activates MAP2K1"]
+
+
+class TestBoundConditionAndResidues(_NlgTestBase):
+    statements = [Phosphorylation(kras_bound, braf, position='373'),
+                  Phosphorylation(braf, mapk3, residue='T', position='202')]
+    sentences = ["KRAS bound to GTP phosphorylates BRAF",
+                 "BRAF phosphorylates MAPK3 on T202"]
+
+
+class TestTwoSimpleStatements(_NlgTestBase):
+    statements = [Activation(kras, braf), Activation(kras, braf)]
+    sentences = ["KRAS activates BRAF", "KRAS activates BRAF"]
+
+
+class TestSimpleStatement(_NlgTestBase):
+    statements = [Activation(kras, braf)]
+    sentences = ["KRAS activates BRAF"]

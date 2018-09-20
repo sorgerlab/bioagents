@@ -6,6 +6,7 @@ from bioagents.tests.integration import _IntegrationTest
 
 # DTDA unit tests
 
+
 def test_mutation_statistics():
     d = DTDA()
     mutation_dict = \
@@ -76,6 +77,7 @@ class _TestFindTargetDrug(_IntegrationTest):
 
 class TestFindTargetDrug1(_TestFindTargetDrug):
     target = 'BRAF'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('drugs')) == 9, output
@@ -83,6 +85,7 @@ class TestFindTargetDrug1(_TestFindTargetDrug):
 
 class TestFindTargetDrug2(_TestFindTargetDrug):
     target = 'PAK4'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('drugs')) == 1, output
@@ -99,6 +102,7 @@ class TestFindTargetDrug2(_TestFindTargetDrug):
 
 class TestFindTargetDrug3(_TestFindTargetDrug):
     target = 'KRAS'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('drugs')) == 0, output
@@ -106,6 +110,7 @@ class TestFindTargetDrug3(_TestFindTargetDrug):
 
 class TestFindTargetDrug4(_TestFindTargetDrug):
     target = 'JAK2'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('drugs')) == 9, output
@@ -113,10 +118,10 @@ class TestFindTargetDrug4(_TestFindTargetDrug):
 
 class TestFindTargetDrug5(_TestFindTargetDrug):
     target = 'JAK1'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('drugs')) == 6, output
-
 
 
 # FIND-DRUG-TARGETS tests
@@ -158,6 +163,7 @@ class TestFindDrugTargets2(_IntegrationTest):
 class _TestIsDrugTarget(_IntegrationTest):
     target = NotImplemented
     drug = NotImplemented
+
     def __init__(self, *args):
         super(_TestIsDrugTarget, self).__init__(DTDA_Module)
 
@@ -169,33 +175,42 @@ class _TestIsDrugTarget(_IntegrationTest):
         content.set('drug', drug)
         return get_request(content), content
 
+
 class TestIsDrugTarget1(_TestIsDrugTarget):
     target = 'BRAF'
     drug = 'Vemurafenib'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.gets('is-target') == 'TRUE', output
+
 
 class TestIsDrugTarget2(_TestIsDrugTarget):
     target = 'BRAF'
     drug = 'dabrafenib'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.gets('is-target') == 'TRUE', output
+
 
 class TestIsDrugTarget3(_TestIsDrugTarget):
     target = 'KRAS'
     drug = 'dabrafenib'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.gets('is-target') == 'FALSE', output
 
+
 class TestIsDrugTarget4(_TestIsDrugTarget):
     target = 'TGFBR1'
     drug = 'SB525334'
+
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.gets('is-target') == 'TRUE', output
+
 
 # FIND-DISEASE-TARGETS tests
 class TestFindDiseaseTargets1(_IntegrationTest):
@@ -216,6 +231,7 @@ class TestFindDiseaseTargets1(_IntegrationTest):
             output.gets('prevalence')
         assert output.gets('functional-effect') == 'ACTIVE'
 
+
 class TestFindDiseaseTargets2(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -230,6 +246,7 @@ class TestFindDiseaseTargets2(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.gets('prevalence') == '0.19'
         assert output.gets('functional-effect') == 'ACTIVE'
+
 
 class TestFindDiseaseTargets3(_IntegrationTest):
     def __init__(self, *args):

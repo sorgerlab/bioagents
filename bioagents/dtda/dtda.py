@@ -10,6 +10,8 @@ import pickle
 import logging
 import sqlite3
 import operator
+
+from indra.sources.indra_db_rest import get_statements
 from indra.statements import ActiveForm
 from indra.databases import cbio_client
 from bioagents import BioagentException
@@ -44,12 +46,10 @@ cbio_efo_map = _make_cbio_efo_map()
 
 class DTDA(object):
     def __init__(self):
-        # Build an initial set of substitution statements
-        bel_corpus = _resource_dir + 'large_corpus_direct_subs.pkl'
-        with open(bel_corpus, 'rb') as fh:
-            self.sub_statements = pickle.load(fh)
-        logger.info('Loaded %d mutation effect statements' %
-                    len(self.sub_statements))
+        # Initialize cache of substitution statements, which will populate
+        # on-the-fly from the database.
+        self.sub_statements = {}
+
         # Load a database of drug targets
         drug_db_file = _resource_dir + 'drug_targets.db'
         if os.path.isfile(drug_db_file):
@@ -123,16 +123,16 @@ class DTDA(object):
         pos = matches[1]
         sub_residue = matches[2]
 
-        for stmt in self.sub_statements:
-            # Make sure it's an active form statements
-            if not isinstance(stmt, ActiveForm):
-                continue
+        if protein_name not in self.sub_statements.keys():
+            self.sub_statements[protein_name] \
+                = get_statements(agents=[protein_name], stmt_type='ActiveForm')
+
+        for stmt in self.sub_statements[protein_name]:
             mutations = stmt.agent.mutations
             # Make sure the Agent has exactly one mutation
             if len(mutations) != 1:
                 continue
-            if stmt.agent.name == protein_name and\
-                mutations[0].residue_from == wt_residue and\
+            if mutations[0].residue_from == wt_residue and\
                 mutations[0].position == pos and\
                 mutations[0].residue_to == sub_residue:
                     if stmt.is_active:

@@ -486,7 +486,6 @@ class TraTestModel2(_IntegrationTest):
         assert content.gets('satisfies-rate') == '1.0'
 
 
-
 class TraTestModel3(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
@@ -515,6 +514,38 @@ class TraTestModel3(_IntegrationTest):
         assert output.head() == 'SUCCESS'
         content = output.get('content')
         assert content.gets('satisfies-rate') == '1.0'
+
+
+class TraTestModelAlwaysValue(_IntegrationTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super(TraTestModelAlwaysValue, self).__init__(tra_module.TRA_Module,
+                                                      use_kappa=False)
+
+    def create_message(self):
+        model = stmts_kstring_from_text('MEK phosphorylates ERK')
+        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'always_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+        msg = get_request(content)
+        return (msg, content)
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '0.0'
+        assert content.get('suggestion').gets('type') == 'eventual_value'
 
 
 class TraTestModel4(_IntegrationTest):
@@ -662,7 +693,6 @@ class TraTestModel7(_IntegrationTest):
         content.set('pattern', pattern)
         content.set('model', model)
 
-
         condition_entity = ekb_kstring_from_text('DUSP')
         conditions = KQMLList()
         condition = KQMLList()
@@ -677,7 +707,7 @@ class TraTestModel7(_IntegrationTest):
         conditions.append(condition)
         content.set('conditions', conditions)
         msg = get_request(content)
-        return (msg, content)
+        return msg, content
 
     def check_response_to_message2(self, output):
         assert output.head() == 'SUCCESS'
@@ -688,11 +718,12 @@ class TraTestModel7(_IntegrationTest):
 class TraTestModel8(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel8, self).__init__(tra_module.TRA_Module, use_kappa=False)
+        super(TraTestModel8, self).__init__(tra_module.TRA_Module,
+                                            use_kappa=False)
 
     def create_message(self):
-        txt = 'MEK not bound to Selumetinib phosphorylates ERK. DUSP dephosphorylates ERK. ' + \
-            'Selumetinib binds MEK.'
+        txt = ('MEK not bound to Selumetinib phosphorylates ERK. DUSP '
+               'dephosphorylates ERK. Selumetinib binds MEK.')
         model = stmts_kstring_from_text(txt)
         entity = ekb_kstring_from_text('ERK that is phosphorylated')
 
@@ -723,12 +754,13 @@ class TraTestModel8(_IntegrationTest):
         conditions.append(condition)
         content.set('conditions', conditions)
         msg = get_request(content)
-        return (msg, content)
+        return msg, content
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS'
         content = output.get('content')
         assert content.gets('satisfies-rate') == '1.0'
+
 
 class TraTestModel9(_IntegrationTest):
     """Test that TRA can correctly run a model."""
@@ -799,6 +831,32 @@ class TraTestModel9(_IntegrationTest):
         assert output.head() == 'SUCCESS'
         content = output.get('content')
         assert content.gets('satisfies-rate') == '0.0'
+
+
+class TestMissingModel(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestMissingModel, self).__init__(tra_module.TRA_Module)
+
+    def create_message(self):
+        content = KQMLList('SATISFIES-PATTERN')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE'
+        assert output.gets('reason') == 'INVALID_MODEL'
+
+
+class TestInvalidModel(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestInvalidModel, self).__init__(tra_module.TRA_Module)
+
+    def create_message(self):
+        content = KQMLList('SATISFIES-PATTERN')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE'
+        assert output.gets('reason') == 'INVALID_MODEL'
 
 
 class TraTestMissingMonomer(_IntegrationTest):
@@ -906,7 +964,7 @@ class TraMissingMonomerCondition(_IntegrationTest):
         content.set('conditions', conditions)
 
         msg = get_request(content)
-        return (msg, content)
+        return msg, content
 
     def check_response_to_message1(self, output):
         assert output.head() == 'FAILURE', output
@@ -1023,6 +1081,7 @@ class TestCompareConditionsMissing(_IntegrationTest):
         reason = output.gets('reason')
         assert reason == 'MODEL_MISSING_MONOMER'
 
+
 # Testing an issue with a specific message from the BA
 # the bug ended up being in the BA's message but this test is still useful
 class TestConditionNotInvalid(_IntegrationTest):
@@ -1071,6 +1130,7 @@ class TestConditionNotInvalid(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         cont = output.get('content')
         cont.gets('satisfies-rate') == '1.0'
+
 
 def _get_gk_model():
     SelfExporter.do_export = True

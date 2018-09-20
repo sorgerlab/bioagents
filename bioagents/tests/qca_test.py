@@ -39,16 +39,47 @@ class TestSosKras(_IntegrationTest):
         return msg, content
 
     def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS'
+        assert output.head() == 'SUCCESS', output
         paths = output.get('paths')
-        assert len(paths) == 1
+        assert len(paths) == 1, len(paths)
         path = paths[0].string_value()
         path_json = json.loads(path)
         stmts = stmts_from_json(path_json)
-        assert len(stmts) == 1
-        assert isinstance(stmts[0], Gef)
-        assert stmts[0].ras.name == 'KRAS'
-        assert stmts[0].gef.name == 'SOS1'
+        assert len(stmts) == 1, stmts
+        assert isinstance(stmts[0], Gef), stmts[0]
+        assert stmts[0].ras.name == 'KRAS', stmts[0].ras.name
+        assert stmts[0].gef.name == 'SOS1', stmts[0].get.name
+
+
+class _SimpleQcaTest(_IntegrationTest):
+    agents = []
+
+    def __init__(self, *args):
+        super(_SimpleQcaTest, self).__init__(QCA_Module)
+
+    def create_message(self):
+        content = _get_qca_content('FIND-QCA-PATH', *self.agents)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        paths = output.get('paths')
+        for path in paths:
+            stmts = stmts_from_json(json.loads(path.string_value()))
+            assert stmts[0].agent_list()[0].name == self.agents[0]
+            assert stmts[-1].agent_list()[1].name == self.agents[1]
+
+
+class TestTpStat(_SimpleQcaTest):
+    agents = ['TP53', 'STAT3']
+
+
+class TestMapkKras(_SimpleQcaTest):
+    agents = ['MAPK3', 'KRAS']
+
+
+class TestE2f1Pten(_SimpleQcaTest):
+    agents = ['E2F1', 'PTEN']
 
 
 def test_find_qca_path():

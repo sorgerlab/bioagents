@@ -78,8 +78,8 @@ class TestMapkKras(_SimpleQcaTest):
     agents = ['MAPK3', 'KRAS']
 
 
-class TestE2b1Pten(_SimpleQcaTest):
-    agents = ['E2B1', 'PTEN']
+class TestE2f1Pten(_SimpleQcaTest):
+    agents = ['E2F1', 'PTEN']
 
 
 def test_find_qca_path():

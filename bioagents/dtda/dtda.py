@@ -49,20 +49,9 @@ class DTDA(object):
         # Initialize cache of substitution statements, which will populate
         # on-the-fly from the database.
         self.sub_statements = {}
-
-        # Load a database of drug targets
-        drug_db_file = _resource_dir + 'drug_targets.db'
-        if os.path.isfile(drug_db_file):
-            self.drug_db = sqlite3.connect(drug_db_file,
-                                           check_same_thread=False)
-            logger.info('Loaded drug-target database')
-        else:
-            logger.error('DTDA could not load drug-target database.')
-            self.drug_db = None
-
-    def __del__(self):
-        if self.drug_db is not None:
-            self.drug_db.close()
+        self.target_drugs = {}
+        self.drug_targets = {}
+        return
 
     def is_nominal_drug_target(self, drug_names, target_name):
         """Return True if the drug targets the target, and False if not."""
@@ -85,19 +74,16 @@ class DTDA(object):
 
     def find_target_drugs(self, target_name):
         """Return all the drugs that nominally target the target."""
-        if self.drug_db is not None:
-            res = self.drug_db.execute('SELECT name, primary_cid FROM agent '
-                                       'WHERE nominal_target LIKE "%%%s%%" ' %
-                                       target_name).fetchall()
-            if not res:
-                drug_names = []
-                pubchem_ids = []
-            else:
-                drug_names, pubchem_ids = map(list, zip(*res))
+        if target_name not in self.target_drugs.keys():
+            candidates = get_statements(object=target_name,
+                                        stmt_type='Inhibition')
+            tas = (s for s in candidates
+                   if any(ev.source_api == 'tas' for ev in s.evidence))
+            drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM')) for s in tas}
+            self.target_drugs[target_name] = drugs
         else:
-            drug_names = []
-            pubchem_ids = []
-        return drug_names, pubchem_ids
+            drugs = self.target_drugs[target_name]
+        return map(list, zip(*drugs))
 
     def find_drug_targets(self, drug_name):
         """Return all the drugs that nominally target the target."""

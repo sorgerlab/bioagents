@@ -72,14 +72,15 @@ class DTDA(object):
             raise DrugNotFoundException
         return False
 
+    def _get_tas_stmts(self, **kwargs):
+        return (s for s in get_statements(stmt_type='Inhibition', **kwargs)
+                if any(ev.source_api == 'tas' for ev in s.evidence))
+
     def find_target_drugs(self, target_name):
         """Return all the drugs that nominally target the target."""
         if target_name not in self.target_drugs.keys():
-            candidates = get_statements(object=target_name,
-                                        stmt_type='Inhibition')
-            tas = (s for s in candidates
-                   if any(ev.source_api == 'tas' for ev in s.evidence))
-            drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM')) for s in tas}
+            drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
+                     for s in self._get_tas_stmts(object=target_name)}
             self.target_drugs[target_name] = drugs
         else:
             drugs = self.target_drugs[target_name]
@@ -87,18 +88,12 @@ class DTDA(object):
 
     def find_drug_targets(self, drug_name):
         """Return all the drugs that nominally target the target."""
-        if self.drug_db is not None:
-            res = self.drug_db.execute('SELECT nominal_target FROM agent '
-                                       'WHERE (name LIKE "%%%s%%" OR '
-                                        'synonyms LIKE "%%%s%%")' %
-                                       (drug_name, drug_name)).fetchall()
-            if not res:
-                target_names = []
-            else:
-                target_names = [r[0] for r in res]
+        if drug_name not in self.drug_targets.keys():
+            targets = {s.obj.name for s in self._get_tas_stmts(drug_name)}
+            self.drug_targets[drug_name] = targets
         else:
-            target_names = []
-        return target_names
+            targets = self.drug_targets[drug_name]
+        return targets
 
     def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)
@@ -194,7 +189,7 @@ class DTDA(object):
         mut_percent = int(top_mutation[1][0]*100.0)
         # TODO: return mutated residues
         # mut_residues =
-        return (mut_protein, mut_percent)
+        return mut_protein, mut_percent
 
     def _get_gene_list(self):
         gene_list = []

@@ -49,6 +49,13 @@ class DTDA(object):
         # Initialize cache of substitution statements, which will populate
         # on-the-fly from the database.
         self.sub_statements = {}
+
+        # These two dicts will cache results from the database, and act as
+        # a record of which targets and drugs have been search, which is why
+        # the dicts are kept separate. That way we know that if Selumetinib
+        # shows up in the drug_targets keys, all the targets of Selumetinib will
+        # be present, while although Selumetinib may be a value in target_drugs
+        # drugs, not all targets that have Selumetinib as a drug will be keys.
         self.target_drugs = {}
         self.drug_targets = {}
         return
@@ -56,18 +63,13 @@ class DTDA(object):
     def is_nominal_drug_target(self, drug_names, target_name):
         """Return True if the drug targets the target, and False if not."""
         no_result = True
-        if self.drug_db is not None:
-            for drug_name in drug_names:
-                res = self.drug_db.execute('SELECT nominal_target FROM agent '
-                                           'WHERE (synonyms LIKE "%%%s%%" '
-                                           'OR name LIKE "%%%s%%")' %
-                                           (drug_name, drug_name)).fetchall()
-                if not res:
-                    continue
-                no_result = False
-                for r in res:
-                    if r[0].upper() == target_name.upper():
-                        return True
+        for drug_name in drug_names:
+            targets = self.find_drug_targets(drug_name)
+            if not targets:
+                continue
+            no_result = False
+            if target_name in targets:
+                return True
         if no_result:
             raise DrugNotFoundException
         return False

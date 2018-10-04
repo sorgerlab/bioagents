@@ -138,8 +138,10 @@ class TestFindDrugTargets1(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('targets')) == 1, output
-        assert output.get('targets')[0].gets('name') == 'BRAF'
+        targets = output.get('targets')
+        assert targets
+        assert len(targets) >= 3, targets
+        assert any(target.gets('name') == 'BRAF' for target in targets), targets
 
 
 class TestFindDrugTargets2(_IntegrationTest):

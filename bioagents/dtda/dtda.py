@@ -74,27 +74,41 @@ class DTDA(object):
             raise DrugNotFoundException
         return False
 
-    def _get_tas_stmts(self, **kwargs):
-        return (s for s in get_statements(stmt_type='Inhibition', **kwargs)
+    def _get_tas_stmts(self, drug_term=None, target_term=None):
+        drug = _convert_term(drug_term)
+        target = _convert_term(target_term)
+        return (s for s in get_statements(subject=drug, object=target,
+                                          stmt_type='Inhibition')
                 if any(ev.source_api == 'tas' for ev in s.evidence))
 
     def find_target_drugs(self, target_name):
         """Return all the drugs that nominally target the target."""
-        if target_name not in self.target_drugs.keys():
+        target_term = (target_name, 'TEXT')
+        if target_term not in self.target_drugs.keys():
             drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
-                     for s in self._get_tas_stmts(object=target_name)}
-            self.target_drugs[target_name] = drugs
+                     for s in self._get_tas_stmts(object=target_term)}
+            self.target_drugs[target_term] = drugs
         else:
-            drugs = self.target_drugs[target_name]
+            drugs = self.target_drugs[target_term]
         return map(list, zip(*drugs))
 
-    def find_drug_targets(self, drug_name):
+    def find_drug_targets(self, drug):
         """Return all the drugs that nominally target the target."""
-        if drug_name not in self.drug_targets.keys():
-            targets = {s.obj.name for s in self._get_tas_stmts(drug_name)}
-            self.drug_targets[drug_name] = targets
-        else:
-            targets = self.drug_targets[drug_name]
+        # Build a list of different possible identifiers
+        search_list = [(ref, ns) for ns, ref in drug.db_refs.items()]
+        search_list.append((drug.name, 'TEXT'))
+        if '-' in drug.name:
+            search_list.append((drug.name.replace('-', ''), 'TEXT'))
+
+        # Search for relations involving those identifiers.
+        targets = set()
+        for term in search_list:
+            if term not in self.drug_targets.keys():
+                tas_stmts = self._get_tas_stmts(term)
+                targets |= {s.obj.name for s in tas_stmts}
+                self.drug_targets[term] = targets
+            else:
+                targets |= self.drug_targets[term]
         return targets
 
     def find_mutation_effect(self, protein_name, amino_acid_change):
@@ -228,3 +242,9 @@ class Disease(object):
 
     def __str__(self):
         return self.__repr__()
+
+
+def _convert_term(term):
+    if term is not None:
+        return '%s@%s' % tuple(term)
+    return

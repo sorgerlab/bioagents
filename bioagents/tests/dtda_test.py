@@ -1,3 +1,4 @@
+from indra.statements import Agent
 from kqml import KQMLList
 from bioagents.dtda.dtda import DTDA
 from bioagents.dtda.dtda_module import DTDA_Module
@@ -25,35 +26,42 @@ def test_get_disease():
     disease = DTDA_Module.get_disease(disease_ekb)
 
 
+def _create_agent(name, **refs):
+    return Agent(name, db_refs={k.upper(): v for k, v in refs.items()})
+
+
+_vems = [_create_agent('Vemurafenib', chebi='CHEBI:63637'),
+         _create_agent('Vemurafenib', chebi='CHEBI:63637',
+                       text='VEMURAFENIB')]
+_alk_drug = _create_agent('SB-525334', pc='9967941', text='SB525334')
+
+
 def test_is_nominal_target():
     d = DTDA()
-    vems = ('vemurafenib', 'Vemurafenib', 'VEMURAFENIB')
-    for vem in vems:
-        is_target = d.is_nominal_drug_target([vem], 'BRAF')
+    for vem in _vems:
+        is_target = d.is_nominal_drug_target(vem, 'BRAF')
         assert is_target
-        is_target = d.is_nominal_drug_target([vem], 'KRAS')
+        is_target = d.is_nominal_drug_target(vem, 'KRAS')
         assert not is_target
 
 
 def test_is_nominal_target_dash():
     d = DTDA()
-    is_target = d.is_nominal_drug_target(['SB525334', 'SB-525334'],
-                                         'TGFBR1')
+    is_target = d.is_nominal_drug_target(_alk_drug, 'TGFBR1')
     assert is_target
 
 
 def test_find_drug_targets1():
     d = DTDA()
-    vems = ('vemurafenib', 'Vemurafenib', 'VEMURAFENIB')
-    for vem in vems:
+    for vem in _vems:
         targets = d.find_drug_targets(vem)
-        assert len(targets) == 1
-        assert targets[0] == 'BRAF', targets
+        assert len(targets) >= 1
+        assert any(target == 'BRAF' for target in targets), targets
 
 
 def test_find_drug_targets2():
     d = DTDA()
-    targets = d.find_drug_targets('SB525334')
+    targets = d.find_drug_targets(_alk_drug)
     assert len(targets) == 1
     assert targets[0] == 'TGFBR1', targets
 
@@ -80,7 +88,7 @@ class TestFindTargetDrug1(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 9, output
+        assert len(output.get('drugs')) >= 9, output
 
 
 class TestFindTargetDrug2(_TestFindTargetDrug):

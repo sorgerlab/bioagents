@@ -41,12 +41,11 @@ class DTDA_Module(Bioagent):
         try:
             target_arg = content.gets('target')
             target = self._get_agent(target_arg)
-            target_name = target.name
         except Exception:
             return self.make_failure('INVALID_TARGET')
 
         try:
-            is_target = self.dtda.is_nominal_drug_target(drug, target_name)
+            is_target = self.dtda.is_nominal_drug_target(drug, target)
         except DrugNotFoundException:
             return self.make_failure('DRUG_NOT_FOUND')
         reply = KQMLList('SUCCESS')

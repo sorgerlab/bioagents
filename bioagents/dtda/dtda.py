@@ -60,12 +60,12 @@ class DTDA(object):
         self.drug_targets = {}
         return
 
-    def is_nominal_drug_target(self, drug, target_name):
+    def is_nominal_drug_target(self, drug, target):
         """Return True if the drug targets the target, and False if not."""
         targets = self.find_drug_targets(drug)
         if not targets:
             raise DrugNotFoundException
-        if target_name in targets:
+        if target.name in targets:
             return True
         return False
 

@@ -76,34 +76,43 @@ class DTDA(object):
                                           stmt_type='Inhibition')
                 if any(ev.source_api == 'tas' for ev in s.evidence))
 
-    def find_target_drugs(self, target_name):
+    def _extract_terms(self, agent):
+        term_set = {(ref, ns) for ns, ref in agent.db_refs.items()}
+        term_set.add((agent.name, 'TEXT'))
+        if '-' in agent.name:
+            term_set.add((agent.name.replace('-', ''), 'TEXT'))
+        return term_set
+
+    def find_target_drugs(self, target):
         """Return all the drugs that nominally target the target."""
-        target_term = (target_name, 'TEXT')
-        if target_term not in self.target_drugs.keys():
-            drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
-                     for s in self._get_tas_stmts(target_term=target_term)}
-            self.target_drugs[target_term] = drugs
-        else:
-            drugs = self.target_drugs[target_term]
-        return map(list, zip(*drugs))
+        target_terms = self._extract_terms(target)
+
+        all_drugs = set()
+        for target_term in target_terms:
+            if target_term not in self.target_drugs.keys():
+                drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
+                         for s in self._get_tas_stmts(target_term=target_term)}
+                self.target_drugs[target_term] = drugs
+            else:
+                drugs = self.target_drugs[target_term]
+            all_drugs |= drugs
+        return all_drugs
 
     def find_drug_targets(self, drug):
         """Return all the drugs that nominally target the target."""
         # Build a list of different possible identifiers
-        search_list = [(ref, ns) for ns, ref in drug.db_refs.items()]
-        search_list.append((drug.name, 'TEXT'))
-        if '-' in drug.name:
-            search_list.append((drug.name.replace('-', ''), 'TEXT'))
+        drug_terms = self._extract_terms(drug)
 
         # Search for relations involving those identifiers.
-        targets = set()
-        for term in search_list:
+        all_targets = set()
+        for term in drug_terms:
             if term not in self.drug_targets.keys():
                 tas_stmts = self._get_tas_stmts(term)
-                targets |= {s.obj.name for s in tas_stmts}
+                targets = {s.obj.name for s in tas_stmts}
                 self.drug_targets[term] = targets
             else:
-                targets |= self.drug_targets[term]
+                targets = self.drug_targets[term]
+            all_targets |= targets
         return targets
 
     def find_mutation_effect(self, protein_name, amino_acid_change):

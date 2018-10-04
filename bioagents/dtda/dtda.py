@@ -60,18 +60,13 @@ class DTDA(object):
         self.drug_targets = {}
         return
 
-    def is_nominal_drug_target(self, drug_names, target_name):
+    def is_nominal_drug_target(self, drug, target_name):
         """Return True if the drug targets the target, and False if not."""
-        no_result = True
-        for drug_name in drug_names:
-            targets = self.find_drug_targets(drug_name)
-            if not targets:
-                continue
-            no_result = False
-            if target_name in targets:
-                return True
-        if no_result:
+        targets = self.find_drug_targets(drug)
+        if not targets:
             raise DrugNotFoundException
+        if target_name in targets:
+            return True
         return False
 
     def _get_tas_stmts(self, drug_term=None, target_term=None):
@@ -86,7 +81,7 @@ class DTDA(object):
         target_term = (target_name, 'TEXT')
         if target_term not in self.target_drugs.keys():
             drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
-                     for s in self._get_tas_stmts(object=target_term)}
+                     for s in self._get_tas_stmts(target_term=target_term)}
             self.target_drugs[target_term] = drugs
         else:
             drugs = self.target_drugs[target_term]

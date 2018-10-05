@@ -635,7 +635,7 @@ class TestModelMeetsGoalBuildOnly(_IntegrationTest):
     def create_build(self):
         self.bioagent.mra.explain = \
             sts.Activation(sts.Agent('KRAS', db_refs={'HGNC': '6407'}),
-                           sts.Agent('BRAF', db_refs={'HGNV': '1097'}))
+                           sts.Agent('BRAF', db_refs={'HGNC': '1097'}))
         return _get_build_model_request('KRAS activates BRAF')
 
     def check_response_to_build(self, output):

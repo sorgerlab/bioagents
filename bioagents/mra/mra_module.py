@@ -99,6 +99,50 @@ class MRA_Module(Bioagent):
                 if rxn_diagram:
                     msg.sets('diagram', rxn_diagram)
                 self.send_display_model(diagrams)
+
+        # SUGGESTIONS
+        # Indicate whether the goal has been explained
+        has_expl = res.get('has_explanation')
+        if has_expl is not None:
+            msg.set('has_explanation', str(has_expl).upper())
+        # If there is an explanation, english assemble it
+        expl_path = res.get('explanation_path')
+        if expl_path:
+            ea_path = EnglishAssembler(expl_path)
+            path_str = ea_path.make_model()
+            ea_goal = EnglishAssembler([self.mra.explain])
+            goal_str = ea_goal.make_model()
+            if path_str and goal_str:
+                explanation_str = (
+                    'Our model can now explain how %s: <i>%s</i>' %
+                    (goal_str[:-1], path_str))
+                content = KQMLList('SPOKEN')
+                content.sets('WHAT', explanation_str)
+                self.tell(content)
+
+        # If there is a suggestion, say it
+        suggs = res.get('stmt_suggestions')
+        if suggs:
+            say = 'I have some suggestions on how to complete our model.'
+            say += ' We could try modeling one of:<br>'
+            stmt_str = '<ul>%s</ul>' % \
+                ''.join([('<li>%s</li>' % EnglishAssembler([stmt]).make_model())
+                         for stmt in suggs])
+            say += stmt_str
+            content = KQMLList('SPOKEN')
+            content.sets('WHAT', say)
+            self.tell(content)
+
+        # If there are corrections
+        corrs = res.get('stmt_corrections')
+        if corrs:
+            stmt = corrs[0]
+            say = 'It looks like a required activity is missing,'
+            say += ' consider revising to <i>%s</i>' % \
+                    (EnglishAssembler([stmt]).make_model())
+            content = KQMLList('SPOKEN')
+            content.sets('WHAT', say)
+            self.tell(content)
         # Analyze the model for issues
         # Report ambiguities
         ambiguities = res.get('ambiguities')

@@ -114,8 +114,6 @@ class MRA(object):
         return res
 
     def run_diagnoser(self, res, model_stmts, model_exec):
-        corrections = None
-        suggestions = None
         # Use a model diagnoser to identify explanations given the executable
         # model, the current statements, and the explanation goal
         if self.explain:

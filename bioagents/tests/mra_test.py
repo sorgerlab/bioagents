@@ -626,6 +626,27 @@ class TestModelMeetsGoal(_IntegrationTest):
         assert has_explanation == 'TRUE'
 
 
+class TestModelMeetsGoalBuildOnly(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+
+    message_funcs = ['build']
+
+    def create_build(self):
+        self.bioagent.mra.explain = \
+            sts.Activation(sts.Agent('KRAS', db_refs={'HGNC': '6407'}),
+                           sts.Agent('BRAF', db_refs={'HGNV': '1097'}))
+        return _get_build_model_request('KRAS activates BRAF')
+
+    def check_response_to_build(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '1'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+        has_explanation = output.gets('has_explanation')
+        assert has_explanation == 'TRUE', has_explanation
+
+
 class TestModelGapSuggest(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(MRA_Module)
@@ -678,6 +699,9 @@ class TestDegradeSbgn(_IntegrationTest):
         assert output.get('model-id') == '2'
         model = json.loads(output.gets('model'))
         assert len(model) == 2
+
+
+
 '''
 def test_replace_agent_one():
     m = MRA()

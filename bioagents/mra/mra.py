@@ -71,6 +71,7 @@ class MRA(object):
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, model_id,
                                         self.models[model_id], self.context)
+        self.run_diagnoser(res, stmts, model_exec)
         return res
 
     def build_model_from_json(self, model_json):
@@ -109,6 +110,12 @@ class MRA(object):
         res['diagrams'] = make_diagrams(model_exec, new_model_id,
                                         self.models[new_model_id],
                                         self.context)
+        self.run_diagnoser(res, model_stmts, model_exec)
+        return res
+
+    def run_diagnoser(self, res, model_stmts, model_exec):
+        corrections = None
+        suggestions = None
         # Use a model diagnoser to identify explanations given the executable
         # model, the current statements, and the explanation goal
         if self.explain:
@@ -127,8 +134,7 @@ class MRA(object):
         md = ModelDiagnoser(model_stmts)
         acts = md.get_missing_activities()
         if acts:
-            res['stmt_corrections'] = acts
-        return res
+            res['corrections'] = acts
 
     def expand_model_from_json(self, model_json, model_id):
         """Expand a model using INDRA JSON."""

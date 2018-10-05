@@ -100,49 +100,14 @@ class MRA_Module(Bioagent):
                     msg.sets('diagram', rxn_diagram)
                 self.send_display_model(diagrams)
 
-        # SUGGESTIONS
         # Indicate whether the goal has been explained
         has_expl = res.get('has_explanation')
         if has_expl is not None:
             msg.set('has_explanation', str(has_expl).upper())
-        # If there is an explanation, english assemble it
-        expl_path = res.get('explanation_path')
-        if expl_path:
-            ea_path = EnglishAssembler(expl_path)
-            path_str = ea_path.make_model()
-            ea_goal = EnglishAssembler([self.mra.explain])
-            goal_str = ea_goal.make_model()
-            if path_str and goal_str:
-                explanation_str = (
-                    'Our model can now explain how %s: <i>%s</i>' %
-                    (goal_str[:-1], path_str))
-                content = KQMLList('SPOKEN')
-                content.sets('WHAT', explanation_str)
-                self.tell(content)
 
-        # If there is a suggestion, say it
-        suggs = res.get('stmt_suggestions')
-        if suggs:
-            say = 'I have some suggestions on how to complete our model.'
-            say += ' We could try modeling one of:<br>'
-            stmt_str = '<ul>%s</ul>' % \
-                ''.join([('<li>%s</li>' % EnglishAssembler([stmt]).make_model())
-                         for stmt in suggs])
-            say += stmt_str
-            content = KQMLList('SPOKEN')
-            content.sets('WHAT', say)
-            self.tell(content)
+        # Send out various model diagnosis messages
+        self._send_model_diagnoses(res)
 
-        # If there are corrections
-        corrs = res.get('stmt_corrections')
-        if corrs:
-            stmt = corrs[0]
-            say = 'It looks like a required activity is missing,'
-            say += ' consider revising to <i>%s</i>' % \
-                    (EnglishAssembler([stmt]).make_model())
-            content = KQMLList('SPOKEN')
-            content.sets('WHAT', say)
-            self.tell(content)
         # Analyze the model for issues
         # Report ambiguities
         ambiguities = res.get('ambiguities')
@@ -181,11 +146,39 @@ class MRA_Module(Bioagent):
         # Add the INDRA model new json
         model_new = res.get('model_new')
 
-        # SUGGESTIONS
         # Indicate whether the goal has been explained
         has_expl = res.get('has_explanation')
         if has_expl is not None:
             msg.set('has_explanation', str(has_expl).upper())
+
+        # Send out various model diagnosis messages
+        self._send_model_diagnoses(res)
+
+        if model_new and (descr_format == 'ekb' or not descr_format):
+            self.send_background_support(model_new)
+        if model_new:
+            model_new_msg = encode_indra_stmts(model_new)
+            msg.sets('model-new', model_new_msg)
+        # Add the diagram
+        if not no_display:
+            diagrams = res.get('diagrams')
+            if diagrams:
+                rxn_diagram = diagrams.get('reactionnetwork')
+                if rxn_diagram:
+                    msg.sets('diagram', rxn_diagram)
+                self.send_display_model(diagrams)
+        # Analyze the model for issues
+
+        # Report ambiguities
+        ambiguities = res.get('ambiguities')
+        if ambiguities:
+            ambiguities_msg = get_ambiguities_msg(ambiguities)
+            msg.set('ambiguities', ambiguities_msg)
+        return msg
+
+
+    def _send_model_diagnoses(self, res):
+        # SUGGESTIONS
         # If there is an explanation, english assemble it
         expl_path = res.get('explanation_path')
         if expl_path:
@@ -225,27 +218,6 @@ class MRA_Module(Bioagent):
             content.sets('WHAT', say)
             self.tell(content)
 
-        if model_new and (descr_format == 'ekb' or not descr_format):
-            self.send_background_support(model_new)
-        if model_new:
-            model_new_msg = encode_indra_stmts(model_new)
-            msg.sets('model-new', model_new_msg)
-        # Add the diagram
-        if not no_display:
-            diagrams = res.get('diagrams')
-            if diagrams:
-                rxn_diagram = diagrams.get('reactionnetwork')
-                if rxn_diagram:
-                    msg.sets('diagram', rxn_diagram)
-                self.send_display_model(diagrams)
-        # Analyze the model for issues
-
-        # Report ambiguities
-        ambiguities = res.get('ambiguities')
-        if ambiguities:
-            ambiguities_msg = get_ambiguities_msg(ambiguities)
-            msg.set('ambiguities', ambiguities_msg)
-        return msg
 
     def respond_model_undo(self, content):
         """Return response content to model-undo request."""

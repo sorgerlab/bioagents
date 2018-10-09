@@ -3,6 +3,7 @@ import sys
 import re
 import pickle
 import logging
+from datetime import datetime
 from itertools import groupby
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -123,6 +124,7 @@ class MSA_Module(Bioagent):
 
     def _lookup_from_source_type_target(self, content, desc):
         """Look up statement given format received by find/confirm relations."""
+        start_time = datetime.now()
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
             ekb = content.gets(loc)
@@ -173,6 +175,9 @@ class MSA_Module(Bioagent):
 
         # Sort statements by support and evidence
         stmts.sort(key=lambda s: len(s.evidence) + len(s.supported_by))
+
+        logger.info("Retrieved statements after %s seconds."
+                    % (datetime.now() - start_time).total_seconds())
 
         return nl, stmts
 
@@ -259,7 +264,8 @@ class MSA_Module(Bioagent):
             self.tell(content)
 
     def _send_display_stmts(self, stmts, nl_question):
-        logger.info('Sending display statements')
+        start_time = datetime.now()
+        logger.info('Sending display statements.')
         display_stmts = []
         for stmt_type, stmt_grp in groupby(stmts, key=lambda s: str(type(s))):
             stmt_sublist = list(stmt_grp)
@@ -267,7 +273,12 @@ class MSA_Module(Bioagent):
                         % (len(stmt_sublist), stmt_type))
             stmt_sublist.sort(key=lambda s: len(s.evidence)+len(s.supported_by))
             display_stmts.extend(stmt_sublist[:DUMP_LIMIT])
+        logger.info("Finished processing statements after %s seconds."
+                    % (datetime.now() - start_time).total_seconds())
         self._send_table_to_provenance(display_stmts, nl_question)
+        logger.info("Finished sending provenance after %s seconds."
+                    % (datetime.now() - start_time).total_seconds())
+
         # resource = _make_sbgn(stmts[:10])
         # logger.info(resource)
         # content = KQMLList('open-query-window')

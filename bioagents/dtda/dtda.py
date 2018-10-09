@@ -113,7 +113,7 @@ class DTDA(object):
             else:
                 targets = self.drug_targets[term]
             all_targets |= targets
-        return targets
+        return all_targets
 
     def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)

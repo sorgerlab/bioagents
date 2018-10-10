@@ -173,9 +173,6 @@ class MSA_Module(Bioagent):
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
 
-        # Sort statements by support and evidence
-        stmts.sort(key=lambda s: len(s.evidence) + len(s.supported_by))
-
         logger.info("Retrieved statements after %s seconds."
                     % (datetime.now() - start_time).total_seconds())
 
@@ -279,8 +276,8 @@ class MSA_Module(Bioagent):
 
     def _format_evidence(self, ev_list):
         """Format the evidence of a statement for display."""
-        fmt = ('{source_api}: <a href=https://www.ncbi.nlm.nih.gov/pubmed/'
-               '{pmid}>{pmid}</a>')
+        fmt = ('{source_api}: <a href="https://www.ncbi.nlm.nih.gov/pubmed/'
+               '{pmid}" target="_blank">{pmid}</a>')
         pmids = [fmt.format(**ev.__dict__) if ev.pmid else 'None'
                  for ev in ev_list[:10]]
         return ','.join(pmids)

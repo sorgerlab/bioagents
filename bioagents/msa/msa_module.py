@@ -3,6 +3,7 @@ import sys
 import re
 import pickle
 import logging
+from datetime import datetime
 from itertools import groupby
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -123,6 +124,7 @@ class MSA_Module(Bioagent):
 
     def _lookup_from_source_type_target(self, content, desc):
         """Look up statement given format received by find/confirm relations."""
+        start_time = datetime.now()
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
             ekb = content.gets(loc)
@@ -164,22 +166,22 @@ class MSA_Module(Bioagent):
                             break
 
             # Actually get the statements.
-            stmts = get_statements(**input_dict)
-            logger.info("Found %d stmts" % len(stmts))
+            resp = get_statements(simple_response=False, **input_dict)
+            logger.info("Found %d stmts" % len(resp.statements))
         except IndraDBRestError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
 
-        # Sort statements by support and evidence
-        stmts.sort(key=lambda s: len(s.evidence) + len(s.supported_by))
+        logger.info("Retrieved statements after %s seconds."
+                    % (datetime.now() - start_time).total_seconds())
 
-        return nl, stmts
+        return nl, resp
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            nl_question, stmts =\
+            nl_question, rest_resp =\
                 self._lookup_from_source_type_target(content, 'Find')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
@@ -187,29 +189,30 @@ class MSA_Module(Bioagent):
         # For now just list the statements in the provenance tab. Only captures
         # the top 5.
         try:
-            self._send_display_stmts(stmts, nl_question)
+            self._send_display_stmts(rest_resp, nl_question)
         except Exception as e:
             logger.warning("Failed to send provenance.")
             logger.exception(e)
 
         # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
-        resp.set('relations-found', str(len(stmts)))
+        resp.set('relations-found', str(len(rest_resp.statements)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb."""
         try:
-            nl_question, stmts = \
+            nl_question, rest_resp = \
                 self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
-        if len(stmts):
-            self._send_display_stmts(stmts, nl_question)
+        num_stmts = len(rest_resp.statements)
+        if num_stmts:
+            self._send_display_stmts(rest_resp, nl_question)
         resp = KQMLPerformative('SUCCESS')
-        resp.set('some-relations-found', 'TRUE' if len(stmts) > 0 else 'FALSE')
-        resp.set('num-relations-found', str(len(stmts)))
+        resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
+        resp.set('num-relations-found', str(num_stmts))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
@@ -258,16 +261,13 @@ class MSA_Module(Bioagent):
                 content.sets('path', resource)
             self.tell(content)
 
-    def _send_display_stmts(self, stmts, nl_question):
-        logger.info('Sending display statements')
-        display_stmts = []
-        for stmt_type, stmt_grp in groupby(stmts, key=lambda s: str(type(s))):
-            stmt_sublist = list(stmt_grp)
-            logger.info("There are %d statements of type %s."
-                        % (len(stmt_sublist), stmt_type))
-            stmt_sublist.sort(key=lambda s: len(s.evidence)+len(s.supported_by))
-            display_stmts.extend(stmt_sublist[:DUMP_LIMIT])
-        self._send_table_to_provenance(display_stmts, nl_question)
+    def _send_display_stmts(self, resp, nl_question):
+        start_time = datetime.now()
+        logger.info('Sending display statements.')
+        self._send_table_to_provenance(resp, nl_question)
+        logger.info("Finished sending provenance after %s seconds."
+                    % (datetime.now() - start_time).total_seconds())
+
         # resource = _make_sbgn(stmts[:10])
         # logger.info(resource)
         # content = KQMLList('open-query-window')
@@ -275,15 +275,27 @@ class MSA_Module(Bioagent):
         # content.sets('graph', resource)
         # self.tell(content)
 
-    def _send_table_to_provenance(self, stmts, nl_question):
+    def _format_evidence(self, ev_list, ev_count):
+        """Format the evidence of a statement for display."""
+        fmt = ('{source_api}: <a href=https://www.ncbi.nlm.nih.gov/pubmed/'
+               '{pmid} target="_blank">{pmid}</a>')
+        pmids = [fmt.format(**ev.__dict__) for ev in ev_list[:10]]
+        if len(pmids) < ev_count:
+            pmids.append('...and %d more!' % (ev_count - len(pmids)))
+        return ', '.join(pmids)
+
+    def _send_table_to_provenance(self, resp, nl_question):
         """Post a concise table listing statements found."""
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
-        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>']
-        for stmt in stmts[:DUMP_LIMIT]:
+        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
+                    '<th>Source and PMID</th>']
+        for stmt in resp.statements[:DUMP_LIMIT]:
             sub_ag, obj_ag = stmt.agent_list()
-            row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
-                            % (sub_ag, type(stmt).__name__, obj_ag))
+            ev_str = self._format_evidence(stmt.evidence,
+                                           resp.get_ev_count(stmt))
+            row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
+                            % (sub_ag, type(stmt).__name__, obj_ag, ev_str))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'

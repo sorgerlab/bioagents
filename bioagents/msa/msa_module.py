@@ -277,6 +277,13 @@ class MSA_Module(Bioagent):
         # content.sets('graph', resource)
         # self.tell(content)
 
+    def _format_evidence(self, ev_list):
+        """Format the evidence of a statement for display."""
+        fmt = '<a href=https://www.ncbi.nlm.nih.gov/pubmed/{pmid}>{pmid}</a>'
+        pmids = [fmt.format(pmid=ev.pmid) if ev.pmid else 'None'
+                 for ev in ev_list[:10]]
+        return ','.join(pmids)
+
     def _send_table_to_provenance(self, stmts, nl_question):
         """Post a concise table listing statements found."""
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
@@ -287,7 +294,7 @@ class MSA_Module(Bioagent):
             sub_ag, obj_ag = stmt.agent_list()
             row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
                             % (sub_ag, type(stmt).__name__, obj_ag,
-                               ','.join(ev.pmid for ev in stmt.evidence[:10])))
+                               self._format_evidence(stmt.evidence)))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'

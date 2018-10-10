@@ -275,11 +275,13 @@ class MSA_Module(Bioagent):
         # content.sets('graph', resource)
         # self.tell(content)
 
-    def _format_evidence(self, ev_list):
+    def _format_evidence(self, ev_list, ev_count):
         """Format the evidence of a statement for display."""
         fmt = ('{source_api}: <a href=https://www.ncbi.nlm.nih.gov/pubmed/'
                '{pmid} target="_blank">{pmid}</a>')
         pmids = [fmt.format(**ev.__dict__) for ev in ev_list[:10]]
+        if len(pmids) < ev_count:
+            pmids.append('...and %d more!' % (ev_count - len(pmids)))
         return ', '.join(pmids)
 
     def _send_table_to_provenance(self, resp, nl_question):
@@ -290,9 +292,10 @@ class MSA_Module(Bioagent):
                     '<th>Source and PMID</th>']
         for stmt in resp.statements[:DUMP_LIMIT]:
             sub_ag, obj_ag = stmt.agent_list()
+            ev_str = self._format_evidence(stmt.evidence,
+                                           resp.get_ev_count(stmt))
             row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
-                            % (sub_ag, type(stmt).__name__, obj_ag,
-                               self._format_evidence(stmt.evidence)))
+                            % (sub_ag, type(stmt).__name__, obj_ag, ev_str))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'

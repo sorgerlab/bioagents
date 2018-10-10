@@ -281,11 +281,13 @@ class MSA_Module(Bioagent):
         """Post a concise table listing statements found."""
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
-        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>']
+        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
+                    '<th>PMID</th>']
         for stmt in stmts[:DUMP_LIMIT]:
             sub_ag, obj_ag = stmt.agent_list()
-            row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
-                            % (sub_ag, type(stmt).__name__, obj_ag))
+            row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
+                            % (sub_ag, type(stmt).__name__, obj_ag,
+                               ','.join(ev.pmid for ev in stmt.evidence[:10])))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'

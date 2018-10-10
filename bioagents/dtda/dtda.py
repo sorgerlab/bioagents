@@ -10,6 +10,8 @@ import pickle
 import logging
 import sqlite3
 import operator
+
+from indra.sources.indra_db_rest import get_statements
 from indra.statements import ActiveForm
 from indra.databases import cbio_client
 from bioagents import BioagentException
@@ -44,75 +46,82 @@ cbio_efo_map = _make_cbio_efo_map()
 
 class DTDA(object):
     def __init__(self):
-        # Build an initial set of substitution statements
-        bel_corpus = _resource_dir + 'large_corpus_direct_subs.pkl'
-        with open(bel_corpus, 'rb') as fh:
-            self.sub_statements = pickle.load(fh)
-        logger.info('Loaded %d mutation effect statements' %
-                    len(self.sub_statements))
-        # Load a database of drug targets
-        drug_db_file = _resource_dir + 'drug_targets.db'
-        if os.path.isfile(drug_db_file):
-            self.drug_db = sqlite3.connect(drug_db_file,
-                                           check_same_thread=False)
-            logger.info('Loaded drug-target database')
-        else:
-            logger.error('DTDA could not load drug-target database.')
-            self.drug_db = None
+        # Initialize cache of substitution statements, which will populate
+        # on-the-fly from the database.
+        self.sub_statements = {}
 
-    def __del__(self):
-        if self.drug_db is not None:
-            self.drug_db.close()
+        # These two dicts will cache results from the database, and act as
+        # a record of which targets and drugs have been search, which is why
+        # the dicts are kept separate. That way we know that if Selumetinib
+        # shows up in the drug_targets keys, all the targets of Selumetinib will
+        # be present, while although Selumetinib may be a value in target_drugs
+        # drugs, not all targets that have Selumetinib as a drug will be keys.
+        self.target_drugs = {}
+        self.drug_targets = {}
+        return
 
-    def is_nominal_drug_target(self, drug_names, target_name):
+    def is_nominal_drug_target(self, drug, target):
         """Return True if the drug targets the target, and False if not."""
-        no_result = True
-        if self.drug_db is not None:
-            for drug_name in drug_names:
-                res = self.drug_db.execute('SELECT nominal_target FROM agent '
-                                           'WHERE (synonyms LIKE "%%%s%%" '
-                                           'OR name LIKE "%%%s%%")' %
-                                           (drug_name, drug_name)).fetchall()
-                if not res:
-                    continue
-                no_result = False
-                for r in res:
-                    if r[0].upper() == target_name.upper():
-                        return True
-        if no_result:
+        targets = self.find_drug_targets(drug)
+        if not targets:
             raise DrugNotFoundException
+        if target.name in targets:
+            return True
         return False
 
-    def find_target_drugs(self, target_name):
-        """Return all the drugs that nominally target the target."""
-        if self.drug_db is not None:
-            res = self.drug_db.execute('SELECT name, primary_cid FROM agent '
-                                       'WHERE nominal_target LIKE "%%%s%%" ' %
-                                       target_name).fetchall()
-            if not res:
-                drug_names = []
-                pubchem_ids = []
-            else:
-                drug_names, pubchem_ids = map(list, zip(*res))
-        else:
-            drug_names = []
-            pubchem_ids = []
-        return drug_names, pubchem_ids
+    def _get_tas_stmts(self, drug_term=None, target_term=None):
+        drug = _convert_term(drug_term)
+        target = _convert_term(target_term)
+        return (s for s in get_statements(subject=drug, object=target,
+                                          stmt_type='Inhibition')
+                if any(ev.source_api == 'tas' for ev in s.evidence))
 
-    def find_drug_targets(self, drug_name):
+    def _extract_terms(self, agent):
+        term_set = {(ref, ns) for ns, ref in agent.db_refs.items()}
+        term_set.add((agent.name, 'TEXT'))
+
+        # Try without a hyphen.
+        if '-' in agent.name:
+            term_set.add((agent.name.replace('-', ''), 'TEXT'))
+
+        # Try different capitalizations.
+        transforms = ['capitalize', 'upper', 'lower']
+        for opp in map(lambda nm: getattr(agent.name, nm), transforms):
+            term_set.add((opp(), 'TEXT'))
+
+        return term_set
+
+    def find_target_drugs(self, target):
         """Return all the drugs that nominally target the target."""
-        if self.drug_db is not None:
-            res = self.drug_db.execute('SELECT nominal_target FROM agent '
-                                       'WHERE (name LIKE "%%%s%%" OR '
-                                        'synonyms LIKE "%%%s%%")' %
-                                       (drug_name, drug_name)).fetchall()
-            if not res:
-                target_names = []
+        target_terms = self._extract_terms(target)
+
+        all_drugs = set()
+        for target_term in target_terms:
+            if target_term not in self.target_drugs.keys():
+                drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
+                         for s in self._get_tas_stmts(target_term=target_term)}
+                self.target_drugs[target_term] = drugs
             else:
-                target_names = [r[0] for r in res]
-        else:
-            target_names = []
-        return target_names
+                drugs = self.target_drugs[target_term]
+            all_drugs |= drugs
+        return all_drugs
+
+    def find_drug_targets(self, drug):
+        """Return all the drugs that nominally target the target."""
+        # Build a list of different possible identifiers
+        drug_terms = self._extract_terms(drug)
+
+        # Search for relations involving those identifiers.
+        all_targets = set()
+        for term in drug_terms:
+            if term not in self.drug_targets.keys():
+                tas_stmts = self._get_tas_stmts(term)
+                targets = {s.obj.name for s in tas_stmts}
+                self.drug_targets[term] = targets
+            else:
+                targets = self.drug_targets[term]
+            all_targets |= targets
+        return all_targets
 
     def find_mutation_effect(self, protein_name, amino_acid_change):
         match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)
@@ -123,16 +132,16 @@ class DTDA(object):
         pos = matches[1]
         sub_residue = matches[2]
 
-        for stmt in self.sub_statements:
-            # Make sure it's an active form statements
-            if not isinstance(stmt, ActiveForm):
-                continue
+        if protein_name not in self.sub_statements.keys():
+            self.sub_statements[protein_name] \
+                = get_statements(agents=[protein_name], stmt_type='ActiveForm')
+
+        for stmt in self.sub_statements[protein_name]:
             mutations = stmt.agent.mutations
             # Make sure the Agent has exactly one mutation
             if len(mutations) != 1:
                 continue
-            if stmt.agent.name == protein_name and\
-                mutations[0].residue_from == wt_residue and\
+            if mutations[0].residue_from == wt_residue and\
                 mutations[0].position == pos and\
                 mutations[0].residue_to == sub_residue:
                     if stmt.is_active:
@@ -208,7 +217,7 @@ class DTDA(object):
         mut_percent = int(top_mutation[1][0]*100.0)
         # TODO: return mutated residues
         # mut_residues =
-        return (mut_protein, mut_percent)
+        return mut_protein, mut_percent
 
     def _get_gene_list(self):
         gene_list = []
@@ -245,3 +254,9 @@ class Disease(object):
 
     def __str__(self):
         return self.__repr__()
+
+
+def _convert_term(term):
+    if term is not None:
+        return '%s@%s' % tuple(term)
+    return

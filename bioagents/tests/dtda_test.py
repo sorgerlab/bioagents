@@ -1,3 +1,4 @@
+from indra.statements import Agent
 from kqml import KQMLList
 from bioagents.dtda.dtda import DTDA
 from bioagents.dtda.dtda_module import DTDA_Module
@@ -25,37 +26,47 @@ def test_get_disease():
     disease = DTDA_Module.get_disease(disease_ekb)
 
 
+def _create_agent(name, **refs):
+    return Agent(name, db_refs={k.upper(): v for k, v in refs.items()})
+
+
+_vems = [_create_agent('Vemurafenib', chebi='CHEBI:63637'),
+         _create_agent('Vemurafenib', chebi='CHEBI:63637',
+                       text='VEMURAFENIB')]
+_alk_drug = _create_agent('SB-525334', pc='9967941', text='SB525334')
+_braf = _create_agent('BRAF', hgnc='1097')
+_kras = _create_agent('KRAS', hgnc='6407')
+_tgfbr1 = _create_agent('TGFBR1', hgnc='11772')
+
+
 def test_is_nominal_target():
     d = DTDA()
-    vems = ('vemurafenib', 'Vemurafenib', 'VEMURAFENIB')
-    for vem in vems:
-        is_target = d.is_nominal_drug_target([vem], 'BRAF')
+    for vem in _vems:
+        is_target = d.is_nominal_drug_target(vem, _braf)
         assert is_target
-        is_target = d.is_nominal_drug_target([vem], 'KRAS')
+        is_target = d.is_nominal_drug_target(vem, _kras)
         assert not is_target
 
 
 def test_is_nominal_target_dash():
     d = DTDA()
-    is_target = d.is_nominal_drug_target(['SB525334', 'SB-525334'],
-                                         'TGFBR1')
+    is_target = d.is_nominal_drug_target(_alk_drug, _tgfbr1)
     assert is_target
 
 
 def test_find_drug_targets1():
     d = DTDA()
-    vems = ('vemurafenib', 'Vemurafenib', 'VEMURAFENIB')
-    for vem in vems:
+    for vem in _vems:
         targets = d.find_drug_targets(vem)
-        assert len(targets) == 1
-        assert targets[0] == 'BRAF', targets
+        assert len(targets) >= 1, targets
+        assert any(target == 'BRAF' for target in targets), targets
 
 
 def test_find_drug_targets2():
     d = DTDA()
-    targets = d.find_drug_targets('SB525334')
+    targets = d.find_drug_targets(_alk_drug)
     assert len(targets) == 1
-    assert targets[0] == 'TGFBR1', targets
+    assert any(target == 'TGFBR1' for target in targets), targets
 
 
 # FIND-TARGET-DRUG tests
@@ -80,7 +91,7 @@ class TestFindTargetDrug1(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 9, output
+        assert len(output.get('drugs')) >= 9, output
 
 
 class TestFindTargetDrug2(_TestFindTargetDrug):
@@ -88,16 +99,18 @@ class TestFindTargetDrug2(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 1, output
-        drug_name = output.get('drugs')[0].gets('name')
+        drugs = output.get('drugs')
+        assert drugs, drugs
+        assert len(drugs) >= 1, drugs
+        drug_names = [drug.gets('name') for drug in drugs]
         exp_drug_name = 'PF-3758309'
-        assert drug_name == exp_drug_name,\
-            "Got %s as drug name; expected %s." % (drug_name, exp_drug_name)
-        pubchem_id = int(output.get('drugs')[0].get('pubchem_id').to_string())
-        exp_pubchem_id = 25227462
-        assert pubchem_id == exp_pubchem_id,\
-            ("Got %d as pubchem id for %s; expected %d."
-             % (pubchem_id, drug_name, exp_pubchem_id))
+        assert exp_drug_name in drug_names,\
+            "Expected to find %s; not among %s." % (exp_drug_name, drug_names)
+        pubchem_ids = [drug.gets('pubchem_id') for drug in drugs]
+        exp_pubchem_id = '25227462'
+        assert exp_pubchem_id in pubchem_ids,\
+            ("Got pubchem ids %s for drugs %s; expected to find id %d."
+             % (pubchem_ids, drug_names, exp_pubchem_id))
 
 
 class TestFindTargetDrug3(_TestFindTargetDrug):
@@ -113,7 +126,7 @@ class TestFindTargetDrug4(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 9, output
+        assert len(output.get('drugs')) >= 9, (len(output), output)
 
 
 class TestFindTargetDrug5(_TestFindTargetDrug):
@@ -121,7 +134,7 @@ class TestFindTargetDrug5(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 6, output
+        assert len(output.get('drugs')) >= 6, (len(output), output)
 
 
 # FIND-DRUG-TARGETS tests
@@ -138,8 +151,10 @@ class TestFindDrugTargets1(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('targets')) == 1, output
-        assert output.get('targets')[0].gets('name') == 'BRAF'
+        targets = output.get('targets')
+        assert targets
+        assert len(targets) >= 3, targets
+        assert any(target.gets('name') == 'BRAF' for target in targets), targets
 
 
 class TestFindDrugTargets2(_IntegrationTest):

@@ -2,6 +2,7 @@ import sys
 import logging
 import xml.etree.ElementTree as ET
 from indra.sources.trips.processor import TripsProcessor
+from indra.statements import Agent
 from kqml import KQMLList
 from .dtda import DTDA, Disease, \
                   DrugNotFoundException, DiseaseNotFoundException
@@ -35,23 +36,16 @@ class DTDA_Module(Bioagent):
             return self.make_failure('INVALID_DRUG')
         try:
             drug = self._get_agent(drug_arg)
-            drug_name = drug.name
         except Exception:
             return self.make_failure('DRUG_NOT_FOUND')
-        if '-' in drug_name:
-            drug_names = [drug_name, drug_name.replace('-', '')]
-        else:
-            drug_names = [drug_name]
         try:
             target_arg = content.gets('target')
             target = self._get_agent(target_arg)
-            target_name = target.name
         except Exception:
             return self.make_failure('INVALID_TARGET')
 
         try:
-            is_target = self.dtda.is_nominal_drug_target(drug_names,
-                                                         target_name)
+            is_target = self.dtda.is_nominal_drug_target(drug, target)
         except DrugNotFoundException:
             return self.make_failure('DRUG_NOT_FOUND')
         reply = KQMLList('SUCCESS')
@@ -63,17 +57,16 @@ class DTDA_Module(Bioagent):
         try:
             target_arg = content.gets('target')
             target = self._get_agent(target_arg)
-            target_name = target.name
         except Exception:
             return self.make_failure('INVALID_TARGET')
-        drug_names, pubchem_ids = self.dtda.find_target_drugs(target_name)
+        drug_results = self.dtda.find_target_drugs(target)
         reply = KQMLList('SUCCESS')
         drugs = KQMLList()
-        for dn, pci in zip(drug_names, pubchem_ids):
+        for dn, pci in drug_results:
             drug = KQMLList()
-            drug.set('name', dn.replace(' ', '-'))
+            drug.sets('name', dn.replace(' ', '-'))
             if pci:
-                drug.set('pubchem_id', pci)
+                drug.sets('pubchem_id', pci)
             drugs.append(drug)
         reply.set('drugs', drugs)
         return reply
@@ -83,25 +76,17 @@ class DTDA_Module(Bioagent):
         try:
             drug_arg = content.gets('drug')
             drug = self._get_agent(drug_arg)
-            drug_name = drug.name
-        except Exception:
+        except Exception as e:
             return self.make_failure('INVALID_DRUG')
-        if '-' in drug_name:
-            drug_names = [drug_name, drug_name.replace('-', '')]
-        else:
-            drug_names = [drug_name]
-        all_targets = []
-        for drugn in drug_names:
-            logger.info('DTDA looking for targets of %s' % drugn)
-            drug_targets = self.dtda.find_drug_targets(drugn)
-            all_targets += drug_targets
-        all_targets = sorted(list(set(all_targets)))
+        logger.info('DTDA looking for targets of %s' % drug.name)
+        drug_targets = self.dtda.find_drug_targets(drug)
+        all_targets = sorted(list(set(drug_targets)))
 
         reply = KQMLList('SUCCESS')
         targets = KQMLList()
         for target_name in all_targets:
             target = KQMLList()
-            target.set('name', target_name)
+            target.sets('name', target_name)
             targets.append(target)
         reply.set('targets', targets)
         return reply
@@ -151,7 +136,6 @@ class DTDA_Module(Bioagent):
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
-
         logger.info('Disease type: %s' % disease.disease_type)
 
         if not trips_isa(disease.disease_type, 'ont::cancer'):
@@ -183,9 +167,10 @@ class DTDA_Module(Bioagent):
         reply.append(reply1)
 
         reply2 = KQMLList('SUCCESS')
-        drug_names, pubchem_ids = self.dtda.find_target_drugs(mut_protein)
+        target = Agent(mut_protein, db_refs={'HGNC-SYMBOL': mut_protein})
+        drug_results = self.dtda.find_target_drugs(target)
         drugs = KQMLList()
-        for dn, pci in zip(drug_names, pubchem_ids):
+        for dn, pci in drug_results:
             drug = KQMLList()
             drug.sets('name', dn.replace(' ', '-'))
             if pci:

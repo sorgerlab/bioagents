@@ -279,8 +279,9 @@ class MSA_Module(Bioagent):
 
     def _format_evidence(self, ev_list):
         """Format the evidence of a statement for display."""
-        fmt = '<a href=https://www.ncbi.nlm.nih.gov/pubmed/{pmid}>{pmid}</a>'
-        pmids = [fmt.format(pmid=ev.pmid) if ev.pmid else 'None'
+        fmt = ('{source_api}: <a href=https://www.ncbi.nlm.nih.gov/pubmed/'
+               '{pmid}>{pmid}</a>')
+        pmids = [fmt.format(**ev.__dict__) if ev.pmid else 'None'
                  for ev in ev_list[:10]]
         return ','.join(pmids)
 

@@ -166,8 +166,8 @@ class MSA_Module(Bioagent):
                             break
 
             # Actually get the statements.
-            stmts = get_statements(**input_dict)
-            logger.info("Found %d stmts" % len(stmts))
+            resp = get_statements(simple_response=False, **input_dict)
+            logger.info("Found %d stmts" % len(resp.statements))
         except IndraDBRestError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
@@ -176,12 +176,12 @@ class MSA_Module(Bioagent):
         logger.info("Retrieved statements after %s seconds."
                     % (datetime.now() - start_time).total_seconds())
 
-        return nl, stmts
+        return nl, resp
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            nl_question, stmts =\
+            nl_question, rest_resp =\
                 self._lookup_from_source_type_target(content, 'Find')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
@@ -189,29 +189,30 @@ class MSA_Module(Bioagent):
         # For now just list the statements in the provenance tab. Only captures
         # the top 5.
         try:
-            self._send_display_stmts(stmts, nl_question)
+            self._send_display_stmts(rest_resp, nl_question)
         except Exception as e:
             logger.warning("Failed to send provenance.")
             logger.exception(e)
 
         # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
-        resp.set('relations-found', str(len(stmts)))
+        resp.set('relations-found', str(len(rest_resp.statements)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb."""
         try:
-            nl_question, stmts = \
+            nl_question, rest_resp = \
                 self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
-        if len(stmts):
-            self._send_display_stmts(stmts, nl_question)
+        num_stmts = len(rest_resp.statements)
+        if num_stmts:
+            self._send_display_stmts(rest_resp, nl_question)
         resp = KQMLPerformative('SUCCESS')
-        resp.set('some-relations-found', 'TRUE' if len(stmts) > 0 else 'FALSE')
-        resp.set('num-relations-found', str(len(stmts)))
+        resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
+        resp.set('num-relations-found', str(num_stmts))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
@@ -260,10 +261,10 @@ class MSA_Module(Bioagent):
                 content.sets('path', resource)
             self.tell(content)
 
-    def _send_display_stmts(self, stmts, nl_question):
+    def _send_display_stmts(self, resp, nl_question):
         start_time = datetime.now()
         logger.info('Sending display statements.')
-        self._send_table_to_provenance(stmts, nl_question)
+        self._send_table_to_provenance(resp, nl_question)
         logger.info("Finished sending provenance after %s seconds."
                     % (datetime.now() - start_time).total_seconds())
 
@@ -281,13 +282,13 @@ class MSA_Module(Bioagent):
         pmids = [fmt.format(**ev.__dict__) for ev in ev_list[:10]]
         return ', '.join(pmids)
 
-    def _send_table_to_provenance(self, stmts, nl_question):
+    def _send_table_to_provenance(self, resp, nl_question):
         """Post a concise table listing statements found."""
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
                     '<th>Source and PMID</th>']
-        for stmt in stmts[:DUMP_LIMIT]:
+        for stmt in resp.statements[:DUMP_LIMIT]:
             sub_ag, obj_ag = stmt.agent_list()
             row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
                             % (sub_ag, type(stmt).__name__, obj_ag,

@@ -266,16 +266,7 @@ class MSA_Module(Bioagent):
     def _send_display_stmts(self, stmts, nl_question):
         start_time = datetime.now()
         logger.info('Sending display statements.')
-        display_stmts = []
-        for stmt_type, stmt_grp in groupby(stmts, key=lambda s: str(type(s))):
-            stmt_sublist = list(stmt_grp)
-            logger.info("There are %d statements of type %s."
-                        % (len(stmt_sublist), stmt_type))
-            stmt_sublist.sort(key=lambda s: len(s.evidence)+len(s.supported_by))
-            display_stmts.extend(stmt_sublist[:DUMP_LIMIT])
-        logger.info("Finished processing statements after %s seconds."
-                    % (datetime.now() - start_time).total_seconds())
-        self._send_table_to_provenance(display_stmts, nl_question)
+        self._send_table_to_provenance(stmts, nl_question)
         logger.info("Finished sending provenance after %s seconds."
                     % (datetime.now() - start_time).total_seconds())
 

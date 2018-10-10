@@ -64,9 +64,9 @@ class DTDA_Module(Bioagent):
         drugs = KQMLList()
         for dn, pci in drug_results:
             drug = KQMLList()
-            drug.set('name', dn.replace(' ', '-'))
+            drug.sets('name', dn.replace(' ', '-'))
             if pci:
-                drug.set('pubchem_id', pci)
+                drug.sets('pubchem_id', pci)
             drugs.append(drug)
         reply.set('drugs', drugs)
         return reply
@@ -86,7 +86,7 @@ class DTDA_Module(Bioagent):
         targets = KQMLList()
         for target_name in all_targets:
             target = KQMLList()
-            target.set('name', target_name)
+            target.sets('name', target_name)
             targets.append(target)
         reply.set('targets', targets)
         return reply

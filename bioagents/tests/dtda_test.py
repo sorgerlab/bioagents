@@ -102,13 +102,12 @@ class TestFindTargetDrug2(_TestFindTargetDrug):
         drugs = output.get('drugs')
         assert drugs, drugs
         assert len(drugs) >= 1, drugs
-        drug_names = [drug.get('name') for drug in drugs]
+        drug_names = [drug.gets('name') for drug in drugs]
         exp_drug_name = 'PF-3758309'
         assert exp_drug_name in drug_names,\
             "Expected to find %s; not among %s." % (exp_drug_name, drug_names)
-        pubchem_ids = [int(drug.get('pubchem_id').to_string())
-                       for drug in drugs]
-        exp_pubchem_id = 25227462
+        pubchem_ids = [drug.gets('pubchem_id') for drug in drugs]
+        exp_pubchem_id = '25227462'
         assert exp_pubchem_id in pubchem_ids,\
             ("Got pubchem ids %s for drugs %s; expected to find id %d."
              % (pubchem_ids, drug_names, exp_pubchem_id))

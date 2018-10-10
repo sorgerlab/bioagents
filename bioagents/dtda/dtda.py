@@ -79,8 +79,16 @@ class DTDA(object):
     def _extract_terms(self, agent):
         term_set = {(ref, ns) for ns, ref in agent.db_refs.items()}
         term_set.add((agent.name, 'TEXT'))
+
+        # Try without a hyphen.
         if '-' in agent.name:
             term_set.add((agent.name.replace('-', ''), 'TEXT'))
+
+        # Try different capitalizations.
+        transforms = ['capitalize', 'upper', 'lower']
+        for opp in map(lambda nm: getattr(agent.name, nm), transforms):
+            term_set.add((opp(), 'TEXT'))
+
         return term_set
 
     def find_target_drugs(self, target):

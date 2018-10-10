@@ -278,16 +278,15 @@ class MSA_Module(Bioagent):
         """Format the evidence of a statement for display."""
         fmt = ('{source_api}: <a href=https://www.ncbi.nlm.nih.gov/pubmed/'
                '{pmid} target="_blank">{pmid}</a>')
-        pmids = [fmt.format(**ev.__dict__) if ev.pmid else 'None'
-                 for ev in ev_list[:10]]
-        return ','.join(pmids)
+        pmids = [fmt.format(**ev.__dict__) for ev in ev_list[:10]]
+        return ', '.join(pmids)
 
     def _send_table_to_provenance(self, stmts, nl_question):
         """Post a concise table listing statements found."""
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
-                    '<th>PMID</th>']
+                    '<th>Source and PMID</th>']
         for stmt in stmts[:DUMP_LIMIT]:
             sub_ag, obj_ag = stmt.agent_list()
             row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td>'

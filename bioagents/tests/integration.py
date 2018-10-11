@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from unittest import TestCase
 from difflib import SequenceMatcher
 import logging
@@ -188,7 +189,13 @@ class _IntegrationTest(TestCase):
 
     def run_test(self):
         for request_args, check_resp in self._get_messages():
+            start = datetime.now()
             self.bioagent.receive_request(*request_args)
+            end = datetime.now()
+            dt = end - start
+            assert dt.total_seconds() < 40, \
+                "Task took too long (%.2f seconds). BA would have timed out." \
+                % dt.total_seconds()
             output = self.get_output_log()[-1].get('content')
             if check_resp is not None:
                 check_resp(self, output)

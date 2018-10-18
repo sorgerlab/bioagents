@@ -128,11 +128,14 @@ class MRA(object):
                 u_stmt, v_stmt = connect_stmts
                 stmt_suggestions = md.suggest_statements(u_stmt, v_stmt)
                 if stmt_suggestions:
-                    res['stmt_suggestions'] = stmt_suggestions
+                    agents = [a.name for a in stmt_suggestions[0].agent_list()
+                              if a is not None]
+                    if len(set(agents)) > 1:
+                        res['stmt_suggestions'] = stmt_suggestions
         md = ModelDiagnoser(model_stmts)
         acts = md.get_missing_activities()
         if acts:
-            res['corrections'] = acts
+            res['stmt_corrections'] = acts
 
     def expand_model_from_json(self, model_json, model_id):
         """Expand a model using INDRA JSON."""

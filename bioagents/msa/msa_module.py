@@ -5,6 +5,7 @@ import pickle
 import logging
 from datetime import datetime
 from itertools import groupby
+from threading import Thread
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -186,18 +187,45 @@ class MSA_Module(Bioagent):
 
         return resp
 
+    def _run_lookup_in_thread(self, content, desc):
+        """Run the content lookup in a thread."""
+        def lookup(result):
+            try:
+                rest_resp = self._lookup_from_source_type_target(content, desc)
+            except MSALookupError as mle:
+                result['result'] = mle.args[0]
+                result['failed'] = True
+                result['done'] = True
+                return
+            result['result'] = rest_resp
+            result['done'] = True
+            return
+
+        res = {"result": None, "done": False, "failed": False}
+        th = Thread(target=lookup, args=[res])
+        th.start()
+        th.join(timeout=5)
+        return res
+
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
-        try:
-            rest_resp = self._lookup_from_source_type_target(content, 'Find')
-        except MSALookupError as mle:
-            return self.make_failure(mle.args[0])
-
-        # Assuming we haven't hit any errors yet, return SUCCESS
-        resp = KQMLPerformative('SUCCESS')
-        resp.set('relations-found', str(len(rest_resp.statements)))
-        resp.set('dump-limit', str(DUMP_LIMIT))
-        return resp
+        res_dict = self._run_lookup_in_thread(content, 'Find')
+        if res_dict['done']:
+            if res_dict['failed']:
+                return self.make_failure(res_dict['result'])
+            else:
+                rest_resp = res_dict['result']
+                resp = KQMLPerformative('SUCCESS')
+                resp.set('finished', True)
+                resp.set('relations-found', str(len(rest_resp.statements)))
+                resp.set('dump-limit', str(DUMP_LIMIT))
+                return resp
+        else:
+            resp = KQMLPerformative('SUCCESS')
+            resp.set('finished', False)
+            resp.set('relations-found', None)
+            resp.set('dump-limit', str(DUMP_LIMIT))
+            return resp
 
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb."""

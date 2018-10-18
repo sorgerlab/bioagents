@@ -210,22 +210,23 @@ class MSA_Module(Bioagent):
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         res_dict = self._run_lookup_in_thread(content, 'Find')
-        if res_dict['done']:
-            if res_dict['failed']:
-                return self.make_failure(res_dict['result'])
-            else:
-                rest_resp = res_dict['result']
-                resp = KQMLPerformative('SUCCESS')
-                resp.set('finished', True)
-                resp.set('relations-found', str(len(rest_resp.statements)))
-                resp.set('dump-limit', str(DUMP_LIMIT))
-                return resp
-        else:
+        if not res_dict['done']:
+            # Calling this success may be a bit ambitious.
             resp = KQMLPerformative('SUCCESS')
             resp.set('finished', False)
             resp.set('relations-found', None)
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
+
+        if res_dict['failed']:
+            return self.make_failure(res_dict['result'])
+
+        rest_resp = res_dict['result']
+        resp = KQMLPerformative('SUCCESS')
+        resp.set('finished', True)
+        resp.set('relations-found', str(len(rest_resp.statements)))
+        resp.set('dump-limit', str(DUMP_LIMIT))
+        return resp
 
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb."""

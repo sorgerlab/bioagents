@@ -301,6 +301,18 @@ class TestBuildModelBoundCondition(_IntegrationTest):
         assert(stmt.enz.bound_conditions[0].agent.name == 'GTP')
 
 
+class TestBuildModelProvenance(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestBuildModelProvenance, self).__init__(MRA_Module)
+
+    def create_message(self):
+        txt = 'MEK binds ERK.'
+        return _get_build_model_request(txt)
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+
+
 class TestBuildModelComplex(_IntegrationTest):
     def __init__(self, *args):
         super(TestBuildModelComplex, self).__init__(MRA_Module)
@@ -390,7 +402,6 @@ class TestModelBuildExpandUndo(_IntegrationTest):
         assert output.get('model-id') == '3'
         model = json.loads(output.gets('model'))
         assert len(model) == 1
-
 
 
 class TestGetModelJson(_IntegrationTest):

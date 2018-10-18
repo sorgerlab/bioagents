@@ -213,7 +213,7 @@ class MSA_Module(Bioagent):
         if not res_dict['done']:
             # Calling this success may be a bit ambitious.
             resp = KQMLPerformative('SUCCESS')
-            resp.set('finished', 'nil')
+            resp.set('status', 'WORKING')
             resp.set('relations-found', 'nil')
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
@@ -223,7 +223,7 @@ class MSA_Module(Bioagent):
 
         rest_resp = res_dict['result']
         resp = KQMLPerformative('SUCCESS')
-        resp.set('finished', 't')
+        resp.set('status', 'FINISHED')
         resp.set('relations-found', str(len(rest_resp.statements)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp

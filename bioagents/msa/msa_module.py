@@ -177,7 +177,7 @@ class MSA_Module(Bioagent):
 
         num_stmts = len(resp.statements)
         logger.info("Retrieved %d statements after %s seconds."
-                    % (num_stmts, datetime.now() - start_time).total_seconds())
+                    % (num_stmts, (datetime.now()-start_time).total_seconds()))
         if num_stmts and send_provenance:
             try:
                 self._send_display_stmts(resp, nl)
@@ -213,8 +213,8 @@ class MSA_Module(Bioagent):
         if not res_dict['done']:
             # Calling this success may be a bit ambitious.
             resp = KQMLPerformative('SUCCESS')
-            resp.set('finished', False)
-            resp.set('relations-found', None)
+            resp.set('finished', 't')
+            resp.set('relations-found', 'nil')
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
 
@@ -223,7 +223,7 @@ class MSA_Module(Bioagent):
 
         rest_resp = res_dict['result']
         resp = KQMLPerformative('SUCCESS')
-        resp.set('finished', True)
+        resp.set('finished', 't')
         resp.set('relations-found', str(len(rest_resp.statements)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp

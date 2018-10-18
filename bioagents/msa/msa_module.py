@@ -122,7 +122,8 @@ class MSA_Module(Bioagent):
         ret = fmt.format(subject=subject, object=object, stmt_type=stmt_type)
         return ret
 
-    def _lookup_from_source_type_target(self, content, desc):
+    def _lookup_from_source_type_target(self, content, desc,
+                                        send_provenance=True):
         """Look up statement given format received by find/confirm relations."""
         start_time = datetime.now()
         agent_dict = dict.fromkeys(['subject', 'object'])
@@ -173,26 +174,24 @@ class MSA_Module(Bioagent):
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
 
-        logger.info("Retrieved statements after %s seconds."
-                    % (datetime.now() - start_time).total_seconds())
+        num_stmts = len(resp.statements)
+        logger.info("Retrieved %d statements after %s seconds."
+                    % (num_stmts, datetime.now() - start_time).total_seconds())
+        if num_stmts and send_provenance:
+            try:
+                self._send_display_stmts(resp, nl)
+            except Exception as e:
+                logger.warning("Failed to send provenance.")
+                logger.exception(e)
 
-        return nl, resp
+        return resp
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            nl_question, rest_resp =\
-                self._lookup_from_source_type_target(content, 'Find')
+            rest_resp = self._lookup_from_source_type_target(content, 'Find')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
-
-        # For now just list the statements in the provenance tab. Only captures
-        # the top 5.
-        try:
-            self._send_display_stmts(rest_resp, nl_question)
-        except Exception as e:
-            logger.warning("Failed to send provenance.")
-            logger.exception(e)
 
         # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
@@ -203,13 +202,10 @@ class MSA_Module(Bioagent):
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb."""
         try:
-            nl_question, rest_resp = \
-                self._lookup_from_source_type_target(content, 'Confirm')
+            rest_resp = self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
         num_stmts = len(rest_resp.statements)
-        if num_stmts:
-            self._send_display_stmts(rest_resp, nl_question)
         resp = KQMLPerformative('SUCCESS')
         resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
         resp.set('num-relations-found', str(num_stmts))

@@ -123,7 +123,7 @@ class MSA_Module(Bioagent):
         ret = fmt.format(subject=subject, object=object, stmt_type=stmt_type)
         return ret
 
-    def _lookup_from_source_type_target(self, content, desc,
+    def _lookup_from_source_type_target(self, content, desc, timeout=20,
                                         send_provenance=True):
         """Look up statement given format received by find/confirm relations."""
         start_time = datetime.now()
@@ -154,7 +154,8 @@ class MSA_Module(Bioagent):
         try:
             input_dict = {'stmt_type': stmt_type,
                           'ev_limit': 3,
-                          'persist': False}
+                          'persist': False,
+                          'timeout': timeout}
 
             # Use the best available db ref for each agent.
             for pos, ref_dict in agent_dict.items():
@@ -180,48 +181,30 @@ class MSA_Module(Bioagent):
                     % (num_stmts, (datetime.now()-start_time).total_seconds()))
         if num_stmts and send_provenance:
             try:
-                self._send_display_stmts(resp, nl)
+                th = Thread(target=self._send_display_stmts, args=(resp, nl))
+                th.start()
             except Exception as e:
-                logger.warning("Failed to send provenance.")
+                logger.warning("Failed to start thread to send provenance.")
                 logger.exception(e)
 
         return resp
 
-    def _run_lookup_in_thread(self, content, desc):
-        """Run the content lookup in a thread."""
-        def lookup(result):
-            try:
-                rest_resp = self._lookup_from_source_type_target(content, desc)
-            except MSALookupError as mle:
-                result['result'] = mle.args[0]
-                result['failed'] = True
-                result['done'] = True
-                return
-            result['result'] = rest_resp
-            result['done'] = True
-            return
-
-        res = {"result": None, "done": False, "failed": False}
-        th = Thread(target=lookup, args=[res])
-        th.start()
-        th.join(timeout=5)
-        return res
-
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
-        res_dict = self._run_lookup_in_thread(content, 'Find')
-        if not res_dict['done']:
+        try:
+            rest_resp = self._lookup_from_source_type_target(content, 'Find',
+                                                             timeout=5)
+        except MSALookupError as mle:
+            return self.make_failure(mle.args[0])
+
+        if not rest_resp.done:
             # Calling this success may be a bit ambitious.
-            resp = KQMLPerformative('SUCCESS')
-            resp.set('status', 'WORKING')
-            resp.set('relations-found', 'nil')
-            resp.set('dump-limit', str(DUMP_LIMIT))
-            return resp
+            rest_resp = KQMLPerformative('SUCCESS')
+            rest_resp.set('status', 'WORKING')
+            rest_resp.set('relations-found', 'nil')
+            rest_resp.set('dump-limit', str(DUMP_LIMIT))
+            return rest_resp
 
-        if res_dict['failed']:
-            return self.make_failure(res_dict['result'])
-
-        rest_resp = res_dict['result']
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
         resp.set('relations-found', str(len(rest_resp.statements)))
@@ -234,6 +217,10 @@ class MSA_Module(Bioagent):
             rest_resp = self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
+        finished = rest_resp.wait_until_done(15)
+        if not finished:
+            # TODO: Handle this more gracefully, if possible.
+            return self.make_failure('MISSING_MECHANISM')
         num_stmts = len(rest_resp.statements)
         resp = KQMLPerformative('SUCCESS')
         resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
@@ -287,6 +274,7 @@ class MSA_Module(Bioagent):
             self.tell(content)
 
     def _send_display_stmts(self, resp, nl_question):
+        resp.wait_until_done()
         start_time = datetime.now()
         logger.info('Sending display statements.')
         self._send_table_to_provenance(resp, nl_question)

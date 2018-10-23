@@ -19,7 +19,7 @@ from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
-    from indra.sources.indra_db_rest import get_statements, IndraDBRestError, \
+    from indra.sources.indra_db_rest import get_statements, IndraDBRestAPIError, \
                                             get_statements_for_paper
 
     CAN_CHECK_STATEMENTS = True
@@ -171,7 +171,7 @@ class MSA_Module(Bioagent):
             # Actually get the statements.
             resp = get_statements(simple_response=False, **input_dict)
             logger.info("Found %d stmts" % len(resp.statements))
-        except IndraDBRestError as e:
+        except IndraDBRestAPIError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
@@ -197,7 +197,7 @@ class MSA_Module(Bioagent):
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
 
-        if not rest_resp.done:
+        if rest_resp.is_working():
             # Calling this success may be a bit ambitious.
             rest_resp = KQMLPerformative('SUCCESS')
             rest_resp.set('status', 'WORKING')
@@ -238,7 +238,7 @@ class MSA_Module(Bioagent):
             return self.make_failure('BAD_INPUT')
         try:
             stmts = get_statements_for_paper(pmid, id_type='pmid')
-        except IndraDBRestError as e:
+        except IndraDBRestAPIError as e:
             if e.status_code == 404 and 'Invalid or unavailable' in e.reason:
                 logger.error("Could not find pmid: %s" % e.reason)
                 return self.make_failure('MISSING_MECHANISM')

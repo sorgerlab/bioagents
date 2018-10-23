@@ -29,6 +29,10 @@ class DiseaseNotFoundException(BioagentException):
     pass
 
 
+class DatabaseTimeoutError(BioagentException):
+    pass
+
+
 def _make_cbio_efo_map():
     lines = open(_resource_dir + 'cbio_efo_map.tsv', 'rt').readlines()
     cbio_efo_map = {}
@@ -70,10 +74,18 @@ class DTDA(object):
         return False
 
     def _get_tas_stmts(self, drug_term=None, target_term=None):
+        timeout = 10
         drug = _convert_term(drug_term)
         target = _convert_term(target_term)
-        return (s for s in get_statements(subject=drug, object=target,
-                                          stmt_type='Inhibition')
+        resp = get_statements(subject=drug, object=target,
+                              stmt_type='Inhibition', timeout=timeout,
+                              simple_response=False)
+        if resp.is_working():
+            msg = ("Database has failed to respond after %d seconds looking up "
+                   "%s inhibits %s." % (timeout, drug, target))
+            logger.error(msg)
+            raise DatabaseTimeoutError(msg)
+        return (s for s in resp.statements
                 if any(ev.source_api == 'tas' for ev in s.evidence))
 
     def _extract_terms(self, agent):

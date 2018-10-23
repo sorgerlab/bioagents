@@ -6,13 +6,9 @@
 import re
 import os
 import numpy
-import pickle
 import logging
-import sqlite3
-import operator
 
 from indra.sources.indra_db_rest import get_statements
-from indra.statements import ActiveForm
 from indra.databases import cbio_client
 from bioagents import BioagentException
 
@@ -110,8 +106,14 @@ class DTDA(object):
         all_drugs = set()
         for target_term in target_terms:
             if target_term not in self.target_drugs.keys():
-                drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
-                         for s in self._get_tas_stmts(target_term=target_term)}
+                try:
+                    drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
+                             for s in self._get_tas_stmts(target_term=target_term)}
+                except DatabaseTimeoutError:
+                    # TODO: We should return a special message if the database
+                    # can't be reached for some reason. It might also be good to
+                    # stash the cache dicts as back-ups.
+                    continue
                 self.target_drugs[target_term] = drugs
             else:
                 drugs = self.target_drugs[target_term]
@@ -127,7 +129,10 @@ class DTDA(object):
         all_targets = set()
         for term in drug_terms:
             if term not in self.drug_targets.keys():
-                tas_stmts = self._get_tas_stmts(term)
+                try:
+                    tas_stmts = self._get_tas_stmts(term)
+                except DatabaseTimeoutError:
+                    continue
                 targets = {s.obj.name for s in tas_stmts}
                 self.drug_targets[term] = targets
             else:

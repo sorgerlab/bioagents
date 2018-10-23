@@ -4,6 +4,7 @@ from kqml.kqml_list import KQMLList
 from bioagents.tests.util import ekb_from_text, get_request
 from bioagents.tests.integration import _IntegrationTest
 from nose.plugins.skip import SkipTest
+from nose.plugins.attrib import attr
 
 
 if not msa_module.CAN_CHECK_STATEMENTS:
@@ -27,6 +28,7 @@ def _check_failure(msg, flaw, reason):
     assert msg.gets('reason') == reason
 
 
+@attr('webservice')
 def test_respond_phosphorylation_activating():
     "Test the msa_module response to a query regarding phosphorylation."
     msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'MAP2K1', 'S', '222')
@@ -38,27 +40,32 @@ def test_respond_phosphorylation_activating():
         'MSA responded with wrong answer.'
 
 
+@attr('webservice')
 def test_no_target_failure():
     msg = _get_message('PHOSPHORYLATION-ACTIVATING')
     _check_failure(msg, 'no target given', 'MISSING_TARGET')
 
 
+@attr('webservice')
 def test_invalid_target_failure():
     msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'JUND')
     _check_failure(msg, 'missing mechanism', 'MISSING_MECHANISM')
 
 
+@attr('webservice')
 def test_not_phosphorylation():
     msg = _get_message('BOGUS-ACTIVATING', 'MAP2K1', 'S', '222')
     _check_failure(msg, 'getting a bogus action', 'MISSING_MECHANISM')
 
 
+@attr('webservice')
 def test_not_activating():
     msg = _get_message('PHOSPHORYLATION-INHIBITING', 'MAP2K1', 'S', '222')
     _check_failure(msg, 'getting inhibition instead of activation',
                    'MISSING_MECHANISM')
 
 
+@attr('webservice')
 def test_no_activity_given():
     msg = _get_message('')
     _check_failure(msg, 'getting no activity type', 'UNKNOWN_ACTION')
@@ -95,6 +102,7 @@ class _TestMsaGeneralLookup(_IntegrationTest):
         assert len(prov_tells) == 1, prov_tells
 
 
+@attr('webservice')
 class TestMSATypeAndTarget(_TestMsaGeneralLookup):
     def create_type_and_target(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
@@ -106,6 +114,7 @@ class TestMSATypeAndTarget(_TestMsaGeneralLookup):
         return self._check_find_response(output)
 
 
+@attr('webservice')
 class TestMSATypeAndSource(_TestMsaGeneralLookup):
     def create_type_and_source(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
@@ -117,6 +126,7 @@ class TestMSATypeAndSource(_TestMsaGeneralLookup):
         return self._check_find_response(output)
 
 
+@attr('webservice')
 class TestMSAConfirm1(_TestMsaGeneralLookup):
     def create_message(self):
         return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
@@ -128,6 +138,7 @@ class TestMSAConfirm1(_TestMsaGeneralLookup):
         return self._check_find_response(output)
 
 
+@attr('webservice')
 class TestMSAConfirm2(_TestMsaGeneralLookup):
     def create_message(self):
         return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
@@ -139,6 +150,7 @@ class TestMSAConfirm2(_TestMsaGeneralLookup):
         return self._check_find_response(output)
 
 
+@attr('webservice')
 class TestMsaPaperGraph(_IntegrationTest):
     def __init__(self, *args, **kwargs):
         super(TestMsaPaperGraph, self).__init__(msa_module.MSA_Module)
@@ -168,6 +180,7 @@ class TestMsaPaperGraph(_IntegrationTest):
         return
 
 
+@attr('webservice')
 class TestMsaProvenance(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
@@ -209,6 +222,7 @@ class TestMsaProvenance(_IntegrationTest):
         return
 
 
+@attr('webservice')
 def test_msa_paper_retrieval_failure():
     raise SkipTest("This feature is currently not available.")
     content = KQMLList('GET-PAPER-MODEL')

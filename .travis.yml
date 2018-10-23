@@ -33,4 +33,14 @@ script:
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
   # Run standard unit tests
   - cd $TRAVIS_BUILD_DIR
-  - nosetests bioagents/tests -v --with-coverage --cover-inclusive --cover-package=bioagents
+  - if [[ "$TRAVIS_EVENT_TYPE" == "cron" ]]; then
+        export RUN_SLOW=true;
+    fi
+  - export NOSEATTR="";
+  - if [[ $TRAVIS_PULL_REQUEST ]]; then
+      export NOSEATTR="!nonpublic,!webservice";
+    fi
+  - if [[ $RUN_SLOW != "true" ]]; then
+      export NOSEATTR="!slow,$NOSEATTR";
+    fi
+  - nosetests bioagents/tests -a $NOSEATTR -v --with-coverage --cover-inclusive --cover-package=bioagents

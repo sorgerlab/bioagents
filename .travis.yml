@@ -38,7 +38,7 @@ script:
     fi
   - export NOSEATTR="";
   - if [[ $TRAVIS_PULL_REQUEST ]]; then
-      export NOSEATTR="!nonpublic,!webservice";
+      export NOSEATTR="!nonpublic";
     fi
   - if [[ $RUN_SLOW != "true" ]]; then
       export NOSEATTR="!slow,$NOSEATTR";

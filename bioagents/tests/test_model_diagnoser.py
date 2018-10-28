@@ -1,6 +1,8 @@
 from indra.statements import *
 from bioagents.mra.model_diagnoser import ModelDiagnoser
 from indra.assemblers.pysb import PysbAssembler
+from nose.plugins.attrib import attr
+
 
 drug = Agent('PLX4720')
 raf = Agent('RAF', db_refs={'FPLX': 'RAF'})
@@ -52,6 +54,7 @@ def test_check_model():
     assert path[1] == model_stmts[1]
 
 
+@attr('nonpublic')
 def test_propose_statement():
     jun = Agent('JUN', db_refs={'HGNC':'6204', 'UP': 'P05412'})
     explain = Activation(raf, jun)
@@ -73,7 +76,3 @@ def test_propose_statement():
     stmt_prop = result.get('connect_stmts')
     assert stmt_prop == (model_stmts[0], model_stmts[1])
     stmt_suggestions = md.suggest_statements(*stmt_prop)
-
-
-if __name__ == '__main__':
-    test_propose_statement()

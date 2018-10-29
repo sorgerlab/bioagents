@@ -10,6 +10,7 @@ from nose.plugins.attrib import attr
 
 # DTDA unit tests
 
+@attr('nonpublic')
 def test_mutation_statistics():
     d = DTDA()
     mutation_dict = \

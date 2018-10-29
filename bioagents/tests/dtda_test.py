@@ -2,12 +2,15 @@ from indra.statements import Agent
 from kqml import KQMLList
 from bioagents.dtda.dtda import DTDA
 from bioagents.dtda.dtda_module import DTDA_Module
-from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, get_request
+from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
+    get_request
 from bioagents.tests.integration import _IntegrationTest
+from nose.plugins.attrib import attr
+
 
 # DTDA unit tests
 
-
+@attr('nonpublic')
 def test_mutation_statistics():
     d = DTDA()
     mutation_dict = \
@@ -39,6 +42,7 @@ _kras = _create_agent('KRAS', hgnc='6407')
 _tgfbr1 = _create_agent('TGFBR1', hgnc='11772')
 
 
+@attr('nonpublic')
 def test_is_nominal_target():
     d = DTDA()
     for vem in _vems:
@@ -48,12 +52,14 @@ def test_is_nominal_target():
         assert not is_target
 
 
+@attr('nonpublic')
 def test_is_nominal_target_dash():
     d = DTDA()
     is_target = d.is_nominal_drug_target(_alk_drug, _tgfbr1)
     assert is_target
 
 
+@attr('nonpublic')
 def test_find_drug_targets1():
     d = DTDA()
     for vem in _vems:
@@ -62,6 +68,7 @@ def test_find_drug_targets1():
         assert any(target == 'BRAF' for target in targets), targets
 
 
+@attr('nonpublic')
 def test_find_drug_targets2():
     d = DTDA()
     targets = d.find_drug_targets(_alk_drug)
@@ -86,6 +93,7 @@ class _TestFindTargetDrug(_IntegrationTest):
         assert len(output.get('drugs')) == 9, output
 
 
+@attr('nonpublic')
 class TestFindTargetDrug1(_TestFindTargetDrug):
     target = 'BRAF'
 
@@ -94,6 +102,7 @@ class TestFindTargetDrug1(_TestFindTargetDrug):
         assert len(output.get('drugs')) >= 9, output
 
 
+@attr('nonpublic')
 class TestFindTargetDrug2(_TestFindTargetDrug):
     target = 'PAK4'
 
@@ -113,6 +122,7 @@ class TestFindTargetDrug2(_TestFindTargetDrug):
              % (pubchem_ids, drug_names, exp_pubchem_id))
 
 
+@attr('nonpublic')
 class TestFindTargetDrug3(_TestFindTargetDrug):
     target = 'KRAS'
 
@@ -121,6 +131,7 @@ class TestFindTargetDrug3(_TestFindTargetDrug):
         assert len(output.get('drugs')) == 0, output
 
 
+@attr('nonpublic')
 class TestFindTargetDrug4(_TestFindTargetDrug):
     target = 'JAK2'
 
@@ -129,6 +140,7 @@ class TestFindTargetDrug4(_TestFindTargetDrug):
         assert len(output.get('drugs')) >= 9, (len(output), output)
 
 
+@attr('nonpublic')
 class TestFindTargetDrug5(_TestFindTargetDrug):
     target = 'JAK1'
 
@@ -138,7 +150,7 @@ class TestFindTargetDrug5(_TestFindTargetDrug):
 
 
 # FIND-DRUG-TARGETS tests
-
+@attr('nonpublic')
 class TestFindDrugTargets1(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -157,6 +169,7 @@ class TestFindDrugTargets1(_IntegrationTest):
         assert any(target.gets('name') == 'BRAF' for target in targets), targets
 
 
+@attr('nonpublic')
 class TestFindDrugTargets2(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -191,6 +204,7 @@ class _TestIsDrugTarget(_IntegrationTest):
         return get_request(content), content
 
 
+@attr('nonpublic')
 class TestIsDrugTarget1(_TestIsDrugTarget):
     target = 'BRAF'
     drug = 'Vemurafenib'
@@ -200,6 +214,7 @@ class TestIsDrugTarget1(_TestIsDrugTarget):
         assert output.gets('is-target') == 'TRUE', output
 
 
+@attr('nonpublic')
 class TestIsDrugTarget2(_TestIsDrugTarget):
     target = 'BRAF'
     drug = 'dabrafenib'
@@ -208,7 +223,7 @@ class TestIsDrugTarget2(_TestIsDrugTarget):
         assert output.head() == 'SUCCESS', output
         assert output.gets('is-target') == 'TRUE', output
 
-
+@attr('nonpublic')
 class TestIsDrugTarget3(_TestIsDrugTarget):
     target = 'KRAS'
     drug = 'dabrafenib'
@@ -218,6 +233,7 @@ class TestIsDrugTarget3(_TestIsDrugTarget):
         assert output.gets('is-target') == 'FALSE', output
 
 
+@attr('nonpublic')
 class TestIsDrugTarget4(_TestIsDrugTarget):
     target = 'TGFBR1'
     drug = 'SB525334'
@@ -228,6 +244,7 @@ class TestIsDrugTarget4(_TestIsDrugTarget):
 
 
 # FIND-DISEASE-TARGETS tests
+@attr('nonpublic')
 class TestFindDiseaseTargets1(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -247,6 +264,7 @@ class TestFindDiseaseTargets1(_IntegrationTest):
         assert output.gets('functional-effect') == 'ACTIVE'
 
 
+@attr('nonpublic')
 class TestFindDiseaseTargets2(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -263,6 +281,7 @@ class TestFindDiseaseTargets2(_IntegrationTest):
         assert output.gets('functional-effect') == 'ACTIVE'
 
 
+@attr('nonpublic')
 class TestFindDiseaseTargets3(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -279,6 +298,7 @@ class TestFindDiseaseTargets3(_IntegrationTest):
 
 
 # FIND-TREATMENT tests
+@attr('nonpublic')
 class TestFindTreatment1(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -298,6 +318,7 @@ class TestFindTreatment1(_IntegrationTest):
         assert len(part2.get('drugs')) == 0
 
 
+@attr('nonpublic')
 class TestFindTreatment2(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
@@ -316,6 +337,7 @@ class TestFindTreatment2(_IntegrationTest):
         assert len(part2.get('drugs')) == 0
 
 
+@attr('nonpublic')
 class TestFindTreatment3(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)

@@ -5,6 +5,7 @@ import pickle
 import logging
 from datetime import datetime
 from itertools import groupby
+from threading import Thread
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -18,7 +19,7 @@ from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
-    from indra.sources.indra_db_rest import get_statements, IndraDBRestError, \
+    from indra.sources.indra_db_rest import get_statements, IndraDBRestAPIError, \
                                             get_statements_for_paper
 
     CAN_CHECK_STATEMENTS = True
@@ -122,7 +123,8 @@ class MSA_Module(Bioagent):
         ret = fmt.format(subject=subject, object=object, stmt_type=stmt_type)
         return ret
 
-    def _lookup_from_source_type_target(self, content, desc):
+    def _lookup_from_source_type_target(self, content, desc, timeout=20,
+                                        send_provenance=True):
         """Look up statement given format received by find/confirm relations."""
         start_time = datetime.now()
         agent_dict = dict.fromkeys(['subject', 'object'])
@@ -152,7 +154,8 @@ class MSA_Module(Bioagent):
         try:
             input_dict = {'stmt_type': stmt_type,
                           'ev_limit': 3,
-                          'persist': False}
+                          'persist': False,
+                          'timeout': timeout}
 
             # Use the best available db ref for each agent.
             for pos, ref_dict in agent_dict.items():
@@ -168,34 +171,42 @@ class MSA_Module(Bioagent):
             # Actually get the statements.
             resp = get_statements(simple_response=False, **input_dict)
             logger.info("Found %d stmts" % len(resp.statements))
-        except IndraDBRestError as e:
+        except IndraDBRestAPIError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
 
-        logger.info("Retrieved statements after %s seconds."
-                    % (datetime.now() - start_time).total_seconds())
+        num_stmts = len(resp.statements)
+        logger.info("Retrieved %d statements after %s seconds."
+                    % (num_stmts, (datetime.now()-start_time).total_seconds()))
+        if num_stmts and send_provenance:
+            try:
+                th = Thread(target=self._send_display_stmts, args=(resp, nl))
+                th.start()
+            except Exception as e:
+                logger.warning("Failed to start thread to send provenance.")
+                logger.exception(e)
 
-        return nl, resp
+        return resp
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            nl_question, rest_resp =\
-                self._lookup_from_source_type_target(content, 'Find')
+            rest_resp = self._lookup_from_source_type_target(content, 'Find',
+                                                             timeout=5)
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
 
-        # For now just list the statements in the provenance tab. Only captures
-        # the top 5.
-        try:
-            self._send_display_stmts(rest_resp, nl_question)
-        except Exception as e:
-            logger.warning("Failed to send provenance.")
-            logger.exception(e)
+        if rest_resp.is_working():
+            # Calling this success may be a bit ambitious.
+            rest_resp = KQMLPerformative('SUCCESS')
+            rest_resp.set('status', 'WORKING')
+            rest_resp.set('relations-found', 'nil')
+            rest_resp.set('dump-limit', str(DUMP_LIMIT))
+            return rest_resp
 
-        # Assuming we haven't hit any errors yet, return SUCCESS
         resp = KQMLPerformative('SUCCESS')
+        resp.set('status', 'FINISHED')
         resp.set('relations-found', str(len(rest_resp.statements)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
@@ -203,13 +214,14 @@ class MSA_Module(Bioagent):
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb."""
         try:
-            nl_question, rest_resp = \
-                self._lookup_from_source_type_target(content, 'Confirm')
+            rest_resp = self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
+        finished = rest_resp.wait_until_done(15)
+        if not finished:
+            # TODO: Handle this more gracefully, if possible.
+            return self.make_failure('MISSING_MECHANISM')
         num_stmts = len(rest_resp.statements)
-        if num_stmts:
-            self._send_display_stmts(rest_resp, nl_question)
         resp = KQMLPerformative('SUCCESS')
         resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
         resp.set('num-relations-found', str(num_stmts))
@@ -226,7 +238,7 @@ class MSA_Module(Bioagent):
             return self.make_failure('BAD_INPUT')
         try:
             stmts = get_statements_for_paper(pmid, id_type='pmid')
-        except IndraDBRestError as e:
+        except IndraDBRestAPIError as e:
             if e.status_code == 404 and 'Invalid or unavailable' in e.reason:
                 logger.error("Could not find pmid: %s" % e.reason)
                 return self.make_failure('MISSING_MECHANISM')
@@ -262,6 +274,7 @@ class MSA_Module(Bioagent):
             self.tell(content)
 
     def _send_display_stmts(self, resp, nl_question):
+        resp.wait_until_done()
         start_time = datetime.now()
         logger.info('Sending display statements.')
         self._send_table_to_provenance(resp, nl_question)

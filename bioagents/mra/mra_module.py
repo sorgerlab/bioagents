@@ -3,6 +3,8 @@ import sys
 import json
 import random
 import logging
+from threading import Thread
+
 import pysb.export
 
 from indra.databases import hgnc_client
@@ -405,23 +407,30 @@ class MRA_Module(Bioagent):
 
     def send_background_support(self, stmts):
         logger.info('Sending support for %d statements' % len(stmts))
-        for_what = 'the mechanism you added'
-        for stmt in stmts:
-            try:
-                matched = _get_matching_stmts(stmt)
-                logger.info("Found %d statements supporting %s"
-                            % (len(matched), stmt))
-            except BioagentException as e:
-                logger.error("Got exception while looking for support for %s"
-                             % stmt)
-                logger.exception(e)
-                self.send_null_provenance(stmt, for_what,
-                                          'due to an internal error')
-                continue
-            if matched:
-                self.send_provenance_for_stmts(matched, for_what)
-            else:
-                self.send_null_provenance(stmt, for_what)
+
+        def send_support():
+            for_what = 'the mechanism you added'
+            for stmt in stmts:
+                try:
+                    matched = _get_matching_stmts(stmt)
+                    logger.info("Found %d statements supporting %s"
+                                % (len(matched), stmt))
+                except BioagentException as e:
+                    logger.error("Got exception while looking for support for "
+                                 "%s" % stmt)
+                    logger.exception(e)
+                    self.send_null_provenance(stmt, for_what,
+                                              'due to an internal error')
+                    continue
+                if matched:
+                    self.send_provenance_for_stmts(matched, for_what)
+                else:
+                    self.send_null_provenance(stmt, for_what)
+
+        th = Thread(target=send_support)
+        th.start()
+        th.join(2)
+        return
 
     def _get_model_id(self, content):
         model_id_arg = content.get('model-id')

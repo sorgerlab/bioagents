@@ -10,6 +10,7 @@ from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
     _get_matching_stmts, CAN_CHECK_STATEMENTS
 from nose.plugins.skip import SkipTest
+from nose.plugins.attrib import attr
 
 
 # ################
@@ -647,6 +648,7 @@ class TestModelMeetsGoalBuildOnly(_IntegrationTest):
         assert has_explanation == 'TRUE', has_explanation
 
 
+@attr('nonpublic')
 class TestModelGapSuggest(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(MRA_Module)

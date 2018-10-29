@@ -111,6 +111,7 @@ class TestFindTargetDrugAKT(_TestFindTargetDrug):
         assert len(output.get('drugs')) == 0, output
 
 
+@attr('nonpublic')
 class TestFindTargetDrugPAK4(_TestFindTargetDrug):
     target = 'PAK4'
 

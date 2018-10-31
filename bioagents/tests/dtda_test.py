@@ -94,7 +94,7 @@ class _TestFindTargetDrug(_IntegrationTest):
 
 
 @attr('nonpublic')
-class TestFindTargetDrug1(_TestFindTargetDrug):
+class TestFindTargetDrugBRAF(_TestFindTargetDrug):
     target = 'BRAF'
 
     def check_response_to_message(self, output):
@@ -103,7 +103,16 @@ class TestFindTargetDrug1(_TestFindTargetDrug):
 
 
 @attr('nonpublic')
-class TestFindTargetDrug2(_TestFindTargetDrug):
+class TestFindTargetDrugAKT(_TestFindTargetDrug):
+    target = 'AKT'
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('drugs')) == 0, output
+
+
+@attr('nonpublic')
+class TestFindTargetDrugPAK4(_TestFindTargetDrug):
     target = 'PAK4'
 
     def check_response_to_message(self, output):
@@ -123,7 +132,7 @@ class TestFindTargetDrug2(_TestFindTargetDrug):
 
 
 @attr('nonpublic')
-class TestFindTargetDrug3(_TestFindTargetDrug):
+class TestFindTargetDrugKRAS(_TestFindTargetDrug):
     target = 'KRAS'
 
     def check_response_to_message(self, output):
@@ -132,7 +141,7 @@ class TestFindTargetDrug3(_TestFindTargetDrug):
 
 
 @attr('nonpublic')
-class TestFindTargetDrug4(_TestFindTargetDrug):
+class TestFindTargetDrugJAK2(_TestFindTargetDrug):
     target = 'JAK2'
 
     def check_response_to_message(self, output):
@@ -141,7 +150,7 @@ class TestFindTargetDrug4(_TestFindTargetDrug):
 
 
 @attr('nonpublic')
-class TestFindTargetDrug5(_TestFindTargetDrug):
+class TestFindTargetDrugJAK1(_TestFindTargetDrug):
     target = 'JAK1'
 
     def check_response_to_message(self, output):
@@ -151,7 +160,7 @@ class TestFindTargetDrug5(_TestFindTargetDrug):
 
 # FIND-DRUG-TARGETS tests
 @attr('nonpublic')
-class TestFindDrugTargets1(_IntegrationTest):
+class TestFindDrugTargetsVemurafenib(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
 
@@ -170,7 +179,7 @@ class TestFindDrugTargets1(_IntegrationTest):
 
 
 @attr('nonpublic')
-class TestFindDrugTargets2(_IntegrationTest):
+class TestFindDrugTargetsSB525334(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(DTDA_Module)
 

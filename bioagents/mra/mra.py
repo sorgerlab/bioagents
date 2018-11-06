@@ -15,8 +15,7 @@ import kappy
 
 from indra.sources import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
-                            AddModification, stmts_from_json
-from indra.databases import uniprot_client
+    stmts_from_json
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.assemblers.pysb import assembler as pysb_assembler
 from indra.assemblers.pysb import PysbAssembler
@@ -26,7 +25,6 @@ from pysb.tools import render_reactions
 from pysb.export import export
 from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
 from bioagents.mra.sbgn_colorizer import SbgnColorizer
-import pickle
 from bioagents.mra.model_diagnoser import ModelDiagnoser
 logger = logging.getLogger('MRA')
 
@@ -366,6 +364,7 @@ def make_pic_name(model_id, token):
         token
         )
 
+
 def make_sbgn(pysb_model, model_id):
     pa = PysbAssembler()
     pa.model = pysb_model
@@ -469,6 +468,7 @@ def stmt_exists(stmts, stmt):
             return True
     return False
 
+
 def make_ccle_map():
     fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          '../resources/ccle_lines.txt')
@@ -477,5 +477,6 @@ def make_ccle_map():
 
     ccle_map = {c.split('_')[0]: c for c in clines}
     return ccle_map
+
 
 ccle_map = make_ccle_map()

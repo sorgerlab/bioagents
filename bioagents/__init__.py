@@ -1,4 +1,9 @@
 import logging
+from os import path
+from datetime import datetime
+
+from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
+
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('Bioagents')
@@ -190,3 +195,15 @@ def make_evidence_html(stmt_list, limit=5):
     entries_list = ['<li>%s</li>' % entry for entry in entries]
     evidence_html = '<ul>%s</ul>' % ('\n'.join(entries_list))
     return evidence_html
+
+
+def get_img_path(img_name):
+    """Get a full path for the given image name.
+
+    The name will also have a timestamp added if settings.TIMESTAMP_PICS is
+    True. The timestamp, if applied, will prepend the name.
+    """
+    if TIMESTAMP_PICS:
+        date_str = datetime.now().strftime('%Y%m%d%H%M%S')
+        img_name = '%s_%s' % (date_str, img_name)
+    return path.join(IMAGE_DIR, img_name)

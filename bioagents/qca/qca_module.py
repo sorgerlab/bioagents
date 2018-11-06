@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import logging
-from bioagents import Bioagent
+from bioagents import Bioagent, get_img_path
 from kqml import KQMLList, KQMLString
 from .qca import QCA
 from indra.statements import stmts_from_json
@@ -92,9 +92,7 @@ class QCA_Module(Bioagent):
 
         paths_list = get_path_statements(results_list)
 
-
         self.report_paths_graph(paths_list)
-
 
         # Take the first one to report
         indra_edges = paths_list[0]
@@ -120,7 +118,7 @@ class QCA_Module(Bioagent):
         all_stmts = flatten(path_stmts)
         ga = GraphAssembler(all_stmts)
         ga.make_model()
-        resource = os.path.abspath('qca_paths.png')
+        resource = get_img_path('qca_paths.png')
         ga.save_pdf(resource)
         content = KQMLList('display-image')
         content.set('type', 'simulation')

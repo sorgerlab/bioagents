@@ -13,6 +13,7 @@ from datetime import datetime
 
 import kappy
 
+from bioagents import get_img_path
 from indra.sources import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
     stmts_from_json
@@ -358,11 +359,8 @@ def make_diagrams(pysb_model, model_id, current_model, context=None):
 
 def make_pic_name(model_id, token):
     """Create a standardized picture name."""
-    return '%s_model%d_%s' % (
-        datetime.now().strftime('%Y%m%d%H%M%S'),
-        model_id,
-        token
-        )
+    s = 'model%d_%s' % (model_id, token)
+    return get_img_path(s)
 
 
 def make_sbgn(pysb_model, model_id):

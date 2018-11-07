@@ -1,13 +1,11 @@
 # QCA stands for qualitative causal agent whose task is to
 # identify causal paths within
 
-import os
-import logging
 import json
-import ndex2.client as nc
+import logging
 import requests
-import io
 import functools
+import ndex2.client as nc
 from enum import Enum
 from bioagents import BioagentException
 
@@ -204,7 +202,6 @@ class QCA(object):
 
         r = requests.post(url)
         return r
-
 
     def get_path_node_names(self, query_result):
         return None

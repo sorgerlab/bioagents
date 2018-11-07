@@ -12,6 +12,7 @@ import numpy
 import logging
 from time import sleep
 from copy import deepcopy
+from datetime import datetime
 import sympy.physics.units as units
 import indra.statements as ist
 import indra.assemblers.pysb.assembler as pa
@@ -21,7 +22,8 @@ from pysb.integrate import Solver
 from pysb.export.kappa import KappaExporter
 import bioagents.tra.model_checker as mc
 import matplotlib
-from bioagents import BioagentException
+from bioagents import BioagentException, get_img_path
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -165,8 +167,7 @@ class TRA(object):
         agent_str = english_assembler._assemble_agent_str(agent)
         plt.title('Simulation results for %s' % agent_str)
         plt.legend()
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        fig_path = os.path.join(dir_path, '%s.png' % obs_name)
+        fig_path = get_img_path(obs_name + '.png')
         plt.savefig(fig_path)
         return fig_path
 
@@ -195,8 +196,7 @@ class TRA(object):
         plt.ylabel('Amount (molecules)')
         agent_str = english_assembler._assemble_agent_str(agent)
         plt.title('Simulation results for %s' % agent_str)
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        fig_path = os.path.join(dir_path, '%s.png' % obs_name)
+        fig_path = get_img_path(obs_name + '.png')
         plt.savefig(fig_path)
         return fig_path
 

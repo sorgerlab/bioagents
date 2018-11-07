@@ -9,22 +9,24 @@ import json
 import logging
 import networkx
 import subprocess
+from datetime import datetime
+
 import kappy
+
+from bioagents import get_img_path
 from indra.sources import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
-                            AddModification, stmts_from_json
-from indra.databases import uniprot_client
+    stmts_from_json
 from indra.preassembler.hierarchy_manager import hierarchies
 from indra.assemblers.pysb import assembler as pysb_assembler
 from indra.assemblers.pysb import PysbAssembler
 from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
+
 from pysb.export import export
 from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
 from bioagents.mra.sbgn_colorizer import SbgnColorizer
-import pickle
 from bioagents.mra.model_diagnoser import ModelDiagnoser
-
 logger = logging.getLogger('MRA')
 
 
@@ -355,6 +357,12 @@ def make_diagrams(pysb_model, model_id, current_model, context=None):
     return diagrams
 
 
+def make_pic_name(model_id, token):
+    """Create a standardized picture name."""
+    s = 'model%d_%s' % (model_id, token)
+    return get_img_path(s)
+
+
 def make_sbgn(pysb_model, model_id):
     pa = PysbAssembler()
     pa.model = pysb_model
@@ -372,7 +380,7 @@ def draw_influence_map(pysb_model, model_id):
     """Generate a Kappa influence map, draw it and save it as a PNG."""
     try:
         im = make_influence_map(pysb_model)
-        fname = 'model%d_im' % model_id
+        fname = make_pic_name(model_id, 'im')
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
         im_agraph = networkx.nx_agraph.to_agraph(im)
@@ -403,7 +411,7 @@ def make_influence_map(pysb_model):
 def draw_contact_map(pysb_model, model_id):
     try:
         cm = make_contact_map(pysb_model)
-        fname = 'model%d_cm' % model_id
+        fname = make_pic_name(model_id, 'cm')
         abs_path = os.path.abspath(os.getcwd())
         full_path = os.path.join(abs_path, fname + '.png')
         cm.draw(full_path, prog='dot')
@@ -430,7 +438,7 @@ def draw_reaction_network(pysb_model, model_id):
     try:
         for m in pysb_model.monomers:
             pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
-        fname = 'model%d_rxn' % model_id
+        fname = make_pic_name(model_id, 'rxn')
         diagram_dot = render_reactions.run(pysb_model)
     # TODO: use specific PySB/BNG exceptions and handle them
     # here to show meaningful error messages
@@ -458,6 +466,7 @@ def stmt_exists(stmts, stmt):
             return True
     return False
 
+
 def make_ccle_map():
     fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          '../resources/ccle_lines.txt')
@@ -466,5 +475,6 @@ def make_ccle_map():
 
     ccle_map = {c.split('_')[0]: c for c in clines}
     return ccle_map
+
 
 ccle_map = make_ccle_map()

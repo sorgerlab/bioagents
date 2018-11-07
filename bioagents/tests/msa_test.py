@@ -1,4 +1,6 @@
 import re
+from time import sleep
+
 from bioagents.msa import msa_module
 from kqml.kqml_list import KQMLList
 from bioagents.tests.util import ekb_from_text, get_request
@@ -99,6 +101,7 @@ class _TestMsaGeneralLookup(_IntegrationTest):
         assert output.head() == 'SUCCESS', str(output)
         logs = self.get_output_log()
         prov_tells = self._get_provenance_tells(logs)
+        sleep(5)
         assert len(prov_tells) == 1, prov_tells
 
 

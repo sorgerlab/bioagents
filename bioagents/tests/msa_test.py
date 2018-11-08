@@ -99,10 +99,16 @@ class _TestMsaGeneralLookup(_IntegrationTest):
 
     def _check_find_response(self, output):
         assert output.head() == 'SUCCESS', str(output)
-        logs = self.get_output_log()
-        prov_tells = self._get_provenance_tells(logs)
-        sleep(5)
+        t = 200
+        prov_tells = []
+        while t > 0 and not prov_tells:
+            sleep(1)
+            logs = self.get_output_log()
+            prov_tells = self._get_provenance_tells(logs)
+            t -= 1
         assert len(prov_tells) == 1, prov_tells
+        if t < 50:
+            print("WARNING: Provenance took more than 10 seconds to post.")
 
 
 @attr('nonpublic')

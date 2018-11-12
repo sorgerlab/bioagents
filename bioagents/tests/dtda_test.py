@@ -360,7 +360,3 @@ class TestFindTreatment3(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.gets('reason') == 'DISEASE_NOT_FOUND', output
-
-
-if __name__ == '__main__':
-    TestFindDrugTargets2().run_test()

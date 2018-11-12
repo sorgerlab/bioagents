@@ -86,7 +86,6 @@ class DTDA(object):
 
     def _extract_terms(self, agent):
         term_set = {(ref, ns) for ns, ref in agent.db_refs.items()}
-        term_set.add((agent.name, 'TEXT'))
 
         # Try without a hyphen.
         if '-' in agent.name:
@@ -100,35 +99,36 @@ class DTDA(object):
         return term_set
 
     def find_target_drugs(self, target):
-        """Return all the drugs that nominally target the target."""
-        target_terms = self._extract_terms(target)
-
-        all_drugs = set()
-        for target_term in target_terms:
-            if target_term not in self.target_drugs.keys():
-                try:
-                    drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
-                             for s in self._get_tas_stmts(target_term=target_term)}
-                except DatabaseTimeoutError:
-                    # TODO: We should return a special message if the database
-                    # can't be reached for some reason. It might also be good to
-                    # stash the cache dicts as back-ups.
-                    continue
+        """Return all the drugs that target a given target."""
+        # These are proteins/genes so we just look at HGNC grounding
+        if 'HGNC' not in target.db_refs:
+            return {}
+        target_term = (target.db_refs['HGNC'], 'HGNC')
+        # Check if we already have the stashed result
+        if target_term not in self.target_drugs:
+            try:
+                drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
+                         for s in self._get_tas_stmts(target_term=target_term)}
                 self.target_drugs[target_term] = drugs
-            else:
-                drugs = self.target_drugs[target_term]
-            all_drugs |= drugs
-        return all_drugs
+            except DatabaseTimeoutError:
+                # TODO: We should return a special message if the database
+                # can't be reached for some reason. It might also be good to
+                # stash the cache dicts as back-ups.
+                # If there is an error we don't stash the results
+                return {}
+        else:
+            drugs = self.target_drugs[target_term]
+        return drugs
 
     def find_drug_targets(self, drug):
-        """Return all the drugs that nominally target the target."""
+        """Return all the targets of a given drug."""
         # Build a list of different possible identifiers
         drug_terms = self._extract_terms(drug)
 
         # Search for relations involving those identifiers.
         all_targets = set()
         for term in drug_terms:
-            if term not in self.drug_targets.keys():
+            if term not in self.drug_targets:
                 try:
                     tas_stmts = self._get_tas_stmts(term)
                 except DatabaseTimeoutError:
@@ -149,7 +149,7 @@ class DTDA(object):
         pos = matches[1]
         sub_residue = matches[2]
 
-        if protein_name not in self.sub_statements.keys():
+        if protein_name not in self.sub_statements:
             self.sub_statements[protein_name] \
                 = get_statements(agents=[protein_name], stmt_type='ActiveForm')
 

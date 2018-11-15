@@ -274,7 +274,7 @@ class MSA_Module(Bioagent):
 
     def _send_display_stmts(self, resp, nl_question):
         try:
-            print("Waiting for statements to finish...")
+            logger.debug("Waiting for statements to finish...")
             resp.wait_until_done()
             if not len(resp.statements):
                 return
@@ -303,8 +303,8 @@ class MSA_Module(Bioagent):
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
                     '<th>Source and PMID</th>']
-        print("Sending %d statements to provenance."
-              % min(len(resp.statements), DUMP_LIMIT))
+        logger.info("Sending %d statements to provenance."
+                    % min(len(resp.statements), DUMP_LIMIT))
         print("Generating html: ", end='', flush=True)
         for i, stmt in enumerate(resp.statements[:DUMP_LIMIT]):
             if i % 5 == 0:

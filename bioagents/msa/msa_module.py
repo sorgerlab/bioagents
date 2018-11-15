@@ -170,7 +170,6 @@ class MSA_Module(Bioagent):
 
             # Actually get the statements.
             resp = get_statements(simple_response=False, **input_dict)
-            logger.info("Found %d stmts" % len(resp.statements))
         except IndraDBRestAPIError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
@@ -179,7 +178,7 @@ class MSA_Module(Bioagent):
         num_stmts = len(resp.statements)
         logger.info("Retrieved %d statements after %s seconds."
                     % (num_stmts, (datetime.now()-start_time).total_seconds()))
-        if num_stmts and send_provenance:
+        if send_provenance:
             try:
                 th = Thread(target=self._send_display_stmts, args=(resp, nl))
                 th.start()
@@ -274,19 +273,20 @@ class MSA_Module(Bioagent):
             self.tell(content)
 
     def _send_display_stmts(self, resp, nl_question):
-        resp.wait_until_done()
-        start_time = datetime.now()
-        logger.info('Sending display statements.')
-        self._send_table_to_provenance(resp, nl_question)
-        logger.info("Finished sending provenance after %s seconds."
-                    % (datetime.now() - start_time).total_seconds())
-
-        # resource = _make_sbgn(stmts[:10])
-        # logger.info(resource)
-        # content = KQMLList('open-query-window')
-        # content.sets('cyld', '#1')
-        # content.sets('graph', resource)
-        # self.tell(content)
+        try:
+            logger.debug("Waiting for statements to finish...")
+            resp.wait_until_done()
+            if not len(resp.statements):
+                return
+            start_time = datetime.now()
+            logger.info('Sending display statements.')
+            self._send_table_to_provenance(resp, nl_question)
+            logger.info("Finished sending provenance after %s seconds."
+                        % (datetime.now() - start_time).total_seconds())
+        except Exception as e:
+            logger.exception(e)
+            logger.error("Failed to post provenance.")
+            raise
 
     def _format_evidence(self, ev_list, ev_count):
         """Format the evidence of a statement for display."""
@@ -303,7 +303,12 @@ class MSA_Module(Bioagent):
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
                     '<th>Source and PMID</th>']
-        for stmt in resp.statements[:DUMP_LIMIT]:
+        logger.info("Sending %d statements to provenance."
+                    % min(len(resp.statements), DUMP_LIMIT))
+        print("Generating html: ", end='', flush=True)
+        for i, stmt in enumerate(resp.statements[:DUMP_LIMIT]):
+            if i % 5 == 0:
+                print('|', end='', flush=True)
             sub_ag, obj_ag = stmt.agent_list()
             ev_str = self._format_evidence(stmt.evidence,
                                            resp.get_ev_count(stmt))
@@ -312,8 +317,10 @@ class MSA_Module(Bioagent):
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'
+        print(" DONE...", end='', flush=True)
         content = KQMLList('add-provenance')
         content.sets('html', html_str)
+        print("SENT!")
         return self.tell(content)
 
     @staticmethod

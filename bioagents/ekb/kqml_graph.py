@@ -37,12 +37,15 @@ class KQMLGraph(networkx.DiGraph):
             A string representing a KQML message that is to be represented
             as a graph.
         """
-        # We ignore edges that talk about offsets in text
-        drop_edges = ['RULE', 'SPEC', 'FORCE']
         # Deserialize the KQML string
         kl = KQMLList.from_string(kqml_str)
+        return self.from_kqml_list(kl)
+
+    def from_kqml_list(self, kqml_list):
+        # We ignore edges that talk about offsets in text
+        drop_edges = ['RULE', 'SPEC', 'FORCE']
         # Look at the elements in the list and convert into nodes
-        for elem in kl:
+        for elem in kqml_list:
             # Get the category of the element (TERM, EVENT, etc.)
             elem_category = elem[0]
             # Get the ID of the element
@@ -119,63 +122,6 @@ class KQMLGraph(networkx.DiGraph):
         ag.node_attr['shape'] = 'plaintext'
         ag.draw(fname, prog='dot')
 
-    def get_node_type(self, node):
-        """Return the type of a node.
-
-        Parameters
-        ----------
-        node : str
-            The identifier of the node
-
-        Returns
-        -------
-        type : str
-            The type of the node which is typically a TRIPS ontology
-            category.
-        """
-        return self.node[node]['type']
-
-    def assert_node_type(self, node, node_type):
-        """Raise exception of the given node isn't of a given type
-
-        Parameters
-        -----------
-        node : str
-            The identifier of the node
-        node_type : str
-            The type of the node to assert
-        """
-        try:
-            self_node_type = self.get_node_type(node)
-            return self_node_type.lower() == node_type.lower()
-        except Exception:
-            raise PatternNotFound
-
-    def assert_matching_path(self, node, path_links):
-        """Return a directed path in the graph given edge constraints.
-
-        Raises an exception if no path is found matching the constraints.
-
-        Parameters
-        ----------
-        node : str
-            The identifier of the node to start from
-        path_links : str
-            A list of edge types that the path should match
-
-        Returns
-        -------
-        path : list[str]
-            A list of node identifiers along the matching path.
-        """
-        path = []
-        current_node = node
-        for link in path_links:
-            next_node = self.assert_matching_node(current_node, link=link)
-            path.append(next_node)
-            current_node = next_node
-        return path
-
     def get_matching_node(self, node, link=None, target_type=None):
         """Return first matching node or None if there is no match.
 
@@ -242,67 +188,3 @@ class KQMLGraph(networkx.DiGraph):
                            (self.node[e[1]]['type'].lower() in
                             targets_to_match)))]
         return matched_nodes
-
-    def assert_matching_node(self, node, link=None, target_type=None):
-        """Return first matching node or raise exception if there is no match.
-
-        Parameters
-        ----------
-        node : str
-            The identifier of the node to start from
-        link : Optional[str]
-            The type of edge going out from the given node. If not given,
-            the type of edge is not constrained.
-        target_type : Optional[str]
-            The type of node the edge is pointing to. If not given, the
-            type of node is not constrained.
-
-        Returns
-        -------
-        nodes : str
-            A matching node identifier.
-        """
-        node = self.get_matching_node(node, link, target_type)
-        if not node:
-            raise PatternNotFound
-        return node
-
-    def assert_matching_nodes(self, node, link=None, target_type=None):
-        """Return all matching nodes or raise exception if there is no match.
-
-        Parameters
-        ----------
-        node : str
-            The identifier of the node to start from
-        link : Optional[str]
-            The type of edge going out from the given node. If not given,
-            the type of edge is not constrained.
-        target_type : Optional[str]
-            The type of node the edge is pointing to. If not given, the
-            type of node is not constrained.
-
-        Returns
-        -------
-        nodes : list[str]
-            A list of matching node identifiers.
-        """
-        nodes = self.get_matching_nodes(node, link, target_type)
-        if not nodes:
-            raise PatternNotFound
-        return nodes
-
-    def get_root(self):
-        """Return the root of the graph.
-
-        Returns
-        -------
-        root : str
-            The identifier of the root node of the graph
-        """
-        for node in self.nodes():
-            if self.in_degree(node) == 0:
-                return node
-
-
-class PatternNotFound(Exception):
-    pass

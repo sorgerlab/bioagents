@@ -178,7 +178,7 @@ class MSA_Module(Bioagent):
         num_stmts = len(resp.statements)
         logger.info("Retrieved %d statements after %s seconds."
                     % (num_stmts, (datetime.now()-start_time).total_seconds()))
-        if num_stmts and send_provenance:
+        if send_provenance:
             try:
                 th = Thread(target=self._send_display_stmts, args=(resp, nl))
                 th.start()
@@ -276,6 +276,8 @@ class MSA_Module(Bioagent):
         try:
             print("Waiting for statements to finish...")
             resp.wait_until_done()
+            if not len(resp.statements):
+                return
             start_time = datetime.now()
             logger.info('Sending display statements.')
             self._send_table_to_provenance(resp, nl_question)

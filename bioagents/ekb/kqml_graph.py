@@ -38,43 +38,29 @@ class KQMLGraph(networkx.DiGraph):
             as a graph.
         """
         # We ignore edges that talk about offsets in text
-        drop_edges = ['START', 'END']
+        drop_edges = ['RULE', 'SPEC', 'FORCE']
         # Deserialize the KQML string
-        kp = KQMLList.from_string(kqml_str)
+        kl = KQMLList.from_string(kqml_str)
         # Look at the elements in the list and convert into nodes
-        for elem in kp:
+        for elem in kl:
+            # Get the category of the element (TERM, EVENT, etc.)
+            elem_category = elem[0]
             # Get the ID of the element
             elem_id = elem[1].string_value()
             # We use the V IDs without the ONT prefix
             if elem_id.startswith('ONT::V'):
                 elem_id = elem_id[5:]
 
-            # Get the type of the element
-            elem_type = elem[2]
-            # If the second element is a list as in
-            # (:* ONT::GENE-PROTEIN W::BRAF)
-            # then the second element of that list is the type
-            if isinstance(elem_type, KQMLList):
-                elem_w = elem_type[2].string_value()
-                elem_type = elem_type[1].string_value()
-            # Otherwise we just take the str of the entry as the type
-            # and there is no W
-            else:
-                elem_w = None
-                elem_type = elem_type.string_value()
+            # Let's get the instance-of as the type
+            elem_type = elem.gets('INSTANCE-OF')
 
             # We now add the node with its ID, type and label
             self.add_node(elem_id, type=elem_type,
                           label='%s (%s)' % (elem_type, elem_id))
-            # If it has a corresponding W, we add that too
-            if elem_w:
-                elem_w_id = elem_w + '_w'
-                self.add_node(elem_w_id, label=elem_w)
-                self.add_edge(elem_id, elem_w_id, label='W')
 
             # The rest of the entry is always a list of keyword args like
             # :ARG VALUE which we iterate over
-            for idx, (key, val) in enumerate(zip(elem[3::2], elem[4::2])):
+            for idx, (key, val) in enumerate(zip(elem[4::2], elem[5::2])):
                 # Drop the : from the beginning of the argument
                 key = key.string_value()[1:]
                 if key in drop_edges:

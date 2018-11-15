@@ -274,6 +274,7 @@ class MSA_Module(Bioagent):
 
     def _send_display_stmts(self, resp, nl_question):
         try:
+            print("Waiting for statements to finish...")
             resp.wait_until_done()
             start_time = datetime.now()
             logger.info('Sending display statements.')

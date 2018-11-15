@@ -112,7 +112,7 @@ class _TestMsaGeneralLookup(_IntegrationTest):
 
 
 @attr('nonpublic')
-class TestMSATypeAndTarget(_TestMsaGeneralLookup):
+class TestMSATypeAndTargetBRAF(_TestMsaGeneralLookup):
     def create_type_and_target(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  source=ekb_from_text('None'),
@@ -124,12 +124,24 @@ class TestMSATypeAndTarget(_TestMsaGeneralLookup):
 
 
 @attr('nonpublic')
-class TestMSATypeAndSource(_TestMsaGeneralLookup):
+class TestMSATypeAndSourceBRAF(_TestMsaGeneralLookup):
     def create_type_and_source(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  type='Phosphorylation',
                                  source=ekb_from_text('BRAF'),
                                  target=ekb_from_text('None'))
+
+    def check_response_to_type_and_source(self, output):
+        return self._check_find_response(output)
+
+
+@attr('nonpublic')
+class TestMSATypeAndTargetTP53(_TestMsaGeneralLookup):
+    def create_type_and_source(self):
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
+                                 type='Phosphorylation',
+                                 source=ekb_from_text('None'),
+                                 target=ekb_from_text('TP53'))
 
     def check_response_to_type_and_source(self, output):
         return self._check_find_response(output)

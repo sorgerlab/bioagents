@@ -194,9 +194,23 @@ class DTDA(object):
             num_case += cbio_client.get_num_sequenced(study_id)
             mutations = cbio_client.get_mutations(study_id, gene_list,
                                                   mutation_type)
-            logger.info("Found %d mutations: %s" % (len(mutations), mutations))
+            if not mutations['gene_symbol']:
+                logger.info("Found no genes for %s." % study_id)
+                continue
+
+            # Get the most mutated gene.
+            top_gene = max(mutations['gene_symbol'],
+                           key=lambda g: mutations['gene_symbol'].count(g))
+            logger.info("Found %d genes, with top hit %s for %s."
+                        % (len(set(mutations['gene_symbol'])), top_gene,
+                           study_id))
+
+            # Get the mutations effects for that gene.
             for g, a in zip(mutations['gene_symbol'],
                             mutations['amino_acid_change']):
+                if g != top_gene:
+                    continue
+
                 mutation_effect = self.find_mutation_effect(g, a)
                 if mutation_effect is None:
                     mutation_effect_key = 'other'

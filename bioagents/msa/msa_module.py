@@ -54,8 +54,21 @@ class MSALookupError(Exception):
 class MSA_Module(Bioagent):
     name = 'MSA'
     tasks = ['PHOSPHORYLATION-ACTIVATING', 'FIND-RELATIONS-FROM-LITERATURE',
-             'GET-PAPER-MODEL', 'CONFIRM-RELATION-FROM-LITERATURE']
+             'GET-PAPER-MODEL', 'CONFIRM-RELATION-FROM-LITERATURE',
+             'GET-COMMON']
     signor_afs = _read_signor_afs()
+
+    def respond_get_common(self, content):
+        """Find the common up/down streams of a protein."""
+        if not CAN_CHECK_STATEMENTS:
+            return self.make_failure(
+                'NO_KNOWLEDGE_ACCESS',
+                'Cannot access the database through the web api.'
+                )
+        genes = content.get('genes')
+        direction = content.get('up-down')
+        logger.info("Got genes: %s and direction %s." % (genes, direction))
+        return self.make_failure("NOT_DONE", "Not done yet.")
 
     def respond_phosphorylation_activating(self, content):
         """Return response content to phosphorylation_activating request."""

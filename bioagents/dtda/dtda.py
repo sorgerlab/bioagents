@@ -154,8 +154,6 @@ class DTDA(object):
             logger.info("Looking up: %s" % protein_name)
             self.sub_statements[protein_name] \
                 = get_statements(agents=[protein_name], stmt_type='ActiveForm')
-        else:
-            logger.info("Already have info for: %s." % protein_name)
 
         for stmt in self.sub_statements[protein_name]:
             mutations = stmt.agent.mutations

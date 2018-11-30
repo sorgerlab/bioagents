@@ -53,9 +53,10 @@ class DTDA(object):
         # These two dicts will cache results from the database, and act as
         # a record of which targets and drugs have been search, which is why
         # the dicts are kept separate. That way we know that if Selumetinib
-        # shows up in the drug_targets keys, all the targets of Selumetinib will
-        # be present, while although Selumetinib may be a value in target_drugs
-        # drugs, not all targets that have Selumetinib as a drug will be keys.
+        # shows up in the drug_targets keys, all the targets of Selumetinib
+        # will be present, while although Selumetinib may be a value in
+        # target_drugs drugs, not all targets that have Selumetinib as a drug
+        # will be keys.
         self.target_drugs = {}
         self.drug_targets = {}
         return
@@ -77,8 +78,8 @@ class DTDA(object):
                               stmt_type='Inhibition', timeout=timeout,
                               simple_response=False)
         if resp.is_working():
-            msg = ("Database has failed to respond after %d seconds looking up "
-                   "%s inhibits %s." % (timeout, drug, target))
+            msg = ("Database has failed to respond after %d seconds looking "
+                   "up %s inhibits %s." % (timeout, drug, target))
             logger.error(msg)
             raise DatabaseTimeoutError(msg)
         return (s for s in resp.statements
@@ -150,8 +151,11 @@ class DTDA(object):
         sub_residue = matches[2]
 
         if protein_name not in self.sub_statements:
+            logger.info("Looking up: %s" % protein_name)
             self.sub_statements[protein_name] \
                 = get_statements(agents=[protein_name], stmt_type='ActiveForm')
+        else:
+            logger.info("Already have info for: %s." % protein_name)
 
         for stmt in self.sub_statements[protein_name]:
             mutations = stmt.agent.mutations
@@ -184,10 +188,13 @@ class DTDA(object):
         gene_list = self._get_gene_list()
         mutation_dict = {}
         num_case = 0
+        logger.info("Found %d studies and a gene_list of %d elements."
+                    % (len(study_ids), len(gene_list)))
         for study_id in study_ids:
             num_case += cbio_client.get_num_sequenced(study_id)
             mutations = cbio_client.get_mutations(study_id, gene_list,
                                                   mutation_type)
+            logger.info("Found %d mutations: %s" % (len(mutations), mutations))
             for g, a in zip(mutations['gene_symbol'],
                             mutations['amino_acid_change']):
                 mutation_effect = self.find_mutation_effect(g, a)

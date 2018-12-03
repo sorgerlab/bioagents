@@ -281,11 +281,11 @@ class MSA_Module(Bioagent):
 
         if rest_resp.is_working():
             # Calling this success may be a bit ambitious.
-            rest_resp = KQMLPerformative('SUCCESS')
-            rest_resp.set('status', 'WORKING')
-            rest_resp.set('relations-found', 'nil')
-            rest_resp.set('dump-limit', str(DUMP_LIMIT))
-            return rest_resp
+            resp = KQMLPerformative('SUCCESS')
+            resp.set('status', 'WORKING')
+            resp.set('relations-found', 'nil')
+            resp.set('dump-limit', str(DUMP_LIMIT))
+            return resp
 
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')

@@ -259,6 +259,7 @@ class TestMsaCommonUpstreamsMEKERK(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        assert output.gets('prefix') == 'up', output.gets('prefix')
         gene_list = output.get('commons')
         assert gene_list, output
         assert 'EGF' in gene_list, gene_list
@@ -281,6 +282,7 @@ class TestMsaCommonDownstreamsMEKERK(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        assert output.gets('prefix') == 'down', output.gets('prefix')
         gene_list = output.get('commons')
         assert gene_list, output
         assert 'EGF' in gene_list, gene_list
@@ -303,6 +305,7 @@ class TestMsaCommonUpstreamsTP53AKT1(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        assert output.gets('prefix') == 'up', output.gets('prefix')
         gene_list = output.get('commons')
         assert gene_list, output
         assert 'PRKDC' in gene_list, gene_list
@@ -325,6 +328,7 @@ class TestMsaCommonDownstreamsTP53AKT1(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        assert output.gets('prefix') == 'down', output.gets('prefix')
         gene_list = output.get('commons')
         assert gene_list, output
         assert 'ROS1' in gene_list, gene_list

@@ -80,11 +80,11 @@ class MSA_Module(Bioagent):
         if direction == 'ONT::PREDECESSOR':
             kw = 'object'
             other_idx = 0
-            desc = 'up'
+            prefix = 'up'
         elif direction == 'ONT::SUCCESSOR':
             kw = 'subject'
             other_idx = 1
-            desc = 'down'
+            prefix = 'down'
         else:
             return self.make_failure("UNKNOWN_ACTION", direction)
 
@@ -140,7 +140,7 @@ class MSA_Module(Bioagent):
         else:
             name_list = agents[0].name
         name_list += ' and ' + agents[-1].name
-        msg = ('%sstreams of ' % desc).capitalize() + name_list
+        msg = ('%sstreams of ' % prefix).capitalize() + name_list
         self.send_provenance_for_stmts(stmts, msg)
 
         # Create the reply
@@ -149,6 +149,7 @@ class MSA_Module(Bioagent):
         for ag_name in commons.keys():
             gene_list.append(ag_name)
         resp.set('commons', gene_list)
+        resp.sets('prefix', prefix)
         return resp
 
     def respond_phosphorylation_activating(self, content):

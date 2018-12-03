@@ -7,6 +7,8 @@ from datetime import datetime
 from itertools import groupby
 from threading import Thread
 
+from indra.statements import Agent
+
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA')
@@ -65,8 +67,11 @@ class MSA_Module(Bioagent):
                 'NO_KNOWLEDGE_ACCESS',
                 'Cannot access the database through the web api.'
                 )
-        genes_ekb = content.get('genes')
+        genes_ekb = content.gets('genes')
         agents = _get_agents(genes_ekb)
+        if len(agents) < 2:
+            return self.make_failure('NO_TARGET',
+                                     'Only %d < 2 agents given.' % len(agents))
 
         direction = content.gets('up-down')
         logger.info("Got genes: %s and direction %s." % (agents, direction))
@@ -98,19 +103,18 @@ class MSA_Module(Bioagent):
                                          'Agent lacks both HGNC and FPLX ids.')
 
             # Look for statements for this agent.
-            kwargs = {kw: '%s@%s' % (dbid, ns), 'ev_limit': 2, 'persist': True}
+            kwargs = {kw: '%s@%s' % (dbid, ns), 'ev_limit': 2,
+                      'persist': False, 'max_stmts': 100}
             stmts = get_statements(**kwargs)
 
             # Look for matches with existing upstreams.
             for stmt in stmts:
                 other_ag = stmt.agent_list()[other_idx]
-                if other_ag is None:
+                if other_ag is None or 'HGNC' not in other_ag.db_refs.keys():
                     continue
-                other_id = other_ag.db_refs.get('HGNC')
-                if other_id is None:
-                    continue
+                other_id = other_ag.name
                 if first and other_id not in commons.keys():
-                    commons[other_id] = {dbid: []}
+                    commons[other_id] = {dbid: [stmt]}
                 elif other_id in commons.keys():
                     if dbid not in commons[other_id].keys():
                         commons[other_id][dbid] = []
@@ -131,13 +135,20 @@ class MSA_Module(Bioagent):
         # Get post statements to provenance.
         stmts = [s for data in commons.values() for s_list in data.values()
                  for s in s_list]
-        name_list = ' '.join(ag.name for ag in agents)
+        if len(agents) > 2:
+            name_list = ', '.join(ag.name for ag in agents[:-1]) + ','
+        else:
+            name_list = agents[0].name
+        name_list += ' and ' + agents[-1].name
         msg = ('%sstreams of ' % desc).capitalize() + name_list
         self.send_provenance_for_stmts(stmts, msg)
 
         # Create the reply
         resp = KQMLPerformative('SUCCESS')
-        resp.set('commons', list(commons.keys()))
+        gene_list = KQMLList()
+        for ag_name in commons.keys():
+            gene_list.append(ag_name)
+        resp.set('commons', gene_list)
         return resp
 
     def respond_phosphorylation_activating(self, content):
@@ -443,7 +454,8 @@ def _get_agent(agent_ekb):
 def _get_agents(ekb):
     tp = TripsProcessor(ekb)
     terms = tp.tree.findall('TERM')
-    return [tp._get_agent_by_id(t.attrib['id'], None) for t in terms]
+    results = [tp._get_agent_by_id(t.attrib['id'], None) for t in terms]
+    return [ag for ag in results if isinstance(ag, Agent)]
 
 
 if __name__ == "__main__":

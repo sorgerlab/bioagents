@@ -244,9 +244,10 @@ class TestMsaProvenance(_IntegrationTest):
 
 
 @attr('nonpublic')
-class TestMsaUpCommonUpstreams(_IntegrationTest):
+class TestMsaCommonUpstreamsMEKERK(_IntegrationTest):
     def __init__(self, *args, **kwargs):
-        super(TestMsaUpCommonUpstreams, self).__init__(msa_module.MSA_Module)
+        super(TestMsaCommonUpstreamsMEKERK, self).__init__(
+            msa_module.MSA_Module)
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
@@ -261,6 +262,29 @@ class TestMsaUpCommonUpstreams(_IntegrationTest):
         gene_list = output.get('commons')
         assert gene_list, output
         assert 'EGF' in gene_list, gene_list
+        assert 'BRAF' in gene_list, gene_list
+
+
+@attr('nonpublic')
+class TestMsaCommonDownstreamsMEKERK(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaCommonDownstreamsMEKERK, self).__init__(
+            msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-COMMON')
+        ekb = ekb_from_text('MEK, ERK')
+        content.sets('genes', ekb)
+        content.sets('up-down', 'ONT::SUCCESSOR')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        gene_list = output.get('commons')
+        assert gene_list, output
+        assert 'EGF' in gene_list, gene_list
+        assert 'TNF' in gene_list, gene_list
 
 
 @attr('nonpublic')

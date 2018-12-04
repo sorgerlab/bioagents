@@ -161,6 +161,7 @@ class DTDA_Module(Bioagent):
         protein.set('name', mut_protein)
         protein.set('hgnc', mut_protein)
         reply.set('protein', protein)
+        reply.sets('disease', disease_arg)
         reply.set('prevalence', '%.2f' % (mut_percent/100.0))
         reply.set('functional-effect', 'ACTIVE')
         target = Agent(mut_protein, db_refs={'HGNC-SYMBOL': mut_protein})

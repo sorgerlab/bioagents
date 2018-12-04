@@ -30,12 +30,6 @@ class DatabaseTimeoutError(BioagentException):
     pass
 
 
-class MutationNotRecognizedException(BioagentException):
-    def __init__(self, amino_acid_change):
-        msg = 'Regex failed to parse: %s'% amino_acid_change
-        super(MutationNotRecognizedException, self).__init__(msg)
-
-
 def _make_cbio_efo_map():
     lines = open(_resource_dir + 'cbio_efo_map.tsv', 'rt').readlines()
     cbio_efo_map = {}

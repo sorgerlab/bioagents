@@ -11,7 +11,7 @@ import logging
 from indra.sources.indra_db_rest import get_statements
 from indra.databases import cbio_client, hgnc_client
 from bioagents import BioagentException
-from indra.statements import Agent, MutCondition
+from indra.statements import Agent, MutCondition, InvalidResidueError
 
 logger = logging.getLogger('DTDA')
 
@@ -190,7 +190,7 @@ class DTDA(object):
         num_case = 0
         logger.info("Found %d studies and a gene_list of %d elements."
                     % (len(study_ids), len(gene_list)))
-        mut_patt = re.compile("(\w)(\d+)(\w)")
+        mut_patt = re.compile("([A-Z]+)(\d+)([A-Z]+)")
         for study_id in study_ids:
             num_case += cbio_client.get_num_sequenced(study_id)
             mutations = cbio_client.get_mutations(study_id, gene_list,
@@ -206,9 +206,15 @@ class DTDA(object):
                             mutations['amino_acid_change']):
                 m = mut_patt.match(a)
                 if m is None:
-                    raise MutationNotRecognizedException(a)
+                    logger.warning("Unrecognized residue: %s" % a)
+                    continue
                 res_from, pos, res_to = m.groups()
-                mut = MutCondition(pos, res_from, res_to)
+                try:
+                    mut = MutCondition(pos, res_from, res_to)
+                except InvalidResidueError:
+                    logger.warning("Invalid residue: %s or %s."
+                                   % (res_from, res_to))
+                    continue
                 ag = Agent(g, db_refs={'HGNC': hgnc_client.get_hgnc_id(g)},
                            mutations=[mut])
                 if g not in agent_dict.keys():

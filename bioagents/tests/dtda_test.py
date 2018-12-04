@@ -232,6 +232,7 @@ class TestIsDrugTarget2(_TestIsDrugTarget):
         assert output.head() == 'SUCCESS', output
         assert output.gets('is-target') == 'TRUE', output
 
+
 @attr('nonpublic')
 class TestIsDrugTarget3(_TestIsDrugTarget):
     target = 'KRAS'

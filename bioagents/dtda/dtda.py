@@ -214,21 +214,19 @@ class DTDA(object):
                     mutation_effect_key = 'other'
                 else:
                     mutation_effect_key = mutation_effect
-                try:
-                    mutation_dict[g][0] += 1.0
-                    mutation_dict[g][1][mutation_effect_key] += 1
-                except KeyError:
-                    effect_dict = {'activate': 0.0, 'deactivate': 0.0,
-                                   'other': 0.0}
-                    effect_dict[mutation_effect_key] += 1.0
-                    mutation_dict[g] = [1.0, effect_dict]
-        # Normalize entries
+                if g not in mutation_dict.keys():
+                    effect_dict = {'activate': 0, 'deactivate': 0,
+                                   'other': 0}
+                    mutation_dict[g] = {'count': 0, 'effects': effect_dict,
+                                        'total_effects': 0}
+                mutation_dict[g]['count'] += 1
+                mutation_dict[g]['effects'][mutation_effect_key] += 1
+
+        # Calculate normalized entries
         for k, v in mutation_dict.items():
-            mutation_dict[k][0] /= num_case
-            effect_sum = numpy.sum(list(v[1].values()))
-            mutation_dict[k][1]['activate'] /= effect_sum
-            mutation_dict[k][1]['deactivate'] /= effect_sum
-            mutation_dict[k][1]['other'] /= effect_sum
+            mutation_dict[k]['fraction'] = v['count'] / num_case
+            for eff in v['effects'].copy().keys():
+                v['effects'][eff + '_percent'] = v['effects'][eff] / v['count']
 
         return mutation_dict
 
@@ -245,12 +243,11 @@ class DTDA(object):
             return None
 
         # Return the top mutation as a possible target
-        mutations_sorted = sorted(mutation_stats.items(),
-                                  key=lambda x: x[1][0],
-                                  reverse=True)
-        top_mutation = mutations_sorted[0]
-        mut_protein = top_mutation[0]
-        mut_percent = int(top_mutation[1][0]*100.0)
+        proteins_sorted = sorted(mutation_stats.keys(),
+                                 key=lambda k: mutation_stats[k]['fraction'],
+                                 reverse=True)
+        mut_protein = proteins_sorted[0]
+        mut_percent = int(mutation_stats[mut_protein]['fraction']*100.0)
         # TODO: return mutated residues
         # mut_residues =
         return mut_protein, mut_percent

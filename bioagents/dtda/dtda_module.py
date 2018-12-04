@@ -152,21 +152,18 @@ class DTDA_Module(Bioagent):
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
-        reply = KQMLList()
 
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
-        reply1 = KQMLList('SUCCESS')
+        reply = KQMLList('SUCCESS')
         protein = KQMLList()
         protein.set('name', mut_protein)
         protein.set('hgnc', mut_protein)
-        reply1.set('protein', protein)
-        reply1.set('prevalence', '%.2f' % (mut_percent/100.0))
-        reply1.set('functional-effect', 'ACTIVE')
-        reply.append(reply1)
-
-        reply2 = KQMLList('SUCCESS')
+        reply.set('protein', protein)
+        reply.sets('disease', disease_arg)
+        reply.set('prevalence', '%.2f' % (mut_percent/100.0))
+        reply.set('functional-effect', 'ACTIVE')
         target = Agent(mut_protein, db_refs={'HGNC-SYMBOL': mut_protein})
         drug_results = self.dtda.find_target_drugs(target)
         drugs = KQMLList()
@@ -176,9 +173,8 @@ class DTDA_Module(Bioagent):
             if pci:
                 drug.set('pubchem_id', pci)
             drugs.append(drug)
-        reply2.set('drugs', drugs)
+        reply.set('drugs', drugs)
 
-        reply.append(reply2)
         return reply
 
     @staticmethod

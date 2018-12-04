@@ -15,7 +15,7 @@ def test_mutation_statistics():
     d = DTDA()
     mutation_dict = \
         d.get_mutation_statistics('pancreatic carcinoma', 'missense')
-    assert(mutation_dict['KRAS'][0] > 0)
+    assert mutation_dict['KRAS']['count'] > 0
 
 
 def test_get_disease():
@@ -319,12 +319,10 @@ class TestFindTreatment1(_IntegrationTest):
         return get_request(content), content
 
     def check_response_to_message(self, output):
-        part1, part2 = output
-        assert part1.head() == 'SUCCESS', part1
-        assert part2.head() == 'SUCCESS', part2
-        assert 0.8 < float(part1.gets('prevalence')) < 0.9, \
-            part1.get('prevalence')
-        assert len(part2.get('drugs')) == 0
+        assert output.head() == 'SUCCESS', output
+        assert 0.8 < float(output.gets('prevalence')) < 0.9, \
+            output.get('prevalence')
+        assert len(output.get('drugs')) == 0
 
 
 @attr('nonpublic')
@@ -339,11 +337,9 @@ class TestFindTreatment2(_IntegrationTest):
         return get_request(content), content
 
     def check_response_to_message(self, output):
-        part1, part2 = output
-        assert part1.head() == 'SUCCESS', part1
-        assert part2.head() == 'SUCCESS', part2
-        assert part1.gets('prevalence') == '0.19', part1.get('prevalence')
-        assert len(part2.get('drugs')) == 0
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('prevalence') == '0.19', output.get('prevalence')
+        assert len(output.get('drugs')) == 0
 
 
 @attr('nonpublic')

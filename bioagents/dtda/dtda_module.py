@@ -108,15 +108,15 @@ class DTDA_Module(Bioagent):
         logger.debug('Disease: %s' % disease.name)
 
         try:
-            mut_protein, mut_percent = \
+            mut_protein, mut_percent, agents = \
                 self.dtda.get_top_mutation(disease.name)
         except DiseaseNotFoundException:
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
 
         # TODO: get functional effect from actual mutations
-        # TODO: add list of actual mutations to response
-        # TODO: get fraction not percentage from DTDA
+        # TODO: add list of actual mutations to response (get from agents)
+        # TODO: get fraction not percentage from DTDA (edit get_top_mutation)
         reply = KQMLList('SUCCESS')
         protein = KQMLList()
         protein.set('name', mut_protein)
@@ -146,12 +146,11 @@ class DTDA_Module(Bioagent):
         logger.debug('Disease: %s' % disease.name)
 
         try:
-            mut_protein, mut_percent = \
+            mut_protein, mut_percent, agents = \
                 self.dtda.get_top_mutation(disease.name)
         except DiseaseNotFoundException:
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
-
 
         # TODO: get functional effect from actual mutations
         # TODO: add list of actual mutations to response
@@ -164,8 +163,9 @@ class DTDA_Module(Bioagent):
         reply.sets('disease', disease_arg)
         reply.set('prevalence', '%.2f' % (mut_percent/100.0))
         reply.set('functional-effect', 'ACTIVE')
-        target = Agent(mut_protein, db_refs={'HGNC-SYMBOL': mut_protein})
-        drug_results = self.dtda.find_target_drugs(target)
+        # These differ only in mutation, which isn't relevant.
+        an_agent = agents[0]
+        drug_results = self.dtda.find_target_drugs(an_agent)
         drugs = KQMLList()
         for dn, pci in drug_results:
             drug = KQMLList()

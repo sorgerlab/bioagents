@@ -9,8 +9,9 @@ import numpy
 import logging
 
 from indra.sources.indra_db_rest import get_statements
-from indra.databases import cbio_client
+from indra.databases import cbio_client, hgnc_client
 from bioagents import BioagentException
+from indra.statements import Agent, MutCondition, InvalidResidueError
 
 logger = logging.getLogger('DTDA')
 
@@ -141,32 +142,27 @@ class DTDA(object):
             all_targets |= targets
         return all_targets
 
-    def find_mutation_effect(self, protein_name, amino_acid_change):
-        match = re.match(r'([A-Z])([0-9]+)([A-Z])', amino_acid_change)
-        if match is None:
+    def find_mutation_effect(self, agent):
+        if not agent.mutations or len(agent.mutations) < 1:
             return None
-        matches = match.groups()
-        wt_residue = matches[0]
-        pos = matches[1]
-        sub_residue = matches[2]
+        mut = agent.mutations[0]
 
-        if protein_name not in self.sub_statements:
-            logger.info("Looking up: %s" % protein_name)
-            self.sub_statements[protein_name] \
-                = get_statements(agents=[protein_name], stmt_type='ActiveForm')
+        if agent.name not in self.sub_statements:
+            logger.info("Looking up: %s" % agent.name)
+            self.sub_statements[agent.name] \
+                = get_statements(agents=[agent.db_refs['HGNC'] + '@HGNC'],
+                                 stmt_type='ActiveForm')
 
-        for stmt in self.sub_statements[protein_name]:
+        for stmt in self.sub_statements[agent.name]:
             mutations = stmt.agent.mutations
             # Make sure the Agent has exactly one mutation
             if len(mutations) != 1:
                 continue
-            if mutations[0].residue_from == wt_residue and\
-                mutations[0].position == pos and\
-                mutations[0].residue_to == sub_residue:
-                    if stmt.is_active:
-                        return 'activate'
-                    else:
-                        return 'deactivate'
+            if mutations[0].equals(mut):
+                if stmt.is_active:
+                    return 'activate'
+                else:
+                    return 'deactivate'
         return None
 
     @staticmethod
@@ -188,39 +184,58 @@ class DTDA(object):
         num_case = 0
         logger.info("Found %d studies and a gene_list of %d elements."
                     % (len(study_ids), len(gene_list)))
+        mut_patt = re.compile("([A-Z]+)(\d+)([A-Z]+)")
         for study_id in study_ids:
             num_case += cbio_client.get_num_sequenced(study_id)
             mutations = cbio_client.get_mutations(study_id, gene_list,
                                                   mutation_type)
+
             if not mutations['gene_symbol']:
                 logger.info("Found no genes for %s." % study_id)
                 continue
 
-            # Get the most mutated gene.
-            top_gene = max(mutations['gene_symbol'],
-                           key=lambda g: mutations['gene_symbol'].count(g))
-            logger.info("Found %d genes, with top hit %s for %s."
-                        % (len(set(mutations['gene_symbol'])), top_gene,
-                           study_id))
-
-            # Get the mutations effects for that gene.
+            # Create agents from the results of the search.
+            agent_dict = {}
             for g, a in zip(mutations['gene_symbol'],
                             mutations['amino_acid_change']):
-                if g != top_gene:
+                m = mut_patt.match(a)
+                if m is None:
+                    logger.warning("Unrecognized residue: %s" % a)
                     continue
+                res_from, pos, res_to = m.groups()
+                try:
+                    mut = MutCondition(pos, res_from, res_to)
+                except InvalidResidueError:
+                    logger.warning("Invalid residue: %s or %s."
+                                   % (res_from, res_to))
+                    continue
+                ag = Agent(g, db_refs={'HGNC': hgnc_client.get_hgnc_id(g)},
+                           mutations=[mut])
+                if g not in agent_dict.keys():
+                    agent_dict[g] = []
+                agent_dict[g].append(ag)
 
-                mutation_effect = self.find_mutation_effect(g, a)
+            # Get the most mutated gene.
+            top_gene = max(agent_dict.keys(),
+                           key=lambda k: len(agent_dict[k]))
+            logger.info("Found %d genes, with top hit %s for %s."
+                        % (len(agent_dict.keys()), top_gene, study_id))
+
+            if top_gene not in mutation_dict.keys():
+                effect_dict = {'activate': 0, 'deactivate': 0,
+                               'other': 0}
+                mutation_dict[top_gene] = {'count': 0, 'effects': effect_dict,
+                                           'total_effects': 0, 'agents': []}
+            for agent in agent_dict[top_gene]:
+                # Get the mutations effects for that gene.
+                mutation_effect = self.find_mutation_effect(agent)
                 if mutation_effect is None:
                     mutation_effect_key = 'other'
                 else:
                     mutation_effect_key = mutation_effect
-                if g not in mutation_dict.keys():
-                    effect_dict = {'activate': 0, 'deactivate': 0,
-                                   'other': 0}
-                    mutation_dict[g] = {'count': 0, 'effects': effect_dict,
-                                        'total_effects': 0}
-                mutation_dict[g]['count'] += 1
-                mutation_dict[g]['effects'][mutation_effect_key] += 1
+                mutation_dict[top_gene]['count'] += 1
+                mutation_dict[top_gene]['effects'][mutation_effect_key] += 1
+                mutation_dict[top_gene]['agents'].append(agent)
 
         # Calculate normalized entries
         for k, v in mutation_dict.items():
@@ -249,8 +264,9 @@ class DTDA(object):
         mut_protein = proteins_sorted[0]
         mut_percent = int(mutation_stats[mut_protein]['fraction']*100.0)
         # TODO: return mutated residues
-        # mut_residues =
-        return mut_protein, mut_percent
+        # Doing even better, returning a list of agents.
+        agents = mutation_stats[mut_protein]['agents']
+        return mut_protein, mut_percent, agents
 
     def _get_gene_list(self):
         gene_list = []

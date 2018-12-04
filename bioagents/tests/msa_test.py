@@ -244,6 +244,136 @@ class TestMsaProvenance(_IntegrationTest):
 
 
 @attr('nonpublic')
+class TestMsaCommonUpstreamsMEKERK(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaCommonUpstreamsMEKERK, self).__init__(
+            msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-COMMON')
+        ekb = ekb_from_text('MEK, ERK')
+        content.sets('genes', ekb)
+        content.sets('up-down', 'ONT::PREDECESSOR')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('prefix') == 'up', output.gets('prefix')
+        gene_list = output.get('commons')
+        assert gene_list, output
+        assert 'EGF' in gene_list, gene_list
+        assert 'BRAF' in gene_list, gene_list
+
+
+@attr('nonpublic')
+class TestMsaCommonDownstreamsMEKERK(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaCommonDownstreamsMEKERK, self).__init__(
+            msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-COMMON')
+        ekb = ekb_from_text('MEK, ERK')
+        content.sets('genes', ekb)
+        content.sets('up-down', 'ONT::SUCCESSOR')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('prefix') == 'down', output.gets('prefix')
+        gene_list = output.get('commons')
+        assert gene_list, output
+        assert 'EGF' in gene_list, gene_list
+        assert 'TNF' in gene_list, gene_list
+
+
+@attr('nonpublic')
+class TestMsaCommonUpstreamsTP53AKT1(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaCommonUpstreamsTP53AKT1, self).__init__(
+            msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-COMMON')
+        ekb = ekb_from_text('TP53, AKT1')
+        content.sets('genes', ekb)
+        content.sets('up-down', 'ONT::PREDECESSOR')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('prefix') == 'up', output.gets('prefix')
+        gene_list = output.get('commons')
+        assert gene_list, output
+        assert 'PRKDC' in gene_list, gene_list
+        assert 'ROS1' in gene_list, gene_list
+
+
+@attr('nonpublic')
+class TestMsaCommonDownstreamsTP53AKT1(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaCommonDownstreamsTP53AKT1, self).__init__(
+            msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-COMMON')
+        ekb = ekb_from_text('TP53, AKT1')
+        content.sets('genes', ekb)
+        content.sets('up-down', 'ONT::SUCCESSOR')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('prefix') == 'down', output.gets('prefix')
+        gene_list = output.get('commons')
+        assert gene_list, output
+        assert 'ROS1' in gene_list, gene_list
+        assert 'CDKN1A' in gene_list, gene_list
+
+
+@attr('nonpublic')
+class TestMsaCommonDownstreamsMEKVemurafenib(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaCommonDownstreamsMEKVemurafenib, self).__init__(
+            msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-COMMON')
+        ekb = ekb_from_text('MEK, Vemurafenib')
+        content.sets('genes', ekb)
+        content.sets('up-down', 'ONT::SUCCESSOR')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.gets('reason') == 'MISSING_TARGET', output.gets('reason')
+
+
+@attr('nonpublic')
+class TestMsaCommonDownstreamsMEKonly(_IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TestMsaCommonDownstreamsMEKonly, self).__init__(
+            msa_module.MSA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-COMMON')
+        ekb = ekb_from_text('MEK')
+        content.sets('genes', ekb)
+        content.sets('up-down', 'ONT::SUCCESSOR')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.gets('reason') == 'NO_TARGET', output.gets('reason')
+
+
+@attr('nonpublic')
 def test_msa_paper_retrieval_failure():
     raise SkipTest("This feature is currently not available.")
     content = KQMLList('GET-PAPER-MODEL')

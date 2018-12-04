@@ -7,6 +7,8 @@ from datetime import datetime
 from itertools import groupby
 from threading import Thread
 
+from indra.statements import Agent
+
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA')
@@ -54,8 +56,101 @@ class MSALookupError(Exception):
 class MSA_Module(Bioagent):
     name = 'MSA'
     tasks = ['PHOSPHORYLATION-ACTIVATING', 'FIND-RELATIONS-FROM-LITERATURE',
-             'GET-PAPER-MODEL', 'CONFIRM-RELATION-FROM-LITERATURE']
+             'GET-PAPER-MODEL', 'CONFIRM-RELATION-FROM-LITERATURE',
+             'GET-COMMON']
     signor_afs = _read_signor_afs()
+
+    def respond_get_common(self, content):
+        """Find the common up/down streams of a protein."""
+        if not CAN_CHECK_STATEMENTS:
+            return self.make_failure(
+                'NO_KNOWLEDGE_ACCESS',
+                'Cannot access the database through the web api.'
+                )
+        genes_ekb = content.gets('genes')
+        agents = _get_agents(genes_ekb)
+        if len(agents) < 2:
+            return self.make_failure('NO_TARGET',
+                                     'Only %d < 2 agents given.' % len(agents))
+
+        direction = content.gets('up-down')
+        logger.info("Got genes: %s and direction %s." % (agents, direction))
+
+        # Choose some parameters based on direction.
+        if direction == 'ONT::PREDECESSOR':
+            kw = 'object'
+            other_idx = 0
+            prefix = 'up'
+        elif direction == 'ONT::SUCCESSOR':
+            kw = 'subject'
+            other_idx = 1
+            prefix = 'down'
+        else:
+            return self.make_failure("UNKNOWN_ACTION", direction)
+
+        # Find the commonalities.
+        commons = {}
+        first = True
+        for ag in agents:
+
+            # Look for HGNC or FPLX, and fail if neither is found.
+            for ns in ['HGNC', 'FPLX']:
+                dbid = ag.db_refs.get(ns)
+                if dbid:
+                    break
+            else:
+                return self.make_failure('MISSING_TARGET',
+                                         'Agent lacks both HGNC and FPLX ids.')
+
+            # Look for statements for this agent.
+            kwargs = {kw: '%s@%s' % (dbid, ns), 'ev_limit': 2,
+                      'persist': False, 'max_stmts': 100}
+            stmts = get_statements(**kwargs)
+
+            # Look for matches with existing upstreams.
+            for stmt in stmts:
+                other_ag = stmt.agent_list()[other_idx]
+                if other_ag is None or 'HGNC' not in other_ag.db_refs.keys():
+                    continue
+                other_id = other_ag.name
+                if first and other_id not in commons.keys():
+                    commons[other_id] = {dbid: [stmt]}
+                elif other_id in commons.keys():
+                    if dbid not in commons[other_id].keys():
+                        commons[other_id][dbid] = []
+                    commons[other_id][dbid].append(stmt)
+
+            # Remove all entries that didn't find match this time around.
+            if not first:
+                commons = {other_id: data for other_id, data in commons.items()
+                           if dbid in data.keys()}
+
+            # Check for the empty condition
+            if not commons:
+                break
+
+            # The next run is definitely not the first.
+            first = False
+
+        # Get post statements to provenance.
+        stmts = [s for data in commons.values() for s_list in data.values()
+                 for s in s_list]
+        if len(agents) > 2:
+            name_list = ', '.join(ag.name for ag in agents[:-1]) + ','
+        else:
+            name_list = agents[0].name
+        name_list += ' and ' + agents[-1].name
+        msg = ('%sstreams of ' % prefix).capitalize() + name_list
+        self.send_provenance_for_stmts(stmts, msg)
+
+        # Create the reply
+        resp = KQMLPerformative('SUCCESS')
+        gene_list = KQMLList()
+        for ag_name in commons.keys():
+            gene_list.append(ag_name)
+        resp.set('commons', gene_list)
+        resp.sets('prefix', prefix)
+        return resp
 
     def respond_phosphorylation_activating(self, content):
         """Return response content to phosphorylation_activating request."""
@@ -72,7 +167,7 @@ class MSA_Module(Bioagent):
         target_ekb = content.gets('target')
         if target_ekb is None or target_ekb == '':
             return self.make_failure('MISSING_TARGET')
-        agent = self._get_agent(target_ekb)
+        agent = _get_agent(target_ekb)
         logger.debug('Found agent (target): %s.' % agent.name)
         site = content.gets('site')
         if site is None:
@@ -131,7 +226,7 @@ class MSA_Module(Bioagent):
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
             ekb = content.gets(loc)
             try:
-                agent = self._get_agent(ekb)
+                agent = _get_agent(ekb)
                 if agent is None:
                     agent_dict[pos] = None
                 else:
@@ -198,11 +293,11 @@ class MSA_Module(Bioagent):
 
         if rest_resp.is_working():
             # Calling this success may be a bit ambitious.
-            rest_resp = KQMLPerformative('SUCCESS')
-            rest_resp.set('status', 'WORKING')
-            rest_resp.set('relations-found', 'nil')
-            rest_resp.set('dump-limit', str(DUMP_LIMIT))
-            return rest_resp
+            resp = KQMLPerformative('SUCCESS')
+            resp.set('status', 'WORKING')
+            resp.set('relations-found', 'nil')
+            resp.set('dump-limit', str(DUMP_LIMIT))
+            return resp
 
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
@@ -211,7 +306,7 @@ class MSA_Module(Bioagent):
         return resp
 
     def respond_confirm_relation_from_literature(self, content):
-        """Confirm a protein-protein interaction given subject, object, verb."""
+        """Confirm a protein-protein interaction given subject, object, verb"""
         try:
             rest_resp = self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
@@ -323,17 +418,6 @@ class MSA_Module(Bioagent):
         print("SENT!")
         return self.tell(content)
 
-    @staticmethod
-    def _get_agent(agent_ekb):
-        tp = TripsProcessor(agent_ekb)
-        terms = tp.tree.findall('TERM')
-        if len(terms):
-            term_id = terms[0].attrib['id']
-            agent = tp._get_agent_by_id(term_id, None)
-        else:
-            agent = None
-        return agent
-
     def _matching(self, stmt, residue, position, action, polarity):
         if stmt.is_active is not (polarity == 'activating'):
             return False
@@ -358,6 +442,21 @@ def _make_diagrams(stmts):
     sbgn = _make_sbgn(stmts)
     diagrams = {'sbgn': sbgn.decode('utf-8')}
     return diagrams
+
+
+def _get_agent(agent_ekb):
+    agents = _get_agents(agent_ekb)
+    agent = None
+    if len(agents):
+        agent = agents[0]
+    return agent
+
+
+def _get_agents(ekb):
+    tp = TripsProcessor(ekb)
+    terms = tp.tree.findall('TERM')
+    results = [tp._get_agent_by_id(t.attrib['id'], None) for t in terms]
+    return [ag for ag in results if isinstance(ag, Agent)]
 
 
 if __name__ == "__main__":

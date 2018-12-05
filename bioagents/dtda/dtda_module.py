@@ -60,14 +60,8 @@ class DTDA_Module(Bioagent):
         except Exception:
             return self.make_failure('INVALID_TARGET')
         drug_results = self.dtda.find_target_drugs(target)
+        drugs = self._get_drug_kqml(drug_results)
         reply = KQMLList('SUCCESS')
-        drugs = KQMLList()
-        for dn, pci in drug_results:
-            drug = KQMLList()
-            drug.sets('name', dn.replace(' ', '-'))
-            if pci:
-                drug.sets('pubchem_id', pci)
-            drugs.append(drug)
         reply.set('drugs', drugs)
         return reply
 
@@ -166,16 +160,20 @@ class DTDA_Module(Bioagent):
         # These differ only in mutation, which isn't relevant.
         an_agent = agents[0]
         drug_results = self.dtda.find_target_drugs(an_agent)
+        drugs = self._get_drug_kqml(drug_results)
+        reply.set('drugs', drugs)
+        return reply
+
+    @staticmethod
+    def _get_drug_kqml(drug_list):
         drugs = KQMLList()
-        for dn, pci in drug_results:
+        for dn, pci in drug_list:
             drug = KQMLList()
             drug.sets('name', dn.replace(' ', '-'))
             if pci:
-                drug.set('pubchem_id', pci)
+                drug.sets('pubchem_id', pci)
             drugs.append(drug)
-        reply.set('drugs', drugs)
-
-        return reply
+        return drugs
 
     @staticmethod
     def _get_agent(agent_ekb):

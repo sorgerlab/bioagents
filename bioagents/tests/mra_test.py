@@ -370,13 +370,9 @@ class TestSmallModelDescription(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        output_log = self.get_output_log()
-        print('\n'.join(str(line) for line in output_log))
-        spoken = [msg.get('content').gets('WHAT') for msg in output_log
-                  if msg.head() == 'tell' and msg.get('content')
-                  and msg.get('content').head() == 'SPOKEN']
-        assert spoken
-        assert 'MAP2K1 phosphorylates MAPK1.' in spoken, spoken
+        spoken = output.gets('description')
+        assert spoken, output
+        assert 'MAP2K1 phosphorylates MAPK1.' == spoken, spoken
 
 
 class TestLargeModelDescription(_IntegrationTest):
@@ -406,14 +402,10 @@ class TestLargeModelDescription(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        output_log = self.get_output_log()
-        print('\n'.join(str(line) for line in output_log))
-        spoken = [msg.get('content').gets('WHAT') for msg in output_log
-                  if msg.head() == 'tell' and msg.get('content')
-                  and msg.get('content').head() == 'SPOKEN']
-        assert spoken and len(spoken) == 1, spoken
-        assert all(phrase in spoken[0] for phrase in self.model_build_list), \
-            spoken[0]
+        spoken = output.gets('description')
+        assert spoken, output
+        assert all(phrase in spoken for phrase in self.model_build_list), \
+            spoken
 
 
 class TestMissingDescriptionFailure(_FailureTest):

@@ -350,13 +350,9 @@ class MRA_Module(Bioagent):
         english_assembler = EnglishAssembler(model)
         desc = english_assembler.make_model()
 
-        # Tell the description to the user.
-        content = KQMLList('SPOKEN')
-        content.sets('WHAT', desc)
-        self.tell(content)
-
         # Respond to the BA.
         resp = KQMLList('SUCCESS')
+        resp.sets('description', desc)
         return resp
 
     def send_model_diagnoses(self, res):

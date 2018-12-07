@@ -355,6 +355,30 @@ class TestModelUndo(_IntegrationTest):
                     for msg in output_log])
 
 
+class TestModelDescriptionSimple(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+        # Start off with a model
+        msg, content = _get_build_model_request('MEK1 phosphorylates ERK2')
+        self.bioagent.receive_request(msg, content)
+
+    def create_message(self):
+        content = KQMLList('DESCRIBE-MODEL')
+        content.set('model-id', '1')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        output_log = self.get_output_log()
+        print('\n'.join(str(line) for line in output_log))
+        spoken = [msg.get('content').gets('WHAT') for msg in output_log
+                  if msg.head() == 'tell' and msg.get('content')
+                  and msg.get('content').head() == 'SPOKEN']
+        assert spoken
+        assert 'MAP2K1 phosphorylates MAPK1.' in spoken, spoken
+
+
 class TestMissingDescriptionFailure(_FailureTest):
     def __init__(self, *args):
         super(TestMissingDescriptionFailure, self).__init__(MRA_Module)

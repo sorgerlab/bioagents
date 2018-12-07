@@ -355,7 +355,7 @@ class TestModelUndo(_IntegrationTest):
                     for msg in output_log])
 
 
-class TestModelDescriptionSimple(_IntegrationTest):
+class TestSmallModelDescription(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(MRA_Module)
         # Start off with a model
@@ -377,6 +377,43 @@ class TestModelDescriptionSimple(_IntegrationTest):
                   and msg.get('content').head() == 'SPOKEN']
         assert spoken
         assert 'MAP2K1 phosphorylates MAPK1.' in spoken, spoken
+
+
+class TestLargeModelDescription(_IntegrationTest):
+    model_build_list = [
+        'KRAS bound to GTP phosphorylates BRAF on T373.',
+        'Phosphorylated BRAF activates NFAT.',
+        'GPT bound to KRAS inhibits KRAS.',
+        'GPT binds KRAS.'
+    ]
+
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+        # Start off with a model
+        msg, content = _get_build_model_request(self.model_build_list[0])
+        self.bioagent.receive_request(msg, content)
+        for phrase in self.model_build_list[1:]:
+            model_id = self.bioagent.mra.id_counter
+            msg, content = _get_expand_model_request(phrase, str(model_id))
+            self.bioagent.receive_request(msg, content)
+        return
+
+    def create_message(self):
+        content = KQMLList('DESCRIBE-MODEL')
+        content.set('model-id', str(self.bioagent.mra.id_counter))
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        output_log = self.get_output_log()
+        print('\n'.join(str(line) for line in output_log))
+        spoken = [msg.get('content').gets('WHAT') for msg in output_log
+                  if msg.head() == 'tell' and msg.get('content')
+                  and msg.get('content').head() == 'SPOKEN']
+        assert spoken and len(spoken) == 1, spoken
+        assert all(phrase in spoken[0] for phrase in self.model_build_list), \
+            spoken[0]
 
 
 class TestMissingDescriptionFailure(_FailureTest):

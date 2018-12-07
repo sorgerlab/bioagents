@@ -38,7 +38,7 @@ class MRA_Module(Bioagent):
     tasks = ['BUILD-MODEL', 'EXPAND-MODEL', 'MODEL-HAS-MECHANISM',
              'MODEL-REPLACE-MECHANISM', 'MODEL-REMOVE-MECHANISM',
              'MODEL-UNDO', 'MODEL-GET-UPSTREAM', 'MODEL-GET-JSON',
-             'USER-GOAL']
+             'USER-GOAL', 'DESCRIBE-MODEL']
 
     def __init__(self, **kwargs):
         # Instantiate a singleton MRA agent
@@ -340,6 +340,21 @@ class MRA_Module(Bioagent):
         reply = KQMLList('SUCCESS')
         return reply
 
+    def respond_describe_model(self, content):
+        """Convert the model to natural language."""
+        # Get the model.
+        model_id = self._get_model_id(content)
+        model = self.mra.get_model_by_id(model_id)
+
+        # Turn the model into a text description.
+        english_assembler = EnglishAssembler(model)
+        desc = english_assembler.make_model()
+
+        # Respond to the BA.
+        resp = KQMLList('SUCCESS')
+        resp.sets('description', desc)
+        return resp
+
     def send_model_diagnoses(self, res):
         # SUGGESTIONS
         # If there is an explanation, english assemble it
@@ -382,8 +397,6 @@ class MRA_Module(Bioagent):
             content = KQMLList('SPOKEN')
             content.sets('WHAT', say)
             self.tell(content)
-
-
 
     def send_display_model(self, diagrams):
         for diagram_type, resource in diagrams.items():

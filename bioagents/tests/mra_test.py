@@ -355,6 +355,59 @@ class TestModelUndo(_IntegrationTest):
                     for msg in output_log])
 
 
+class TestSmallModelDescription(_IntegrationTest):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+        # Start off with a model
+        msg, content = _get_build_model_request('MEK1 phosphorylates ERK2')
+        self.bioagent.receive_request(msg, content)
+
+    def create_message(self):
+        content = KQMLList('DESCRIBE-MODEL')
+        content.set('model-id', '1')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        spoken = output.gets('description')
+        assert spoken, output
+        assert 'MAP2K1 phosphorylates MAPK1.' == spoken, spoken
+
+
+class TestLargeModelDescription(_IntegrationTest):
+    model_build_list = [
+        'KRAS bound to GTP phosphorylates BRAF on T373.',
+        'Phosphorylated BRAF activates NFAT.',
+        'GPT bound to KRAS inhibits KRAS.',
+        'GPT binds KRAS.'
+    ]
+
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(MRA_Module)
+        # Start off with a model
+        msg, content = _get_build_model_request(self.model_build_list[0])
+        self.bioagent.receive_request(msg, content)
+        for phrase in self.model_build_list[1:]:
+            model_id = self.bioagent.mra.id_counter
+            msg, content = _get_expand_model_request(phrase, str(model_id))
+            self.bioagent.receive_request(msg, content)
+        return
+
+    def create_message(self):
+        content = KQMLList('DESCRIBE-MODEL')
+        content.set('model-id', str(self.bioagent.mra.id_counter))
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        spoken = output.gets('description')
+        assert spoken, output
+        assert all(phrase in spoken for phrase in self.model_build_list), \
+            spoken
+
+
 class TestMissingDescriptionFailure(_FailureTest):
     def __init__(self, *args):
         super(TestMissingDescriptionFailure, self).__init__(MRA_Module)

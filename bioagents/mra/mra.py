@@ -50,9 +50,9 @@ class MRA(object):
         return False
 
     def assemble_pysb(self, stmts):
-        pa = PysbAssembler(policies=self.default_policy)
+        pa = PysbAssembler()
         pa.add_statements(stmts)
-        pa.make_model()
+        pa.make_model(policies=self.default_policy)
         pa.add_default_initial_conditions(self.default_initial_amount)
         return pa.model
 

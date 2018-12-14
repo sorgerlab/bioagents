@@ -82,7 +82,10 @@ class QCA_Module(Bioagent):
                 # Edges of the first result
                 edges = res[1::2]
                 # INDRA JSON of the edges of the result
-                indra_edges = [fe[0]['INDRA json'] for fe in edges]
+                try:
+                    indra_edges = [fe[0]['__INDRA json'] for fe in edges]
+                except Exception:
+                    indra_edges = [fe[0]['INDRA json'] for fe in edges]
                 # Make the JSONs dicts from strings
                 indra_edges = [json.loads(e) for e in indra_edges]
                 # Now fix the edges if needed due to INDRA Statement changes

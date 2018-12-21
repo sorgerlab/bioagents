@@ -40,7 +40,8 @@ class TRA_Module(Bioagent):
             logger.warning('You have chosen to not use Kappa.')
 
         self.tra = tra.TRA(use_kappa, use_kappa_rest)
-        return super(TRA_Module, self).__init__(**kwargs)
+        super(TRA_Module, self).__init__(**kwargs)
+        return
 
     def respond_satisfies_pattern(self, content):
         """Return response content to satisfies-pattern request."""
@@ -157,7 +158,6 @@ class TRA_Module(Bioagent):
         reply.set('result', result)
         return reply
 
-
     def send_display_figure(self, path):
         msg = KQMLPerformative('tell')
         content = KQMLList('display-image')
@@ -174,9 +174,9 @@ def decode_indra_stmts(stmts_json_str):
 
 
 def assemble_model(stmts):
-    pa = PysbAssembler(policies='one_step')
+    pa = PysbAssembler()
     pa.add_statements(stmts)
-    model = pa.make_model()
+    model = pa.make_model(policies='one_step')
     pa.add_default_initial_conditions(100.0)
 
     try:

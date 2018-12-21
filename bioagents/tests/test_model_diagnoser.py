@@ -9,6 +9,7 @@ raf = Agent('RAF', db_refs={'FPLX': 'RAF'})
 mek = Agent('MEK', db_refs={'FPLX': 'MEK'})
 erk = Agent('ERK', db_refs={'FPLX': 'ERK'})
 
+
 def test_missing_activity1():
     stmts = [Activation(raf, mek), Phosphorylation(mek, erk)]
     md = ModelDiagnoser(stmts)
@@ -42,9 +43,9 @@ def test_check_model():
                        activity=ActivityCondition('activity', True))
     model_stmts = [Activation(raf, mek), Activation(mek_active, erk)]
     # Build the pysb model
-    pa = PysbAssembler(policies='one_step')
+    pa = PysbAssembler()
     pa.add_statements(model_stmts)
-    pa.make_model()
+    pa.make_model(policies='one_step')
     md = ModelDiagnoser(model_stmts, pa.model, explain)
     result = md.check_explanation()
     assert result['has_explanation'] is True
@@ -63,9 +64,9 @@ def test_propose_statement():
     # Leave out MEK activates ERK
     model_stmts = [Activation(raf, mek), Activation(erk_active, jun)]
     # Build the pysb model
-    pa = PysbAssembler(policies='one_step')
+    pa = PysbAssembler()
     pa.add_statements(model_stmts)
-    pa.make_model()
+    pa.make_model(policies='one_step')
     md = ModelDiagnoser(model_stmts, pa.model, explain)
     result = md.check_explanation()
     assert result['has_explanation'] is False

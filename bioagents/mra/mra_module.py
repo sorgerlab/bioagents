@@ -193,11 +193,11 @@ class MRA_Module(Bioagent):
         """Return response content to model-undo request."""
         res = self.mra.model_undo()
         no_display = content.get('no-display')
-        new_model_id = res.get('model_id')
+        model_id = res.get('model_id')
         # Start a SUCCESS message
         msg = KQMLPerformative('SUCCESS')
         # Add the model id
-        msg.set('model-id', str(new_model_id))
+        msg.set('model-id', 'NIL' if model_id is None else str(model_id))
         # Add the INDRA model json
         model = res.get('model')
 

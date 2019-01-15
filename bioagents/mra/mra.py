@@ -194,8 +194,7 @@ class MRA(object):
                 removed_stmts.append(model_st)
         new_model_id = self.new_model(new_stmts)
         model_exec = self.assemble_pysb(new_stmts)
-        res = {'model_id': new_model_id,
-               'model': new_stmts}
+        res = {'model_id': new_model_id, 'model': new_stmts}
         res['model_exec'] = model_exec
         if removed_stmts:
             res['removed'] = removed_stmts
@@ -208,18 +207,31 @@ class MRA(object):
 
     def model_undo(self):
         """Revert to the previous model version."""
+        # Handle the case that there are no previous transformations (left).
+        if not self.transformations:
+            return {'action': 'no_op', 'model_id': None, 'model': [],
+                    'reason': "NO_TRANSACTIONS"}
+
+        # Undo the latest transformation.
         forward_action = self.transformations.pop()
-        if forward_action[0] == 'add_stmts':
-            stmts_added = forward_action[1]
-            old_model_id = forward_action[2]
-            new_model_id = self.get_new_id()
-            stmts = self.models[old_model_id] \
-                if old_model_id is not None else []
-            self.models[new_model_id] = stmts
-            undo_action = {'action': 'remove_stmts', 'statements': stmts_added}
+
+        # Ensure that the forward action was to add statements.
+        if forward_action[0] != 'add_stmts':
+            return {'action': 'undo_' + forward_action[0], 'model_id': None,
+                    'model': [], 'reason': "INVALID_FORWARD_ACTION"}
+
+        stmts_added = forward_action[1]
+        old_model_id = forward_action[2]
+        new_model_id = self.get_new_id()
+        stmts = self.models[old_model_id] \
+            if old_model_id is not None else []
+        self.models[new_model_id] = stmts
+        undo_action = {'action': 'remove_stmts', 'statements': stmts_added}
+
         res = {'model_id': new_model_id,
                'model': stmts,
                'action': undo_action}
+
         model_exec = self.assemble_pysb(stmts)
         if not stmts:
             return res

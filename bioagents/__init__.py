@@ -1,3 +1,4 @@
+import uuid
 import logging
 from os import path
 from datetime import datetime
@@ -153,6 +154,67 @@ class Bioagent(KQMLModule):
         return self.tell(content)
 
 
+def stash_evidence_html(html):
+    """Make html for a set of statements, return a link to the file.
+
+    The if the PROVENANCE_LOCATION environment variable determines where the
+    content is stored. The variable should be divided by colons, the first
+    division indicating whether the file is stored locally or on s3, being
+    either "file" or "s3" respectively.
+
+    If the html will be stored locally, the next and last division should be a
+    path (absolute would be best) to the location where html files will be
+    stored. For example:
+
+        file:/home/myname/projects/cwc-integ/provenance
+
+    If the html will be stored on s3, the next division should be the bucket,
+    and the last division should be a prefix to a "directory" where the html
+    files will be stored. For example:
+
+        s3:cwc-stuff:bob/provenance
+
+    The default is:
+
+        file:{this directory}/../../../provenance
+
+    Which should land in the cwc-integ directory. If the directory does not yet
+    exist, it will be created.
+    """
+    # Get the provenance location.
+    from os import environ, mkdir
+
+    loc = environ.get('PROVENANCE_LOCATION')
+    if loc is None:
+        this_dir = path.dirname(path.abspath(__file__))
+        relpath = path.join(*([this_dir] + 3*[path.pardir] + ['provenance']))
+        loc = 'file:' + path.abspath(relpath)
+
+    # Save the file.
+    method = loc.split(':')[0]
+    fname = '%s.html' % uuid.uuid4()
+    if method == 'file':
+        prov_path = loc.split(':')[1]
+        if not path.exists(prov_path):
+            mkdir(prov_path)
+        link = path.join(prov_path, fname)
+        with open(link, 'w') as f:
+            f.write(html)
+    elif method == 's3':
+        bucket = loc.split(':')[1]
+        prefix = loc.split(':')[2]
+        import boto3
+        s3 = boto3.client('s3')
+        key = prefix + fname
+        link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)
+        s3.put_object(Bucket=bucket, Key=key, Body=html.encode('utf-8'),
+                      ContentType='text/html')
+    else:
+        logger.error('Invalid PROVENANCE_LOCATION: "%s". HTML not saved.'
+                     % loc)
+    return link
+
+
 def make_report_cols_html(stmt_list):
     """Make columns listing the support given by the statement list."""
 
@@ -195,50 +257,6 @@ def make_report_cols_html(stmt_list):
                          % (key[1], key[0], key[2], count))
 
     return '<ul>%s</ul>' % ('\n'.join(html_rows))
-
-
-def make_evidence_html(stmt_list, limit=5):
-    """Creates HTML content for evidences corresponding to INDRA Statements."""
-    # Create some formats
-    url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'
-    pmid_link_fmt = '<a href={url}{pmid} target="_blank">PMID{pmid}</a>'
-
-    def get_ev_desc(ev, stmt):
-        "Get a description of the evidence."
-        if ev.text:
-            entry = "<i>'%s'</i>" % ev.text
-        # If the entry at least has a source ID in a database
-        elif ev.source_id:
-            entry = "Database entry in '%s': %s" % \
-                (ev.source_api, ev.source_id)
-        # Otherwise turn it into English
-        else:
-            txt = EnglishAssembler([stmt]).make_model()
-            entry = "Database entry in '%s' representing: %s" % \
-                (ev.source_api, txt)
-        return entry
-
-    # Extract a list of the evidence then map pmids to lists of text
-    evidence_list = {(ev, get_ev_desc(ev, stmt)) for stmt in stmt_list
-                     for ev in stmt.evidence}
-    evidence_with_text = {(ev, txt) for ev, txt in evidence_list if ev.text}
-    evidence_from_db = {(ev, txt) for ev, txt in evidence_list if not ev.text
-                        and ev.source_id}
-    evidence_no_ids = {(ev, txt) for ev, txt in evidence_list if (ev not in
-                       evidence_with_text) and (ev not in evidence_from_db)}
-    evidence_list = evidence_with_text | evidence_from_db | evidence_no_ids
-    entries = set()
-    for i, (ev, entry) in enumerate(evidence_list):
-        if limit and i >= limit:
-            break
-        if ev.pmid:
-            entry += ' (%s)' % (pmid_link_fmt.format(url=url_base,
-                                                     pmid=ev.pmid))
-        entries.add(entry)
-
-    entries_list = ['<li>%s</li>' % entry for entry in entries]
-    evidence_html = '<ul>%s</ul>' % ('\n'.join(entries_list))
-    return evidence_html
 
 
 def get_img_path(img_name):

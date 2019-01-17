@@ -255,7 +255,7 @@ def make_report_cols_html(stmt_list):
 
     # Sort the rows by count and agent names.
     row_data = sorted(((k, v) for k, v in stmt_rows.items() if len(k) == 3),
-                      key=lambda key, stmts: (len(stmts), key[1], key[2]))
+                      key=lambda tpl: (len(tpl[1]), tpl[0][1], tpl[0][2]))
 
     # Build the html.
     rows = []

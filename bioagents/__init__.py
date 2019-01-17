@@ -196,6 +196,7 @@ def stash_evidence_html(html):
         this_dir = path.dirname(path.abspath(__file__))
         relpath = path.join(*([this_dir] + 3*[path.pardir] + ['provenance']))
         loc = 'file:' + path.abspath(relpath)
+    logger.info("Using provenance location: \"%s\"" % loc)
 
     # Save the file.
     method = loc.split(':')[0]
@@ -204,7 +205,7 @@ def stash_evidence_html(html):
         prov_path = loc.split(':')[1]
         if not path.exists(prov_path):
             mkdir(prov_path)
-        link = path.join(prov_path, fname)
+        link = 'file://' + path.join(prov_path, fname)
         with open(link, 'w') as f:
             f.write(html)
     elif method == 's3':

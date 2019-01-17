@@ -2,6 +2,7 @@ import uuid
 import logging
 from os import path
 from datetime import datetime
+from indra.assemblers.html import HtmlAssembler
 
 from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
 
@@ -154,6 +155,12 @@ class Bioagent(KQMLModule):
         return self.tell(content)
 
 
+def make_evidence_html(stmts):
+    "Make html from a set of statements."
+    ha = HtmlAssembler(stmts)
+    return ha.make_model()
+
+
 def stash_evidence_html(html):
     """Make html for a set of statements, return a link to the file.
 
@@ -242,21 +249,25 @@ def make_report_cols_html(stmt_list):
 
         # Update the counts, and add key if needed.
         if key not in stmt_rows.keys():
-            stmt_rows[key] = 0
-        stmt_rows[key] += len(s.evidence)
+            stmt_rows[key] = []
+        stmt_rows[key].append(s)
 
     # Build the html.
-    html_rows = []
-    for key, count in stmt_rows.items():
+    rows = []
+    for key, stmts in stmt_rows.items():
+        stmts_html = make_evidence_html(stmts)
+        link = stash_evidence_html(stmts_html)
+
+        count = sum(len(s.evidence) for s in stmts)
 
         # For now, just skip non-subject-object-verb statements.
         if len(key[1:]) != 2:
             continue
 
-        html_rows.append('<li>%s %s %s (%d)</li>'
-                         % (key[1], key[0], key[2], count))
+        rows.append('<li>%s %s %s <a href="%s" target="_blank">(%d)</a></li>'
+                    % (key[1], key[0], key[2], link, count))
 
-    return '<ul>%s</ul>' % ('\n'.join(html_rows))
+    return '<ul>%s</ul>' % ('\n'.join(rows))
 
 
 def get_img_path(img_name):

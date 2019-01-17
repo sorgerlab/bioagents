@@ -260,7 +260,7 @@ def make_report_cols_html(stmt_list):
         return count, key[1], key[2]
 
     row_data = sorted(((k, v) for k, v in stmt_rows.items() if len(k) == 3),
-                      key=sort_key)
+                      key=sort_key, reverse=True)
 
     # Build the html.
     rows = []

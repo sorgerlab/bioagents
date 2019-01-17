@@ -253,9 +253,13 @@ def make_report_cols_html(stmt_list):
             stmt_rows[key] = []
         stmt_rows[key].append(s)
 
+    # Sort the rows by count and agent names.
+    row_data = sorted(((k, v) for k, v in stmt_rows.items() if len(k) == 3),
+                      key=lambda key, stmts: (len(stmts), key[1], key[2]))
+
     # Build the html.
     rows = []
-    for key, stmts in stmt_rows.items():
+    for key, stmts in row_data[:5]:
         stmts_html = make_evidence_html(stmts)
         link = stash_evidence_html(stmts_html)
 
@@ -265,11 +269,20 @@ def make_report_cols_html(stmt_list):
         if len(key[1:]) != 2:
             continue
 
-        rows.append('<li>%s %s %s <a href=%s target="_blank">(%d)</a></li>'
-                    % (key[1], key[0], key[2], link, count))
+        rows.append(((key[1], key[2]),
+                     '<li>%s %s %s <a href=%s target="_blank">(%d)</a></li>'
+                     % (key[1], key[0], key[2], link, count)))
 
+    # Sort rows by entity names.
     rows.sort()
-    return '<ul>%s</ul>' % ('\n'.join(rows))
+
+    # Build the overall html.
+    list_html = '<ul>%s</ul>' % ('\n'.join(r for _, r in rows))
+    html = make_evidence_html(stmt_list)
+    link = stash_evidence_html(html)
+    link_html = '<a href=%s target="_blank">Here</a> is the full list.' % link
+
+    return list_html + '\n' + link_html
 
 
 def get_img_path(img_name):

@@ -265,9 +265,10 @@ def make_report_cols_html(stmt_list):
         if len(key[1:]) != 2:
             continue
 
-        rows.append('<li>%s %s %s <a href="%s" target="_blank">(%d)</a></li>'
+        rows.append('<li>%s %s %s <a href=%s target="_blank">(%d)</a></li>'
                     % (key[1], key[0], key[2], link, count))
 
+    rows.sort()
     return '<ul>%s</ul>' % ('\n'.join(rows))
 
 

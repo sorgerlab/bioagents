@@ -143,7 +143,7 @@ class Bioagent(KQMLModule):
                     % (len(stmt_list), for_what))
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
-        evidence_html = make_evidence_html(stmt_list, limit)
+        evidence_html = make_report_cols_html(stmt_list)
         # Actually create the content.
         content = KQMLList('add-provenance')
         content.sets('html',
@@ -151,6 +151,50 @@ class Bioagent(KQMLModule):
                                         evidence=evidence_html,
                                         bioagent=self.name))
         return self.tell(content)
+
+
+def make_report_cols_html(stmt_list):
+    """Make columns listing the support given by the statement list."""
+
+    def name(agent):
+        return 'None' if agent is None else agent.name
+
+    # Build the list of relevant statements and count their prevalence.
+    stmt_rows = {}
+    for s in stmt_list:
+        # Create a key.
+        verb = s.__class__.__name__
+        key = (verb,)
+
+        ags = s.agent_list()
+        if verb == 'Complex':
+            ag_ns = {name(ag) for ag in ags}
+            key += tuple(sorted(ag_ns))
+        elif verb == 'Conversion':
+            subj = name(ags[0])
+            objs_from = {name(ag) for ag in ags[1]}
+            objs_to = {name(ag) for ag in ags[2]}
+            key += (subj, tuple(sorted(objs_from)), tuple(sorted(objs_to)))
+        else:
+            key += tuple([name(ag) for ag in ags])
+
+        # Update the counts, and add key if needed.
+        if key not in stmt_rows.keys():
+            stmt_rows[key] = 0
+        stmt_rows[key] += len(s.evidence)
+
+    # Build the html.
+    html_rows = []
+    for key, count in stmt_rows.items():
+
+        # For now, just skip non-subject-object-verb statements.
+        if len(key[1:]) != 2:
+            continue
+
+        html_rows.append('<li>%s %s %s (%d)</li>'
+                         % (key[1], key[0], key[2], count))
+
+    return '<ul>%s</ul>' % ('\n'.join(html_rows))
 
 
 def make_evidence_html(stmt_list, limit=5):

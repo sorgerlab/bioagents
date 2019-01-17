@@ -145,8 +145,8 @@ class Bioagent(KQMLModule):
                     % (len(stmt_list), for_what))
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
-        evidence_html = make_report_cols_html(stmt_list)
-        # Actually create the content.
+        evidence_html = self._make_report_cols_html(stmt_list)
+
         content = KQMLList('add-provenance')
         content.sets('html',
                      content_fmt.format(conclusion=for_what,
@@ -154,140 +154,142 @@ class Bioagent(KQMLModule):
                                         bioagent=self.name))
         return self.tell(content)
 
+    def _make_evidence_html(self, stmts):
+        "Make html from a set of statements."
+        ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio')
+        return ha.make_model()
 
-def make_evidence_html(stmts):
-    "Make html from a set of statements."
-    ha = HtmlAssembler(stmts)
-    return ha.make_model()
+    def _stash_evidence_html(self, html):
+        """Make html for a set of statements, return a link to the file.
 
+        The if the PROVENANCE_LOCATION environment variable determines where
+        the content is stored. The variable should be divided by colons, the
+        first division indicating whether the file is stored locally or on s3,
+        being either "file" or "s3" respectively.
 
-def stash_evidence_html(html):
-    """Make html for a set of statements, return a link to the file.
+        If the html will be stored locally, the next and last division should
+        be a path (absolute would be best) to the location where html files
+        will be stored. For example:
 
-    The if the PROVENANCE_LOCATION environment variable determines where the
-    content is stored. The variable should be divided by colons, the first
-    division indicating whether the file is stored locally or on s3, being
-    either "file" or "s3" respectively.
+            file:/home/myname/projects/cwc-integ/provenance
 
-    If the html will be stored locally, the next and last division should be a
-    path (absolute would be best) to the location where html files will be
-    stored. For example:
+        If the html will be stored on s3, the next division should be the
+        bucket, and the last division should be a prefix to a "directory" where
+        the html files will be stored. For example:
 
-        file:/home/myname/projects/cwc-integ/provenance
+            s3:cwc-stuff:bob/provenance
 
-    If the html will be stored on s3, the next division should be the bucket,
-    and the last division should be a prefix to a "directory" where the html
-    files will be stored. For example:
+        The default is:
 
-        s3:cwc-stuff:bob/provenance
+            file:{this directory}/../../../provenance
 
-    The default is:
+        Which should land in the cwc-integ directory. If the directory does not
+        yet exist, it will be created.
+        """
+        # Get the provenance location.
+        from os import environ, mkdir
 
-        file:{this directory}/../../../provenance
+        loc = environ.get('PROVENANCE_LOCATION')
+        if loc is None:
+            this_dir = path.dirname(path.abspath(__file__))
+            rel = path.join(*([this_dir] + 3*[path.pardir] + ['provenance']))
+            loc = 'file:' + path.abspath(rel)
+        logger.info("Using provenance location: \"%s\"" % loc)
 
-    Which should land in the cwc-integ directory. If the directory does not yet
-    exist, it will be created.
-    """
-    # Get the provenance location.
-    from os import environ, mkdir
-
-    loc = environ.get('PROVENANCE_LOCATION')
-    if loc is None:
-        this_dir = path.dirname(path.abspath(__file__))
-        relpath = path.join(*([this_dir] + 3*[path.pardir] + ['provenance']))
-        loc = 'file:' + path.abspath(relpath)
-    logger.info("Using provenance location: \"%s\"" % loc)
-
-    # Save the file.
-    method = loc.split(':')[0]
-    fname = '%s.html' % uuid.uuid4()
-    if method == 'file':
-        prov_path = loc.split(':')[1]
-        if not path.exists(prov_path):
-            mkdir(prov_path)
-        link = 'file://' + path.join(prov_path, fname)
-        with open(link, 'w') as f:
-            f.write(html)
-    elif method == 's3':
-        bucket = loc.split(':')[1]
-        prefix = loc.split(':')[2]
-        import boto3
-        s3 = boto3.client('s3')
-        key = prefix + fname
-        link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)
-        s3.put_object(Bucket=bucket, Key=key, Body=html.encode('utf-8'),
-                      ContentType='text/html')
-    else:
-        logger.error('Invalid PROVENANCE_LOCATION: "%s". HTML not saved.'
-                     % loc)
-    return link
-
-
-def make_report_cols_html(stmt_list):
-    """Make columns listing the support given by the statement list."""
-
-    def name(agent):
-        return 'None' if agent is None else agent.name
-
-    # Build the list of relevant statements and count their prevalence.
-    stmt_rows = {}
-    for s in stmt_list:
-        # Create a key.
-        verb = s.__class__.__name__
-        key = (verb,)
-
-        ags = s.agent_list()
-        if verb == 'Complex':
-            ag_ns = {name(ag) for ag in ags}
-            key += tuple(sorted(ag_ns))
-        elif verb == 'Conversion':
-            subj = name(ags[0])
-            objs_from = {name(ag) for ag in ags[1]}
-            objs_to = {name(ag) for ag in ags[2]}
-            key += (subj, tuple(sorted(objs_from)), tuple(sorted(objs_to)))
+        # Save the file.
+        method = loc.split(':')[0]
+        fname = '%s.html' % uuid.uuid4()
+        if method == 'file':
+            prov_path = loc.split(':')[1]
+            if not path.exists(prov_path):
+                mkdir(prov_path)
+            link = 'file://' + path.join(prov_path, fname)
+            with open(link, 'w') as f:
+                f.write(html)
+        elif method == 's3':
+            bucket = loc.split(':')[1]
+            prefix = loc.split(':')[2]
+            import boto3
+            s3 = boto3.client('s3')
+            key = prefix + fname
+            link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)
+            s3.put_object(Bucket=bucket, Key=key, Body=html.encode('utf-8'),
+                          ContentType='text/html')
         else:
-            key += tuple([name(ag) for ag in ags])
+            logger.error('Invalid PROVENANCE_LOCATION: "%s". HTML not saved.'
+                         % loc)
+            link = None
+        return link
 
-        # Update the counts, and add key if needed.
-        if key not in stmt_rows.keys():
-            stmt_rows[key] = []
-        stmt_rows[key].append(s)
+    def _make_report_cols_html(self, stmt_list):
+        """Make columns listing the support given by the statement list."""
 
-    # Sort the rows by count and agent names.
-    def sort_key(tpl):
-        key, stmts = tpl
-        count = sum(len(s.evidence) for s in stmts)
-        return count, key[1], key[2]
+        def href(ref, text):
+            return '<a href=%s target="_blank">%s</a>' % (ref, text)
 
-    row_data = sorted(((k, v) for k, v in stmt_rows.items() if len(k) == 3),
-                      key=sort_key, reverse=True)
+        def name(agent):
+            return 'None' if agent is None else agent.name
 
-    # Build the html.
-    rows = []
-    for key, stmts in row_data[:5]:
-        stmts_html = make_evidence_html(stmts)
-        link = stash_evidence_html(stmts_html)
+        # Build the list of relevant statements and count their prevalence.
+        stmt_rows = {}
+        for s in stmt_list:
+            # Create a key.
+            verb = s.__class__.__name__
+            key = (verb,)
 
-        count = sum(len(s.evidence) for s in stmts)
+            ags = s.agent_list()
+            if verb == 'Complex':
+                ag_ns = {name(ag) for ag in ags}
+                key += tuple(sorted(ag_ns))
+            elif verb == 'Conversion':
+                subj = name(ags[0])
+                objs_from = {name(ag) for ag in ags[1]}
+                objs_to = {name(ag) for ag in ags[2]}
+                key += (subj, tuple(sorted(objs_from)), tuple(sorted(objs_to)))
+            else:
+                key += tuple([name(ag) for ag in ags])
 
-        # For now, just skip non-subject-object-verb statements.
-        if len(key[1:]) != 2:
-            continue
+            # Update the counts, and add key if needed.
+            if key not in stmt_rows.keys():
+                stmt_rows[key] = []
+            stmt_rows[key].append(s)
 
-        rows.append(((key[1], key[2]),
-                     '<li>%s %s %s <a href=%s target="_blank">(%d)</a></li>'
-                     % (key[1], key[0], key[2], link, count)))
+        # Sort the rows by count and agent names.
+        def sort_key(tpl):
+            key, stmts = tpl
+            count = sum(len(s.evidence) for s in stmts)
+            return count, key[1], key[2]
 
-    # Sort rows by entity names.
-    rows.sort()
+        row_data = sorted((t for t in stmt_rows.items() if len(t[0]) == 3),
+                          key=sort_key, reverse=True)
 
-    # Build the overall html.
-    list_html = '<ul>%s</ul>' % ('\n'.join(r for _, r in rows))
-    html = make_evidence_html(stmt_list)
-    link = stash_evidence_html(html)
-    link_html = '<a href=%s target="_blank">Here</a> is the full list.' % link
+        # Build the html.
+        rows = []
+        for key, stmts in row_data[:5]:
+            stmts_html = self._make_evidence_html(stmts)
+            link = self._stash_evidence_html(stmts_html)
 
-    return list_html + '\n' + link_html
+            count = sum(len(s.evidence) for s in stmts)
+
+            # For now, just skip non-subject-object-verb statements.
+            if len(key[1:]) != 2:
+                continue
+
+            row_key = (key[1], key[2])
+            line = '<li>%s %s %s %s' % (key[1], key[0], key[2],
+                                        href(link, '(%d)' % count))
+            rows.append((row_key, line))
+
+        # Sort rows by entity names.
+        rows.sort()
+
+        # Build the overall html.
+        list_html = '<ul>%s</ul>' % ('\n'.join(r for _, r in rows))
+        html = self._make_evidence_html(stmt_list)
+        link = self._stash_evidence_html(html)
+        link_html = href(link, 'Here') + 'is the full list.'
+
+        return list_html + '\n' + link_html
 
 
 def get_img_path(img_name):

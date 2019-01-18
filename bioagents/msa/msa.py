@@ -73,7 +73,7 @@ class StatementFinder(object):
     def find(self, *args, **kwargs):
         subj, obj, agents, verb = self.regularize_input(*args, **kwargs)
         self.get_statements(subj, obj, agents, verb)
-        print('Got %d statements.' % len(self.statements))
+        logger.info('Got %d statements.' % len(self.statements))
         desc = self.describe(subj, obj, agents, verb)
         html_link = self.get_html()
         return self.statements, desc, html_link
@@ -273,14 +273,6 @@ class ComplexOneSide(StatementFinder):
         return desc
 
 
-def makelambda_uni(fun, verb):
-    return lambda entity: fun(entity, verb)
-
-
-def makelambda_bin(fun, verb):
-    return lambda entity1, entity2: fun(entity1, entity2, verb)
-
-
 def un_camel(name):
     """Convert CamelCase to snake_case.
 
@@ -317,6 +309,14 @@ class MSA(object):
         self.__option_dict = {un_camel(c.__class__.__name__): c
                               for c in StatementFinder.__subclasses__()}
         return
+
+    def find_mechanism(self, method, *args, **kwargs):
+        if method in self.__option_dict.key():
+            FinderClass = self.__option_dict[method]
+            finder = FinderClass()
+            return finder.find(*args, **kwargs)
+        else:
+            raise ValueError("No method: %s." % method)
 
     def __getattribute__(self, item):
         """Automatically generate functions from the above."""

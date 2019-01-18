@@ -222,6 +222,12 @@ class Bioagent(KQMLModule):
             link = None
         return link
 
+    def say(self, message):
+        """Blurt a message directly to the dialogue session."""
+        msg = KQMLList('request')
+        msg.sets('content', message)
+        self.tell(msg)
+
     def _make_report_cols_html(self, stmt_list, limit=5):
         """Make columns listing the support given by the statement list."""
 

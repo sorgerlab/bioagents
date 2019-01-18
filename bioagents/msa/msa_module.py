@@ -4,14 +4,13 @@ import re
 import pickle
 import logging
 from datetime import datetime
-from itertools import groupby
 from threading import Thread
 
 from indra.statements import Agent
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
-logger = logging.getLogger('MSA')
+logger = logging.getLogger('MSA-module')
 
 from kqml import KQMLPerformative, KQMLList
 
@@ -19,6 +18,9 @@ from indra import has_config
 from indra.sources.trips.processor import TripsProcessor
 from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
+
+from bioagents.msa.msa import MSA
+from bioagents import Bioagent
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
     from indra.sources.indra_db_rest import get_statements, IndraDBRestAPIError, \
@@ -28,8 +30,6 @@ if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
 else:
     logger.warning("Database web api not specified. Cannot get background.")
     CAN_CHECK_STATEMENTS = False
-
-from bioagents import Bioagent
 
 
 def _read_signor_afs():
@@ -59,6 +59,10 @@ class MSA_Module(Bioagent):
              'GET-PAPER-MODEL', 'CONFIRM-RELATION-FROM-LITERATURE',
              'GET-COMMON']
     signor_afs = _read_signor_afs()
+
+    def __init__(self):
+        self.msa = MSA()
+        return
 
     def respond_get_common(self, content):
         """Find the common up/down streams of a protein."""
@@ -178,17 +182,15 @@ class MSA_Module(Bioagent):
                 residue, position = site.split('-')
             except:
                 return self.make_failure('INVALID_SITE')
+
+        stmts, desc, html_link = self.msa.find_phos_activeforms(agent)
+        self.say(desc)
+
         related_result_dict = {}
-        logger.info("Looking for statements with agent %s of type %s."
-                    % (str(agent), 'ActiveForm'))
-        for namespace, name in agent.db_refs.items():
-            logger.info("Checking namespace: %s" % namespace)
-            stmts = get_statements(agents=['%s@%s' % (name, namespace)],
-                                   stmt_type='ActiveForm', ev_limit=2,
-                                   persist=True, simple_response=True)
-            for s in stmts:
-                if self._matching(s, residue, position, action, polarity):
-                    related_result_dict[s.matches_key()] = s
+        for s in stmts:
+            if self._matching(s, residue, position, action, polarity):
+                related_result_dict[s.matches_key()] = s
+
         logger.info("Found %d matching statements." % len(related_result_dict))
         if not len(related_result_dict):
             return self.make_failure(
@@ -210,17 +212,18 @@ class MSA_Module(Bioagent):
             msg.set('is-activating', 'TRUE')
             return msg
 
-    def _make_nl_description(self, subject='unknown', object='unknown',
-                             stmt_type='unkown'):
+    def _make_nl_description(self, verb, agent_dict):
         """Make a human-readable description of a query."""
+        question_input = {k: v['name'] if v else 'unknown'
+                          for k, v in agent_dict.items()}
         fmt = ('subject: {subject}, statement type: {stmt_type}, '
                'object: {object}')
-        ret = fmt.format(subject=subject, object=object, stmt_type=stmt_type)
+        ret = fmt.format(**question_input)
         return ret
 
     def _lookup_from_source_type_target(self, content, desc, timeout=20,
                                         send_provenance=True):
-        """Look up statement given format received by find/confirm relations."""
+        """Look up statement given info received by find/confirm relations."""
         start_time = datetime.now()
         agent_dict = dict.fromkeys(['subject', 'object'])
         for pos, loc in [('subject', 'source'), ('object', 'target')]:
@@ -240,9 +243,7 @@ class MSA_Module(Bioagent):
         stmt_type = content.gets('type')
         if stmt_type == 'unknown':
             stmt_type = None
-        question_input = {k: v['name'] if v else 'unknown'
-                          for k, v in agent_dict.items()}
-        nl = self._make_nl_description(stmt_type=stmt_type, **question_input)
+        nl = self._make_nl_description(stmt_type, agent_dict)
         nl = "%s: %s" % (desc, nl)
         logger.info("Got a query for %s." % nl)
         # Try to get related statements.

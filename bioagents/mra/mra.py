@@ -392,16 +392,14 @@ def draw_influence_map(pysb_model, model_id):
     """Generate a Kappa influence map, draw it and save it as a PNG."""
     try:
         im = make_influence_map(pysb_model)
-        fname = make_pic_name(model_id, 'im')
-        abs_path = os.path.abspath(os.getcwd())
-        full_path = os.path.join(abs_path, fname + '.png')
+        fname = make_pic_name(model_id, 'im') + '.png'
         im_agraph = networkx.nx_agraph.to_agraph(im)
-        im_agraph.draw(full_path, prog='dot')
+        im_agraph.draw(fname, prog='dot')
     except Exception as e:
         logger.exception('Could not draw influence map for model.')
         logger.exception(e)
         return None
-    return full_path
+    return fname
 
 
 def make_influence_map(pysb_model):
@@ -423,15 +421,13 @@ def make_influence_map(pysb_model):
 def draw_contact_map(pysb_model, model_id):
     try:
         cm = make_contact_map(pysb_model)
-        fname = make_pic_name(model_id, 'cm')
-        abs_path = os.path.abspath(os.getcwd())
-        full_path = os.path.join(abs_path, fname + '.png')
-        cm.draw(full_path, prog='dot')
+        fname = make_pic_name(model_id, 'cm') + '.png'
+        cm.draw(fname, prog='dot')
     except Exception as e:
         logger.exception('Could not draw contact map for model.')
         logger.exception(e)
         return None
-    return full_path
+    return fname
 
 
 def make_contact_map(pysb_model):
@@ -450,7 +446,6 @@ def draw_reaction_network(pysb_model, model_id):
     try:
         for m in pysb_model.monomers:
             pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
-        fname = make_pic_name(model_id, 'rxn')
         diagram_dot = render_reactions.run(pysb_model)
     # TODO: use specific PySB/BNG exceptions and handle them
     # here to show meaningful error messages
@@ -459,17 +454,17 @@ def draw_reaction_network(pysb_model, model_id):
         logger.error(e)
         return None
     try:
-        with open(fname + '.dot', 'wt') as fh:
+        fname_prefix = make_pic_name(model_id, 'rxn')
+        with open(fname_prefix + '.dot', 'wt') as fh:
             fh.write(diagram_dot)
         subprocess.call(('dot -T png -o %s.png %s.dot' %
-                         (fname, fname)).split(' '))
-        abs_path = os.path.abspath(os.getcwd())
-        full_path = os.path.join(abs_path, fname + '.png')
+                         (fname_prefix, fname_prefix)).split(' '))
+        fname = fname_prefix + '.png'
     except Exception as e:
         logger.error('Could not save model diagram.')
         logger.error(e)
         return None
-    return full_path
+    return fname
 
 
 def stmt_exists(stmts, stmt):

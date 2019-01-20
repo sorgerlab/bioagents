@@ -211,12 +211,15 @@ class MRA(object):
         forward_action = self.transformations.pop() if self.transformations \
             else None
         # Handle the case that there are no previous transformations (left).
+        if not forward_action:
+            return {'model_id': None, 'model': [],
+                    'action': {'action': 'no_op', 'statements': []}}
         # Or we got an action that we don't know how to undo
-        if not forward_action or forward_action[0] != 'add_stmts':
+        elif forward_action[0] != 'add_stmts':
             new_model_id = self.id_counter
             stmts = self.models[self.id_counter] \
                 if self.id_counter else []
-            undo_action = None
+            undo_action = {'action': 'no_op', 'statements': []}
         # Otherwise we are undoing an add_stmts forward action and have to
         # remove the corresponding statements
         else:

@@ -210,7 +210,8 @@ class MRA_Module(Bioagent):
         # Get the action and add it to the message
         action = res.get('action')
         actionl = KQMLList()
-        if action['action'] == 'remove_stmts':
+        # Here we handle no action as effectively an empty remove action
+        if action['action'] in ('no_op', 'remove_stmts'):
             actionl.append('remove_stmts')
             actionl.sets(
                 'statements',

@@ -207,26 +207,26 @@ class MRA(object):
 
     def model_undo(self):
         """Revert to the previous model version."""
+        # Figure out what the last forward action was, if any
+        forward_action = self.transformations.pop() if self.transformations \
+            else None
         # Handle the case that there are no previous transformations (left).
-        if not self.transformations:
-            return {'action': 'no_op', 'model_id': None, 'model': [],
-                    'reason': "NO_TRANSACTIONS"}
-
-        # Undo the latest transformation.
-        forward_action = self.transformations.pop()
-
-        # Ensure that the forward action was to add statements.
-        if forward_action[0] != 'add_stmts':
-            return {'action': 'undo_' + forward_action[0], 'model_id': None,
-                    'model': [], 'reason': "INVALID_FORWARD_ACTION"}
-
-        stmts_added = forward_action[1]
-        old_model_id = forward_action[2]
-        new_model_id = self.get_new_id()
-        stmts = self.models[old_model_id] \
-            if old_model_id is not None else []
-        self.models[new_model_id] = stmts
-        undo_action = {'action': 'remove_stmts', 'statements': stmts_added}
+        # Or we got an action that we don't know how to undo
+        if not forward_action or forward_action[0] != 'add_stmts':
+            new_model_id = self.id_counter
+            stmts = self.models[self.id_counter] \
+                if self.id_counter else []
+            undo_action = None
+        # Otherwise we are undoing an add_stmts forward action and have to
+        # remove the corresponding statements
+        else:
+            stmts_added = forward_action[1]
+            old_model_id = forward_action[2]
+            new_model_id = self.get_new_id()
+            stmts = self.models[old_model_id] \
+                if old_model_id is not None else []
+            self.models[new_model_id] = stmts
+            undo_action = {'action': 'remove_stmts', 'statements': stmts_added}
 
         res = {'model_id': new_model_id,
                'model': stmts,

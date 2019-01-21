@@ -194,8 +194,7 @@ class MRA(object):
                 removed_stmts.append(model_st)
         new_model_id = self.new_model(new_stmts)
         model_exec = self.assemble_pysb(new_stmts)
-        res = {'model_id': new_model_id,
-               'model': new_stmts}
+        res = {'model_id': new_model_id, 'model': new_stmts}
         res['model_exec'] = model_exec
         if removed_stmts:
             res['removed'] = removed_stmts
@@ -208,8 +207,24 @@ class MRA(object):
 
     def model_undo(self):
         """Revert to the previous model version."""
-        forward_action = self.transformations.pop()
-        if forward_action[0] == 'add_stmts':
+        # Figure out what the last forward action was, if any
+        forward_action = self.transformations.pop() if self.transformations \
+            else None
+        # Handle the case that there are no previous transformations (left).
+        if not forward_action:
+            return {'model_id': None, 'model': [],
+                    'action': {'action': 'no_op', 'statements': [],
+                               'reason': 'NO_ACTIONS'}}
+        # Or we got an action that we don't know how to undo
+        elif forward_action[0] != 'add_stmts':
+            new_model_id = self.id_counter
+            stmts = self.models[self.id_counter] \
+                if self.id_counter else []
+            undo_action = {'action': 'no_op', 'statements': [],
+                           'reason': 'UNKNOWN_ACTION'}
+        # Otherwise we are undoing an add_stmts forward action and have to
+        # remove the corresponding statements
+        else:
             stmts_added = forward_action[1]
             old_model_id = forward_action[2]
             new_model_id = self.get_new_id()
@@ -217,9 +232,11 @@ class MRA(object):
                 if old_model_id is not None else []
             self.models[new_model_id] = stmts
             undo_action = {'action': 'remove_stmts', 'statements': stmts_added}
+
         res = {'model_id': new_model_id,
                'model': stmts,
                'action': undo_action}
+
         model_exec = self.assemble_pysb(stmts)
         if not stmts:
             return res
@@ -380,16 +397,14 @@ def draw_influence_map(pysb_model, model_id):
     """Generate a Kappa influence map, draw it and save it as a PNG."""
     try:
         im = make_influence_map(pysb_model)
-        fname = make_pic_name(model_id, 'im')
-        abs_path = os.path.abspath(os.getcwd())
-        full_path = os.path.join(abs_path, fname + '.png')
+        fname = make_pic_name(model_id, 'im') + '.png'
         im_agraph = networkx.nx_agraph.to_agraph(im)
-        im_agraph.draw(full_path, prog='dot')
+        im_agraph.draw(fname, prog='dot')
     except Exception as e:
         logger.exception('Could not draw influence map for model.')
         logger.exception(e)
         return None
-    return full_path
+    return fname
 
 
 def make_influence_map(pysb_model):
@@ -411,15 +426,13 @@ def make_influence_map(pysb_model):
 def draw_contact_map(pysb_model, model_id):
     try:
         cm = make_contact_map(pysb_model)
-        fname = make_pic_name(model_id, 'cm')
-        abs_path = os.path.abspath(os.getcwd())
-        full_path = os.path.join(abs_path, fname + '.png')
-        cm.draw(full_path, prog='dot')
+        fname = make_pic_name(model_id, 'cm') + '.png'
+        cm.draw(fname, prog='dot')
     except Exception as e:
         logger.exception('Could not draw contact map for model.')
         logger.exception(e)
         return None
-    return full_path
+    return fname
 
 
 def make_contact_map(pysb_model):
@@ -438,7 +451,6 @@ def draw_reaction_network(pysb_model, model_id):
     try:
         for m in pysb_model.monomers:
             pysb_assembler.set_extended_initial_condition(pysb_model, m, 0)
-        fname = make_pic_name(model_id, 'rxn')
         diagram_dot = render_reactions.run(pysb_model)
     # TODO: use specific PySB/BNG exceptions and handle them
     # here to show meaningful error messages
@@ -447,17 +459,17 @@ def draw_reaction_network(pysb_model, model_id):
         logger.error(e)
         return None
     try:
-        with open(fname + '.dot', 'wt') as fh:
+        fname_prefix = make_pic_name(model_id, 'rxn')
+        with open(fname_prefix + '.dot', 'wt') as fh:
             fh.write(diagram_dot)
         subprocess.call(('dot -T png -o %s.png %s.dot' %
-                         (fname, fname)).split(' '))
-        abs_path = os.path.abspath(os.getcwd())
-        full_path = os.path.join(abs_path, fname + '.png')
+                         (fname_prefix, fname_prefix)).split(' '))
+        fname = fname_prefix + '.png'
     except Exception as e:
         logger.error('Could not save model diagram.')
         logger.error(e)
         return None
-    return full_path
+    return fname
 
 
 def stmt_exists(stmts, stmt):

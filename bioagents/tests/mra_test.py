@@ -219,6 +219,17 @@ def test_respond_model_undo():
     assert json.loads(stmts.string_value()) == json.loads(expand_stmts)
 
 
+def test_respond_model_undo_no_model_yet():
+    mm = MRA_Module(testing=True)
+    content = KQMLList.from_string('(MODEL-UNDO)')
+    reply = mm.respond_model_undo(content)
+    assert reply.gets('model-id') == 'NIL'
+    action = reply.get('action')
+    assert action.head() == 'remove_stmts', reply
+    stmts = action.get('statements')
+    assert json.loads(stmts.string_value()) == []
+
+
 def test_get_matching_statements():
     if not CAN_CHECK_STATEMENTS:
         raise SkipTest("Database api not accessible.")
@@ -575,6 +586,19 @@ class TestModelBuildExpandRemove(_IntegrationTest):
         rem_stmts_str = action.gets('statements')
         rem_stmts = sts.stmts_from_json(json.loads(rem_stmts_str))
         assert len(rem_stmts) == 1
+
+    def create_undo(self):
+        content = KQMLList('MODEL-UNDO')
+        content.sets('model-id', '4')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_undo(self, output):
+        assert output.head() == 'SUCCESS'
+        assert output.get('model-id') == '4'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+
 
 
 class TestModelRemoveWrong(_IntegrationTest):

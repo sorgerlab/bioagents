@@ -203,9 +203,10 @@ class Bioagent(KQMLModule):
             prov_path = loc.split(':')[1]
             if not path.exists(prov_path):
                 mkdir(prov_path)
-            link = 'file://' + path.join(prov_path, fname)
-            with open(link, 'w') as f:
+            fpath = path.join(prov_path, fname)
+            with open(fpath, 'w') as f:
                 f.write(html)
+            link = 'file://' + path.join(prov_path, fname)
         elif method == 's3':
             bucket = loc.split(':')[1]
             prefix = loc.split(':')[2]

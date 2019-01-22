@@ -15,7 +15,7 @@ from indra.preassembler.grounding_mapper import gm
 
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
-from indra.assemblers.english import EnglishAssembler
+from indra.assemblers.english.assembler import EnglishAssembler, _join_list
 
 logger = logging.getLogger('MSA')
 
@@ -119,7 +119,7 @@ class StatementFinder(object):
     def describe(self, subj, obj, agents, verb):
         """Turn the results dictionary into a coherent message."""
         msg = 'Here are the top 5 statements I found:\n'
-        msg += self.get_summary() + '.\n'
+        msg += self.get_summary() + '\n'
         return msg
 
     def get_html_message(self):
@@ -181,9 +181,19 @@ class StatementFinder(object):
         msg = json.dumps(stmts_to_json(self.statements), indent=1)
         return msg
 
-    def get_verb_set(self):
+    def get_unique_verb_list(self):
         """Get the set of statement types found in the body of statements."""
-        return {stmt.__class__.__name__.lower() for stmt in self.statements}
+        overrides = {'increaseamount': 'increase amount',
+                     'decreaseamount': 'decrease amount',
+                     'gtpactivation': 'GTP-bound activation',
+                     'gef': 'GEF interaction',
+                     'gap': 'GAP interaction',
+                     'complex': 'complex formation'}
+        stmt_types = {stmt.__class__.__name__.lower() for stmt in
+                      self.statements}
+        verbs = {st if st not in overrides else overrides[st]
+                 for st in stmt_types}
+        return list(verbs)
 
     def get_other_names(self, entity):
         """Find all the resulting agents besides the one given.
@@ -196,20 +206,21 @@ class StatementFinder(object):
             for ag in s.agent_list():
                 if ag is not None and ag.db_refs.get(dbn) != dbi:
                     name_dict[ag.name] += 1
-        names = sorted(name_dict.items(), key=lambda t: t[1], reverse=True)
-        return [n for n, _ in names]
+        names = list(sorted(name_dict.keys(), key=lambda t: name_dict[t],
+                            reverse=True))
+        return names
 
 
 class Neighborhood(StatementFinder):
     def regularize_input(self, entity):
         return None, None, [entity], None
 
-    def describe(self, subj, obj, agents, verb, max_names=10):
+    def describe(self, subj, obj, agents, verb, max_names=20):
         desc = super(Neighborhood, self).describe(subj, obj, agents, verb)
         desc += "\nOverall, I found the following entities in the " \
                 "neighborhood of %s: " % agents[0]
         other_names = self.get_other_names(agents[0])
-        desc += ', '.join(other_names[:max_names])
+        desc += _join_list(other_names[:max_names])
         desc += '.'
         return desc
 
@@ -235,9 +246,9 @@ class BinaryDirected(StatementFinder):
         return subject, object, [], verb
 
     def describe(self, subj, obj, agents, verb):
-        desc = "I found that %s can have the following affects on %s: " \
-               % (subj, obj)
-        desc += ", ".join(self.get_verb_set()) + '.'
+        desc = "Overall, I found that %s can have the following effects on " \
+               "%s: " % (subj, obj)
+        desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
 
@@ -246,9 +257,9 @@ class BinaryUndirected(StatementFinder):
         return None, None, [entity1, entity2], None
 
     def describe(self, subj, obj, agents, verb):
-        desc = "I found that %s and %s interact in the following ways: " \
-               % (agents[0], agents[1])
-        desc += ', '.join(self.get_verb_set()) + '.'
+        desc = "Overall, I found that %s and %s interact in the following " \
+               "ways: " % (agents[0], agents[1])
+        desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
 
@@ -266,10 +277,10 @@ class ComplexOneSide(StatementFinder):
     def regularize_input(self, entity):
         return None, None, [entity], 'Complex'
 
-    def describe(self, subj, obj, agents, verb):
-        desc = "I found that %s can bind the following:"
+    def describe(self, subj, obj, agents, verb, max_names=20):
+        desc = "Overall, I found that %s can be in a complex with: "
         other_names = self.get_other_names(agents[0])
-        desc += ", ".join([other_names])
+        desc += _join_list(other_names[:max_names])
         return desc
 
 

@@ -105,7 +105,7 @@ class MSA_Module(Bioagent):
             # Look for statements for this agent.
             kwargs = {kw: '%s@%s' % (dbid, ns), 'ev_limit': 2,
                       'persist': False, 'max_stmts': 100}
-            stmts = get_statements(**kwargs)
+            stmts = get_statements(simple_response=True, **kwargs)
 
             # Look for matches with existing upstreams.
             for stmt in stmts:
@@ -185,7 +185,7 @@ class MSA_Module(Bioagent):
             logger.info("Checking namespace: %s" % namespace)
             stmts = get_statements(agents=['%s@%s' % (name, namespace)],
                                    stmt_type='ActiveForm', ev_limit=2,
-                                   persist=True)
+                                   persist=True, simple_response=True)
             for s in stmts:
                 if self._matching(s, residue, position, action, polarity):
                     related_result_dict[s.matches_key()] = s
@@ -264,24 +264,25 @@ class MSA_Module(Bioagent):
                             break
 
             # Actually get the statements.
-            resp = get_statements(simple_response=False, **input_dict)
+            processor = get_statements(**input_dict)
         except IndraDBRestAPIError as e:
             logger.error("Failed to get statements.")
             logger.exception(e)
             raise MSALookupError('MISSING_MECHANISM')
 
-        num_stmts = len(resp.statements)
+        num_stmts = len(processor.statements)
         logger.info("Retrieved %d statements after %s seconds."
                     % (num_stmts, (datetime.now()-start_time).total_seconds()))
         if send_provenance:
             try:
-                th = Thread(target=self._send_display_stmts, args=(resp, nl))
+                th = Thread(target=self._send_display_stmts,
+                            args=(processor, nl))
                 th.start()
             except Exception as e:
                 logger.warning("Failed to start thread to send provenance.")
                 logger.exception(e)
 
-        return resp
+        return processor
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""

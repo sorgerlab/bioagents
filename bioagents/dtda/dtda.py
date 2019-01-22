@@ -75,15 +75,14 @@ class DTDA(object):
         timeout = 10
         drug = _convert_term(drug_term)
         target = _convert_term(target_term)
-        resp = get_statements(subject=drug, object=target,
-                              stmt_type='Inhibition', timeout=timeout,
-                              simple_response=False)
-        if resp.is_working():
+        processor = get_statements(subject=drug, object=target,
+                              stmt_type='Inhibition', timeout=timeout)
+        if processor.is_working():
             msg = ("Database has failed to respond after %d seconds looking "
                    "up %s inhibits %s." % (timeout, drug, target))
             logger.error(msg)
             raise DatabaseTimeoutError(msg)
-        return (s for s in resp.statements
+        return (s for s in processor.statements
                 if any(ev.source_api == 'tas' for ev in s.evidence))
 
     def _extract_terms(self, agent):
@@ -151,7 +150,7 @@ class DTDA(object):
             logger.info("Looking up: %s" % agent.name)
             self.sub_statements[agent.name] \
                 = get_statements(agents=[agent.db_refs['HGNC'] + '@HGNC'],
-                                 stmt_type='ActiveForm')
+                                 stmt_type='ActiveForm', simple_response=True)
 
         for stmt in self.sub_statements[agent.name]:
             mutations = stmt.agent.mutations

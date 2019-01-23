@@ -148,7 +148,7 @@ def test_scratch():
     target_names = ["CCND1"]
     results_list = []
     directed_path_query_url = \
-        'http://general.bigmech.ndexbio.org:5603/directedpath/query'
+        'http://54.84.114.146:5603/directedpath/query'
 
     # Assemble REST url
     uuid_prior = "50e3dff7-133e-11e6-a039-06603eb7f303"

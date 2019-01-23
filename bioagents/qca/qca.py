@@ -23,7 +23,7 @@ class QCA(object):
         logger.debug('Starting QCA')
 
         if not path_host:
-            path_host = 'general.bigmech.ndexbio.org'
+            path_host = '54.84.114.146'
 
         if not network_uuid:
             network_uuid = '50e3dff7-133e-11e6-a039-06603eb7f303'

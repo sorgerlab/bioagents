@@ -185,10 +185,11 @@ class MSA_Module(Bioagent):
             except:
                 return self.make_failure('INVALID_SITE')
 
-        stmts, desc, html_link = self.msa.find_phos_activeforms(agent)
-        self.say(desc)
+        finder = self.msa.find_phos_activeforms(agent)
+        self.say(finder.describe())
 
         related_result_dict = {}
+        stmts = finder.get_statements()
         for s in stmts:
             if self._matching(s, residue, position, action, polarity):
                 related_result_dict[s.matches_key()] = s

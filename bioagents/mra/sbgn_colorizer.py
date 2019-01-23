@@ -20,6 +20,7 @@ logger = logging.getLogger('sbgn_colorizer')
 # How a node should be colorized
 Style = collections.namedtuple('Style', ['border_color', 'fill_color'])
 
+
 def is_mutation_activating(gene_name, mutation_status):
     """Checks the database for whether a mutation is activating.
 
@@ -37,7 +38,8 @@ def is_mutation_activating(gene_name, mutation_status):
         database says the mutation is inhibiting, None if the database doesn't
         say
     """
-    statements = get_statements(agents=[gene_name], stmt_type='ActiveForm')
+    statements = get_statements(agents=[gene_name], stmt_type='ActiveForm',
+                                simple_response=True)
     print('ActiveForm statements involving', gene_name)
     for statement in statements:
         print(statement)
@@ -106,7 +108,6 @@ class SbgnColorizer(object):
                             '../resources/mutation_cache.json'), 'r') as fh:
             self.mut = json.load(fh)
 
-
     def get_nodes(self):
         """Returns the labels of the nodes that can be colorized;
         duplicate labels are possible.
@@ -151,7 +152,6 @@ class SbgnColorizer(object):
         labels = self.label_to_glyph_ids.keys()
         if label in labels:
             self.label_to_style[label] = Style(border_color, fill_color)
-
 
     def get_mutations(self, gene, cell_line):
         if cell_line in self.mut:

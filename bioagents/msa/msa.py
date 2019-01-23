@@ -10,7 +10,8 @@ from collections import defaultdict
 from indra import get_config
 from indra.databases import hgnc_client
 from indra.statements import stmts_to_json, Agent
-from indra.sources import trips, indra_db_rest
+from indra.sources import trips
+from indra.sources import indra_db_rest as idbr
 from indra.preassembler.grounding_mapper import gm
 
 from indra.assemblers.html import HtmlAssembler
@@ -65,18 +66,18 @@ def get_grounding_from_name(name):
     return 'TEXT', name
 
 
-class StatementFinder(object):
-    def __init__(self):
-        self.statements = None
+class StatementQuery(object):
+    def __init__(self, subj, obj, agents, verb, settings):
         self.entities = {}
-
-    def find(self, *args, **kwargs):
-        subj, obj, agents, verb = self.regularize_input(*args, **kwargs)
-        self.get_statements(subj, obj, agents, verb)
-        logger.info('Got %d statements.' % len(self.statements))
-        desc = self.describe(subj, obj, agents, verb)
-        html_link = self.get_html()
-        return self.statements, desc, html_link
+        self.subj = subj
+        self.subj_key = self.get_key(subj)
+        self.obj = obj
+        self.obj_key = self.get_key(obj)
+        self.agents = agents
+        self.agent_keys = [self.get_key(ag) for ag in agents]
+        self.verb = verb
+        self.settings = settings
+        return
 
     def get_key(self, entity):
         """Create a keys from the entity strings."""
@@ -96,27 +97,53 @@ class StatementFinder(object):
             return None
         return '%s@%s' % (dbi, dbn)
 
+
+class StatementFinder(object):
+    def __init__(self, *args, **kwargs):
+        self.block_default = kwargs.pop('block_default', True)
+        self.entities = {}
+        self.query = self.regularize_input(*args, **kwargs)
+        self.processor = self.make_processor()
+        logger.info('Got %d statements.' % len(self.statements))
+        return
+
     def regularize_input(self, *args, **kwargs):
         """Convert arbitrary input in subject, object, agents, and verb."""
         raise NotImplementedError
 
-    def get_statements(self, subj, obj, agents, verb):
-        subj_key = self.get_key(subj)
-        obj_key = self.get_key(obj)
-        ag_keys = [self.get_key(ag) for ag in agents]
-        if not verb or verb not in mod_map:
-            self.statements = indra_db_rest.get_statements(subject=subj_key,
-                                                           object=obj_key,
-                                                           agents=ag_keys)
-        elif verb in mod_map:
-            stmt_type = mod_map[verb]
-            self.statements = indra_db_rest.get_statements(subject=subj_key,
-                                                           object=obj_key,
-                                                           agents=ag_keys,
-                                                           stmt_type=stmt_type)
-        return
+    def make_processor(self):
+        if not self.query.verb or self.query.verb not in mod_map:
+            processor = \
+                idbr.get_statements(subject=self.query.subj_key,
+                                    object=self.query.obj_key,
+                                    agents=self.query.agent_keys,
+                                    **self.query.settings)
+        elif self.query.verb in mod_map.keys():
+            stmt_type = mod_map[self.query.verb]
+            processor = \
+                idbr.get_statements(subject=self.query.subj_key,
+                                    object=self.query.obj_key,
+                                    agents=self.query.ag_keys,
+                                    stmt_type=stmt_type,
+                                    **self.query.settings)
+        return processor
 
-    def describe(self, subj, obj, agents, verb):
+    def get_statements(self, block=None, timeout=10):
+        if block is None:
+            block = self.block_default
+
+        if block and self.processor.is_working():
+            self.processor.wait_until_done(timeout)
+            if self.processor.is_working():
+                return None
+
+        return self.processor.statements[:]
+
+    def get_sample(self):
+        # A deep copy may be warranted here.
+        return self.processor.statements_sample[:]
+
+    def describe(self):
         """Turn the results dictionary into a coherent message."""
         msg = 'Here are the top 5 statements I found:\n'
         msg += self.get_summary() + '\n'
@@ -129,13 +156,14 @@ class StatementFinder(object):
 
     def get_summary(self, num=5):
         """List the top statements in plane english."""
-        sentences = ['- ' + EnglishAssembler([self.statements[i]]).make_model()
-                     for i in range(min(num, len(self.statements)))]
+        stmts = self.get_statements()
+        sentences = ['- ' + EnglishAssembler([stmts[i]]).make_model()
+                     for i in range(min(num, len(stmts)))]
         return '\n'.join(sentences)
 
     def get_html(self):
         """Get html for these statements."""
-        html_assembler = HtmlAssembler(self.statements,
+        html_assembler = HtmlAssembler(self.get_statements(),
                                        db_rest_url=DB_REST_URL)
         html = html_assembler.make_model()
         s3 = boto3.client('s3')
@@ -149,7 +177,7 @@ class StatementFinder(object):
     def get_tsv(self):
         """Get a string of the tsv for these statements."""
         msg = ''
-        for stmt in self.statements:
+        for stmt in self.get_statements():
             if not stmt.evidence:
                 logger.warning('Statement %s without evidence' % stmt.uuid)
                 txt = ''
@@ -165,20 +193,20 @@ class StatementFinder(object):
         """Generate a pickle file, and return the file name."""
         fname = 'indrabot.pkl'
         with open(fname, 'wb') as fh:
-            pickle.dump(self.statements, fh)
+            pickle.dump(self.get_statements(), fh)
         return fname
 
     def get_pdf_graph(self):
         """Save a graph made with GraphAssembler as pdf, return file name."""
         fname = 'indrabot.pdf'
-        ga = GraphAssembler(self.statements)
+        ga = GraphAssembler(self.get_statements())
         ga.make_model()
         ga.save_pdf(fname)
         return fname
 
     def get_json(self):
         """Generate statement jsons and return the json bytes."""
-        msg = json.dumps(stmts_to_json(self.statements), indent=1)
+        msg = json.dumps(stmts_to_json(self.get_statements()), indent=1)
         return msg
 
     def get_unique_verb_list(self):
@@ -190,7 +218,7 @@ class StatementFinder(object):
                      'gap': 'GAP interaction',
                      'complex': 'complex formation'}
         stmt_types = {stmt.__class__.__name__.lower() for stmt in
-                      self.statements}
+                      self.get_statements()}
         verbs = {st if st not in overrides else overrides[st]
                  for st in stmt_types}
         return list(verbs)
@@ -202,7 +230,7 @@ class StatementFinder(object):
         """
         dbn, dbi = self.entities[entity]
         name_dict = defaultdict(lambda: 0)
-        for s in self.statements:
+        for s in self.get_statements():
             for ag in s.agent_list():
                 if ag is not None and ag.db_refs.get(dbn) != dbi:
                     name_dict[ag.name] += 1
@@ -213,26 +241,31 @@ class StatementFinder(object):
 
 class Neighborhood(StatementFinder):
     def regularize_input(self, entity):
-        return None, None, [entity], None
+        return StatementQuery(None, None, [entity], None)
 
-    def describe(self, subj, obj, agents, verb, max_names=20):
-        desc = super(Neighborhood, self).describe(subj, obj, agents, verb)
+    def describe(self, max_names=20):
+        desc = super(Neighborhood, self).describe()
         desc += "\nOverall, I found the following entities in the " \
-                "neighborhood of %s: " % agents[0]
-        other_names = self.get_other_names(agents[0])
+                "neighborhood of %s: " % self.query.agents[0]
+        other_names = self.get_other_names(self.query.agents[0])
         desc += _join_list(other_names[:max_names])
         desc += '.'
         return desc
 
 
 class Activeforms(StatementFinder):
-    def regularize_input(self, entity):
-        return None, None, [entity], 'ActiveForm'
+    def regularize_input(self, entity, **params):
+        return StatementQuery(None, None, [entity], 'ActiveForm', params)
 
 
 class PhosActiveforms(Activeforms):
-    def get_statements(self, *args, **kwargs):
-        stmts = super(PhosActiveforms, self).get_statements(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(PhosActiveforms, self).__init__(*args, **kwargs)
+        self._statements = []
+        self._sample = []
+        return
+
+    def _filter_stmts(self, stmts):
         ret_stmts = []
         for stmt in stmts:
             for mc in stmt.agent.mods:
@@ -240,46 +273,62 @@ class PhosActiveforms(Activeforms):
                     ret_stmts.append(stmt)
         return ret_stmts
 
+    def get_statements(self, *args, **kwargs):
+        if not self._statements:
+            stmts = \
+                super(PhosActiveforms, self).get_statements(*args, **kwargs)
+            if stmts:
+                self._statements = self._filter_stmts(stmts)
+        return self._statements
+
+    def get_sample(self, *args, **kwargs):
+        if not self._sample:
+            stmts = \
+                super(PhosActiveforms, self).get_statements(*args, **kwargs)
+            if stmts:
+                self._sample = self._filter_stmts(stmts)
+        return self._sample
+
 
 class BinaryDirected(StatementFinder):
-    def regularize_input(self, subject, object, verb=None):
-        return subject, object, [], verb
+    def regularize_input(self, subject, object, verb=None, **params):
+        return StatementQuery(subject, object, [], verb, params)
 
-    def describe(self, subj, obj, agents, verb):
+    def describe(self):
         desc = "Overall, I found that %s can have the following effects on " \
-               "%s: " % (subj, obj)
+               "%s: " % (self.query.subj, self.query.obj)
         desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
 
 class BinaryUndirected(StatementFinder):
-    def regularize_input(self, entity1, entity2):
-        return None, None, [entity1, entity2], None
+    def regularize_input(self, entity1, entity2, **params):
+        return StatementQuery(None, None, [entity1, entity2], None, params)
 
-    def describe(self, subj, obj, agents, verb):
+    def describe(self):
         desc = "Overall, I found that %s and %s interact in the following " \
-               "ways: " % (agents[0], agents[1])
+               "ways: " % (self.query.agents[0], self.query.agents[1])
         desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
 
 class FromSource(StatementFinder):
-    def regularize_input(self, source, verb=None):
-        return source, None, [], verb
+    def regularize_input(self, source, verb=None, **params):
+        return StatementQuery(source, None, [], verb, params)
 
 
 class ToTarget(StatementFinder):
-    def regularize_input(self, target, verb=None):
-        return None, target, [], verb
+    def regularize_input(self, target, verb=None, **params):
+        return StatementQuery(None, target, [], verb, params)
 
 
 class ComplexOneSide(StatementFinder):
-    def regularize_input(self, entity):
-        return None, None, [entity], 'Complex'
+    def regularize_input(self, entity, **params):
+        return StatementQuery(None, None, [entity], 'Complex', params)
 
-    def describe(self, subj, obj, agents, verb, max_names=20):
+    def describe(self, max_names=20):
         desc = "Overall, I found that %s can be in a complex with: "
-        other_names = self.get_other_names(agents[0])
+        other_names = self.get_other_names(self.query.agents[0])
         desc += _join_list(other_names[:max_names])
         return desc
 
@@ -321,11 +370,11 @@ class MSA(object):
                               for c in StatementFinder.__subclasses__()}
         return
 
-    def find_mechanism(self, method, *args, **kwargs):
+    def find_mechanisms(self, method, *args, **kwargs):
         if method in self.__option_dict.key():
             FinderClass = self.__option_dict[method]
-            finder = FinderClass()
-            return finder.find(*args, **kwargs)
+            finder = FinderClass(*args, **kwargs)
+            return finder
         else:
             raise ValueError("No method: %s." % method)
 
@@ -334,15 +383,15 @@ class MSA(object):
         if item.startswith(self.__prefix):
             key = item[len(self.__prefix):]
             if key in self.option_dict.keys():
-                FuncClass = self.__option_dict[key]
-                return FuncClass()
+                FinderClass = self.__option_dict[key]
+                return FinderClass
             else:
                 return super(MSA, self).__getattribute__(item)
         else:
             return super(MSA, self).__getattribute__(item)
 
     def find_mechanism_from_input(self, subject=None, object=None, agents=None,
-                                  verb=None):
+                                  verb=None, **params):
         """Get statements, automatically mapping to an appropriate endpoint."""
         # Ensure there are at most 2 agents.
         if agents and len(agents) > 2:
@@ -365,17 +414,18 @@ class MSA(object):
                 raise ValueError('Cannot set both subject and agents to '
                                  'search for complexes.')
 
-            return self.find_complex_one_side(entity)
+            return self.find_complex_one_side(entity, **params)
 
         # Handle more generic (verb-independent) queries.
         if subject and not object and not agents:
-            return self.find_from_subject(subject, verb)
+            return self.find_from_subject(subject, verb, **params)
         elif object and not subject and not agents:
-            return self.find_to_target(object, verb)
+            return self.find_to_target(object, verb, **params)
         elif subject and object and not agents:
-            return self.find_binary_directed(subject, object, verb)
+            return self.find_binary_directed(subject, object, verb, **params)
         elif not subject and not object and agents:
-            return self.find_binary_undirected(agents[0], agents[1], verb)
+            return self.find_binary_undirected(agents[0], agents[1], verb,
+                                               **params)
         else:
             raise ValueError("Invalid combination of entity arguments: "
                              "subject=%s, object=%s, agents=%s."

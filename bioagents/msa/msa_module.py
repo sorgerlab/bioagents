@@ -66,6 +66,7 @@ class MSA_Module(Bioagent):
 
     def respond_get_common(self, content):
         """Find the common up/down streams of a protein."""
+        # TODO: This entire function could be part of the MSA.
         if not CAN_CHECK_STATEMENTS:
             return self.make_failure(
                 'NO_KNOWLEDGE_ACCESS',
@@ -82,14 +83,15 @@ class MSA_Module(Bioagent):
 
         # Choose some parameters based on direction.
         if direction == 'ONT::PREDECESSOR':
-            kw = 'object'
+            meth = 'FromTarget'
             other_idx = 0
             prefix = 'up'
         elif direction == 'ONT::SUCCESSOR':
-            kw = 'subject'
+            meth = 'FromSubject'
             other_idx = 1
             prefix = 'down'
         else:
+            # TODO: With the new MSA we could handle common neighbors.
             return self.make_failure("UNKNOWN_ACTION", direction)
 
         # Find the commonalities.
@@ -107,12 +109,12 @@ class MSA_Module(Bioagent):
                                          'Agent lacks both HGNC and FPLX ids.')
 
             # Look for statements for this agent.
-            kwargs = {kw: '%s@%s' % (dbid, ns), 'ev_limit': 2,
-                      'persist': False, 'max_stmts': 100}
-            stmts = get_statements(simple_response=True, **kwargs)
+            finder = self.msa.find_mechanisms(meth, ag, ev_limit=2,
+                                              persist=False, max_stmts=100)
 
-            # Look for matches with existing upstreams.
-            for stmt in stmts:
+            # TODO: much of this work could be offloaded into the MSA.
+            # Look for matches with existing up- or down-streams.
+            for stmt in finder.get_statements():
                 other_ag = stmt.agent_list()[other_idx]
                 if other_ag is None or 'HGNC' not in other_ag.db_refs.keys():
                     continue

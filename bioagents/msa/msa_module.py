@@ -215,10 +215,11 @@ class MSA_Module(Bioagent):
             msg.set('is-activating', 'TRUE')
             return msg
 
-    def _make_nl_description(self, verb, agent_dict):
+    def _make_nl_description(self, verb, subj, obj):
         """Make a human-readable description of a query."""
-        question_input = {k: v['name'] if v else 'unknown'
-                          for k, v in agent_dict.items()}
+        question_input = {k: ag.name if ag else 'unknown'
+                          for k, ag in [('subject', subj), ('object', obj)]}
+        question_input['stmt_type'] = verb
         fmt = ('subject: {subject}, statement type: {stmt_type}, '
                'object: {object}')
         ret = fmt.format(**question_input)
@@ -228,75 +229,42 @@ class MSA_Module(Bioagent):
                                         send_provenance=True):
         """Look up statement given info received by find/confirm relations."""
         start_time = datetime.now()
-        agent_dict = dict.fromkeys(['subject', 'object'])
-        for pos, loc in [('subject', 'source'), ('object', 'target')]:
-            ekb = content.gets(loc)
-            try:
-                agent = _get_agent(ekb)
-                if agent is None:
-                    agent_dict[pos] = None
-                else:
-                    agent_dict[pos] = {'name': agent.name}
-                    agent_dict[pos].update(agent.db_refs)
-            except Exception as e:
-                logger.error("Got exception while converting ekb for %s "
-                             "(%s) into an agent." % (pos, ekb))
-                logger.exception(e)
-                raise MSALookupError('MISSING_TARGET')
+        subj = _get_agent(content.gets('source'))
+        obj = _get_agent(content.gets('target'))
         stmt_type = content.gets('type')
         if stmt_type == 'unknown':
             stmt_type = None
-        nl = self._make_nl_description(stmt_type, agent_dict)
+        nl = self._make_nl_description(stmt_type, subj, obj)
         nl = "%s: %s" % (desc, nl)
         logger.info("Got a query for %s." % nl)
+
         # Try to get related statements.
-        try:
-            input_dict = {'stmt_type': stmt_type,
-                          'ev_limit': 3,
-                          'persist': False,
-                          'timeout': timeout}
-
-            # Use the best available db ref for each agent.
-            for pos, ref_dict in agent_dict.items():
-                if ref_dict is None:
-                    input_dict[pos] = None
-                else:
-                    for key in ['HGNC', 'FPLX', 'CHEBI', 'TEXT']:
-                        if key in ref_dict.keys():
-                            inp = r'%s@%s' % (ref_dict[key], key)
-                            input_dict[pos] = inp
-                            break
-
-            # Actually get the statements.
-            processor = get_statements(**input_dict)
-        except IndraDBRestAPIError as e:
-            logger.error("Failed to get statements.")
-            logger.exception(e)
-            raise MSALookupError('MISSING_MECHANISM')
-
-        num_stmts = len(processor.statements)
+        finder = self.msa.find_binary_directed(subj, obj, verb=stmt_type,
+                                               ev_limit=3, persist=False,
+                                               timeout=timeout)
+        num_stmts = len(finder.get_statements(block=False))
         logger.info("Retrieved %d statements after %s seconds."
                     % (num_stmts, (datetime.now()-start_time).total_seconds()))
         if send_provenance:
             try:
-                th = Thread(target=self._send_display_stmts,
-                            args=(processor, nl))
+                th = Thread(target=self._send_display_stmts, args=(finder, nl))
                 th.start()
             except Exception as e:
                 logger.warning("Failed to start thread to send provenance.")
                 logger.exception(e)
 
-        return processor
+        return finder
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            rest_resp = self._lookup_from_source_type_target(content, 'Find',
-                                                             timeout=5)
+            finder = self._lookup_from_source_type_target(content, 'Find',
+                                                          timeout=5)
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
 
-        if rest_resp.is_working():
+        stmts = finder.get_statements(timeout=15)
+        if stmts is None:
             # Calling this success may be a bit ambitious.
             resp = KQMLPerformative('SUCCESS')
             resp.set('status', 'WORKING')
@@ -304,23 +272,25 @@ class MSA_Module(Bioagent):
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
 
+        self.say(finder.describe())
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
-        resp.set('relations-found', str(len(rest_resp.statements)))
+        resp.set('relations-found', str(len(stmts)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb"""
         try:
-            rest_resp = self._lookup_from_source_type_target(content, 'Confirm')
+            finder = self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
-        finished = rest_resp.wait_until_done(15)
-        if not finished:
+        stmts = finder.get_statements(timeout=15)
+        if stmts is None:
             # TODO: Handle this more gracefully, if possible.
             return self.make_failure('MISSING_MECHANISM')
-        num_stmts = len(rest_resp.statements)
+        num_stmts = len(stmts)
+        self.say(finder.describe())
         resp = KQMLPerformative('SUCCESS')
         resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
         resp.set('num-relations-found', str(num_stmts))
@@ -450,7 +420,13 @@ def _make_diagrams(stmts):
 
 
 def _get_agent(agent_ekb):
-    agents = _get_agents(agent_ekb)
+    try:
+        agents = _get_agents(agent_ekb)
+    except Exception as e:
+        logger.error("Got exception while converting ekb in an agent:\n"
+                     "%s" % agent_ekb)
+        logger.exception(e)
+        raise MSALookupError('MISSING_TARGET')
     agent = None
     if len(agents):
         agent = agents[0]

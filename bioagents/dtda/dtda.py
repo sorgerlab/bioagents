@@ -7,7 +7,6 @@ import re
 import os
 import numpy
 import logging
-import xml.etree.ElementTree as ET
 
 from indra.sources.indra_db_rest import get_statements
 from indra.databases import cbio_client, hgnc_client
@@ -305,8 +304,8 @@ class Disease(object):
         return self.__repr__()
 
 
-def get_disease(disease_str):
-        term = ET.fromstring(disease_str).find('TERM')
+def get_disease(disease_ekb):
+        term = disease_ekb.find('TERM')
         disease_type = term.find('type').text
         if disease_type.startswith('ONT::'):
             disease_type = disease_type[5:].lower()

@@ -89,7 +89,7 @@ class DTDA_Module(Bioagent):
         """Response content to find-disease-targets request."""
         try:
             disease_arg = content.gets('disease')
-            disease = get_disease(disease_arg)
+            disease = get_disease(ET.fromstring(disease_arg))
         except Exception as e:
             logger.error(e)
             reply = self.make_failure('INVALID_DISEASE')
@@ -124,7 +124,7 @@ class DTDA_Module(Bioagent):
         """Response content to find-treatment request."""
         try:
             disease_arg = content.gets('disease')
-            disease = get_disease(disease_arg)
+            disease = get_disease(ET.fromstring(disease_arg))
         except Exception as e:
             logger.error(e)
             reply = self.make_failure('INVALID_DISEASE')

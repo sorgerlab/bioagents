@@ -187,12 +187,16 @@ class MSA_Module(Bioagent):
         start_time = datetime.now()
         subj = _get_agent(content.gets('source'))
         obj = _get_agent(content.gets('target'))
+        if not subj and not obj:
+            raise MSALookupError('MISSING_MECHANISM')
+
         stmt_type = content.gets('type')
-        if stmt_type == 'unknown':
-            stmt_type = None
         nl = self._make_nl_description(stmt_type, subj, obj)
         nl = "%s: %s" % (desc, nl)
         logger.info("Got a query for %s." % nl)
+
+        if stmt_type == 'unknown':
+            stmt_type = None
 
         # Try to get related statements.
         finder = self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,

@@ -140,7 +140,6 @@ class StatementFinder(object):
         self._processor = self._make_processor()
         self._statements = None
         self._sample = []
-        logger.info('Got %d statements.' % len(self.statements))
         return
 
     def _regularize_input(self, *args, **kwargs):
@@ -158,8 +157,12 @@ class StatementFinder(object):
                                     object=self._query.obj_key,
                                     agents=self._query.agent_keys,
                                     **self._query.settings)
-        elif self._query.verb in mod_map.keys():
-            stmt_type = mod_map[self._query.verb]
+        else:
+            if self._query.verb in mod_map.keys():
+                stmt_type = mod_map[self._query.verb]
+            else:
+                stmt_type = self._query.verb
+
             processor = \
                 idbr.get_statements(subject=self._query.subj_key,
                                     object=self._query.obj_key,
@@ -621,7 +624,7 @@ class MSA(object):
 
         # Handle more generic (verb-independent) queries.
         if subject and not object and not agents:
-            return self.find_from_subject(subject, verb, **params)
+            return self.find_from_source(subject, verb, **params)
         elif object and not subject and not agents:
             return self.find_to_target(object, verb, **params)
         elif subject and object and not agents:

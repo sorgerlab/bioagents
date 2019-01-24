@@ -90,8 +90,11 @@ class StatementQuery(object):
         preference (most preferable first). If None, the default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', 'TEXT'].
     """
-    def __init__(self, subj, obj, agents, verb, settings, valid_name_spaces=None):
+    def __init__(self, subj, obj, agents, verb, settings,
+                 valid_name_spaces=None):
         self.entities = {}
+        self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
+            else ['HGNC', 'FPLX', 'CHEBI', 'TEXT']
         self.subj = subj
         self.subj_key = self.get_key(subj)
         self.obj = obj
@@ -100,8 +103,6 @@ class StatementQuery(object):
         self.agent_keys = [self.get_key(ag) for ag in agents]
         self.verb = verb
         self.settings = settings
-        self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
-            else ['HGNC', 'FPLX', 'CHEBI', 'TEXT']
         return
 
     def get_key(self, entity):

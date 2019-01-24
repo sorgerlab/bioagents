@@ -83,77 +83,32 @@ class MSA_Module(Bioagent):
 
         # Choose some parameters based on direction.
         if direction == 'ONT::PREDECESSOR':
-            meth = 'FromTarget'
-            other_idx = 0
+            method = 'common_upstreams'
             prefix = 'up'
         elif direction == 'ONT::SUCCESSOR':
-            meth = 'FromSubject'
-            other_idx = 1
+            method = 'common_downstreams'
             prefix = 'down'
         else:
             # TODO: With the new MSA we could handle common neighbors.
             return self.make_failure("UNKNOWN_ACTION", direction)
 
         # Find the commonalities.
-        commons = {}
-        first = True
-        for ag in agents:
-
-            # Look for HGNC or FPLX, and fail if neither is found.
-            for ns in ['HGNC', 'FPLX']:
-                dbid = ag.db_refs.get(ns)
-                if dbid:
-                    break
-            else:
-                return self.make_failure('MISSING_TARGET',
-                                         'Agent lacks both HGNC and FPLX ids.')
-
-            # Look for statements for this agent.
-            finder = self.msa.find_mechanisms(meth, ag, ev_limit=2,
-                                              persist=False, max_stmts=100)
-
-            # TODO: much of this work could be offloaded into the MSA.
-            # Look for matches with existing up- or down-streams.
-            for stmt in finder.get_statements():
-                other_ag = stmt.agent_list()[other_idx]
-                if other_ag is None or 'HGNC' not in other_ag.db_refs.keys():
-                    continue
-                other_id = other_ag.name
-                if first and other_id not in commons.keys():
-                    commons[other_id] = {dbid: [stmt]}
-                elif other_id in commons.keys():
-                    if dbid not in commons[other_id].keys():
-                        commons[other_id][dbid] = []
-                    commons[other_id][dbid].append(stmt)
-
-            # Remove all entries that didn't find match this time around.
-            if not first:
-                commons = {other_id: data for other_id, data in commons.items()
-                           if dbid in data.keys()}
-
-            # Check for the empty condition
-            if not commons:
-                break
-
-            # The next run is definitely not the first.
-            first = False
+        finder = self.msa.find_mechanisms(method, agents)
 
         # Get post statements to provenance.
-        stmts = [s for data in commons.values() for s_list in data.values()
-                 for s in s_list]
         if len(agents) > 2:
             name_list = ', '.join(ag.name for ag in agents[:-1]) + ','
         else:
             name_list = agents[0].name
         name_list += ' and ' + agents[-1].name
         msg = ('%sstreams of ' % prefix).capitalize() + name_list
-        self.send_provenance_for_stmts(stmts, msg)
+        self.send_provenance_for_stmts(finder.get_statements(), msg)
 
         # Create the reply
         resp = KQMLPerformative('SUCCESS')
         gene_list = KQMLList()
-        for ag_name in commons.keys():
-            gene_list.append(ag_name)
+        for gene in finder.get_common_entities():
+            gene_list.append(gene)
         resp.set('commons', gene_list)
         resp.sets('prefix', prefix)
         return resp

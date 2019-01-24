@@ -417,6 +417,123 @@ class ComplexOneSide(StatementFinder):
         return desc
 
 
+class _Commons(StatementFinder):
+    _role = NotImplemented()
+    _name = NotImplemented()
+
+    def __init__(self, *args, **kwargs):
+        super(_Commons, self).__init__(*args, **kwargs)
+        self.commons = {}
+        assert self._role in ['SUBJECT', 'OBJECT', 'OTHER']
+        return
+
+    def _regularize_input(self, *entities, **params):
+        return StatementQuery(None, None, list(entities), None, params,
+                              ['HGNC', 'FPLX'])
+
+    def _iter_stmts(self, stmts):
+        for stmt in stmts:
+            if self._role == 'OTHER':
+                for other_ag in stmt.agent_list():
+                    yield other_ag
+            elif self._role == 'SUBJECT':
+                if len(stmt.agent_list()) >= 2:
+                    yield stmt.agent_list()[1]
+            else:
+                if len(stmt.agent_list()):
+                    yield stmt.agent_list()[0]
+
+    def _make_processor(self):
+        """This method is overwritten to prevent excessive queries.
+
+        Given N entities, the odds of finding common neighbors among them all
+        decrease rapidly as N increases. Thus, if N is 100, you will likely run
+        out of common neighbors after only a few queries. This implementation
+        takes advantage of that fact, thus preventing hangs in essentially
+        trivial cases with large N.
+        """
+        # Prep the settings with some defaults.
+        kwargs = self._query.settings.copy()
+        if 'max_stmts' not in kwargs.keys():
+            kwargs['max_stmts'] = 100
+        if 'ev_limit' not in kwargs.keys():
+            kwargs['ev_limit'] = 2
+        if 'persist' not in kwargs.keys():
+            kwargs['persist'] = False
+
+        # Run multiple queries, building up a single processor and a dict of
+        # agents held in common.
+        processor = None
+        for ag, ag_key in zip(self._query.agents, self._query.agent_keys):
+            if ag_key is None:
+                continue
+
+            # Make another query.
+            kwargs[self._role] = ag_key
+            dbid = ag if isinstance(ag, str) else ag.name
+            new_processor = idbr.get_statements(**kwargs)
+            new_processor.wait_until_done()
+
+            # Look for new agents.
+            for other_ag, stmt in self._iter_stmts(new_processor.statements):
+                if other_ag is None or 'HGNC' not in other_ag.db_refs.keys():
+                    continue
+                other_id = other_ag.name
+
+                # If this is the first pass, init the dict.
+                if processor is None and other_id not in self.commons.keys():
+                    self.commons[other_id] = {dbid: [stmt]}
+                # Otherwise we can only add to the sub-dicts and their lists.
+                elif other_id in self.commons.keys():
+                    if dbid not in self.commons[other_id].keys():
+                        self.commons[other_id][dbid] = []
+                    self.commons[other_id][dbid].append(stmt)
+
+            # If this isn't the first time around, remove all entries that
+            # didn't find match this time around.
+            if processor is not None:
+                self.commons = {other_id: data
+                                for other_id, data in self.commons.items()
+                                if dbid in data.keys()}
+                processor.merge_results(new_processor)
+            else:
+                processor = new_processor
+
+            # If there's nothing left in common, it won't get better.
+            if not self.commons:
+                break
+
+        return processor
+
+    def get_statements(self, block=None, timeout=10):
+        if self._statements is None:
+            self._statements = [s for data in self.commons.values()
+                                for s_list in data.values()
+                                for s in s_list]
+        return self._statements
+
+    def get_common_entities(self):
+        return [ag_name for ag_name in self.commons.keys()]
+
+    def describe(self):
+        desc = "Overall, I found that %s have the following common %s: %s" \
+               % (_join_list([ag.name if hasattr(ag, 'name') else ag
+                              for ag in self.query.agents]),
+                  self._name,
+                  _join_list(self.get_common_entities()))
+        return desc
+
+
+class CommonUpstreams(_Commons):
+    _role = 'OBJECT'
+    _name = 'upstreams'
+
+
+class CommonDownstreams(_Commons):
+    _role = 'SUBJECT'
+    _name = 'downstreams'
+
+
 def un_camel(name):
     """Convert CamelCase to snake_case.
 

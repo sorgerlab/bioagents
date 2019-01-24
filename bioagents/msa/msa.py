@@ -572,7 +572,7 @@ class MSA(object):
         return
 
     def find_mechanisms(self, method, *args, **kwargs):
-        if method in self.__option_dict.key():
+        if method in self.__option_dict.keys():
             FinderClass = self.__option_dict[method]
             finder = FinderClass(*args, **kwargs)
             return finder

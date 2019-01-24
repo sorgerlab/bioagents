@@ -100,48 +100,77 @@ class StatementQuery(object):
 
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
-        self.block_default = kwargs.pop('block_default', True)
-        self.entities = {}
-        self.query = self.regularize_input(*args, **kwargs)
-        self.processor = self.make_processor()
+        self._block_default = kwargs.pop('block_default', True)
+        self._query = self._regularize_input(*args, **kwargs)
+        self._processor = self._make_processor()
+        self._statements = None
+        self._sample = []
         logger.info('Got %d statements.' % len(self.statements))
         return
 
-    def regularize_input(self, *args, **kwargs):
+    def _regularize_input(self, *args, **kwargs):
         """Convert arbitrary input in subject, object, agents, and verb."""
         raise NotImplementedError
 
-    def make_processor(self):
-        if not self.query.verb or self.query.verb not in mod_map:
+    def _make_processor(self):
+        """Create an instance a indra_db_rest processor.
+
+        This method makes use of the `query` attribute.
+        """
+        if not self._query.verb or self._query.verb not in mod_map:
             processor = \
-                idbr.get_statements(subject=self.query.subj_key,
-                                    object=self.query.obj_key,
-                                    agents=self.query.agent_keys,
-                                    **self.query.settings)
-        elif self.query.verb in mod_map.keys():
-            stmt_type = mod_map[self.query.verb]
+                idbr.get_statements(subject=self._query.subj_key,
+                                    object=self._query.obj_key,
+                                    agents=self._query.agent_keys,
+                                    **self._query.settings)
+        elif self._query.verb in mod_map.keys():
+            stmt_type = mod_map[self._query.verb]
             processor = \
-                idbr.get_statements(subject=self.query.subj_key,
-                                    object=self.query.obj_key,
-                                    agents=self.query.ag_keys,
+                idbr.get_statements(subject=self._query.subj_key,
+                                    object=self._query.obj_key,
+                                    agents=self._query.ag_keys,
                                     stmt_type=stmt_type,
-                                    **self.query.settings)
+                                    **self._query.settings)
         return processor
 
-    def get_statements(self, block=None, timeout=10):
-        if block is None:
-            block = self.block_default
+    def _filter_stmts(self, stmts):
+        """This is an internal function that is applied to filter statements.
 
-        if block and self.processor.is_working():
-            self.processor.wait_until_done(timeout)
-            if self.processor.is_working():
+        In general, this does nothing, but some sub classes may want to limit
+        the statements that are presented. This is applied to both the complete
+        statements list (retrieved by `get_statements`) and the sample (gotten
+        through `get_sample`).
+        """
+        return stmts
+
+    def get_statements(self, block=None, timeout=10):
+        """Get the full list of statements if available."""
+        if self._statements is not None:
+            return self._statements[:]
+
+        if block is None:
+            # This is True by default.
+            block = self._block_default
+
+        if self._processor.is_working():
+            if block:
+                self._processor.wait_until_done(timeout)
+                if self._processor.is_working():
+                    return None
+            else:
                 return None
 
-        return self.processor.statements[:]
+        self._statements = self._filter_stmts(self._processor.statements[:])
+
+        return self._statements[:]
 
     def get_sample(self):
-        # A deep copy may be warranted here.
-        return self.processor.statements_sample[:]
+        """Get the sample of statements retrieved by the first query."""
+        if not self._sample:
+            # A deep copy may be warranted here.
+            self._sample = \
+                self._filter_stmts(self._processor.statements_sample[:])
+        return self._sample[:]
 
     def describe(self):
         """Turn the results dictionary into a coherent message."""
@@ -228,7 +257,7 @@ class StatementFinder(object):
 
         It is assumed that the given entity was one of the inputs.
         """
-        dbn, dbi = self.entities[entity]
+        dbn, dbi = self._query.entities[entity]
         name_dict = defaultdict(lambda: 0)
         for s in self.get_statements():
             for ag in s.agent_list():
@@ -240,21 +269,21 @@ class StatementFinder(object):
 
 
 class Neighborhood(StatementFinder):
-    def regularize_input(self, entity):
+    def _regularize_input(self, entity):
         return StatementQuery(None, None, [entity], None)
 
     def describe(self, max_names=20):
         desc = super(Neighborhood, self).describe()
         desc += "\nOverall, I found the following entities in the " \
-                "neighborhood of %s: " % self.query.agents[0]
-        other_names = self.get_other_names(self.query.agents[0])
+                "neighborhood of %s: " % self._query.agents[0]
+        other_names = self.get_other_names(self._query.agents[0])
         desc += _join_list(other_names[:max_names])
         desc += '.'
         return desc
 
 
 class Activeforms(StatementFinder):
-    def regularize_input(self, entity, **params):
+    def _regularize_input(self, entity, **params):
         return StatementQuery(None, None, [entity], 'ActiveForm', params)
 
 
@@ -273,62 +302,46 @@ class PhosActiveforms(Activeforms):
                     ret_stmts.append(stmt)
         return ret_stmts
 
-    def get_statements(self, *args, **kwargs):
-        if not self._statements:
-            stmts = \
-                super(PhosActiveforms, self).get_statements(*args, **kwargs)
-            if stmts:
-                self._statements = self._filter_stmts(stmts)
-        return self._statements
-
-    def get_sample(self, *args, **kwargs):
-        if not self._sample:
-            stmts = \
-                super(PhosActiveforms, self).get_statements(*args, **kwargs)
-            if stmts:
-                self._sample = self._filter_stmts(stmts)
-        return self._sample
-
 
 class BinaryDirected(StatementFinder):
-    def regularize_input(self, subject, object, verb=None, **params):
+    def _regularize_input(self, subject, object, verb=None, **params):
         return StatementQuery(subject, object, [], verb, params)
 
     def describe(self):
         desc = "Overall, I found that %s can have the following effects on " \
-               "%s: " % (self.query.subj, self.query.obj)
+               "%s: " % (self._query.subj, self._query.obj)
         desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
 
 class BinaryUndirected(StatementFinder):
-    def regularize_input(self, entity1, entity2, **params):
+    def _regularize_input(self, entity1, entity2, **params):
         return StatementQuery(None, None, [entity1, entity2], None, params)
 
     def describe(self):
         desc = "Overall, I found that %s and %s interact in the following " \
-               "ways: " % (self.query.agents[0], self.query.agents[1])
+               "ways: " % (self._query.agents[0], self._query.agents[1])
         desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
 
 class FromSource(StatementFinder):
-    def regularize_input(self, source, verb=None, **params):
+    def _regularize_input(self, source, verb=None, **params):
         return StatementQuery(source, None, [], verb, params)
 
 
 class ToTarget(StatementFinder):
-    def regularize_input(self, target, verb=None, **params):
+    def _regularize_input(self, target, verb=None, **params):
         return StatementQuery(None, target, [], verb, params)
 
 
 class ComplexOneSide(StatementFinder):
-    def regularize_input(self, entity, **params):
+    def _regularize_input(self, entity, **params):
         return StatementQuery(None, None, [entity], 'Complex', params)
 
     def describe(self, max_names=20):
         desc = "Overall, I found that %s can be in a complex with: "
-        other_names = self.get_other_names(self.query.agents[0])
+        other_names = self.get_other_names(self._query.agents[0])
         desc += _join_list(other_names[:max_names])
         return desc
 

@@ -239,9 +239,9 @@ class MSA_Module(Bioagent):
         logger.info("Got a query for %s." % nl)
 
         # Try to get related statements.
-        finder = self.msa.find_binary_directed(subj, obj, verb=stmt_type,
-                                               ev_limit=3, persist=False,
-                                               timeout=timeout)
+        finder = self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
+                                                    ev_limit=3, persist=False,
+                                                    timeout=timeout)
         num_stmts = len(finder.get_statements(block=False))
         logger.info("Retrieved %d statements after %s seconds."
                     % (num_stmts, (datetime.now()-start_time).total_seconds()))
@@ -285,7 +285,7 @@ class MSA_Module(Bioagent):
             finder = self._lookup_from_source_type_target(content, 'Confirm')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
-        stmts = finder.get_statements(timeout=15)
+        stmts = finder.get_statements(timeout=20)
         if stmts is None:
             # TODO: Handle this more gracefully, if possible.
             return self.make_failure('MISSING_MECHANISM')

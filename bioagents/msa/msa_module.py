@@ -302,15 +302,15 @@ class MSA_Module(Bioagent):
                 content.sets('path', resource)
             self.tell(content)
 
-    def _send_display_stmts(self, resp, nl_question):
+    def _send_display_stmts(self, finder, nl_question):
         try:
             logger.debug("Waiting for statements to finish...")
-            resp.wait_until_done()
-            if not len(resp.statements):
+            stmts = finder.get_statements()
+            if not len(stmts):
                 return
             start_time = datetime.now()
             logger.info('Sending display statements.')
-            self.send_provenance_for_stmts(resp.statements, nl_question)
+            self.send_provenance_for_stmts(stmts, nl_question)
             logger.info("Finished sending provenance after %s seconds."
                         % (datetime.now() - start_time).total_seconds())
         except Exception as e:
@@ -333,10 +333,11 @@ class MSA_Module(Bioagent):
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
                     '<th>Source and PMID</th>']
+        stmts = resp.get_statements()
         logger.info("Sending %d statements to provenance."
-                    % min(len(resp.statements), DUMP_LIMIT))
+                    % min(len(stmts), DUMP_LIMIT))
         print("Generating html: ", end='', flush=True)
-        for i, stmt in enumerate(resp.statements[:DUMP_LIMIT]):
+        for i, stmt in enumerate(stmts[:DUMP_LIMIT]):
             if i % 5 == 0:
                 print('|', end='', flush=True)
             sub_ag, obj_ag = stmt.agent_list()

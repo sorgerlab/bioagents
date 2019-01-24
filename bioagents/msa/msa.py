@@ -67,7 +67,30 @@ def get_grounding_from_name(name):
 
 
 class StatementQuery(object):
-    def __init__(self, subj, obj, agents, verb, settings):
+    """This is an object that encapsulates the information used to make a query.
+
+    Parameters
+    ----------
+    subj, obj : str or Agent or None
+        The subject and object of the causal mechanism to be found. If a string,
+        it will be grounded if possible. If an Agent, the db_refs will be used
+        as grounding. If there is no subject or object, subj or obj may be None
+        respectively.
+    agents : list[str or Agent]
+        A list of agents like subj and obj, but without the implication of an
+        order. Each element will be treated as above.
+    verb : str or None
+        A string describing a type of interaction between the subject, object,
+        and/or agents. Must be mappable to a subclass of Statement.
+    settings : dict
+        A dictionary containing other parameters used by the
+        IndraDbRestProcessor.
+    valid_name_spaces : list[str] or None
+        A list of name spaces that are allowed as grounding, in order of
+        preference (most preferable first). If None, the default list will be
+        used: ['HGNC', 'FPLX', 'CHEBI', 'TEXT'].
+    """
+    def __init__(self, subj, obj, agents, verb, settings, valid_name_spaces=None):
         self.entities = {}
         self.subj = subj
         self.subj_key = self.get_key(subj)
@@ -77,6 +100,8 @@ class StatementQuery(object):
         self.agent_keys = [self.get_key(ag) for ag in agents]
         self.verb = verb
         self.settings = settings
+        self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
+            else ['HGNC', 'FPLX', 'CHEBI', 'TEXT']
         return
 
     def get_key(self, entity):
@@ -85,14 +110,23 @@ class StatementQuery(object):
             return None
         try:
             if isinstance(entity, str):
+                # Getting the grounding should be refactored to take the
+                # namespace ordering into account, in principle. In practice,
+                # that will probably never be needed.
                 dbn, dbi = get_grounding_from_name(entity)
-                self.entities[entity] = (dbn, dbi)
+                if dbn not in self._ns_keys:
+                    return None
             elif isinstance(entity, Agent):
-                for key in ['HGNC', 'FPLX', 'CHEBI', 'TEXT']:
+                for key in self._ns_keys:
                     if key in entity.db_refs.keys():
                         dbn = key
                         dbi = entity.db_refs[key]
                         break
+                else:
+                    return None
+            else:
+                return None
+            self.entities[entity] = (dbn, dbi)
         except Exception as e:
             return None
         return '%s@%s' % (dbi, dbn)

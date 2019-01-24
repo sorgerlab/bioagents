@@ -315,7 +315,7 @@ def get_disease(disease_ekb):
             dbid_dict = {}
         else:
             dbname = drum_term.attrib['name']
-            dbid = term.attrib['dbid']
+            dbid = drum_term.attrib['dbid']
             dbids = dbid.split('|')
             dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
         disease = Disease(disease_type, dbname, dbid_dict)

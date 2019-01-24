@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from indra import get_config
 from indra.databases import hgnc_client
-from indra.statements import stmts_to_json, Agent
+from indra.statements import stmts_to_json, Agent, get_all_descendants
 from indra.sources import trips
 from indra.sources import indra_db_rest as idbr
 from indra.preassembler.grounding_mapper import gm
@@ -418,8 +418,8 @@ class ComplexOneSide(StatementFinder):
 
 
 class _Commons(StatementFinder):
-    _role = NotImplemented()
-    _name = NotImplemented()
+    _role = NotImplemented
+    _name = NotImplemented
 
     def __init__(self, *args, **kwargs):
         super(_Commons, self).__init__(*args, **kwargs)
@@ -564,11 +564,12 @@ class MSA(object):
 
         find_mechanism_from_input(subject, object, agents, verb)
     """
-    __prefix = 'find_'
-
     def __init__(self):
-        self.__option_dict = {un_camel(c.__class__.__name__): c
-                              for c in StatementFinder.__subclasses__()}
+        self.__option_dict = {}
+        for cls in get_all_descendants(StatementFinder):
+            if cls.__name__.startswith('_'):
+                continue
+            self.__option_dict[un_camel(cls.__name__)] = cls
         return
 
     def find_mechanisms(self, method, *args, **kwargs):
@@ -581,9 +582,10 @@ class MSA(object):
 
     def __getattribute__(self, item):
         """Automatically generate functions from the above."""
-        if item.startswith(self.__prefix):
-            key = item[len(self.__prefix):]
-            if key in self.option_dict.keys():
+        prefix = 'find_'
+        if item.startswith(prefix):
+            key = item[len(prefix):]
+            if key in self.__option_dict.keys():
                 FinderClass = self.__option_dict[key]
                 return FinderClass
             else:

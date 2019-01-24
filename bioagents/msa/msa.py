@@ -116,6 +116,7 @@ class StatementQuery(object):
                 dbn, dbi = get_grounding_from_name(entity)
                 if dbn not in self._ns_keys:
                     return None
+                self.entities[entity] = (dbn, dbi)
             elif isinstance(entity, Agent):
                 for key in self._ns_keys:
                     if key in entity.db_refs.keys():
@@ -124,9 +125,9 @@ class StatementQuery(object):
                         break
                 else:
                     return None
+                self.entities[entity.name] = (dbn, dbi)
             else:
                 return None
-            self.entities[entity] = (dbn, dbi)
         except Exception as e:
             return None
         return '%s@%s' % (dbi, dbn)
@@ -293,9 +294,10 @@ class StatementFinder(object):
 
         Parameters
         ----------
-        entity : str
-            Either the original entity string, or the agent name of one of the
-            given query entities.
+        entity : str or Agent.
+            Either an original entity string or Agent, or Agent name. This
+            method will find other entities that occur within the statements
+            besides this one.
         role : 'subject', 'object', or None
             The part of speech/role of the other names. Limits the results to
             subjects, if 'subject', objects if 'object', or places no limit
@@ -307,7 +309,10 @@ class StatementFinder(object):
                              % (type(role), role))
 
         # Get the namespace and id of the original entity.
-        dbn, dbi = self._query.entities[entity]
+        if isinstance(entity, str):
+            dbn, dbi = self._query.entities[entity]
+        elif isinstance(entity, Agent):
+            dbn, dbi = self._query.entities[entity.name]
 
         # Build up a dict of names, counting how often they occur.
         name_dict = defaultdict(lambda: 0)

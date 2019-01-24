@@ -252,17 +252,49 @@ class StatementFinder(object):
                  for st in stmt_types}
         return list(verbs)
 
-    def get_other_names(self, entity):
+    def get_other_names(self, entity, role=None):
         """Find all the resulting agents besides the one given.
 
         It is assumed that the given entity was one of the inputs.
+
+        Parameters
+        ----------
+        entity : str
+            Either the original entity string, or the agent name of one of the
+            given query entities.
+        role : 'subject', 'object', or None
+            The part of speech/role of the other names. Limits the results to
+            subjects, if 'subject', objects if 'object', or places no limit
+            if None. Default is None.
         """
+        # Check to make sure role is valid.
+        if role not in ['subject', 'object', None]:
+            raise ValueError('Invalid role of type %s: %s'
+                             % (type(role), role))
+
+        # Get the namespace and id of the original entity.
         dbn, dbi = self._query.entities[entity]
+
+        # Build up a dict of names, counting how often they occur.
         name_dict = defaultdict(lambda: 0)
         for s in self.get_statements():
-            for ag in s.agent_list():
+
+            # If the role is None, look at all the agents.
+            if role is None:
+                for ag in s.agent_list():
+                    if ag is not None and ag.db_refs.get(dbn) != dbi:
+                        name_dict[ag.name] += 1
+            # If the role is specified, look at just those agents.
+            else:
+                idx = 0 if role == 'subject' else 1
+                if idx+1 > len(s.agent_list()):
+                    raise ValueError('Could not apply role %s, not enough '
+                                     'agents: %s' % (role, s.agent_list()))
+                ag = s.agent_list()[idx]
                 if ag is not None and ag.db_refs.get(dbn) != dbi:
                     name_dict[ag.name] += 1
+
+        # Create a list of names sorted with the most frequent first.
         names = list(sorted(name_dict.keys(), key=lambda t: name_dict[t],
                             reverse=True))
         return names

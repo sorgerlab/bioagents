@@ -94,7 +94,7 @@ class MSA_Module(Bioagent):
             return self.make_failure("UNKNOWN_ACTION", direction)
 
         # Find the commonalities.
-        finder = self.msa.find_mechanisms(method, agents)
+        finder = self.msa.find_mechanisms(method, *agents)
 
         # Get post statements to provenance.
         if len(agents) > 2:
@@ -202,7 +202,8 @@ class MSA_Module(Bioagent):
         finder = self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
                                                     ev_limit=3, persist=False,
                                                     timeout=timeout)
-        num_stmts = len(finder.get_statements(block=False))
+        stmts = finder.get_statements(block=False)
+        num_stmts = 0 if stmts is None else len(stmts)
         logger.info("Retrieved %d statements after %s seconds."
                     % (num_stmts, (datetime.now()-start_time).total_seconds()))
         if send_provenance:
@@ -306,7 +307,7 @@ class MSA_Module(Bioagent):
         try:
             logger.debug("Waiting for statements to finish...")
             stmts = finder.get_statements()
-            if not len(stmts):
+            if stmts is None or not len(stmts):
                 return
             start_time = datetime.now()
             logger.info('Sending display statements.')

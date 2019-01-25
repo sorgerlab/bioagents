@@ -103,6 +103,8 @@ class StatementQuery(object):
         self.agent_keys = [self.get_key(ag) for ag in agents]
         self.verb = verb
         self.settings = settings
+        if not self.subj_key and not self.obj_key and not self.agent_keys:
+            raise ValueError("Did not get any usable entity constraints!")
         return
 
     def get_key(self, entity):
@@ -426,9 +428,9 @@ class _Commons(StatementFinder):
     _name = NotImplemented
 
     def __init__(self, *args, **kwargs):
-        super(_Commons, self).__init__(*args, **kwargs)
-        self.commons = {}
         assert self._role in ['SUBJECT', 'OBJECT', 'OTHER']
+        self.commons = {}
+        super(_Commons, self).__init__(*args, **kwargs)
         return
 
     def _regularize_input(self, *entities, **params):
@@ -437,15 +439,14 @@ class _Commons(StatementFinder):
 
     def _iter_stmts(self, stmts):
         for stmt in stmts:
+            ags = stmt.agent_list()
             if self._role == 'OTHER':
-                for other_ag in stmt.agent_list():
-                    yield other_ag
-            elif self._role == 'SUBJECT':
-                if len(stmt.agent_list()) >= 2:
-                    yield stmt.agent_list()[1]
-            else:
-                if len(stmt.agent_list()):
-                    yield stmt.agent_list()[0]
+                for other_ag in ags:
+                    yield other_ag, stmt
+            elif self._role == 'SUBJECT' and len(ags) >= 2:
+                yield ags[1], stmt
+            elif len(ags):
+                yield ags[0], stmt
 
     def _make_processor(self):
         """This method is overwritten to prevent excessive queries.
@@ -473,7 +474,7 @@ class _Commons(StatementFinder):
                 continue
 
             # Make another query.
-            kwargs[self._role] = ag_key
+            kwargs[self._role.lower()] = ag_key
             dbid = ag if isinstance(ag, str) else ag.name
             new_processor = idbr.get_statements(**kwargs)
             new_processor.wait_until_done()
@@ -495,13 +496,13 @@ class _Commons(StatementFinder):
 
             # If this isn't the first time around, remove all entries that
             # didn't find match this time around.
-            if processor is not None:
+            if processor is None:
+                processor = new_processor
+            else:
                 self.commons = {other_id: data
                                 for other_id, data in self.commons.items()
                                 if dbid in data.keys()}
                 processor.merge_results(new_processor)
-            else:
-                processor = new_processor
 
             # If there's nothing left in common, it won't get better.
             if not self.commons:

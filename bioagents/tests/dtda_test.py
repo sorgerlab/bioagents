@@ -1,6 +1,7 @@
+import xml.etree.ElementTree as ET
 from indra.statements import Agent
 from kqml import KQMLList
-from bioagents.dtda.dtda import DTDA
+from bioagents.dtda.dtda import DTDA, get_disease
 from bioagents.dtda.dtda_module import DTDA_Module
 from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
     get_request
@@ -20,13 +21,13 @@ def test_mutation_statistics():
 
 def test_get_disease():
     disease_ekb = ekb_from_text('pancreatic cancer')
-    disease = DTDA_Module.get_disease(disease_ekb)
+    disease = get_disease(ET.fromstring(disease_ekb))
     disease_ekb = ekb_from_text('lung cancer')
-    disease = DTDA_Module.get_disease(disease_ekb)
+    disease = get_disease(ET.fromstring(disease_ekb))
     disease_ekb = ekb_from_text('diabetes')
-    disease = DTDA_Module.get_disease(disease_ekb)
+    disease = get_disease(ET.fromstring(disease_ekb))
     disease_ekb = ekb_from_text('common cold')
-    disease = DTDA_Module.get_disease(disease_ekb)
+    disease = get_disease(ET.fromstring(disease_ekb))
 
 
 def _create_agent(name, **refs):

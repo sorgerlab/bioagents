@@ -304,6 +304,24 @@ class Disease(object):
         return self.__repr__()
 
 
+def get_disease(disease_ekb):
+        term = disease_ekb.find('TERM')
+        disease_type = term.find('type').text
+        if disease_type.startswith('ONT::'):
+            disease_type = disease_type[5:].lower()
+        drum_term = term.find('drum-terms/drum-term')
+        if drum_term is None:
+            dbname = term.find('name').text
+            dbid_dict = {}
+        else:
+            dbname = drum_term.attrib['name']
+            dbid = drum_term.attrib['dbid']
+            dbids = dbid.split('|')
+            dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
+        disease = Disease(disease_type, dbname, dbid_dict)
+        return disease
+
+
 def _convert_term(term):
     if term is not None:
         return '%s@%s' % tuple(term)

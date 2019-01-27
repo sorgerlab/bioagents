@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from indra.sources.trips.processor import TripsProcessor
 from indra.statements import Agent
 from kqml import KQMLList
-from .dtda import DTDA, Disease, \
+from .dtda import DTDA, Disease, get_disease, \
                   DrugNotFoundException, DiseaseNotFoundException
 from bioagents import Bioagent
 from bioagents.resources.trips_ont_manager import trips_isa
@@ -89,7 +89,7 @@ class DTDA_Module(Bioagent):
         """Response content to find-disease-targets request."""
         try:
             disease_arg = content.gets('disease')
-            disease = self.get_disease(disease_arg)
+            disease = get_disease(ET.fromstring(disease_arg))
         except Exception as e:
             logger.error(e)
             reply = self.make_failure('INVALID_DISEASE')
@@ -124,7 +124,7 @@ class DTDA_Module(Bioagent):
         """Response content to find-treatment request."""
         try:
             disease_arg = content.gets('disease')
-            disease = self.get_disease(disease_arg)
+            disease = get_disease(ET.fromstring(disease_arg))
         except Exception as e:
             logger.error(e)
             reply = self.make_failure('INVALID_DISEASE')
@@ -182,24 +182,6 @@ class DTDA_Module(Bioagent):
         term_id = terms[0].attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
         return agent
-
-    @staticmethod
-    def get_disease(disease_str):
-        term = ET.fromstring(disease_str).find('TERM')
-        disease_type = term.find('type').text
-        if disease_type.startswith('ONT::'):
-            disease_type = disease_type[5:].lower()
-        drum_term = term.find('drum-terms/drum-term')
-        if drum_term is None:
-            dbname = term.find('name').text
-            dbid_dict = {}
-        else:
-            dbname = drum_term.attrib['name']
-            dbid = term.attrib['dbid']
-            dbids = dbid.split('|')
-            dbid_dict = {k: v for k, v in [d.split(':') for d in dbids]}
-        disease = Disease(disease_type, dbname, dbid_dict)
-        return disease
 
 
 if __name__ == "__main__":

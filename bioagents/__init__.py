@@ -144,14 +144,14 @@ class Bioagent(KQMLModule):
         logger.info("Sending provenance for %d statements for \"%s\"."
                     % (len(stmt_list), for_what))
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
-                       '{conclusion}:</h4>\n{evidence}<hr>')
+                       '{conclusion} (max {limit}):</h4>\n{evidence}<hr>')
         evidence_html = self._make_report_cols_html(stmt_list, limit)
 
         content = KQMLList('add-provenance')
         content.sets('html',
                      content_fmt.format(conclusion=for_what,
                                         evidence=evidence_html,
-                                        bioagent=self.name))
+                                        bioagent=self.name, limit=limit))
         return self.tell(content)
 
     def _make_evidence_html(self, stmts):
@@ -288,7 +288,7 @@ class Bioagent(KQMLModule):
         list_html = '<ul>%s</ul>' % ('\n'.join(r for _, r in rows))
         html = self._make_evidence_html(stmt_list)
         link = self._stash_evidence_html(html)
-        link_html = href(link, 'Here') + 'is the full list.'
+        link_html = href(link, 'Here') + ' is the full list.'
 
         return list_html + '\n' + link_html
 

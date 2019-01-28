@@ -23,7 +23,7 @@ from bioagents.msa.msa import MSA, EntityError
 from bioagents import Bioagent
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
-    from indra.sources.indra_db_rest import get_statements, IndraDBRestAPIError, \
+    from indra.sources.indra_db_rest import IndraDBRestAPIError, \
                                             get_statements_for_paper
 
     CAN_CHECK_STATEMENTS = True
@@ -97,7 +97,7 @@ class MSA_Module(Bioagent):
         try:
             finder = self.msa.find_mechanisms(method, *agents)
         except EntityError as e:
-            return self.make_failure("NO_TARGET", e.args[0])
+            return self.make_failure("MISSING_TARGET", e.args[0])
 
         # Get post statements to provenance.
         if len(agents) > 2:

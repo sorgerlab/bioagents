@@ -228,69 +228,72 @@ class Bioagent(KQMLModule):
         def href(ref, text):
             return '<a href=%s target="_blank">%s</a>' % (ref, text)
 
-        def name(agent):
-            return 'None' if agent is None else agent.name
-
         # Build the list of relevant statements and count their prevalence.
-        stmt_rows = {}
-        for s in stmt_list:
-            # Create a key.
-            verb = s.__class__.__name__
-            key = (verb,)
-
-            ags = s.agent_list()
-            if verb == 'Complex':
-                ag_ns = {name(ag) for ag in ags}
-                key += tuple(sorted(ag_ns))
-            elif verb == 'Conversion':
-                subj = name(ags[0])
-                objs_from = {name(ag) for ag in ags[1]}
-                objs_to = {name(ag) for ag in ags[2]}
-                key += (subj, tuple(sorted(objs_from)), tuple(sorted(objs_to)))
-            else:
-                key += tuple([name(ag) for ag in ags])
-
-            # Update the counts, and add key if needed.
-            if key not in stmt_rows.keys():
-                stmt_rows[key] = []
-            stmt_rows[key].append(s)
-
-        # Sort the rows by count and agent names.
-        def sort_key(tpl):
-            key, stmts = tpl
-            count = sum(len(s.evidence) for s in stmts)
-            return count, key[1], key[2]
-
-        row_data = sorted((t for t in stmt_rows.items() if len(t[0]) == 3),
-                          key=sort_key, reverse=True)
+        row_data = get_row_data(stmt_list)
 
         # Build the html.
-        rows = []
-        for key, stmts in row_data[:limit]:
-            stmts_html = self._make_evidence_html(stmts)
-            link = self._stash_evidence_html(stmts_html)
-
-            count = sum(len(s.evidence) for s in stmts)
-
+        lines = []
+        for key, verb, stmts in row_data[:limit]:
             # For now, just skip non-subject-object-verb statements.
             if len(key[1:]) != 2:
                 continue
 
-            row_key = (key[1], key[2])
-            line = '<li>%s %s %s %s' % (key[1], key[0], key[2],
-                                        href(link, '(%d)' % count))
-            rows.append((row_key, line))
+            count = key[0]
 
-        # Sort rows by entity names.
-        rows.sort()
+            stmts_html = self._make_evidence_html(stmts)
+            link = self._stash_evidence_html(stmts_html)
+            line = '<li>%s %s %s %s' % (key[1], verb, key[2],
+                                        href(link, '(%d)' % count))
+            lines.append(line)
 
         # Build the overall html.
-        list_html = '<ul>%s</ul>' % ('\n'.join(r for _, r in rows))
+        list_html = '<ul>%s</ul>' % ('\n'.join(lines))
         html = self._make_evidence_html(stmt_list)
         link = self._stash_evidence_html(html)
         link_html = href(link, 'Here') + ' is the full list.'
 
         return list_html + '\n' + link_html
+
+
+def get_row_data(stmt_list):
+    def name(agent):
+        return 'None' if agent is None else agent.name
+
+    stmt_rows = {}
+    for s in stmt_list:
+        # Create a key.
+        verb = s.__class__.__name__
+        key = (verb,)
+
+        ags = s.agent_list()
+        if verb == 'Complex':
+            ag_ns = {name(ag) for ag in ags}
+            key += tuple(sorted(ag_ns))
+        elif verb == 'Conversion':
+            subj = name(ags[0])
+            objs_from = {name(ag) for ag in ags[1]}
+            objs_to = {name(ag) for ag in ags[2]}
+            key += (subj, tuple(sorted(objs_from)), tuple(sorted(objs_to)))
+        else:
+            key += tuple([name(ag) for ag in ags])
+
+        # Update the counts, and add key if needed.
+        if key not in stmt_rows.keys():
+            stmt_rows[key] = []
+        stmt_rows[key].append(s)
+
+    # Sort the rows by count and agent names.
+    def process(tpl):
+        key, stmts = tpl
+        count = sum(len(s.evidence) for s in stmts)
+        new_key = (count,)
+        new_key += tuple(key[1:])
+        return new_key, key[0], stmts
+
+    row_data = sorted((process(t) for t in stmt_rows.items()),
+                      key=lambda tpl: tpl[0], reverse=True)
+
+    return row_data
 
 
 def get_img_path(img_name):

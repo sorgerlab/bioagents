@@ -19,7 +19,7 @@ from indra.sources.trips.processor import TripsProcessor
 from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
-from bioagents.msa.msa import MSA
+from bioagents.msa.msa import MSA, EntityError
 from bioagents import Bioagent
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
@@ -94,7 +94,10 @@ class MSA_Module(Bioagent):
             return self.make_failure("UNKNOWN_ACTION", direction)
 
         # Find the commonalities.
-        finder = self.msa.find_mechanisms(method, *agents)
+        try:
+            finder = self.msa.find_mechanisms(method, *agents)
+        except EntityError as e:
+            return self.make_failure("NO_TARGET", e.args[0])
 
         # Get post statements to provenance.
         if len(agents) > 2:

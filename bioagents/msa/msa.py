@@ -94,51 +94,52 @@ class StatementQuery(object):
         preference (most preferable first). If None, the default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', 'TEXT'].
     """
-    def __init__(self, subj, obj, agents, verb, settings,
+    def __init__(self, subj, obj, entities, verb, settings,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', 'TEXT']
-        self.subj = subj
-        self.subj_key = self.get_key(subj)
-        self.obj = obj
-        self.obj_key = self.get_key(obj)
-        self.agents = agents
-        self.agent_keys = [self.get_key(ag) for ag in agents]
+        self.subj, self.subj_key = self.get_agent_and_key(subj)
+        self.obj, self.obj_key = self.get_agent_and_key(obj)
+        self.agents, self.agent_keys = zip(*self.get_agent_and_key(entities))
         self.verb = verb
+        if verb in mod_map.keys():
+            self.stmt_type = mod_map[verb]
+        else:
+            self.stmt_type = verb
+
         self.settings = settings
         if not self.subj_key and not self.obj_key and not self.agent_keys:
             raise EntityError("Did not get any usable entity constraints!")
         return
 
-    def get_key(self, entity):
-        """Create a keys from the entity strings."""
+    def get_agent_and_key(self, entity):
+        """If the entity is not already an agent, form an agent."""
         if entity is None:
             return None
 
+        # Create an agent object if necessary.
         if isinstance(entity, str):
-            # Getting the grounding should be refactored to take the
-            # namespace ordering into account, in principle. In practice,
-            # that will probably never be needed.
-            dbn, dbi = get_grounding_from_name(entity)
-            if dbn not in self._ns_keys:
-                raise EntityError("Could not get valid grounding (%s) for %s."
-                                  % (', '.join(self._ns_keys), entity))
-            self.entities[entity] = (dbn, dbi)
+            dbn, dbi = get_all_descendants(entity)
+            agent = Agent(entity, db_refs={dbn: dbi})
         elif isinstance(entity, Agent):
-            for key in self._ns_keys:
-                if key in entity.db_refs.keys():
-                    dbn = key
-                    dbi = entity.db_refs[key]
-                    break
-            else:
-                raise EntityError("Could not get valid grounding (%s) for %s."
-                                  % (', '.join(self._ns_keys), entity))
-            self.entities[entity.name] = (dbn, dbi)
+            agent = entity
         else:
-            raise EntityError("Unknown type of entity: %s" % type(entity))
+            raise EntityError("Invalid entity type: \"%s\"; expected \"str\" "
+                              "or \"Agent\"." % type(entity))
 
-        return '%s@%s' % (dbi, dbn)
+        # Get the key
+        for key in self._ns_keys:
+            if key in agent.db_refs.keys():
+                dbn = key
+                dbi = agent.db_refs[key]
+                break
+        else:
+            raise EntityError("Could not get valid grounding (%s) for %s."
+                              % (', '.join(self._ns_keys), entity))
+        self.entities[agent.name] = (dbn, dbi)
+
+        return agent, '%s@%s' % (dbi, dbn)
 
 
 class StatementFinder(object):
@@ -166,16 +167,11 @@ class StatementFinder(object):
                                     agents=self._query.agent_keys,
                                     **self._query.settings)
         else:
-            if self._query.verb in mod_map.keys():
-                stmt_type = mod_map[self._query.verb]
-            else:
-                stmt_type = self._query.verb
-
             processor = \
                 idbr.get_statements(subject=self._query.subj_key,
                                     object=self._query.obj_key,
                                     agents=self._query.agent_keys,
-                                    stmt_type=stmt_type,
+                                    stmt_type=self._query.stmt_type,
                                     **self._query.settings)
         return processor
 
@@ -324,10 +320,7 @@ class StatementFinder(object):
                              % (type(role), role))
 
         # Get the namespace and id of the original entity.
-        if isinstance(entity, str):
-            dbn, dbi = self._query.entities[entity]
-        elif isinstance(entity, Agent):
-            dbn, dbi = self._query.entities[entity.name]
+        dbn, dbi = self._query.entities[entity.name]
 
         # Build up a dict of names, counting how often they occur.
         name_dict = defaultdict(lambda: 0)
@@ -361,8 +354,8 @@ class Neighborhood(StatementFinder):
     def describe(self, max_names=20):
         desc = super(Neighborhood, self).describe()
         desc += "\nOverall, I found the following entities in the " \
-                "neighborhood of %s: " % self._query.agents[0]
-        other_names = self.get_other_names(self._query.agents[0])
+                "neighborhood of %s: " % self._query.agents[0].name
+        other_names = self.get_other_names(self._query.agents[0].name)
         desc += _join_list(other_names[:max_names])
         desc += '.'
         return desc
@@ -401,7 +394,7 @@ class BinaryDirected(StatementFinder):
 
     def describe(self):
         desc = "Overall, I found that %s can have the following effects on " \
-               "%s: " % (self._query.subj, self._query.obj)
+               "%s: " % (self._query.subj.name, self._query.obj.name)
         desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
@@ -412,7 +405,7 @@ class BinaryUndirected(StatementFinder):
 
     def describe(self):
         desc = "Overall, I found that %s and %s interact in the following " \
-               "ways: " % (self._query.agents[0], self._query.agents[1])
+               "ways: " % tuple([ag.name for ag in self._query.agents])
         desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
@@ -433,7 +426,7 @@ class ComplexOneSide(StatementFinder):
 
     def describe(self, max_names=20):
         desc = "Overall, I found that %s can be in a complex with: "
-        other_names = self.get_other_names(self._query.agents[0])
+        other_names = self.get_other_names(self._query.agents[0].name)
         desc += _join_list(other_names[:max_names])
         return desc
 
@@ -490,7 +483,6 @@ class _Commons(StatementFinder):
 
             # Make another query.
             kwargs[self._role.lower()] = ag_key
-            dbid = ag if isinstance(ag, str) else ag.name
             new_processor = idbr.get_statements(**kwargs)
             new_processor.wait_until_done()
 
@@ -502,12 +494,12 @@ class _Commons(StatementFinder):
 
                 # If this is the first pass, init the dict.
                 if processor is None and other_id not in self.commons.keys():
-                    self.commons[other_id] = {dbid: [stmt]}
+                    self.commons[other_id] = {ag.name: [stmt]}
                 # Otherwise we can only add to the sub-dicts and their lists.
                 elif other_id in self.commons.keys():
-                    if dbid not in self.commons[other_id].keys():
-                        self.commons[other_id][dbid] = []
-                    self.commons[other_id][dbid].append(stmt)
+                    if ag.name not in self.commons[other_id].keys():
+                        self.commons[other_id][ag.name] = []
+                    self.commons[other_id][ag.name].append(stmt)
 
             # If this isn't the first time around, remove all entries that
             # didn't find match this time around.
@@ -516,7 +508,7 @@ class _Commons(StatementFinder):
             else:
                 self.commons = {other_id: data
                                 for other_id, data in self.commons.items()
-                                if dbid in data.keys()}
+                                if ag.name in data.keys()}
                 processor.merge_results(new_processor)
 
             # If there's nothing left in common, it won't get better.
@@ -537,10 +529,8 @@ class _Commons(StatementFinder):
 
     def describe(self):
         desc = "Overall, I found that %s have the following common %s: %s" \
-               % (_join_list([ag.name if hasattr(ag, 'name') else ag
-                              for ag in self.query.agents]),
-                  self._name,
-                  _join_list(self.get_common_entities()))
+               % (_join_list([ag.name for ag in self.query.agents]),
+                  self._name, _join_list(self.get_common_entities()))
         return desc
 
 

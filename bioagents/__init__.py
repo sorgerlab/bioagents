@@ -136,7 +136,7 @@ class Bioagent(KQMLModule):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
 
-    def send_provenance_for_stmts(self, stmt_list, for_what, limit=5):
+    def send_provenance_for_stmts(self, stmt_list, for_what, limit=20):
         """Send out a provenance tell for a list of INDRA Statements.
 
         The message is used to provide evidence supporting a conclusion.
@@ -145,7 +145,7 @@ class Bioagent(KQMLModule):
                     % (len(stmt_list), for_what))
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
                        '{conclusion}:</h4>\n{evidence}<hr>')
-        evidence_html = self._make_report_cols_html(stmt_list)
+        evidence_html = self._make_report_cols_html(stmt_list, limit)
 
         content = KQMLList('add-provenance')
         content.sets('html',
@@ -222,7 +222,7 @@ class Bioagent(KQMLModule):
             link = None
         return link
 
-    def _make_report_cols_html(self, stmt_list):
+    def _make_report_cols_html(self, stmt_list, limit=5):
         """Make columns listing the support given by the statement list."""
 
         def href(ref, text):
@@ -266,7 +266,7 @@ class Bioagent(KQMLModule):
 
         # Build the html.
         rows = []
-        for key, stmts in row_data[:5]:
+        for key, stmts in row_data[:limit]:
             stmts_html = self._make_evidence_html(stmts)
             link = self._stash_evidence_html(stmts_html)
 

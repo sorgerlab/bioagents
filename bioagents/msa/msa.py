@@ -101,8 +101,13 @@ class StatementQuery(object):
             else ['HGNC', 'FPLX', 'CHEBI', 'TEXT']
         self.subj, self.subj_key = self.get_agent_and_key(subj)
         self.obj, self.obj_key = self.get_agent_and_key(obj)
-        self.agents, self.agent_keys = zip(*[self.get_agent_and_key(e)
-                                             for e in entities])
+        if entities:
+            self.agents, self.agent_keys = zip(*[self.get_agent_and_key(e)
+                                                 for e in entities])
+        else:
+            self.agents = []
+            self.agent_keys = []
+
         self.verb = verb
         if verb in mod_map.keys():
             self.stmt_type = mod_map[verb]
@@ -117,7 +122,7 @@ class StatementQuery(object):
     def get_agent_and_key(self, entity):
         """If the entity is not already an agent, form an agent."""
         if entity is None:
-            return None
+            return None, None
 
         # Create an agent object if necessary.
         if isinstance(entity, str):

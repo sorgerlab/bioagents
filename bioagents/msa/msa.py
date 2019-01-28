@@ -220,8 +220,12 @@ class StatementFinder(object):
 
     def describe(self):
         """Turn the results dictionary into a coherent message."""
-        msg = 'Here are the top 5 statements I found:\n'
-        msg += self.get_summary() + '\n'
+        summary = self.get_summary()
+        if summary:
+            msg = 'Here are the top 5 statements I found:\n'
+            msg += self.get_summary() + '\n'
+        else:
+            msg = 'I did not find any statements about that'
         return msg
 
     def get_html_message(self):

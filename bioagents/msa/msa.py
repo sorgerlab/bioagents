@@ -66,6 +66,10 @@ def get_grounding_from_name(name):
     return 'TEXT', name
 
 
+class EntityError(ValueError):
+    pass
+
+
 class StatementQuery(object):
     """This is an object that encapsulates the information used to make a query.
 
@@ -104,35 +108,36 @@ class StatementQuery(object):
         self.verb = verb
         self.settings = settings
         if not self.subj_key and not self.obj_key and not self.agent_keys:
-            raise ValueError("Did not get any usable entity constraints!")
+            raise EntityError("Did not get any usable entity constraints!")
         return
 
     def get_key(self, entity):
         """Create a keys from the entity strings."""
         if entity is None:
             return None
-        try:
-            if isinstance(entity, str):
-                # Getting the grounding should be refactored to take the
-                # namespace ordering into account, in principle. In practice,
-                # that will probably never be needed.
-                dbn, dbi = get_grounding_from_name(entity)
-                if dbn not in self._ns_keys:
-                    return None
-                self.entities[entity] = (dbn, dbi)
-            elif isinstance(entity, Agent):
-                for key in self._ns_keys:
-                    if key in entity.db_refs.keys():
-                        dbn = key
-                        dbi = entity.db_refs[key]
-                        break
-                else:
-                    return None
-                self.entities[entity.name] = (dbn, dbi)
+
+        if isinstance(entity, str):
+            # Getting the grounding should be refactored to take the
+            # namespace ordering into account, in principle. In practice,
+            # that will probably never be needed.
+            dbn, dbi = get_grounding_from_name(entity)
+            if dbn not in self._ns_keys:
+                raise EntityError("Could not get valid grounding (%s) for %s."
+                                  % (', '.join(self._ns_keys), entity))
+            self.entities[entity] = (dbn, dbi)
+        elif isinstance(entity, Agent):
+            for key in self._ns_keys:
+                if key in entity.db_refs.keys():
+                    dbn = key
+                    dbi = entity.db_refs[key]
+                    break
             else:
-                return None
-        except Exception as e:
-            return None
+                raise EntityError("Could not get valid grounding (%s) for %s."
+                                  % (', '.join(self._ns_keys), entity))
+            self.entities[entity.name] = (dbn, dbi)
+        else:
+            raise EntityError("Unknown type of entity: %s" % type(entity))
+
         return '%s@%s' % (dbi, dbn)
 
 

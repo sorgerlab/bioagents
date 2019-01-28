@@ -159,7 +159,7 @@ class StatementFinder(object):
 
         This method makes use of the `query` attribute.
         """
-        if not self._query.verb or self._query.verb not in mod_map:
+        if not self._query.verb:
             processor = \
                 idbr.get_statements(subject=self._query.subj_key,
                                     object=self._query.obj_key,
@@ -174,7 +174,7 @@ class StatementFinder(object):
             processor = \
                 idbr.get_statements(subject=self._query.subj_key,
                                     object=self._query.obj_key,
-                                    agents=self._query.ag_keys,
+                                    agents=self._query.agent_keys,
                                     stmt_type=stmt_type,
                                     **self._query.settings)
         return processor
@@ -376,14 +376,20 @@ class Activeforms(StatementFinder):
 class PhosActiveforms(Activeforms):
     def __init__(self, *args, **kwargs):
         super(PhosActiveforms, self).__init__(*args, **kwargs)
-        self._statements = []
+        self._statements = None
         self._sample = []
         return
 
     def _filter_stmts(self, stmts):
         ret_stmts = []
         for stmt in stmts:
-            for mc in stmt.agent.mods:
+            ags = stmt.agent_list()
+            if len(ags) != 1:
+                logger.warning("Got an unexpected statement with 2 agents "
+                               "from query for ActiveForms: %s" % str(stmt))
+                continue
+            ag = ags[0]
+            for mc in ag.mods:
                 if mc.mod_type == 'phosphorylation':
                     ret_stmts.append(stmt)
         return ret_stmts

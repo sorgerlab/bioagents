@@ -83,7 +83,7 @@ class MSA_Module(Bioagent):
         logger.info("Got genes: %s and direction %s." % (agents, direction))
 
         # Choose some parameters based on direction.
-        if direction == 'ONT::PREDECESSOR':
+        if direction == 'ONT::MORE':
             method = 'common_upstreams'
             prefix = 'up'
         elif direction == 'ONT::SUCCESSOR':

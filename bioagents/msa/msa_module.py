@@ -61,8 +61,8 @@ class MSA_Module(Bioagent):
     signor_afs = _read_signor_afs()
 
     def __init__(self, *args, **kwargs):
-        super(MSA_Module, self).__init__(*args, **kwargs)
         self.msa = MSA()
+        super(MSA_Module, self).__init__(*args, **kwargs)
         return
 
     def respond_get_common(self, content):

@@ -224,8 +224,9 @@ class Bioagent(KQMLModule):
 
     def say(self, message):
         """Blurt a message directly to the dialogue session."""
-        msg = KQMLList('request')
-        msg.sets('content', message)
+        msg = KQMLList('spoken')
+        msg.sets('who', 'sys')
+        msg.sets('what', message)
         self.tell(msg)
 
     def _make_report_cols_html(self, stmt_list, limit=5):

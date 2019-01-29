@@ -8,11 +8,8 @@ import logging
 from collections import defaultdict
 
 from indra import get_config
-from indra.databases import hgnc_client
 from indra.statements import stmts_to_json, Agent, get_all_descendants
-from indra.sources import trips
 from indra.sources import indra_db_rest as idbr
-from indra.preassembler.grounding_mapper import gm
 
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
@@ -32,40 +29,6 @@ mod_map = {'demethylate': 'Demethylation',
 DB_REST_URL = get_config('INDRA_DB_REST_URL')
 
 
-def get_grounding_from_name(name):
-    # See if it's a gene name
-    hgnc_id = hgnc_client.get_hgnc_id(name)
-    if hgnc_id:
-        return 'HGNC', hgnc_id
-
-    # Check if it's in the grounding map
-    try:
-        refs = gm[name]
-        if isinstance(refs, dict):
-            for dbn, dbi in refs.items():
-                if dbn != 'TEXT':
-                    return dbn, dbi
-    # If not, search by text
-    except KeyError:
-        pass
-
-    # If none of these, we try TRIPS
-    try:
-        tp = trips.process_text(name, service_endpoint='drum-dev')
-        terms = tp.tree.findall('TERM')
-        if not terms:
-            return 'TEXT', name
-        term_id = terms[0].attrib['id']
-        agent = tp._get_agent_by_id(term_id, None)
-        if 'HGNC' in agent.db_refs:
-            return 'HGNC', agent.db_refs['HGNC']
-        if 'FPLX' in agent.db_refs:
-            return 'FPLX', agent.db_refs['FPLX']
-    except Exception:
-        return 'TEXT', name
-    return 'TEXT', name
-
-
 class EntityError(ValueError):
     pass
 
@@ -75,13 +38,12 @@ class StatementQuery(object):
 
     Parameters
     ----------
-    subj, obj : str or Agent or None
-        The subject and object of the causal mechanism to be found. If a string,
-        it will be grounded if possible. If an Agent, the db_refs will be used
-        as grounding. If there is no subject or object, subj or obj may be None
-        respectively.
-    agents : list[str or Agent]
-        A list of agents like subj and obj, but without the implication of an
+    subj, obj : Agent or None
+        The subject and object of the causal mechanism to be found. If an
+        Agent, the db_refs will be used as grounding. If there is no subject or
+        object, subj or obj may be None respectively.
+    agents : list[Agent]
+        A list of Agents like subj and obj, but without the implication of an
         order. Each element will be treated as above.
     verb : str or None
         A string describing a type of interaction between the subject, object,
@@ -99,14 +61,12 @@ class StatementQuery(object):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', 'TEXT']
-        self.subj, self.subj_key = self.get_agent_and_key(subj)
-        self.obj, self.obj_key = self.get_agent_and_key(obj)
-        if entities:
-            self.agents, self.agent_keys = zip(*[self.get_agent_and_key(e)
-                                                 for e in entities])
-        else:
-            self.agents = []
-            self.agent_keys = []
+        self.subj = subj
+        self.subj_key = self.get_key(subj)
+        self.obj = obj
+        self.obj_key = self.get_key(obj)
+        self.agents = entities
+        self.agent_keys = [self.get_key(e) for e in entities]
 
         self.verb = verb
         if verb in mod_map.keys():
@@ -119,20 +79,10 @@ class StatementQuery(object):
             raise EntityError("Did not get any usable entity constraints!")
         return
 
-    def get_agent_and_key(self, entity):
+    def get_key(self, agent):
         """If the entity is not already an agent, form an agent."""
-        if entity is None:
-            return None, None
-
-        # Create an agent object if necessary.
-        if isinstance(entity, str):
-            dbn, dbi = get_all_descendants(entity)
-            agent = Agent(entity, db_refs={dbn: dbi})
-        elif isinstance(entity, Agent):
-            agent = entity
-        else:
-            raise EntityError("Invalid entity type: \"%s\"; expected \"str\" "
-                              "or \"Agent\"." % type(entity))
+        if agent is None:
+            return None
 
         # Get the key
         for key in self._ns_keys:
@@ -142,10 +92,10 @@ class StatementQuery(object):
                 break
         else:
             raise EntityError("Could not get valid grounding (%s) for %s."
-                              % (', '.join(self._ns_keys), entity))
+                              % (', '.join(self._ns_keys), agent))
         self.entities[agent.name] = (dbn, dbi)
 
-        return agent, '%s@%s' % (dbi, dbn)
+        return '%s@%s' % (dbi, dbn)
 
 
 class StatementFinder(object):

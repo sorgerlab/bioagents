@@ -249,13 +249,9 @@ class Bioagent(KQMLModule):
         # Build the html.
         lines = []
         for key, verb, stmts in row_data[:limit]:
-            # For now, just skip non-subject-object-verb statements.
             count = key[0]
-
-            stmts_html = self._make_evidence_html(stmts)
-            link = self._stash_evidence_html(stmts_html)
             line = '<li>%s %s</li>' % (make_statement_string(key, verb),
-                                       href(link, '(%d)' % count))
+                                       '(%d)' % count)
             lines.append(line)
 
         # Build the overall html.

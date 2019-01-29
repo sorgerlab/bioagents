@@ -245,9 +245,6 @@ class Bioagent(KQMLModule):
         lines = []
         for key, verb, stmts in row_data[:limit]:
             # For now, just skip non-subject-object-verb statements.
-            if len(key[1:]) != 2:
-                continue
-
             count = key[0]
 
             stmts_html = self._make_evidence_html(stmts)

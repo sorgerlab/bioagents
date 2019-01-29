@@ -331,10 +331,28 @@ class Activeforms(StatementFinder):
 
 class PhosActiveforms(Activeforms):
     def __init__(self, *args, **kwargs):
+        # Get some extra details if available.
+        spec_key_list = ['residue', 'position', 'action', 'polarity']
+        self.specs = {k: kwargs.pop(k, None) for k in spec_key_list}
+
+        # Continue with normal init.
         super(PhosActiveforms, self).__init__(*args, **kwargs)
         self._statements = None
         self._sample = []
         return
+
+    def _matching(self, stmt):
+        if all(val is None for val in self.specs.values()):
+            return True
+
+        if stmt.is_active is not (self.specs['polarity'] == 'activating'):
+            return False
+        matching_residues = any([
+            m.residue == self.specs['residue']
+            and m.position == self.specs['position']
+            and m.mod_type == self.specs['action']
+            for m in stmt.agent.mods])
+        return matching_residues
 
     def _filter_stmts(self, stmts):
         ret_stmts = []
@@ -344,10 +362,15 @@ class PhosActiveforms(Activeforms):
                 logger.warning("Got an unexpected statement with 2 agents "
                                "from query for ActiveForms: %s" % str(stmt))
                 continue
+
+            # TODO: this implementation is a bit weird and could probably be
+            # simplified/improved.
             ag = ags[0]
             for mc in ag.mods:
-                if mc.mod_type == 'phosphorylation':
+                if mc.mod_type == 'phosphorylation' and self._matching(stmt):
                     ret_stmts.append(stmt)
+                    break
+
         return ret_stmts
 
 

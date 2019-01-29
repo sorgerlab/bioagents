@@ -144,17 +144,15 @@ class MSA_Module(Bioagent):
             except:
                 return self.make_failure('INVALID_SITE')
 
-        finder = self.msa.find_phos_activeforms(agent)
+        finder = self.msa.find_phos_activeforms(agent, residue=residue,
+                                                position=position,
+                                                action=action,
+                                                polarity=polarity)
+        stmts = finder.get_statements()
         self.say(finder.describe())
 
-        related_result_dict = {}
-        stmts = finder.get_statements()
-        for s in stmts:
-            if self._matching(s, residue, position, action, polarity):
-                related_result_dict[s.matches_key()] = s
-
-        logger.info("Found %d matching statements." % len(related_result_dict))
-        if not len(related_result_dict):
+        logger.info("Found %d matching statements." % len(stmts))
+        if not len(stmts):
             return self.make_failure(
                 'MISSING_MECHANISM',
                 "Could not find statement matching phosphorylation activating "
@@ -163,8 +161,8 @@ class MSA_Module(Bioagent):
                 )
         else:
             self.send_provenance_for_stmts(
-                related_result_dict.values(),
-                "Phosphorylation at %s%s activates %s." % (
+                stmts,
+                "phosphorylation at %s%s activates %s." % (
                     residue,
                     position,
                     agent.name
@@ -357,16 +355,6 @@ class MSA_Module(Bioagent):
         content.sets('html', html_str)
         print("SENT!")
         return self.tell(content)
-
-    def _matching(self, stmt, residue, position, action, polarity):
-        if stmt.is_active is not (polarity == 'activating'):
-            return False
-        matching_residues = any([
-            m.residue == residue
-            and m.position == position
-            and m.mod_type == action
-            for m in stmt.agent.mods])
-        return matching_residues
 
 
 def _make_sbgn(stmts):

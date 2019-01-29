@@ -7,6 +7,7 @@ import logging
 
 from collections import defaultdict
 
+from bioagents import get_row_data
 from indra import get_config
 from indra.statements import stmts_to_json, Agent, get_all_descendants
 from indra.sources import indra_db_rest as idbr
@@ -188,9 +189,20 @@ class StatementFinder(object):
     def get_summary(self, num=5):
         """List the top statements in plane english."""
         stmts = self.get_statements()
-        sentences = ['- ' + EnglishAssembler([stmts[i]]).make_model()
-                     for i in range(min(num, len(stmts)))]
-        return '\n'.join(sentences)
+        row_data = get_row_data(stmts)
+        lines = []
+        for key, verb, stmts in row_data[:num]:
+            # For now, just skip non-subject-object-verb statements.
+
+            if len(key[1:]) == 2:
+                line = '<li>%s</li>' % ' '.join([key[1], verb, key[2]])
+            else:
+                line = '<li>%s among %s</li>' % (verb, ' '.join(key[1:]))
+            lines.append(line)
+
+        # Build the overall html.
+        list_html = '<ul>%s</ul>' % ('\n'.join(lines))
+        return list_html
 
     def get_html(self):
         """Get html for these statements."""

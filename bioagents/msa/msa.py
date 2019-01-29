@@ -7,7 +7,7 @@ import logging
 
 from collections import defaultdict
 
-from bioagents import get_row_data
+from bioagents import get_row_data, make_statement_string
 from indra import get_config
 from indra.statements import stmts_to_json, Agent, get_all_descendants
 from indra.sources import indra_db_rest as idbr
@@ -192,12 +192,7 @@ class StatementFinder(object):
         row_data = get_row_data(stmts)
         lines = []
         for key, verb, stmts in row_data[:num]:
-            # For now, just skip non-subject-object-verb statements.
-
-            if len(key[1:]) == 2:
-                line = '<li>%s</li>' % ' '.join([key[1], verb, key[2]])
-            else:
-                line = '<li>%s among %s</li>' % (verb, ' '.join(key[1:]))
+            line = '<li>%s</li>' % make_statement_string(key, verb)
             lines.append(line)
 
         # Build the overall html.

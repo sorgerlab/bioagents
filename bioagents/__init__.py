@@ -209,7 +209,7 @@ class Bioagent(KQMLModule):
             fpath = path.join(prov_path, fname)
             with open(fpath, 'w') as f:
                 f.write(html)
-            link = 'localhost://' + path.join(prov_path, fname)
+            link = fpath
         elif method == 's3':
             bucket = loc.split(':')[1]
             prefix = loc.split(':')[2]
@@ -258,7 +258,10 @@ class Bioagent(KQMLModule):
         list_html = '<ul>%s</ul>' % ('\n'.join(lines))
         html = self._make_evidence_html(stmt_list)
         link = self._stash_evidence_html(html)
-        link_html = href(link, 'Here') + ' is the full list.'
+        if link.startswith('http'):
+            link_html = href(link, 'Here') + ' is the full list.'
+        else:
+            link_html = 'Here: %s is the full list.' % link
 
         return list_html + '\n' + link_html
 

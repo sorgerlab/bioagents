@@ -1,25 +1,6 @@
-import re
-from indra.statements import Phosphorylation, Agent, Evidence
 from bioagents.tests.integration import _IntegrationTest
-from bioagents import Bioagent, BioagentException, make_evidence_html
+from bioagents import Bioagent, BioagentException
 from kqml import KQMLList, KQMLPerformative
-
-
-def test_make_evidence_html1():
-    # Full evidence
-    ev1 = Evidence(source_api='trips', pmid='12345', text='Some evidence')
-    # Has PMID but no text
-    ev2 = Evidence(source_api='biopax', pmid='23456', text=None)
-    # No PMID or text but has source id
-    ev3 = Evidence(source_api='bel', pmid=None, text=None, source_id='bel_id')
-    # No evidence other than the source API
-    ev4 = Evidence(source_api='bel', pmid=None, text=None, source_id=None)
-    stmt = Phosphorylation(Agent('A'), Agent('B'),
-                           evidence=[ev1, ev2, ev3, ev4])
-    ev_html = make_evidence_html([stmt])
-    assert 'Some evidence' in ev_html, ev_html
-    assert 'Database entry in \'biopax\'' in ev_html, ev_html
-    assert 'Database entry in \'bel\'' in ev_html, ev_html
 
 
 class TestErrorHandling(_IntegrationTest):

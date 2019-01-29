@@ -1,6 +1,8 @@
+import uuid
 import logging
 from os import path
 from datetime import datetime
+from indra.assemblers.html import HtmlAssembler
 
 from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
 
@@ -134,7 +136,7 @@ class Bioagent(KQMLModule):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
 
-    def send_provenance_for_stmts(self, stmt_list, for_what, limit=5):
+    def send_provenance_for_stmts(self, stmt_list, for_what, limit=20):
         """Send out a provenance tell for a list of INDRA Statements.
 
         The message is used to provide evidence supporting a conclusion.
@@ -142,59 +144,156 @@ class Bioagent(KQMLModule):
         logger.info("Sending provenance for %d statements for \"%s\"."
                     % (len(stmt_list), for_what))
         content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
-                       '{conclusion}:</h4>\n{evidence}<hr>')
-        evidence_html = make_evidence_html(stmt_list, limit)
-        # Actually create the content.
+                       '{conclusion} (max {limit}):</h4>\n{evidence}<hr>')
+        evidence_html = self._make_report_cols_html(stmt_list, limit)
+
         content = KQMLList('add-provenance')
         content.sets('html',
                      content_fmt.format(conclusion=for_what,
                                         evidence=evidence_html,
-                                        bioagent=self.name))
+                                        bioagent=self.name, limit=limit))
         return self.tell(content)
 
+    def _make_evidence_html(self, stmts):
+        "Make html from a set of statements."
+        ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio')
+        return ha.make_model()
 
-def make_evidence_html(stmt_list, limit=5):
-    """Creates HTML content for evidences corresponding to INDRA Statements."""
-    # Create some formats
-    url_base = 'https://www.ncbi.nlm.nih.gov/pubmed/'
-    pmid_link_fmt = '<a href={url}{pmid} target="_blank">PMID{pmid}</a>'
+    def _stash_evidence_html(self, html):
+        """Make html for a set of statements, return a link to the file.
 
-    def get_ev_desc(ev, stmt):
-        "Get a description of the evidence."
-        if ev.text:
-            entry = "<i>'%s'</i>" % ev.text
-        # If the entry at least has a source ID in a database
-        elif ev.source_id:
-            entry = "Database entry in '%s': %s" % \
-                (ev.source_api, ev.source_id)
-        # Otherwise turn it into English
+        The if the PROVENANCE_LOCATION environment variable determines where
+        the content is stored. The variable should be divided by colons, the
+        first division indicating whether the file is stored locally or on s3,
+        being either "file" or "s3" respectively.
+
+        If the html will be stored locally, the next and last division should
+        be a path (absolute would be best) to the location where html files
+        will be stored. For example:
+
+            file:/home/myname/projects/cwc-integ/provenance
+
+        If the html will be stored on s3, the next division should be the
+        bucket, and the last division should be a prefix to a "directory" where
+        the html files will be stored. For example:
+
+            s3:cwc-stuff:bob/provenance
+
+        The default is:
+
+            file:{this directory}/../../../provenance
+
+        Which should land in the cwc-integ directory. If the directory does not
+        yet exist, it will be created.
+        """
+        # Get the provenance location.
+        from os import environ, mkdir
+
+        loc = environ.get('PROVENANCE_LOCATION')
+        if loc is None:
+            this_dir = path.dirname(path.abspath(__file__))
+            rel = path.join(*([this_dir] + 3*[path.pardir] + ['provenance']))
+            loc = 'file:' + path.abspath(rel)
+        logger.info("Using provenance location: \"%s\"" % loc)
+
+        # Save the file.
+        method = loc.split(':')[0]
+        fname = '%s.html' % uuid.uuid4()
+        if method == 'file':
+            prov_path = loc.split(':')[1]
+            if not path.exists(prov_path):
+                mkdir(prov_path)
+            fpath = path.join(prov_path, fname)
+            with open(fpath, 'w') as f:
+                f.write(html)
+            link = 'file://' + path.join(prov_path, fname)
+        elif method == 's3':
+            bucket = loc.split(':')[1]
+            prefix = loc.split(':')[2]
+            import boto3
+            s3 = boto3.client('s3')
+            key = prefix + fname
+            link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)
+            s3.put_object(Bucket=bucket, Key=key, Body=html.encode('utf-8'),
+                          ContentType='text/html')
         else:
-            txt = EnglishAssembler([stmt]).make_model()
-            entry = "Database entry in '%s' representing: %s" % \
-                (ev.source_api, txt)
-        return entry
+            logger.error('Invalid PROVENANCE_LOCATION: "%s". HTML not saved.'
+                         % loc)
+            link = None
+        return link
 
-    # Extract a list of the evidence then map pmids to lists of text
-    evidence_list = {(ev, get_ev_desc(ev, stmt)) for stmt in stmt_list
-                     for ev in stmt.evidence}
-    evidence_with_text = {(ev, txt) for ev, txt in evidence_list if ev.text}
-    evidence_from_db = {(ev, txt) for ev, txt in evidence_list if not ev.text
-                        and ev.source_id}
-    evidence_no_ids = {(ev, txt) for ev, txt in evidence_list if (ev not in
-                       evidence_with_text) and (ev not in evidence_from_db)}
-    evidence_list = evidence_with_text | evidence_from_db | evidence_no_ids
-    entries = set()
-    for i, (ev, entry) in enumerate(evidence_list):
-        if limit and i >= limit:
-            break
-        if ev.pmid:
-            entry += ' (%s)' % (pmid_link_fmt.format(url=url_base,
-                                                     pmid=ev.pmid))
-        entries.add(entry)
+    def _make_report_cols_html(self, stmt_list, limit=5):
+        """Make columns listing the support given by the statement list."""
 
-    entries_list = ['<li>%s</li>' % entry for entry in entries]
-    evidence_html = '<ul>%s</ul>' % ('\n'.join(entries_list))
-    return evidence_html
+        def href(ref, text):
+            return '<a href=%s target="_blank">%s</a>' % (ref, text)
+
+        # Build the list of relevant statements and count their prevalence.
+        row_data = get_row_data(stmt_list)
+
+        # Build the html.
+        lines = []
+        for key, verb, stmts in row_data[:limit]:
+            # For now, just skip non-subject-object-verb statements.
+            if len(key[1:]) != 2:
+                continue
+
+            count = key[0]
+
+            stmts_html = self._make_evidence_html(stmts)
+            link = self._stash_evidence_html(stmts_html)
+            line = '<li>%s %s %s %s' % (key[1], verb, key[2],
+                                        href(link, '(%d)' % count))
+            lines.append(line)
+
+        # Build the overall html.
+        list_html = '<ul>%s</ul>' % ('\n'.join(lines))
+        html = self._make_evidence_html(stmt_list)
+        link = self._stash_evidence_html(html)
+        link_html = href(link, 'Here') + ' is the full list.'
+
+        return list_html + '\n' + link_html
+
+
+def get_row_data(stmt_list):
+    def name(agent):
+        return 'None' if agent is None else agent.name
+
+    stmt_rows = {}
+    for s in stmt_list:
+        # Create a key.
+        verb = s.__class__.__name__
+        key = (verb,)
+
+        ags = s.agent_list()
+        if verb == 'Complex':
+            ag_ns = {name(ag) for ag in ags}
+            key += tuple(sorted(ag_ns))
+        elif verb == 'Conversion':
+            subj = name(ags[0])
+            objs_from = {name(ag) for ag in ags[1]}
+            objs_to = {name(ag) for ag in ags[2]}
+            key += (subj, tuple(sorted(objs_from)), tuple(sorted(objs_to)))
+        else:
+            key += tuple([name(ag) for ag in ags])
+
+        # Update the counts, and add key if needed.
+        if key not in stmt_rows.keys():
+            stmt_rows[key] = []
+        stmt_rows[key].append(s)
+
+    # Sort the rows by count and agent names.
+    def process(tpl):
+        key, stmts = tpl
+        count = sum(len(s.evidence) for s in stmts)
+        new_key = (count,)
+        new_key += tuple(key[1:])
+        return new_key, key[0], stmts
+
+    row_data = sorted((process(t) for t in stmt_rows.items()),
+                      key=lambda tpl: tpl[0], reverse=True)
+
+    return row_data
 
 
 def get_img_path(img_name):

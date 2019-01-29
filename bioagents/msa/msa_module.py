@@ -376,7 +376,7 @@ class MSA_Module(Bioagent):
                 return
             start_time = datetime.now()
             logger.info('Sending display statements.')
-            self._send_table_to_provenance(resp, nl_question)
+            self.send_provenance_for_stmts(resp.statements, nl_question)
             logger.info("Finished sending provenance after %s seconds."
                         % (datetime.now() - start_time).total_seconds())
         except Exception as e:

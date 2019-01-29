@@ -553,6 +553,8 @@ def _get_agent_ref(agent):
     """Get the preferred ref for an agent for db web api."""
     if agent is None:
         return None
+
+    # TODO: This will no longer be needed when the database is refreshed.
     ag_hgnc_id = hgnc_client.get_hgnc_id(agent.name)
     if ag_hgnc_id is not None:
         return ag_hgnc_id + "@HGNC"
@@ -570,8 +572,6 @@ def _get_matching_stmts(stmt_ref):
     stmt_type = stmt_ref.__class__.__name__
     agent_name_list = [_get_agent_ref(ag) for ag in stmt_ref.agent_list()]
     non_binary_statements = [Complex, SelfModification, ActiveForm]
-    # TODO: We should look at more than just the agent name.
-    # Doing so efficiently may require changes to the web api.
     kwargs = {}
     if any([isinstance(stmt_ref, tp) for tp in non_binary_statements]):
         kwargs['agents'] = [ag_name for ag_name in agent_name_list

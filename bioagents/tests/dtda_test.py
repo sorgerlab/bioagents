@@ -225,6 +225,16 @@ class TestIsDrugTarget1(_TestIsDrugTarget):
 
 
 @attr('nonpublic')
+class TestIsDrugTargetMAP2K1Selumetinib(_TestIsDrugTarget):
+    target = 'MAP2K1'
+    drug = 'Selumetinib'
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('is-target') == 'TRUE', output
+
+
+@attr('nonpublic')
 class TestIsDrugTarget2(_TestIsDrugTarget):
     target = 'BRAF'
     drug = 'dabrafenib'

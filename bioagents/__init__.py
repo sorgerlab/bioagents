@@ -2,6 +2,9 @@ import uuid
 import logging
 from os import path
 from datetime import datetime
+
+from indra.statements import get_statement_by_name, Agent
+
 from indra.assemblers.html import HtmlAssembler
 
 from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
@@ -222,6 +225,13 @@ class Bioagent(KQMLModule):
             link = None
         return link
 
+    def say(self, message):
+        """Blurt a message directly to the dialogue session."""
+        msg = KQMLList('spoken')
+        msg.sets('who', 'sys')
+        msg.sets('what', message)
+        self.tell(msg)
+
     def _make_report_cols_html(self, stmt_list, limit=5):
         """Make columns listing the support given by the statement list."""
 
@@ -235,15 +245,12 @@ class Bioagent(KQMLModule):
         lines = []
         for key, verb, stmts in row_data[:limit]:
             # For now, just skip non-subject-object-verb statements.
-            if len(key[1:]) != 2:
-                continue
-
             count = key[0]
 
             stmts_html = self._make_evidence_html(stmts)
             link = self._stash_evidence_html(stmts_html)
-            line = '<li>%s %s %s %s' % (key[1], verb, key[2],
-                                        href(link, '(%d)' % count))
+            line = '<li>%s %s</li>' % (make_statement_string(key, verb),
+                                       href(link, '(%d)' % count))
             lines.append(line)
 
         # Build the overall html.
@@ -274,6 +281,10 @@ def get_row_data(stmt_list):
             objs_from = {name(ag) for ag in ags[1]}
             objs_to = {name(ag) for ag in ags[2]}
             key += (subj, tuple(sorted(objs_from)), tuple(sorted(objs_to)))
+        elif verb == 'ActiveForm':
+            key += (name(ags[0]), s.activity, s.is_active)
+        elif verb == 'HasActivity':
+            key += (name(ags[0]), s.activity, s.has_activity)
         else:
             key += tuple([name(ag) for ag in ags])
 
@@ -294,6 +305,21 @@ def get_row_data(stmt_list):
                       key=lambda tpl: tpl[0], reverse=True)
 
     return row_data
+
+
+def make_statement_string(key, verb):
+    """Make a Statement string via EnglishAssembler from `get_row_data` key."""
+    inp = key[1:]
+    StmtClass = get_statement_by_name(verb)
+    if verb == 'Conversion':
+        stmt = StmtClass(Agent(inp[0]), [Agent(name) for name in inp[1]],
+                         [Agent(name) for name in inp[2]])
+    elif verb == 'ActiveForm' or verb == 'HasActivity':
+        stmt = StmtClass(Agent(inp[0]), inp[1], inp[2])
+    else:
+        stmt = StmtClass(*[Agent(name) for name in inp])
+    ea = EnglishAssembler([stmt])
+    return ea.make_model()[:-1]
 
 
 def get_img_path(img_name):

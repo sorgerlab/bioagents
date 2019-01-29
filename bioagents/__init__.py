@@ -209,12 +209,17 @@ class Bioagent(KQMLModule):
             fpath = path.join(prov_path, fname)
             with open(fpath, 'w') as f:
                 f.write(html)
-            link = 'file://' + path.join(prov_path, fname)
+            link = 'localhost://' + path.join(prov_path, fname)
         elif method == 's3':
             bucket = loc.split(':')[1]
             prefix = loc.split(':')[2]
+
+            # Get a connection to s3.
             import boto3
-            s3 = boto3.client('s3')
+            from botocore import UNSIGNED
+            from botocore.client import Config
+            s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+
             key = prefix + fname
             link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)
             s3.put_object(Bucket=bucket, Key=key, Body=html.encode('utf-8'),

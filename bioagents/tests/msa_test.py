@@ -253,7 +253,7 @@ class TestMsaCommonUpstreamsMEKERK(_IntegrationTest):
         content = KQMLList('GET-COMMON')
         ekb = ekb_from_text('MEK, ERK')
         content.sets('genes', ekb)
-        content.sets('up-down', 'ONT::PREDECESSOR')
+        content.sets('up-down', 'ONT::MORE')
         msg = get_request(content)
         return msg, content
 
@@ -299,7 +299,7 @@ class TestMsaCommonUpstreamsTP53AKT1(_IntegrationTest):
         content = KQMLList('GET-COMMON')
         ekb = ekb_from_text('TP53, AKT1')
         content.sets('genes', ekb)
-        content.sets('up-down', 'ONT::PREDECESSOR')
+        content.sets('up-down', 'ONT::MORE')
         msg = get_request(content)
         return msg, content
 

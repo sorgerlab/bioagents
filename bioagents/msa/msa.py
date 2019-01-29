@@ -1,7 +1,6 @@
 import re
 import json
 import uuid
-import boto3
 import pickle
 import logging
 
@@ -14,7 +13,7 @@ from indra.sources import indra_db_rest as idbr
 
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
-from indra.assemblers.english.assembler import EnglishAssembler, _join_list
+from indra.assemblers.english.assembler import _join_list
 
 logger = logging.getLogger('MSA')
 
@@ -207,6 +206,7 @@ class StatementFinder(object):
 
     def get_html(self):
         """Get html for these statements."""
+        import boto3
         html_assembler = HtmlAssembler(self.get_statements(),
                                        db_rest_url=DB_REST_URL)
         html = html_assembler.make_model()
@@ -519,7 +519,7 @@ class _Commons(StatementFinder):
     def get_common_entities(self):
         return [ag_name for ag_name in self.commons.keys()]
 
-    def describe(self):
+    def describe(self, *args, **kwargs):
         desc = "Overall, I found that %s have the following common %s: %s" \
                % (_join_list([ag.name for ag in self.query.agents]),
                   self._name, _join_list(self.get_common_entities()))

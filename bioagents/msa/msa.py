@@ -171,11 +171,14 @@ class StatementFinder(object):
                 self._filter_stmts(self._processor.statements_sample[:])
         return self._sample[:]
 
-    def describe(self):
+    def describe(self, limit=5):
         """Turn the results dictionary into a coherent message."""
-        summary = self.get_summary()
-        if summary:
-            msg = 'Here are the top 5 statements I found:\n'
+        num_stmts = len(self.get_statements())
+        if num_stmts > limit:
+            msg = 'Here are the top %d statements I found:\n' % limit
+            msg += self.get_summary(num=limit) + '\n'
+        elif 0 < num_stmts < limit:
+            msg = 'Here are the statements I found:\n'
             msg += self.get_summary() + '\n'
         else:
             msg = 'I did not find any statements about that'
@@ -196,7 +199,10 @@ class StatementFinder(object):
             lines.append(line)
 
         # Build the overall html.
-        list_html = '<ul>%s</ul>' % ('\n'.join(lines))
+        if lines:
+            list_html = '<ul>%s</ul>' % ('\n'.join(lines))
+        else:
+            list_html = ''
         return list_html
 
     def get_html(self):

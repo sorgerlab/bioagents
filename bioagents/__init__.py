@@ -316,7 +316,9 @@ def make_statement_string(key, verb):
     """Make a Statement string via EnglishAssembler from `get_row_data` key."""
     inp = key[1:]
     StmtClass = get_statement_by_name(verb)
-    if verb == 'Conversion':
+    if verb == 'Complex':
+        stmt = StmtClass([Agent(name) for name in inp])
+    elif verb == 'Conversion':
         stmt = StmtClass(Agent(inp[0]), [Agent(name) for name in inp[1]],
                          [Agent(name) for name in inp[2]])
     elif verb == 'ActiveForm' or verb == 'HasActivity':

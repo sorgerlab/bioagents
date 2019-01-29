@@ -228,18 +228,12 @@ class TestMsaProvenance(_IntegrationTest):
         assert len(provs) == 1, 'Too much provenance: %d vs. 1.' % len(provs)
         html = provs[0].get('content').get('html')
         html_str = html.to_string()
-        evs = re.findall("<i>[\"\'](.*?)[\"\']</i>.*?<a.*?>(?:pmid|PMID)(\d+)</a>",
+        evs = re.findall('<li>(.*?) <a href=(.*?\.html).*?>\((\d+)\)</a></li>',
                          html_str)
-        evs += re.findall("<li>(.*?):.*?\(<a.*?>PMID(\d+)</a>\)</li>", html_str)
         assert len(evs),\
             ("unexpectedly formatted provenance (got no regex extractions): %s"
              % html_str)
-        ev_counts = [(ev, evs.count(ev)) for ev in set(evs)]
-        ev_duplicates = ['%d x \"%s\" with pmid %s' % (num, ev_str, pmid)
-                         for (ev_str, pmid), num in ev_counts if num > 1]
-        assert not ev_duplicates,\
-            ("Some evidence listed multiple times:\n    %s\nFull html:\n%s"
-             % ('\n    '.join(ev_duplicates), html.to_string()))
+        # TODO: think of some way to test this better.
         return
 
 

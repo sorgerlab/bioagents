@@ -441,7 +441,7 @@ class ToTarget(StatementFinder):
                                            other_role='subject')
         desc += _join_list(other_names)
         desc += verb_wrap
-        desc += self.obj.name + '.\n'
+        desc += self.query.obj.name + '.\n'
 
         desc += ps
         return desc

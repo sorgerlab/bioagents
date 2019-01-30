@@ -386,9 +386,14 @@ class BinaryDirected(StatementFinder):
         return StatementQuery(subject, object, [], verb, params)
 
     def describe(self, limit=None):
-        desc = "Overall, I found that %s can have the following effects on " \
-               "%s: " % (self.query.subj.name, self.query.obj.name)
-        desc += _join_list(self.get_unique_verb_list()) + '.'
+        verbs = self.get_unique_verb_list()
+        names = (self.query.subj.name, self.query.obj.name)
+        if len(verbs):
+            desc = "Overall, I found that %s can have the following effects " \
+                   "on %s: " % names
+            desc += _join_list(verbs) + '.'
+        else:
+            desc = 'Overall, I found that %s does not affect %s.' % names
         return desc
 
 
@@ -397,9 +402,15 @@ class BinaryUndirected(StatementFinder):
         return StatementQuery(None, None, [entity1, entity2], None, params)
 
     def describe(self, limit=None):
-        desc = "Overall, I found that %s and %s interact in the following " \
-               "ways: " % tuple([ag.name for ag in self.query.agents])
-        desc += _join_list(self.get_unique_verb_list()) + '.'
+        verbs = self.get_unique_verb_list()
+        names = [ag.name for ag in self.query.agents]
+        if len(verbs):
+            desc = "Overall, I found that %s and %s interact in the " \
+                   "following ways: " % tuple(names)
+            desc += _join_list(verbs) + '.'
+        else:
+            desc = 'Overall, I found that %s and %s do not interact.' \
+                   % tuple(names)
         return desc
 
 
@@ -407,7 +418,7 @@ class FromSource(StatementFinder):
     def _regularize_input(self, source, verb=None, **params):
         return StatementQuery(source, None, [], verb, params)
 
-    def describe(self, limit=5):
+    def describe(self, limit=10):
         if self.query.stmt_type is None:
             verb_wrap = ' can interact with '
             ps = super(FromSource, self).describe(limit=limit)
@@ -443,18 +454,18 @@ class ToTarget(StatementFinder):
             verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
             ps = ''
 
-        desc = "Overall, I found that "
+        desc = "Overall, I found that"
         other_names = self.get_other_names(self.query.obj,
                                            other_role='subject')
         if len(other_names) > limit:
             desc += ', for example, '
             desc += _join_list(other_names[:limit])
         elif 0 < len(other_names) <= limit:
-            desc += _join_list(other_names)
+            desc += ' ' + _join_list(other_names)
         else:
-            desc += 'nothing'
+            desc += ' nothing'
         desc += verb_wrap
-        desc += self.query.obj.name + '.\n'
+        desc += self.query.obj.name + '. '
 
         desc += ps
         return desc

@@ -795,7 +795,7 @@ class TestModelRefinement(_IntegrationTest):
     def __init__(self, *args):
         super(self.__class__, self).__init__(MRA_Module)
 
-    message_funcs = ['build', 'refine']
+    message_funcs = ['build', 'refine', 'refine2', 'refine3']
 
     def create_build(self):
         return _get_build_model_request('KRAS activates BRAF')
@@ -816,6 +816,26 @@ class TestModelRefinement(_IntegrationTest):
         assert len(model) == 1
         model_new = json.loads(output.gets('model-new'))
         assert len(model_new) == 1
+
+    def create_refine2(self):
+        return _get_expand_model_request('KRAS activates BRAF', '2')
+
+    def check_response_to_refine2(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('model-id') == '3'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+        assert output.gets('model-new') is None
+
+    def create_refine3(self):
+        return _get_expand_model_request('RAS activates RAF', '3')
+
+    def check_response_to_refine3(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('model-id') == '4'
+        model = json.loads(output.gets('model'))
+        assert len(model) == 1
+        assert output.gets('model-new') is None
 
 '''
 def test_replace_agent_one():

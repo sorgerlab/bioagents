@@ -106,7 +106,8 @@ class MSA_Module(Bioagent):
             name_list = agents[0].name
         name_list += ' and ' + agents[-1].name
         msg = ('%sstreams of ' % prefix).capitalize() + name_list
-        self.send_provenance_for_stmts(finder.get_statements(), msg)
+        self.send_provenance_for_stmts(finder.get_statements(), msg,
+                                       ev_counts=finder.get_ev_totals())
 
         # Create the reply
         resp = KQMLPerformative('SUCCESS')
@@ -160,68 +161,57 @@ class MSA_Module(Bioagent):
                                      'phosphorylation')
                 )
         else:
-            self.send_provenance_for_stmts(
-                stmts,
-                "phosphorylation at %s%s activates %s." % (
-                    residue,
-                    position,
-                    agent.name
-                    )
-                )
+            msg = "phosphorylation at %s%s activates %s." \
+                  % (residue, position, agent.name)
+            self.send_provenance_for_stmts(stmts, msg,
+                                           ev_counts=finder.get_ev_totals())
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
             return msg
 
-    def _make_nl_description(self, verb, subj, obj):
-        """Make a human-readable description of a query."""
-        question_input = {k: ag.name if ag else 'unknown'
-                          for k, ag in [('subject', subj), ('object', obj)]}
-        question_input['stmt_type'] = verb
-        fmt = ('subject: {subject}, statement type: {stmt_type}, '
-               'object: {object}')
-        ret = fmt.format(**question_input)
-        return ret
-
-    def _lookup_from_source_type_target(self, content, desc, timeout=20,
-                                        send_provenance=True):
-        """Look up statement given info received by find/confirm relations."""
-        start_time = datetime.now()
+    def _get_query_info(self, content):
         subj = _get_agent(content.gets('source'))
         obj = _get_agent(content.gets('target'))
         if not subj and not obj:
             raise MSALookupError('MISSING_MECHANISM')
 
         stmt_type = content.gets('type')
-        nl = self._make_nl_description(stmt_type, subj, obj)
-        nl = "%s: %s" % (desc, nl)
-        logger.info("Got a query for %s." % nl)
-
         if stmt_type == 'unknown':
             stmt_type = None
+        return subj, obj, stmt_type
 
-        # Try to get related statements.
-        finder = self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
-                                                    ev_limit=3, persist=False,
-                                                    timeout=timeout)
+    def _send_provenance_async(self, finder, desc):
+        q = finder.query
+        nl_input = {k: ag.name if ag else 'unknown'
+                    for k, ag in [('subject', q.subj), ('object', q.obj)]}
+        nl_input['stmt_type'] = q.stmt_type
+        fmt = ('subject={subject}, statement type={stmt_type}, '
+               'object={object}')
+        nl = fmt.format(**nl_input)
+        nl = "%s: %s" % (desc, nl)
+
         stmts = finder.get_statements(block=False)
-        num_stmts = 0 if stmts is None else len(stmts)
-        logger.info("Retrieved %d statements after %s seconds."
-                    % (num_stmts, (datetime.now()-start_time).total_seconds()))
-        if send_provenance:
-            try:
-                th = Thread(target=self._send_display_stmts, args=(finder, nl))
-                th.start()
-            except Exception as e:
-                logger.warning("Failed to start thread to send provenance.")
-                logger.exception(e)
-
-        return finder
+        num_stmts = 'no' if stmts is None else len(stmts)
+        logger.info("Retrieved %s statements so far. Sending provenance in a "
+                    "thread..." % num_stmts)
+        try:
+            th = Thread(target=self._send_display_stmts, args=(finder, nl))
+            th.start()
+        except Exception as e:
+            logger.warning("Failed to start thread to send provenance.")
+            logger.exception(e)
+        return
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            finder = self._lookup_from_source_type_target(content, 'Find',
-                                                          timeout=5)
+            subj, obj, stmt_type = self._get_query_info(content)
+            finder = \
+                self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
+                                                   ev_limit=3, persist=False,
+                                                   timeout=5)
+            self._send_provenance_async(finder,
+                                        'finding statements that match')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
 
@@ -244,7 +234,13 @@ class MSA_Module(Bioagent):
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb"""
         try:
-            finder = self._lookup_from_source_type_target(content, 'Confirm')
+            subj, obj, stmt_type = self._get_query_info(content)
+            finder = \
+                self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
+                                                   ev_limit=5, persist=False,
+                                                   timeout=5)
+            self._send_provenance_async(finder,
+                'confirming that some statements match')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
         stmts = finder.get_statements(timeout=20)
@@ -307,54 +303,19 @@ class MSA_Module(Bioagent):
     def _send_display_stmts(self, finder, nl_question):
         try:
             logger.debug("Waiting for statements to finish...")
-            stmts = finder.get_statements()
+            stmts = finder.get_statements(block=True)
             if stmts is None or not len(stmts):
                 return
             start_time = datetime.now()
             logger.info('Sending display statements.')
-            self.send_provenance_for_stmts(stmts, nl_question)
+            self.send_provenance_for_stmts(stmts, nl_question,
+                                           ev_counts=finder.get_ev_totals())
             logger.info("Finished sending provenance after %s seconds."
                         % (datetime.now() - start_time).total_seconds())
         except Exception as e:
             logger.exception(e)
             logger.error("Failed to post provenance.")
             raise
-
-    def _format_evidence(self, ev_list, ev_count):
-        """Format the evidence of a statement for display."""
-        fmt = ('{source_api}: <a href=https://www.ncbi.nlm.nih.gov/pubmed/'
-               '{pmid} target="_blank">{pmid}</a>')
-        pmids = [fmt.format(**ev.__dict__) for ev in ev_list[:10]]
-        if len(pmids) < ev_count:
-            pmids.append('...and %d more!' % (ev_count - len(pmids)))
-        return ', '.join(pmids)
-
-    def _send_table_to_provenance(self, resp, nl_question):
-        """Post a concise table listing statements found."""
-        html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
-        html_str += '<table style="width:100%">\n'
-        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
-                    '<th>Source and PMID</th>']
-        stmts = resp.get_statements()
-        logger.info("Sending %d statements to provenance."
-                    % min(len(stmts), DUMP_LIMIT))
-        print("Generating html: ", end='', flush=True)
-        for i, stmt in enumerate(stmts[:DUMP_LIMIT]):
-            if i % 5 == 0:
-                print('|', end='', flush=True)
-            sub_ag, obj_ag = stmt.agent_list()
-            ev_str = self._format_evidence(stmt.evidence,
-                                           resp.get_ev_count(stmt))
-            row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
-                            % (sub_ag, type(stmt).__name__, obj_ag, ev_str))
-        html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
-                               for row_str in row_list])
-        html_str += '</table>'
-        print(" DONE...", end='', flush=True)
-        content = KQMLList('add-provenance')
-        content.sets('html', html_str)
-        print("SENT!")
-        return self.tell(content)
 
 
 def _make_sbgn(stmts):

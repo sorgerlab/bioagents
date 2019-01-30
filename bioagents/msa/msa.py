@@ -101,7 +101,7 @@ class StatementQuery(object):
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
         self._block_default = kwargs.pop('block_default', True)
-        self._query = self._regularize_input(*args, **kwargs)
+        self.query = self._regularize_input(*args, **kwargs)
         self._processor = self._make_processor()
         self._statements = None
         self._sample = []
@@ -116,19 +116,19 @@ class StatementFinder(object):
 
         This method makes use of the `query` attribute.
         """
-        if not self._query.verb:
+        if not self.query.verb:
             processor = \
-                idbr.get_statements(subject=self._query.subj_key,
-                                    object=self._query.obj_key,
-                                    agents=self._query.agent_keys,
-                                    **self._query.settings)
+                idbr.get_statements(subject=self.query.subj_key,
+                                    object=self.query.obj_key,
+                                    agents=self.query.agent_keys,
+                                    **self.query.settings)
         else:
             processor = \
-                idbr.get_statements(subject=self._query.subj_key,
-                                    object=self._query.obj_key,
-                                    agents=self._query.agent_keys,
-                                    stmt_type=self._query.stmt_type,
-                                    **self._query.settings)
+                idbr.get_statements(subject=self.query.subj_key,
+                                    object=self.query.obj_key,
+                                    agents=self.query.agent_keys,
+                                    stmt_type=self.query.stmt_type,
+                                    **self.query.settings)
         return processor
 
     def _filter_stmts(self, stmts):
@@ -162,6 +162,14 @@ class StatementFinder(object):
 
         return self._statements[:]
 
+    def get_ev_totals(self):
+        """Get a dictionary of evidence total counts from the processor."""
+        # Getting statements applies any filters, so the counts are consistent
+        # with those filters.
+        stmts = self.get_statements(block=False)
+        return {stmt.get_hash(): self._processor.get_ev_count(stmt)
+                for stmt in stmts}
+
     def get_sample(self):
         """Get the sample of statements retrieved by the first query."""
         if not self._sample:
@@ -191,7 +199,7 @@ class StatementFinder(object):
     def get_summary(self, num=5):
         """List the top statements in plane english."""
         stmts = self.get_statements()
-        row_data = get_row_data(stmts)
+        row_data = get_row_data(stmts, ev_totals=self.get_ev_totals())
         lines = []
         for key, verb, stmts in row_data[:num]:
             line = '<li>%s</li>' % make_statement_string(key, verb)
@@ -267,7 +275,7 @@ class StatementFinder(object):
                  for st in stmt_types}
         return list(verbs)
 
-    def get_other_names(self, entity, role=None):
+    def get_other_names(self, entity, other_role=None):
         """Find all the resulting agents besides the one given.
 
         It is assumed that the given entity was one of the inputs.
@@ -278,37 +286,39 @@ class StatementFinder(object):
             Either an original entity string or Agent, or Agent name. This
             method will find other entities that occur within the statements
             besides this one.
-        role : 'subject', 'object', or None
+        other_role : 'subject', 'object', or None
             The part of speech/role of the other names. Limits the results to
             subjects, if 'subject', objects if 'object', or places no limit
             if None. Default is None.
         """
         # Check to make sure role is valid.
-        if role not in ['subject', 'object', None]:
+        if other_role not in ['subject', 'object', None]:
             raise ValueError('Invalid role of type %s: %s'
-                             % (type(role), role))
+                             % (type(other_role), other_role))
 
         # Get the namespace and id of the original entity.
-        dbn, dbi = self._query.entities[entity.name]
+        dbn, dbi = self.query.entities[entity.name]
 
         # Build up a dict of names, counting how often they occur.
         name_dict = defaultdict(lambda: 0)
+        ev_totals = self.get_ev_totals()
         for s in self.get_statements():
 
             # If the role is None, look at all the agents.
-            if role is None:
-                for ag in s.agent_list():
+            ags = s.agent_list()
+            if other_role is None:
+                for ag in ags:
                     if ag is not None and ag.db_refs.get(dbn) != dbi:
-                        name_dict[ag.name] += 1
+                        name_dict[ag.name] += ev_totals[s.get_hash()]
             # If the role is specified, look at just those agents.
             else:
-                idx = 0 if role == 'subject' else 1
-                if idx+1 > len(s.agent_list()):
+                idx = 0 if other_role == 'subject' else 1
+                if idx+1 > len(ags):
                     raise ValueError('Could not apply role %s, not enough '
-                                     'agents: %s' % (role, s.agent_list()))
+                                     'agents: %s' % (other_role, ags))
                 ag = s.agent_list()[idx]
                 if ag is not None and ag.db_refs.get(dbn) != dbi:
-                    name_dict[ag.name] += 1
+                    name_dict[ag.name] += ev_totals[s.get_hash()]
 
         # Create a list of names sorted with the most frequent first.
         names = list(sorted(name_dict.keys(), key=lambda t: name_dict[t],
@@ -317,14 +327,14 @@ class StatementFinder(object):
 
 
 class Neighborhood(StatementFinder):
-    def _regularize_input(self, entity):
-        return StatementQuery(None, None, [entity], None)
+    def _regularize_input(self, entity, **params):
+        return StatementQuery(None, None, [entity], None, params)
 
     def describe(self, max_names=20):
         desc = super(Neighborhood, self).describe()
         desc += "\nOverall, I found the following entities in the " \
-                "neighborhood of %s: " % self._query.agents[0].name
-        other_names = self.get_other_names(self._query.agents[0].name)
+                "neighborhood of %s: " % self.query.agents[0].name
+        other_names = self.get_other_names(self.query.agents[0])
         desc += _join_list(other_names[:max_names])
         desc += '.'
         return desc
@@ -384,10 +394,15 @@ class BinaryDirected(StatementFinder):
     def _regularize_input(self, subject, object, verb=None, **params):
         return StatementQuery(subject, object, [], verb, params)
 
-    def describe(self):
-        desc = "Overall, I found that %s can have the following effects on " \
-               "%s: " % (self._query.subj.name, self._query.obj.name)
-        desc += _join_list(self.get_unique_verb_list()) + '.'
+    def describe(self, limit=None):
+        verbs = self.get_unique_verb_list()
+        names = (self.query.subj.name, self.query.obj.name)
+        if len(verbs):
+            desc = "Overall, I found that %s can have the following effects " \
+                   "on %s: " % names
+            desc += _join_list(verbs) + '.'
+        else:
+            desc = 'Overall, I found that %s does not affect %s.' % names
         return desc
 
 
@@ -395,10 +410,16 @@ class BinaryUndirected(StatementFinder):
     def _regularize_input(self, entity1, entity2, **params):
         return StatementQuery(None, None, [entity1, entity2], None, params)
 
-    def describe(self):
-        desc = "Overall, I found that %s and %s interact in the following " \
-               "ways: " % tuple([ag.name for ag in self._query.agents])
-        desc += _join_list(self.get_unique_verb_list()) + '.'
+    def describe(self, limit=None):
+        verbs = self.get_unique_verb_list()
+        names = [ag.name for ag in self.query.agents]
+        if len(verbs):
+            desc = "Overall, I found that %s and %s interact in the " \
+                   "following ways: " % tuple(names)
+            desc += _join_list(verbs) + '.'
+        else:
+            desc = 'Overall, I found that %s and %s do not interact.' \
+                   % tuple(names)
         return desc
 
 
@@ -406,10 +427,57 @@ class FromSource(StatementFinder):
     def _regularize_input(self, source, verb=None, **params):
         return StatementQuery(source, None, [], verb, params)
 
+    def describe(self, limit=10):
+        if self.query.stmt_type is None:
+            verb_wrap = ' can interact with '
+            ps = super(FromSource, self).describe(limit=limit)
+        else:
+            verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
+            ps = ''
+
+        desc = "Overall, I found that " + self.query.subj.name + verb_wrap
+        other_names = self.get_other_names(self.query.subj,
+                                           other_role='object')
+
+        if len(other_names) > limit:
+            desc += ', for example, '
+            desc += _join_list(other_names[:limit]) + '.\n'
+        elif 0 < len(other_names) <= limit:
+            desc += _join_list(other_names) + '.\n'
+        else:
+            desc += 'nothing.\n'
+
+        desc += ps
+        return desc
+
 
 class ToTarget(StatementFinder):
     def _regularize_input(self, target, verb=None, **params):
         return StatementQuery(None, target, [], verb, params)
+
+    def describe(self, limit=5):
+        if self.query.stmt_type is None:
+            verb_wrap = ' can interact with '
+            ps = super(ToTarget, self).describe(limit=limit)
+        else:
+            verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
+            ps = ''
+
+        desc = "Overall, I found that"
+        other_names = self.get_other_names(self.query.obj,
+                                           other_role='subject')
+        if len(other_names) > limit:
+            desc += ', for example, '
+            desc += _join_list(other_names[:limit])
+        elif 0 < len(other_names) <= limit:
+            desc += ' ' + _join_list(other_names)
+        else:
+            desc += ' nothing'
+        desc += verb_wrap
+        desc += self.query.obj.name + '. '
+
+        desc += ps
+        return desc
 
 
 class ComplexOneSide(StatementFinder):
@@ -418,7 +486,7 @@ class ComplexOneSide(StatementFinder):
 
     def describe(self, max_names=20):
         desc = "Overall, I found that %s can be in a complex with: "
-        other_names = self.get_other_names(self._query.agents[0].name)
+        other_names = self.get_other_names(self.query.agents[0])
         desc += _join_list(other_names[:max_names])
         return desc
 
@@ -458,7 +526,7 @@ class _Commons(StatementFinder):
         trivial cases with large N.
         """
         # Prep the settings with some defaults.
-        kwargs = self._query.settings.copy()
+        kwargs = self.query.settings.copy()
         if 'max_stmts' not in kwargs.keys():
             kwargs['max_stmts'] = 100
         if 'ev_limit' not in kwargs.keys():
@@ -469,7 +537,7 @@ class _Commons(StatementFinder):
         # Run multiple queries, building up a single processor and a dict of
         # agents held in common.
         processor = None
-        for ag, ag_key in zip(self._query.agents, self._query.agent_keys):
+        for ag, ag_key in zip(self.query.agents, self.query.agent_keys):
             if ag_key is None:
                 continue
 
@@ -619,19 +687,25 @@ class MSA(object):
                 raise ValueError('Cannot set both subject and agents to '
                                  'search for complexes.')
 
+            logger.info("Choosing find_complex_one_side.")
             return self.find_complex_one_side(entity, **params)
 
         # Handle more generic (verb-independent) queries.
         if subject and not object and not agents:
+            logger.info("Choosing find_from_source.")
             return self.find_from_source(subject, verb, **params)
         elif object and not subject and not agents:
+            logger.info("Choosing find_to_target.")
             return self.find_to_target(object, verb, **params)
         elif subject and object and not agents:
+            logger.info("Choosing find_binary_directed")
             return self.find_binary_directed(subject, object, verb, **params)
         elif not subject and not object and agents:
+            logger.info("Choosing find_binary_undirected.")
             return self.find_binary_undirected(agents[0], agents[1], verb,
                                                **params)
         else:
+            logger.error("Could not find a valid endpoint given arguments.")
             raise ValueError("Invalid combination of entity arguments: "
                              "subject=%s, object=%s, agents=%s."
                              % (subject, object, agents))

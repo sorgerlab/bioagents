@@ -139,27 +139,30 @@ class Bioagent(KQMLModule):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
 
-    def send_provenance_for_stmts(self, stmt_list, for_what, limit=20):
+    def send_provenance_for_stmts(self, stmt_list, for_what, limit=50,
+                                  ev_counts=None):
         """Send out a provenance tell for a list of INDRA Statements.
 
         The message is used to provide evidence supporting a conclusion.
         """
         logger.info("Sending provenance for %d statements for \"%s\"."
                     % (len(stmt_list), for_what))
-        content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
-                       '{conclusion} (max {limit}):</h4>\n{evidence}<hr>')
-        evidence_html = self._make_report_cols_html(stmt_list, limit)
+        title = "Supporting evidence from the %s for %s" \
+                % (self.name, for_what)
+        content_fmt = '<h4>%s (max %s):</h4>\n%s<hr>'
+        evidence_html = self._make_report_cols_html(stmt_list, limit=limit,
+                                                    ev_counts=ev_counts,
+                                                    title=title)
 
         content = KQMLList('add-provenance')
-        content.sets('html',
-                     content_fmt.format(conclusion=for_what,
-                                        evidence=evidence_html,
-                                        bioagent=self.name, limit=limit))
+        content.sets('html', content_fmt % (title, limit, evidence_html))
         return self.tell(content)
 
-    def _make_evidence_html(self, stmts):
+    def _make_evidence_html(self, stmts, ev_counts=None,
+                            title='Results from the INDRA database'):
         "Make html from a set of statements."
-        ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio')
+        ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio', title=title,
+                           ev_totals=ev_counts)
         return ha.make_model()
 
     def _stash_evidence_html(self, html):
@@ -209,12 +212,17 @@ class Bioagent(KQMLModule):
             fpath = path.join(prov_path, fname)
             with open(fpath, 'w') as f:
                 f.write(html)
-            link = 'file://' + path.join(prov_path, fname)
+            link = fpath
         elif method == 's3':
             bucket = loc.split(':')[1]
             prefix = loc.split(':')[2]
+
+            # Get a connection to s3.
             import boto3
-            s3 = boto3.client('s3')
+            from botocore import UNSIGNED
+            from botocore.client import Config
+            s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+
             key = prefix + fname
             link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)
             s3.put_object(Bucket=bucket, Key=key, Body=html.encode('utf-8'),
@@ -232,37 +240,39 @@ class Bioagent(KQMLModule):
         msg.sets('what', message)
         self.tell(msg)
 
-    def _make_report_cols_html(self, stmt_list, limit=5):
+    def _make_report_cols_html(self, stmt_list, limit=5, ev_counts=None,
+                               **kwargs):
         """Make columns listing the support given by the statement list."""
 
         def href(ref, text):
             return '<a href=%s target="_blank">%s</a>' % (ref, text)
 
         # Build the list of relevant statements and count their prevalence.
-        row_data = get_row_data(stmt_list)
+        row_data = get_row_data(stmt_list, ev_totals=ev_counts)
 
         # Build the html.
         lines = []
         for key, verb, stmts in row_data[:limit]:
-            # For now, just skip non-subject-object-verb statements.
             count = key[0]
-
-            stmts_html = self._make_evidence_html(stmts)
-            link = self._stash_evidence_html(stmts_html)
             line = '<li>%s %s</li>' % (make_statement_string(key, verb),
-                                       href(link, '(%d)' % count))
+                                       '(%d)' % count)
             lines.append(line)
 
         # Build the overall html.
         list_html = '<ul>%s</ul>' % ('\n'.join(lines))
-        html = self._make_evidence_html(stmt_list)
+        html = self._make_evidence_html(stmt_list, **kwargs)
         link = self._stash_evidence_html(html)
-        link_html = href(link, 'Here') + ' is the full list.'
+        if link is None:
+            link_html = 'I could not generate the full list.'
+        elif link.startswith('http'):
+            link_html = href(link, 'Here') + ' is the full list.'
+        else:
+            link_html = 'Here: %s is the full list.' % link
 
         return list_html + '\n' + link_html
 
 
-def get_row_data(stmt_list):
+def get_row_data(stmt_list, ev_totals=None):
     def name(agent):
         return 'None' if agent is None else agent.name
 
@@ -296,7 +306,10 @@ def get_row_data(stmt_list):
     # Sort the rows by count and agent names.
     def process(tpl):
         key, stmts = tpl
-        count = sum(len(s.evidence) for s in stmts)
+        if ev_totals is None:
+            count = sum(len(s.evidence) for s in stmts)
+        else:
+            count = sum(ev_totals[s.get_hash()] for s in stmts)
         new_key = (count,)
         new_key += tuple(key[1:])
         return new_key, key[0], stmts
@@ -311,7 +324,9 @@ def make_statement_string(key, verb):
     """Make a Statement string via EnglishAssembler from `get_row_data` key."""
     inp = key[1:]
     StmtClass = get_statement_by_name(verb)
-    if verb == 'Conversion':
+    if verb == 'Complex':
+        stmt = StmtClass([Agent(name) for name in inp])
+    elif verb == 'Conversion':
         stmt = StmtClass(Agent(inp[0]), [Agent(name) for name in inp[1]],
                          [Agent(name) for name in inp[2]])
     elif verb == 'ActiveForm' or verb == 'HasActivity':

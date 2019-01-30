@@ -267,7 +267,7 @@ class StatementFinder(object):
                  for st in stmt_types}
         return list(verbs)
 
-    def get_other_names(self, entity, role=None):
+    def get_other_names(self, entity, other_role=None):
         """Find all the resulting agents besides the one given.
 
         It is assumed that the given entity was one of the inputs.
@@ -278,15 +278,15 @@ class StatementFinder(object):
             Either an original entity string or Agent, or Agent name. This
             method will find other entities that occur within the statements
             besides this one.
-        role : 'subject', 'object', or None
+        other_role : 'subject', 'object', or None
             The part of speech/role of the other names. Limits the results to
             subjects, if 'subject', objects if 'object', or places no limit
             if None. Default is None.
         """
         # Check to make sure role is valid.
-        if role not in ['subject', 'object', None]:
+        if other_role not in ['subject', 'object', None]:
             raise ValueError('Invalid role of type %s: %s'
-                             % (type(role), role))
+                             % (type(other_role), other_role))
 
         # Get the namespace and id of the original entity.
         dbn, dbi = self.query.entities[entity.name]
@@ -296,16 +296,17 @@ class StatementFinder(object):
         for s in self.get_statements():
 
             # If the role is None, look at all the agents.
-            if role is None:
-                for ag in s.agent_list():
+            ags = s.agent_list()
+            if other_role is None:
+                for ag in ags:
                     if ag is not None and ag.db_refs.get(dbn) != dbi:
                         name_dict[ag.name] += 1
             # If the role is specified, look at just those agents.
             else:
-                idx = 0 if role == 'subject' else 1
-                if idx+1 > len(s.agent_list()):
+                idx = 0 if other_role == 'subject' else 1
+                if idx+1 > len(ags):
                     raise ValueError('Could not apply role %s, not enough '
-                                     'agents: %s' % (role, s.agent_list()))
+                                     'agents: %s' % (other_role, ags))
                 ag = s.agent_list()[idx]
                 if ag is not None and ag.db_refs.get(dbn) != dbi:
                     name_dict[ag.name] += 1
@@ -406,10 +407,44 @@ class FromSource(StatementFinder):
     def _regularize_input(self, source, verb=None, **params):
         return StatementQuery(source, None, [], verb, params)
 
+    def describe(self, limit=5):
+        if self.query.stmt_type is None:
+            verb_wrap = ' can interact with '
+            ps = super(FromSource, self).describe(limit=limit)
+        else:
+            verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
+            ps = ''
+
+        desc = "Overall, I found that " + self.query.subj.name + verb_wrap
+        other_names = self.get_other_names(self.query.subj,
+                                           other_role='object')
+        desc += _join_list(other_names) + '.\n'
+
+        desc += ps
+        return desc
+
 
 class ToTarget(StatementFinder):
     def _regularize_input(self, target, verb=None, **params):
         return StatementQuery(None, target, [], verb, params)
+
+    def describe(self, limit=5):
+        if self.query.stmt_type is None:
+            verb_wrap = ' can interact with '
+            ps = super(ToTarget, self).describe(limit=limit)
+        else:
+            verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
+            ps = ''
+
+        desc = "Overall, I found that "
+        other_names = self.get_other_names(self.query.obj,
+                                           other_role='subject')
+        desc += _join_list(other_names)
+        desc += verb_wrap
+        desc += self.obj.name + '.\n'
+
+        desc += ps
+        return desc
 
 
 class ComplexOneSide(StatementFinder):

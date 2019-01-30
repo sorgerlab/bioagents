@@ -418,7 +418,14 @@ class FromSource(StatementFinder):
         desc = "Overall, I found that " + self.query.subj.name + verb_wrap
         other_names = self.get_other_names(self.query.subj,
                                            other_role='object')
-        desc += _join_list(other_names) + '.\n'
+
+        if len(other_names) > limit:
+            desc += ', for example, '
+            desc += _join_list(other_names[:limit]) + '.\n'
+        elif 0 < len(other_names) <= limit:
+            desc += _join_list(other_names) + '.\n'
+        else:
+            desc += 'nothing.\n'
 
         desc += ps
         return desc
@@ -439,7 +446,13 @@ class ToTarget(StatementFinder):
         desc = "Overall, I found that "
         other_names = self.get_other_names(self.query.obj,
                                            other_role='subject')
-        desc += _join_list(other_names)
+        if len(other_names) > limit:
+            desc += ', for example, '
+            desc += _join_list(other_names[:limit])
+        elif 0 < len(other_names) <= limit:
+            desc += _join_list(other_names)
+        else:
+            desc += 'nothing'
         desc += verb_wrap
         desc += self.query.obj.name + '.\n'
 

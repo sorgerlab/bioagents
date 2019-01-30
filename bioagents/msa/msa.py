@@ -162,6 +162,14 @@ class StatementFinder(object):
 
         return self._statements[:]
 
+    def get_ev_totals(self):
+        """Get a dictionary of evidence total counts from the processor."""
+        # Getting statements applies any filters, so the counts are consistent
+        # with those filters.
+        stmts = self.get_statements(block=False)
+        return {stmt.get_hash(): self._processor.get_ev_count(stmt)
+                for stmt in stmts}
+
     def get_sample(self):
         """Get the sample of statements retrieved by the first query."""
         if not self._sample:

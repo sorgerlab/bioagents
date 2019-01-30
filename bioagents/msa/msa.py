@@ -101,7 +101,7 @@ class StatementQuery(object):
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
         self._block_default = kwargs.pop('block_default', True)
-        self._query = self._regularize_input(*args, **kwargs)
+        self.query = self._regularize_input(*args, **kwargs)
         self._processor = self._make_processor()
         self._statements = None
         self._sample = []
@@ -116,19 +116,19 @@ class StatementFinder(object):
 
         This method makes use of the `query` attribute.
         """
-        if not self._query.verb:
+        if not self.query.verb:
             processor = \
-                idbr.get_statements(subject=self._query.subj_key,
-                                    object=self._query.obj_key,
-                                    agents=self._query.agent_keys,
-                                    **self._query.settings)
+                idbr.get_statements(subject=self.query.subj_key,
+                                    object=self.query.obj_key,
+                                    agents=self.query.agent_keys,
+                                    **self.query.settings)
         else:
             processor = \
-                idbr.get_statements(subject=self._query.subj_key,
-                                    object=self._query.obj_key,
-                                    agents=self._query.agent_keys,
-                                    stmt_type=self._query.stmt_type,
-                                    **self._query.settings)
+                idbr.get_statements(subject=self.query.subj_key,
+                                    object=self.query.obj_key,
+                                    agents=self.query.agent_keys,
+                                    stmt_type=self.query.stmt_type,
+                                    **self.query.settings)
         return processor
 
     def _filter_stmts(self, stmts):
@@ -289,7 +289,7 @@ class StatementFinder(object):
                              % (type(role), role))
 
         # Get the namespace and id of the original entity.
-        dbn, dbi = self._query.entities[entity.name]
+        dbn, dbi = self.query.entities[entity.name]
 
         # Build up a dict of names, counting how often they occur.
         name_dict = defaultdict(lambda: 0)
@@ -323,8 +323,8 @@ class Neighborhood(StatementFinder):
     def describe(self, max_names=20):
         desc = super(Neighborhood, self).describe()
         desc += "\nOverall, I found the following entities in the " \
-                "neighborhood of %s: " % self._query.agents[0].name
-        other_names = self.get_other_names(self._query.agents[0].name)
+                "neighborhood of %s: " % self.query.agents[0].name
+        other_names = self.get_other_names(self.query.agents[0].name)
         desc += _join_list(other_names[:max_names])
         desc += '.'
         return desc
@@ -386,7 +386,7 @@ class BinaryDirected(StatementFinder):
 
     def describe(self):
         desc = "Overall, I found that %s can have the following effects on " \
-               "%s: " % (self._query.subj.name, self._query.obj.name)
+               "%s: " % (self.query.subj.name, self.query.obj.name)
         desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
@@ -397,7 +397,7 @@ class BinaryUndirected(StatementFinder):
 
     def describe(self):
         desc = "Overall, I found that %s and %s interact in the following " \
-               "ways: " % tuple([ag.name for ag in self._query.agents])
+               "ways: " % tuple([ag.name for ag in self.query.agents])
         desc += _join_list(self.get_unique_verb_list()) + '.'
         return desc
 
@@ -418,7 +418,7 @@ class ComplexOneSide(StatementFinder):
 
     def describe(self, max_names=20):
         desc = "Overall, I found that %s can be in a complex with: "
-        other_names = self.get_other_names(self._query.agents[0].name)
+        other_names = self.get_other_names(self.query.agents[0].name)
         desc += _join_list(other_names[:max_names])
         return desc
 
@@ -458,7 +458,7 @@ class _Commons(StatementFinder):
         trivial cases with large N.
         """
         # Prep the settings with some defaults.
-        kwargs = self._query.settings.copy()
+        kwargs = self.query.settings.copy()
         if 'max_stmts' not in kwargs.keys():
             kwargs['max_stmts'] = 100
         if 'ev_limit' not in kwargs.keys():
@@ -469,7 +469,7 @@ class _Commons(StatementFinder):
         # Run multiple queries, building up a single processor and a dict of
         # agents held in common.
         processor = None
-        for ag, ag_key in zip(self._query.agents, self._query.agent_keys):
+        for ag, ag_key in zip(self.query.agents, self.query.agent_keys):
             if ag_key is None:
                 continue
 

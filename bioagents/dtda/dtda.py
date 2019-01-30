@@ -7,6 +7,7 @@ import re
 import os
 import numpy
 import logging
+from itertools import groupby
 
 from indra.sources.indra_db_rest import get_statements
 from indra.databases import cbio_client, hgnc_client
@@ -76,9 +77,23 @@ class DTDA(object):
         logger.debug('Loading TAS Statements directly into cache.')
         from indra.sources import tas
         tp = tas.process_csv()
+
+        # Here we figure out which drugs only have weak affinities
+        stmts_by_drug = groupby(sorted(tp.statements,
+                                       key=lambda x: x.subj.name),
+                                key=lambda x: x.subj.name)
+        drug_classes = {}
+        for _, stmts in stmts_by_drug:
+            stmts = list(stmts)
+            aff = {stmt.evidence[0].annotations['class_min'] for stmt in stmts}
+            drug_classes[stmts[0].subj.name] = 'has_strong' \
+                if 'Kd < 100nM' in aff else 'not_has_strong'
+
         for stmt in tp.statements:
-            # Skip Statements where the affinity is low
-            if stmt.evidence[0].annotations['class_min'] != 'Kd < 100nM':
+            # Skip Statements where the affinity is low if it otherwise also
+            # has strong affinity targets
+            if drug_classes[stmt.subj.name] == 'has_strong' and \
+                stmt.evidence[0].annotations['class_min'] != 'Kd < 100nM':
                 continue
             # First we make the target to drug mapping
             target_hgnc = stmt.obj.db_refs['HGNC']
@@ -97,9 +112,8 @@ class DTDA(object):
             drug_keys = [(di, dn) for dn, di in stmt.subj.db_refs.items()]
             drug_keys += [(stmt.subj.name.lower(), 'TEXT'),
                           (stmt.subj.name.upper(), 'TEXT'),
+                          (stmt.subj.name.capitalize(), 'TEXT'),
                           (stmt.subj.name, 'TEXT'),]
-            if stmt.subj.name.lower().startswith('sb'):
-                print(drug_keys)
             for drug_key in drug_keys:
                 if drug_key not in self.drug_targets:
                     self.drug_targets[drug_key] = set([stmt.obj.name])
@@ -143,7 +157,7 @@ class DTDA(object):
         target_term = (target.db_refs['HGNC'], 'HGNC')
         # Check if we already have the stashed result
         if target_term not in self.target_drugs:
-            print('Looking up target term in DB: %s' % str(target_term))
+            logger.debug('Looking up target term in DB: %s' % str(target_term))
             try:
                 drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
                          for s in self._get_tas_stmts(target_term=target_term)}
@@ -155,7 +169,7 @@ class DTDA(object):
                 # If there is an error we don't stash the results
                 return {}
         else:
-            logger.info('Getting target term directly from cache: %s'
+            logger.debug('Getting target term directly from cache: %s'
                          % str(target_term))
             drugs = self.target_drugs[target_term]
         return drugs
@@ -169,7 +183,7 @@ class DTDA(object):
         all_targets = set()
         for term in drug_terms:
             if term not in self.drug_targets:
-                print('Looking up drug term in DB: %s' % str(term))
+                logger.debug('Looking up drug term in DB: %s' % str(term))
                 try:
                     tas_stmts = self._get_tas_stmts(term)
                 except DatabaseTimeoutError:
@@ -177,7 +191,7 @@ class DTDA(object):
                 targets = {s.obj.name for s in tas_stmts}
                 self.drug_targets[term] = targets
             else:
-                logger.info('Getting drug term directly from cache: %s'
+                logger.debug('Getting drug term directly from cache: %s'
                              % str(term))
                 targets = self.drug_targets[term]
             all_targets |= targets

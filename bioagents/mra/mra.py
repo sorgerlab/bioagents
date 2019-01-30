@@ -332,6 +332,8 @@ class MRA(object):
             if ost not in stmts_old_refined:
                 stmts_old_to_propagate.append(ost)
 
+        # Add any new Statement that has not already been added
+        # or is not matched or refined by an old statement
         for nst in new_stmts:
             if nst not in stmts_new_refined + stmts_new_matched + \
                     stmts_new_to_add:

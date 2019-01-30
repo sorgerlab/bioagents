@@ -58,7 +58,7 @@ class MRA_Module(Bioagent):
             return
         except InvalidModelDescriptionError as e:
             logger.error('Invalid model description.')
-            logger.exception(e)
+            logger.error(e)
             reply_content = self.make_failure('INVALID_DESCRIPTION')
         except InvalidModelIdError as e:
             logger.error('Invalid model ID.')

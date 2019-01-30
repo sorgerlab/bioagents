@@ -172,56 +172,48 @@ class MSA_Module(Bioagent):
             msg.set('is-activating', 'TRUE')
             return msg
 
-    def _make_nl_description(self, verb, subj, obj):
-        """Make a human-readable description of a query."""
-        question_input = {k: ag.name if ag else 'unknown'
-                          for k, ag in [('subject', subj), ('object', obj)]}
-        question_input['stmt_type'] = verb
-        fmt = ('subject: {subject}, statement type: {stmt_type}, '
-               'object: {object}')
-        ret = fmt.format(**question_input)
-        return ret
-
-    def _lookup_from_source_type_target(self, content, desc, timeout=20,
-                                        send_provenance=True):
-        """Look up statement given info received by find/confirm relations."""
-        start_time = datetime.now()
+    def _get_query_info(self, content):
         subj = _get_agent(content.gets('source'))
         obj = _get_agent(content.gets('target'))
         if not subj and not obj:
             raise MSALookupError('MISSING_MECHANISM')
 
         stmt_type = content.gets('type')
-        nl = self._make_nl_description(stmt_type, subj, obj)
-        nl = "%s: %s" % (desc, nl)
-        logger.info("Got a query for %s." % nl)
-
         if stmt_type == 'unknown':
             stmt_type = None
+        return subj, obj, stmt_type
 
-        # Try to get related statements.
-        finder = self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
-                                                    ev_limit=3, persist=False,
-                                                    timeout=timeout)
+    def _send_provenance_async(self, finder, desc):
+        q = finder.query
+        nl_input = {k: ag.name if ag else 'unknown'
+                    for k, ag in [('subject', q.subj), ('object', q.obj)]}
+        nl_input['stmt_type'] = q.stmt_type
+        fmt = ('subject={subject}, statement type={stmt_type}, '
+               'object={object}')
+        nl = fmt.format(**nl_input)
+        nl = "%s: %s" % (desc, nl)
+
         stmts = finder.get_statements(block=False)
-        num_stmts = 0 if stmts is None else len(stmts)
-        logger.info("Retrieved %d statements after %s seconds."
-                    % (num_stmts, (datetime.now()-start_time).total_seconds()))
-        if send_provenance:
-            try:
-                th = Thread(target=self._send_display_stmts, args=(finder, nl))
-                th.start()
-            except Exception as e:
-                logger.warning("Failed to start thread to send provenance.")
-                logger.exception(e)
-
-        return finder
+        num_stmts = 'no' if stmts is None else len(stmts)
+        logger.info("Retrieved %s statements so far. Sending provenance in a "
+                    "thread..." % num_stmts)
+        try:
+            th = Thread(target=self._send_display_stmts, args=(finder, nl))
+            th.start()
+        except Exception as e:
+            logger.warning("Failed to start thread to send provenance.")
+            logger.exception(e)
+        return
 
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            finder = self._lookup_from_source_type_target(content, 'Find',
-                                                          timeout=5)
+            subj, obj, stmt_type = self._get_query_info(content)
+            finder = \
+                self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
+                                                   ev_limit=3, persist=False,
+                                                   timeout=5)
+            self._send_provenance_async(finder, 'find statements matching')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
 
@@ -244,7 +236,13 @@ class MSA_Module(Bioagent):
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb"""
         try:
-            finder = self._lookup_from_source_type_target(content, 'Confirm')
+            subj, obj, stmt_type = self._get_query_info(content)
+            finder = \
+                self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
+                                                   ev_limit=5, persist=False,
+                                                   timeout=5)
+            self._send_provenance_async(finder,
+                                        'confirm that some statements match')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
         stmts = finder.get_statements(timeout=20)

@@ -258,7 +258,9 @@ class Bioagent(KQMLModule):
         list_html = '<ul>%s</ul>' % ('\n'.join(lines))
         html = self._make_evidence_html(stmt_list)
         link = self._stash_evidence_html(html)
-        if link.startswith('http'):
+        if link is None:
+            link_html = 'I could not generate the full list.'
+        elif link.startswith('http'):
             link_html = href(link, 'Here') + ' is the full list.'
         else:
             link_html = 'Here: %s is the full list.' % link

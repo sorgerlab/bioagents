@@ -139,7 +139,7 @@ class Bioagent(KQMLModule):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
 
-    def send_provenance_for_stmts(self, stmt_list, for_what, limit=20):
+    def send_provenance_for_stmts(self, stmt_list, for_what, limit=50):
         """Send out a provenance tell for a list of INDRA Statements.
 
         The message is used to provide evidence supporting a conclusion.

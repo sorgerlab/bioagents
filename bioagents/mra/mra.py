@@ -291,31 +291,39 @@ class MRA(object):
 
     def extend_model(self, new_stmts, model_id):
         old_stmts = self.models[model_id]
-        stmts_to_add = []
-        stmts_to_propagate = []
+        stmts_new_to_add = []
+        stmts_old_to_propagate = []
+        stmts_new_refined = []
+        stmts_new_matched = []
         # Look at each new Statement being added
         for ost in old_stmts:
-            status = None
             for nst in new_stmts:
                 if ost.matches(nst):
-                    status = 'keep'
+                    stmts_old_to_propagate.append(ost)
+                    if nst not in stmts_new_matched:
+                        stmts_new_matched.append(nst)
                 elif ost.refinement_of(nst, hierarchies):
-                    status = 'keep'
+                    stmts_old_to_propagate.append(ost)
+                    if nst not in stmts_new_refined:
+                        stmts_new_refined.append(nst)
                 elif nst.refinement_of(ost, hierarchies):
-                    status = 'refined'
-                    if nst not in stmts_to_add:
-                        stmts_to_add.append(nst)
+                    if nst not in stmts_new_to_add:
+                        stmts_new_to_add.append(nst)
                 else:
-                    status = 'keep'
-            if status == 'keep':
-                stmts_to_propagate.append(ost)
+                    stmts_old_to_propagate.append(ost)
+        for nst in new_stmts:
+            if nst not in stmts_new_refined + stmts_new_matched + \
+                    stmts_new_to_add:
+                stmts_new_to_add.append(nst)
 
+        logger.debug('Statements to propagate: %s' % (stmts_old_to_propagate))
+        logger.debug('Statements to add: %s' % (stmts_new_to_add))
         new_model_id = self.get_new_id()
-        self.models[new_model_id] = stmts_to_propagate + stmts_to_add
+        self.models[new_model_id] = stmts_old_to_propagate + stmts_new_to_add
         # FIXME: Would undo-s work after a refinement?
-        self.transformations.append(('add_stmts', stmts_to_add, model_id,
+        self.transformations.append(('add_stmts', stmts_new_to_add, model_id,
                                      new_model_id))
-        return new_model_id, stmts_to_add
+        return new_model_id, stmts_new_to_add
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):
         """Replace an agent in a model with other agents.

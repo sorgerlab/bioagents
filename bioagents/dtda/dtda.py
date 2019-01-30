@@ -60,6 +60,7 @@ class DTDA(object):
         # will be keys.
         self.target_drugs = {}
         self.drug_targets = {}
+        self._get_tas_stmts_directly()
         return
 
     def is_nominal_drug_target(self, drug, target):
@@ -71,12 +72,33 @@ class DTDA(object):
             return True
         return False
 
+    def _get_tas_stmts_directly(self):
+        logger.debug('Loading TAS Statements directly into cache.')
+        from indra.sources import tas
+        tp = tas.process_csv()
+        for stmt in tp.statements:
+            target_hgnc = stmt.obj.db_refs['HGNC']
+            if target_hgnc:
+                target_key = (target_hgnc, 'HGNC')
+            else:
+                target_key = stmt.obj.name
+            drug_key = (stmt.subj.name, stmt.subj.db_refs.get('PUBCHEM'))
+            if target_key not in self.target_drugs:
+                self.target_drugs[target_key] = [drug_key]
+            else:
+                self.target_drugs[target_key].append(drug_key)
+            if drug_key not in self.drug_targets:
+                self.drug_targets[drug_key] = [target_key]
+            else:
+                self.drug_targets[drug_key].append(target_key)
+        logger.debug('Loaded TAS Statements directly into cache.')
+
     def _get_tas_stmts(self, drug_term=None, target_term=None):
         timeout = 10
         drug = _convert_term(drug_term)
         target = _convert_term(target_term)
         processor = get_statements(subject=drug, object=target,
-                              stmt_type='Inhibition', timeout=timeout)
+                                   stmt_type='Inhibition', timeout=timeout)
         if processor.is_working():
             msg = ("Database has failed to respond after %d seconds looking "
                    "up %s inhibits %s." % (timeout, drug, target))
@@ -107,6 +129,7 @@ class DTDA(object):
         target_term = (target.db_refs['HGNC'], 'HGNC')
         # Check if we already have the stashed result
         if target_term not in self.target_drugs:
+            logger.debug('Looking up target term in DB: %s' % str(target_term))
             try:
                 drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
                          for s in self._get_tas_stmts(target_term=target_term)}
@@ -118,6 +141,8 @@ class DTDA(object):
                 # If there is an error we don't stash the results
                 return {}
         else:
+            logger.debug('Getting target term directly from cache: %s'
+                         % str(target_term))
             drugs = self.target_drugs[target_term]
         return drugs
 
@@ -130,6 +155,7 @@ class DTDA(object):
         all_targets = set()
         for term in drug_terms:
             if term not in self.drug_targets:
+                logger.debug('Looking up drug term in DB: %s' % str(term))
                 try:
                     tas_stmts = self._get_tas_stmts(term)
                 except DatabaseTimeoutError:
@@ -137,6 +163,8 @@ class DTDA(object):
                 targets = {s.obj.name for s in tas_stmts}
                 self.drug_targets[term] = targets
             else:
+                logger.debug('Getting drug term directly from cache: %s'
+                             % str(term))
                 targets = self.drug_targets[term]
             all_targets |= targets
         return all_targets

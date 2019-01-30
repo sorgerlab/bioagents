@@ -814,7 +814,7 @@ class TestModelRefinement(_IntegrationTest):
         assert output.get('model-id') == '2'
         model = json.loads(output.gets('model'))
         assert len(model) == 1
-        model_new = json.loads(output.gets('model_new'))
+        model_new = json.loads(output.gets('model-new'))
         assert len(model_new) == 1
 
 '''

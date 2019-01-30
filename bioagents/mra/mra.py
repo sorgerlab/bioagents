@@ -309,12 +309,13 @@ class MRA(object):
                     status = 'keep'
             if status == 'keep':
                 stmts_to_propagate.append(ost)
-        new_model_id = self.get_new_id()
 
+        new_model_id = self.get_new_id()
         self.models[new_model_id] = stmts_to_propagate + stmts_to_add
-        # FIXME: Would undo-s work here?
+        # FIXME: Would undo-s work after a refinement?
         self.transformations.append(('add_stmts', stmts_to_add, model_id,
                                      new_model_id))
+        return new_model_id, stmts_to_add
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):
         """Replace an agent in a model with other agents.

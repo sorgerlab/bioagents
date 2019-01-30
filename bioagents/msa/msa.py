@@ -301,6 +301,7 @@ class StatementFinder(object):
 
         # Build up a dict of names, counting how often they occur.
         name_dict = defaultdict(lambda: 0)
+        ev_totals = self.get_ev_totals()
         for s in self.get_statements():
 
             # If the role is None, look at all the agents.
@@ -308,7 +309,7 @@ class StatementFinder(object):
             if other_role is None:
                 for ag in ags:
                     if ag is not None and ag.db_refs.get(dbn) != dbi:
-                        name_dict[ag.name] += 1
+                        name_dict[ag.name] += ev_totals[s.get_hash()]
             # If the role is specified, look at just those agents.
             else:
                 idx = 0 if other_role == 'subject' else 1
@@ -317,7 +318,7 @@ class StatementFinder(object):
                                      'agents: %s' % (other_role, ags))
                 ag = s.agent_list()[idx]
                 if ag is not None and ag.db_refs.get(dbn) != dbi:
-                    name_dict[ag.name] += 1
+                    name_dict[ag.name] += ev_totals[s.get_hash()]
 
         # Create a list of names sorted with the most frequent first.
         names = list(sorted(name_dict.keys(), key=lambda t: name_dict[t],

@@ -619,19 +619,25 @@ class MSA(object):
                 raise ValueError('Cannot set both subject and agents to '
                                  'search for complexes.')
 
+            logger.info("Choosing find_complex_one_side.")
             return self.find_complex_one_side(entity, **params)
 
         # Handle more generic (verb-independent) queries.
         if subject and not object and not agents:
+            logger.info("Choosing find_from_source.")
             return self.find_from_source(subject, verb, **params)
         elif object and not subject and not agents:
+            logger.info("Choosing find_to_target.")
             return self.find_to_target(object, verb, **params)
         elif subject and object and not agents:
+            logger.info("Choosing find_binary_directed")
             return self.find_binary_directed(subject, object, verb, **params)
         elif not subject and not object and agents:
+            logger.info("Choosing find_binary_undirected.")
             return self.find_binary_undirected(agents[0], agents[1], verb,
                                                **params)
         else:
+            logger.error("Could not find a valid endpoint given arguments.")
             raise ValueError("Invalid combination of entity arguments: "
                              "subject=%s, object=%s, agents=%s."
                              % (subject, object, agents))

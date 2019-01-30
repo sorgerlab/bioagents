@@ -213,7 +213,8 @@ class MSA_Module(Bioagent):
                 self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
                                                    ev_limit=3, persist=False,
                                                    timeout=5)
-            self._send_provenance_async(finder, 'find statements matching')
+            self._send_provenance_async(finder,
+                                        'finding statements that match')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
 
@@ -242,7 +243,7 @@ class MSA_Module(Bioagent):
                                                    ev_limit=5, persist=False,
                                                    timeout=5)
             self._send_provenance_async(finder,
-                                        'confirm that some statements match')
+                'confirming that some statements match')
         except MSALookupError as mle:
             return self.make_failure(mle.args[0])
         stmts = finder.get_statements(timeout=20)

@@ -289,18 +289,32 @@ class MRA(object):
         self.transformations.append(('add_stmts', stmts, None, model_id))
         return model_id
 
-    def extend_model(self, stmts, model_id):
+    def extend_model(self, new_stmts, model_id):
         old_stmts = self.models[model_id]
+        stmts_to_add = []
+        stmts_to_propagate = []
+        # Look at each new Statement being added
+        for ost in old_stmts:
+            status = None
+            for nst in new_stmts:
+                if ost.matches(nst):
+                    status = 'keep'
+                elif ost.refinement_of(nst, hierarchies):
+                    status = 'keep'
+                elif nst.refinement_of(ost, hierarchies):
+                    status = 'refined'
+                    if nst not in stmts_to_add:
+                        stmts_to_add.append(nst)
+                else:
+                    status = 'keep'
+            if status == 'keep':
+                stmts_to_propagate.append(ost)
         new_model_id = self.get_new_id()
-        self.models[new_model_id] = [st for st in self.models[model_id]]
-        new_stmts = []
-        for st in stmts:
-            if not stmt_exists(self.models[model_id], st):
-                self.models[new_model_id].append(st)
-                new_stmts.append(st)
-        self.transformations.append(('add_stmts', new_stmts, model_id,
+
+        self.models[new_model_id] = stmts_to_propagate + stmts_to_add
+        # FIXME: Would undo-s work here?
+        self.transformations.append(('add_stmts', stmts_to_add, model_id,
                                      new_model_id))
-        return new_model_id, new_stmts
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):
         """Replace an agent in a model with other agents.
@@ -471,13 +485,6 @@ def draw_reaction_network(pysb_model, model_id):
         logger.error(e)
         return None
     return fname
-
-
-def stmt_exists(stmts, stmt):
-    for st1 in stmts:
-        if st1.matches(stmt):
-            return True
-    return False
 
 
 def make_ccle_map():

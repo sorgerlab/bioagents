@@ -240,14 +240,15 @@ class Bioagent(KQMLModule):
         msg.sets('what', message)
         self.tell(msg)
 
-    def _make_report_cols_html(self, stmt_list, limit=5, **kwargs):
+    def _make_report_cols_html(self, stmt_list, limit=5, ev_counts=None,
+                               **kwargs):
         """Make columns listing the support given by the statement list."""
 
         def href(ref, text):
             return '<a href=%s target="_blank">%s</a>' % (ref, text)
 
         # Build the list of relevant statements and count their prevalence.
-        row_data = get_row_data(stmt_list)
+        row_data = get_row_data(stmt_list, ev_totals=ev_counts)
 
         # Build the html.
         lines = []
@@ -271,7 +272,7 @@ class Bioagent(KQMLModule):
         return list_html + '\n' + link_html
 
 
-def get_row_data(stmt_list):
+def get_row_data(stmt_list, ev_totals=None):
     def name(agent):
         return 'None' if agent is None else agent.name
 
@@ -305,7 +306,10 @@ def get_row_data(stmt_list):
     # Sort the rows by count and agent names.
     def process(tpl):
         key, stmts = tpl
-        count = sum(len(s.evidence) for s in stmts)
+        if ev_totals is None:
+            count = sum(len(s.evidence) for s in stmts)
+        else:
+            count = sum(ev_totals[s.get_hash()] for s in stmts)
         new_key = (count,)
         new_key += tuple(key[1:])
         return new_key, key[0], stmts

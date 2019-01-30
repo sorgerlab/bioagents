@@ -199,7 +199,7 @@ class StatementFinder(object):
     def get_summary(self, num=5):
         """List the top statements in plane english."""
         stmts = self.get_statements()
-        row_data = get_row_data(stmts)
+        row_data = get_row_data(stmts, ev_totals=self.get_ev_totals())
         lines = []
         for key, verb, stmts in row_data[:num]:
             line = '<li>%s</li>' % make_statement_string(key, verb)

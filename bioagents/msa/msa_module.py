@@ -163,7 +163,8 @@ class MSA_Module(Bioagent):
         else:
             msg = "phosphorylation at %s%s activates %s." \
                   % (residue, position, agent.name)
-            self.send_provenance_for_stmts(stmts, msg, finder.get_ev_totals())
+            self.send_provenance_for_stmts(stmts, msg,
+                                           ev_counts=finder.get_ev_totals())
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
             return msg

@@ -150,7 +150,7 @@ class Bioagent(KQMLModule):
         title = "Supporting evidence from the %s for %s" \
                 % (self.name, for_what)
         content_fmt = '<h4>%s (max %s):</h4>\n%s<hr>'
-        evidence_html = self._make_report_cols_html(stmt_list, limit,
+        evidence_html = self._make_report_cols_html(stmt_list, limit=limit,
                                                     ev_counts=ev_counts,
                                                     title=title)
 

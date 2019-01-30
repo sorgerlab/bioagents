@@ -290,34 +290,55 @@ class MRA(object):
         return model_id
 
     def extend_model(self, new_stmts, model_id):
+        # Lists to keep track of types of statements by their
+        # relation compared to the old set of statements
         old_stmts = self.models[model_id]
-        stmts_new_to_add = []
         stmts_old_to_propagate = []
+        stmts_old_matched = []
+        stmts_old_refined = []
+        stmts_old_refinement = []
+        stmts_new_to_add = []
         stmts_new_refined = []
         stmts_new_matched = []
-        # Look at each new Statement being added
+        # Look at each old statement and determine the relationship
+        # of each new statement with respect to it
         for ost in old_stmts:
             for nst in new_stmts:
+                # The old and the new statements are exact matches
+                # We propagate the old one
                 if ost.matches(nst):
-                    stmts_old_to_propagate.append(ost)
+                    if ost not in stmts_old_matched:
+                        stmts_old_matched.append(ost)
                     if nst not in stmts_new_matched:
                         stmts_new_matched.append(nst)
+                # The old statement is a refinement of the new one
+                # We propagate the old one
                 elif ost.refinement_of(nst, hierarchies):
-                    stmts_old_to_propagate.append(ost)
+                    if ost not in stmts_old_refinement:
+                        stmts_old_refinement.append(ost)
                     if nst not in stmts_new_refined:
                         stmts_new_refined.append(nst)
+                # The new statement is a refinement of the old one
+                # We add the new statement and don't propagate the old one
                 elif nst.refinement_of(ost, hierarchies):
+                    if ost not in stmts_old_refined:
+                        stmts_old_refined.append(ost)
                     if nst not in stmts_new_to_add:
                         stmts_new_to_add.append(nst)
-                else:
-                    stmts_old_to_propagate.append(ost)
+                # Otherwise there is no relation so the old statement
+                # won't be added to any of the lists above for this
+                # new statement
+            # Unless the old statement is refined, it is propagated
+            if ost not in stmts_old_refined:
+                stmts_old_to_propagate.append(ost)
+
         for nst in new_stmts:
             if nst not in stmts_new_refined + stmts_new_matched + \
                     stmts_new_to_add:
                 stmts_new_to_add.append(nst)
 
-        logger.debug('Statements to propagate: %s' % (stmts_old_to_propagate))
-        logger.debug('Statements to add: %s' % (stmts_new_to_add))
+        logger.debug('Statements to propagate: %s' % stmts_old_to_propagate)
+        logger.debug('Statements to add: %s' % stmts_new_to_add)
         new_model_id = self.get_new_id()
         self.models[new_model_id] = stmts_old_to_propagate + stmts_new_to_add
         # FIXME: Would undo-s work after a refinement?

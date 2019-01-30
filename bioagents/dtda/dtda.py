@@ -77,6 +77,7 @@ class DTDA(object):
         from indra.sources import tas
         tp = tas.process_csv()
         for stmt in tp.statements:
+            # First we make the target to drug mapping
             target_hgnc = stmt.obj.db_refs['HGNC']
             if target_hgnc:
                 target_key = (target_hgnc, 'HGNC')
@@ -87,10 +88,17 @@ class DTDA(object):
                 self.target_drugs[target_key] = [drug_key]
             else:
                 self.target_drugs[target_key].append(drug_key)
-            if drug_key not in self.drug_targets:
-                self.drug_targets[drug_key] = [target_key]
-            else:
-                self.drug_targets[drug_key].append(target_key)
+
+            # Then we make the drug to target mapping where targets
+            # only need a name
+            drug_keys = [(di, dn) for dn, di in stmt.subj.db_refs.items()]
+            drug_keys += [(stmt.subj.name.lower(), 'TEXT'),
+                          (stmt.subj.name.upper(), 'TEXT')]
+            for drug_key in drug_keys:
+                if drug_key not in self.drug_targets:
+                    self.drug_targets[drug_key] = set([stmt.obj.name])
+                else:
+                    self.drug_targets[drug_key].add(stmt.obj.name)
         logger.debug('Loaded TAS Statements directly into cache.')
 
     def _get_tas_stmts(self, drug_term=None, target_term=None):

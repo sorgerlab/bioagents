@@ -106,7 +106,8 @@ class MSA_Module(Bioagent):
             name_list = agents[0].name
         name_list += ' and ' + agents[-1].name
         msg = ('%sstreams of ' % prefix).capitalize() + name_list
-        self.send_provenance_for_stmts(finder.get_statements(), msg)
+        self.send_provenance_for_stmts(finder.get_statements(), msg,
+                                       ev_counts=finder.get_ev_totals())
 
         # Create the reply
         resp = KQMLPerformative('SUCCESS')
@@ -160,14 +161,9 @@ class MSA_Module(Bioagent):
                                      'phosphorylation')
                 )
         else:
-            self.send_provenance_for_stmts(
-                stmts,
-                "phosphorylation at %s%s activates %s." % (
-                    residue,
-                    position,
-                    agent.name
-                    )
-                )
+            msg = "phosphorylation at %s%s activates %s." \
+                  % (residue, position, agent.name)
+            self.send_provenance_for_stmts(stmts, msg, finder.get_ev_totals())
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
             return msg
@@ -306,54 +302,19 @@ class MSA_Module(Bioagent):
     def _send_display_stmts(self, finder, nl_question):
         try:
             logger.debug("Waiting for statements to finish...")
-            stmts = finder.get_statements()
+            stmts = finder.get_statements(block=True)
             if stmts is None or not len(stmts):
                 return
             start_time = datetime.now()
             logger.info('Sending display statements.')
-            self.send_provenance_for_stmts(stmts, nl_question)
+            self.send_provenance_for_stmts(stmts, nl_question,
+                                           ev_counts=finder.get_ev_totals())
             logger.info("Finished sending provenance after %s seconds."
                         % (datetime.now() - start_time).total_seconds())
         except Exception as e:
             logger.exception(e)
             logger.error("Failed to post provenance.")
             raise
-
-    def _format_evidence(self, ev_list, ev_count):
-        """Format the evidence of a statement for display."""
-        fmt = ('{source_api}: <a href=https://www.ncbi.nlm.nih.gov/pubmed/'
-               '{pmid} target="_blank">{pmid}</a>')
-        pmids = [fmt.format(**ev.__dict__) for ev in ev_list[:10]]
-        if len(pmids) < ev_count:
-            pmids.append('...and %d more!' % (ev_count - len(pmids)))
-        return ', '.join(pmids)
-
-    def _send_table_to_provenance(self, resp, nl_question):
-        """Post a concise table listing statements found."""
-        html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
-        html_str += '<table style="width:100%">\n'
-        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>'
-                    '<th>Source and PMID</th>']
-        stmts = resp.get_statements()
-        logger.info("Sending %d statements to provenance."
-                    % min(len(stmts), DUMP_LIMIT))
-        print("Generating html: ", end='', flush=True)
-        for i, stmt in enumerate(stmts[:DUMP_LIMIT]):
-            if i % 5 == 0:
-                print('|', end='', flush=True)
-            sub_ag, obj_ag = stmt.agent_list()
-            ev_str = self._format_evidence(stmt.evidence,
-                                           resp.get_ev_count(stmt))
-            row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
-                            % (sub_ag, type(stmt).__name__, obj_ag, ev_str))
-        html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
-                               for row_str in row_list])
-        html_str += '</table>'
-        print(" DONE...", end='', flush=True)
-        content = KQMLList('add-provenance')
-        content.sets('html', html_str)
-        print("SENT!")
-        return self.tell(content)
 
 
 def _make_sbgn(stmts):

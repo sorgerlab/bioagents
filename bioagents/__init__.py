@@ -139,27 +139,30 @@ class Bioagent(KQMLModule):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
 
-    def send_provenance_for_stmts(self, stmt_list, for_what, limit=50):
+    def send_provenance_for_stmts(self, stmt_list, for_what, limit=50,
+                                  ev_counts=None):
         """Send out a provenance tell for a list of INDRA Statements.
 
         The message is used to provide evidence supporting a conclusion.
         """
         logger.info("Sending provenance for %d statements for \"%s\"."
                     % (len(stmt_list), for_what))
-        content_fmt = ('<h4>Supporting evidence from the {bioagent} for '
-                       '{conclusion} (max {limit}):</h4>\n{evidence}<hr>')
-        evidence_html = self._make_report_cols_html(stmt_list, limit)
+        title = "Supporting evidence from the %s for %s" \
+                % (self.name, for_what)
+        content_fmt = '<h4>%s (max %s):</h4>\n%s<hr>'
+        evidence_html = self._make_report_cols_html(stmt_list, limit,
+                                                    ev_counts=ev_counts,
+                                                    title=title)
 
         content = KQMLList('add-provenance')
-        content.sets('html',
-                     content_fmt.format(conclusion=for_what,
-                                        evidence=evidence_html,
-                                        bioagent=self.name, limit=limit))
+        content.sets('html', content_fmt % (title, limit, evidence_html))
         return self.tell(content)
 
-    def _make_evidence_html(self, stmts):
+    def _make_evidence_html(self, stmts, ev_counts=None,
+                            title='Results from the INDRA database'):
         "Make html from a set of statements."
-        ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio')
+        ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio', title=title,
+                           ev_totals=ev_counts)
         return ha.make_model()
 
     def _stash_evidence_html(self, html):
@@ -237,7 +240,7 @@ class Bioagent(KQMLModule):
         msg.sets('what', message)
         self.tell(msg)
 
-    def _make_report_cols_html(self, stmt_list, limit=5):
+    def _make_report_cols_html(self, stmt_list, limit=5, **kwargs):
         """Make columns listing the support given by the statement list."""
 
         def href(ref, text):
@@ -256,7 +259,7 @@ class Bioagent(KQMLModule):
 
         # Build the overall html.
         list_html = '<ul>%s</ul>' % ('\n'.join(lines))
-        html = self._make_evidence_html(stmt_list)
+        html = self._make_evidence_html(stmt_list, **kwargs)
         link = self._stash_evidence_html(html)
         if link is None:
             link_html = 'I could not generate the full list.'

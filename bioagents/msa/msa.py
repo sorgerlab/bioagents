@@ -317,14 +317,14 @@ class StatementFinder(object):
 
 
 class Neighborhood(StatementFinder):
-    def _regularize_input(self, entity):
-        return StatementQuery(None, None, [entity], None)
+    def _regularize_input(self, entity, **params):
+        return StatementQuery(None, None, [entity], None, params)
 
     def describe(self, max_names=20):
         desc = super(Neighborhood, self).describe()
         desc += "\nOverall, I found the following entities in the " \
                 "neighborhood of %s: " % self.query.agents[0].name
-        other_names = self.get_other_names(self.query.agents[0].name)
+        other_names = self.get_other_names(self.query.agents[0])
         desc += _join_list(other_names[:max_names])
         desc += '.'
         return desc
@@ -384,7 +384,7 @@ class BinaryDirected(StatementFinder):
     def _regularize_input(self, subject, object, verb=None, **params):
         return StatementQuery(subject, object, [], verb, params)
 
-    def describe(self):
+    def describe(self, limit=None):
         desc = "Overall, I found that %s can have the following effects on " \
                "%s: " % (self.query.subj.name, self.query.obj.name)
         desc += _join_list(self.get_unique_verb_list()) + '.'
@@ -395,7 +395,7 @@ class BinaryUndirected(StatementFinder):
     def _regularize_input(self, entity1, entity2, **params):
         return StatementQuery(None, None, [entity1, entity2], None, params)
 
-    def describe(self):
+    def describe(self, limit=None):
         desc = "Overall, I found that %s and %s interact in the following " \
                "ways: " % tuple([ag.name for ag in self.query.agents])
         desc += _join_list(self.get_unique_verb_list()) + '.'
@@ -418,7 +418,7 @@ class ComplexOneSide(StatementFinder):
 
     def describe(self, max_names=20):
         desc = "Overall, I found that %s can be in a complex with: "
-        other_names = self.get_other_names(self.query.agents[0].name)
+        other_names = self.get_other_names(self.query.agents[0])
         desc += _join_list(other_names[:max_names])
         return desc
 

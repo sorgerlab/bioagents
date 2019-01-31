@@ -121,6 +121,7 @@ class TRA_Module(Bioagent):
         condition_agent_ekb = content.gets('agent')
         target_agent_ekb = content.gets('affected')
         model_indra_str = content.gets('model')
+        up_dn = content.gets('up-dn')
         try:
             stmts = decode_indra_stmts(model_indra_str)
             model = assemble_model(stmts)
@@ -136,9 +137,13 @@ class TRA_Module(Bioagent):
             reply_content = self.make_failure('INVALID_PATTERN')
             return reply_content
         try:
+            up_dn = 'dn' if up_dn is None else up_dn
+            logger.info('Checking %s against %s with polarity %s' %
+                        (condition_agent, target_agent, up_dn))
+
             result, fig_path = \
                 self.tra.compare_conditions(model, condition_agent,
-                                            target_agent)
+                                            target_agent, up_dn)
         except tra.MissingMonomerError as e:
             logger.exception(e)
             reply_content = self.make_failure('MODEL_MISSING_MONOMER')

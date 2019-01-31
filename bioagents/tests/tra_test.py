@@ -1026,7 +1026,7 @@ class TestCompareConditions(_IntegrationTest):
     def check_response_to_message1(self, output):
         assert output.head() == 'SUCCESS'
         satisfied = output.gets('result')
-        assert satisfied == 'decrease'
+        assert satisfied == 'yes_decrease', satisfied
 
     def create_message2(self):
         condition_entity = ekb_kstring_from_text('Vemurafenib')
@@ -1041,7 +1041,7 @@ class TestCompareConditions(_IntegrationTest):
     def check_response_to_message2(self, output):
         assert output.head() == 'SUCCESS'
         satisfied = output.gets('result')
-        assert satisfied == 'increase'
+        assert satisfied == 'no_increase'
 
     def create_message3(self):
         condition_entity = ekb_kstring_from_text('Vemurafenib')
@@ -1057,6 +1057,38 @@ class TestCompareConditions(_IntegrationTest):
         assert output.head() == 'SUCCESS'
         satisfied = output.gets('result')
         assert satisfied == 'no_change'
+
+    def create_message4(self):
+        condition_entity = ekb_kstring_from_text('Vemurafenib')
+        target_entity = ekb_kstring_from_text('Inactive ERK')
+        content = KQMLList('MODEL-COMPARE-CONDITIONS')
+        content.set('model', self.model)
+        content.set('agent', condition_entity)
+        content.set('affected', target_entity)
+        content.set('up-dn', 'up')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message4(self, output):
+        assert output.head() == 'SUCCESS'
+        satisfied = output.gets('result')
+        assert satisfied == 'yes_increase', satisfied
+
+    def create_message5(self):
+        condition_entity = ekb_kstring_from_text('Vemurafenib')
+        target_entity = ekb_kstring_from_text('Active ERK')
+        content = KQMLList('MODEL-COMPARE-CONDITIONS')
+        content.set('model', self.model)
+        content.set('agent', condition_entity)
+        content.set('affected', target_entity)
+        content.set('up-dn', 'up')
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message5(self, output):
+        assert output.head() == 'SUCCESS'
+        satisfied = output.gets('result')
+        assert satisfied == 'no_decrease'
 
 
 class TestCompareConditionsMissing(_IntegrationTest):

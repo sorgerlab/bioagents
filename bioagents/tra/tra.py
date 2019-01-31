@@ -130,7 +130,7 @@ class TRA(object):
                 else:
                     return sat_rate, num_sim, pat, fig_path
 
-    def compare_conditions(self, model, condition_agent, target_agent):
+    def compare_conditions(self, model, condition_agent, target_agent, up_dn):
         obs = get_create_observable(model, target_agent)
         cond_quant = MolecularQuantityReference('total', condition_agent)
         all_results = []
@@ -153,8 +153,11 @@ class TRA(object):
         # If there is a decrease in the observable, we return True
         if abs(diff) < 0.01:
             res = 'no_change'
+        elif up_dn == 'dn':
+            res = 'yes_decrease' if (diff < 0) else 'no_increase'
         else:
-            res = 'decrease' if (diff < 0) else 'increase'
+            res = 'no_decrease' if (diff < 0) else 'yes_increase'
+
         return res, fig_path
 
     def plot_compare_conditions(self, ts, results, agent, obs_name):

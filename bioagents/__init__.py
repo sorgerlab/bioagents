@@ -4,8 +4,8 @@ from os import path
 from datetime import datetime
 
 from indra.assemblers.html import HtmlAssembler
-from indra.util.statement_presentation import get_row_data, \
-    make_statement_string
+from indra.util.statement_presentation import group_and_sort_statements, \
+    make_string_from_sort_key
 
 from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
 
@@ -248,13 +248,14 @@ class Bioagent(KQMLModule):
             return '<a href=%s target="_blank">%s</a>' % (ref, text)
 
         # Build the list of relevant statements and count their prevalence.
-        row_data = get_row_data(stmt_list, ev_totals=ev_counts)
+        sorted_groups = group_and_sort_statements(stmt_list,
+                                                  ev_totals=ev_counts)
 
         # Build the html.
         lines = []
-        for key, verb, stmts in row_data[:limit]:
+        for key, verb, stmts in sorted_groups[:limit]:
             count = key[0]
-            line = '<li>%s %s</li>' % (make_statement_string(key, verb),
+            line = '<li>%s %s</li>' % (make_string_from_sort_key(key, verb),
                                        '(%d)' % count)
             lines.append(line)
 

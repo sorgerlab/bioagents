@@ -2,7 +2,8 @@ import sys
 import logging
 import indra
 from .biosense import BioSense, _get_urls
-from .biosense import InvalidAgentError, UnknownCategoryError
+from .biosense import InvalidAgentError, UnknownCategoryError, \
+    SynonymsUnknownError
 from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
 from bioagents import Bioagent
 from kqml import KQMLPerformative, KQMLList, KQMLString
@@ -105,6 +106,8 @@ class BioSense_Module(Bioagent):
             synonyms = self.bs.get_synonyms(ekb)
         except InvalidAgentError:
             msg = self.make_failure('INVALID_AGENT')
+        except SynonymsUnknownError:
+            msg = self.make_failure('SYNONYMS_UNKNOWN')
         else:
             syns_kqml = KQMLList()
             for s in synonyms:

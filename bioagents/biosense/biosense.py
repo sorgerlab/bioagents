@@ -6,6 +6,7 @@ from indra.databases import get_identifiers_url, uniprot_client
 from indra.util import read_unicode_csv
 from indra.tools import expand_families
 from indra.preassembler.hierarchy_manager import hierarchies
+from indra.preassembler.grounding_mapper import default_grounding_map as gm
 
 
 logger = logging.getLogger('BioSense')
@@ -14,12 +15,14 @@ _indra_path = _indra_path[0]
 
 class BioSense(object):
     """Python API for biosense agent"""
-    __slots__ = ['_kinase_list', '_tf_list', '_phosphatase_list']
+    __slots__ = ['_kinase_list', '_tf_list', '_phosphatase_list',
+                 '_fplx_synonyms']
 
     def __init__(self):
         self._kinase_list = _read_kinases()
         self._tf_list = _read_tfs()
         self._phosphatase_list = _read_phosphatases()
+        self._fplx_synonyms = _make_fplx_synonyms()
 
     def choose_sense(self, agent_ekb):
         """Find possible groundings and potential ambiguities for an ekb-term.
@@ -193,10 +196,15 @@ class BioSense(object):
         if agent is None:
             raise InvalidAgentError("agent not recognized")
         up_id = agent.db_refs.get('UP')
-        if not up_id:
+        fplx_id = agent.db_refs.get('FPLX')
+        if up_id:
+            synonyms = uniprot_client.get_synonyms(up_id)
+        elif fplx_id:
+            synonyms = self._fplx_synonyms.get(fplx_id, [])
+        else:
             raise SynonymsUnknownError('We don\'t provide synonyms for '
                                        'this type of agent.')
-        synonyms = uniprot_client.get_synonyms(up_id)
+
         return synonyms
 
     @staticmethod
@@ -277,6 +285,20 @@ def _read_tfs():
                                 '/resources/transcription_factors.csv')
     gene_names = [lin[1] for lin in list(tf_table)[1:]]
     return gene_names
+
+
+def _make_fplx_synonyms():
+    fplx_synonyms = {}
+    for txt, db_refs in gm.items():
+        if not db_refs:
+            continue
+        fplx_id = db_refs.get('FPLX')
+        if fplx_id:
+            try:
+                fplx_synonyms[fplx_id].append(txt)
+            except KeyError:
+                fplx_synonyms[fplx_id] = [txt]
+    return fplx_synonyms
 
 
 class InvalidAgentError(ValueError):

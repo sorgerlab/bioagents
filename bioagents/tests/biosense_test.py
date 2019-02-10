@@ -140,6 +140,13 @@ def test_get_synonyms():
     assert example_synonyms.issubset(synonyms)
 
 
+def test_get_synonyms_fplx():
+    bs = BioSense()
+    example_synonyms = {'MEK', 'MEK1/2', 'MEK 1/2'}
+    synonyms = set(bs.get_synonyms(mek_ekb))
+    assert example_synonyms.issubset(synonyms), synonyms
+
+
 @raises(InvalidAgentError)
 def test_get_synonyms_invalid_agent():
     """raises InvalidAgentError when the agent is not recognized or if the

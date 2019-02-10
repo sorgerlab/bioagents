@@ -3,11 +3,9 @@ from nose.tools import raises
 from kqml import KQMLList
 from bioagents.tests.util import ekb_from_text
 from bioagents.biosense.biosense_module import BioSense_Module
-from bioagents.biosense.biosense import BioSense
-from bioagents.biosense.biosense import InvalidAgentError
-from bioagents.biosense.biosense import InvalidCollectionError
-from bioagents.biosense.biosense import UnknownCategoryError
-from bioagents.biosense.biosense import CollectionNotFamilyOrComplexError
+from bioagents.biosense.biosense import BioSense, InvalidAgentError, \
+    InvalidCollectionError, UnknownCategoryError, \
+    CollectionNotFamilyOrComplexError, SynonymsUnknownError
 
 
 # example ekb terms
@@ -178,6 +176,15 @@ def test_get_synonyms_invalid_agent():
     bs.get_synonyms(invalid1)
     bs.get_synonyms(invalid2)
     bs.get_synonyms(invalid3)
+
+
+@raises(SynonymsUnknownError)
+def test_get_synonyms_no_synonyms_for_type():
+    """raises InvalidAgentError when the agent is not recognized or if the
+    input submitted is not valid XML or is not in the correct format
+    """
+    bs = BioSense()
+    bs.get_synonyms(ekb_from_text('vemurafenib'))
 
 
 # BioSense module unit tests

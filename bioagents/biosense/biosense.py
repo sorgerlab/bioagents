@@ -168,32 +168,34 @@ class BioSense(object):
         return members
 
     def get_synonyms(self, agent_ekb):
-        """ Get synonyms of an agent
+        """Get synonyms of an agent
 
-        Parameters:
+        Parameters
         -----------
-        agent_ekb : string
-        XML for an extraction knowledge base (ekb) term for an agent
+        agent_ekb : str
+            XML for an extraction knowledge base (ekb) term for an agent
 
-        Returns:
+        Returns
         -------
-        synonyms : list[string]
-        list of synonyms for the agent
+        synonyms : list[str]
+            list of synonyms for the agent
 
         Raises
         ------
         InvalidAgentError
-        agent_ekb does not correspond to a recognized agent
+            agent_ekb does not correspond to a recognized agent
         """
         try:
             agent = self._get_agent(agent_ekb)
-        except (TypeError, AttributeError, IndexError):
+        except Exception as e:
+            logger.error(e)
             raise InvalidAgentError("agent_ekb not readable by Trips")
         if agent is None:
             raise InvalidAgentError("agent not recognized")
         up_id = agent.db_refs.get('UP')
         if not up_id:
-            raise InvalidAgentError("agent not recognized")
+            raise SynonymsUnknownError('We don\'t provide synonyms for '
+                                       'this type of agent.')
         synonyms = uniprot_client.get_synonyms(up_id)
         return synonyms
 
@@ -278,6 +280,11 @@ def _read_tfs():
 
 
 class InvalidAgentError(ValueError):
+    """raised if agent not recognized"""
+    pass
+
+
+class SynonymsUnknownError(ValueError):
     """raised if agent not recognized"""
     pass
 

@@ -15,7 +15,7 @@ logger = logging.getLogger('Bioagents')
 
 
 from indra.assemblers.english import EnglishAssembler
-from kqml import KQMLModule, KQMLPerformative, KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList, KQMLString
 
 
 class BioagentException(Exception):
@@ -112,6 +112,12 @@ class Bioagent(KQMLModule):
     def tell(self, content):
         """Send a tell message."""
         msg = KQMLPerformative('tell')
+        msg.set('content', content)
+        return self.send(msg)
+
+    def request(self, content):
+        """Send a request message."""
+        msg = KQMLPerformative('request')
         msg.set('content', content)
         return self.send(msg)
 
@@ -234,11 +240,10 @@ class Bioagent(KQMLModule):
         return link
 
     def say(self, message):
-        """Blurt a message directly to the dialogue session."""
-        msg = KQMLList('spoken')
-        msg.sets('who', 'sys')
-        msg.sets('what', message)
-        self.tell(msg)
+        """Say something to the user."""
+        msg = KQMLList('say')
+        msg.append(KQMLString(message))
+        self.request(msg)
 
     def _make_report_cols_html(self, stmt_list, limit=5, ev_counts=None,
                                **kwargs):

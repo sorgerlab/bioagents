@@ -228,7 +228,7 @@ class TestMsaProvenance(_IntegrationTest):
         assert len(provs) == 1, 'Too much provenance: %d vs. 1.' % len(provs)
         html = provs[0].get('content').get('html')
         html_str = html.to_string()
-        evs = re.findall('<li>(.*?) <a href=(.*?\.html).*?>\((\d+)\)</a></li>',
+        evs = re.findall('<li>(.*?) \((\d+)\)</li>',
                          html_str)
         assert len(evs),\
             ("unexpectedly formatted provenance (got no regex extractions): %s"

@@ -396,16 +396,19 @@ def get_ambiguities(tp):
 
 def make_diagrams(pysb_model, model_id, current_model, context=None):
     sbgn = make_sbgn(pysb_model, model_id)
-    sbgn = sbgn.encode('utf-8')
     if sbgn is not None:
+        sbgn = sbgn.encode('utf-8')
         if context:
             try:
                 cell_line = ccle_map[context]
             except KeyError:
+                logger.info('Could not find profile info for %s cell line' %
+                            context)
                 cell_line = 'A375_SKIN'
         else:
             cell_line = 'A375_SKIN'
         try:
+            logger.info('Coloring SBGN to %s cell line.' % cell_line)
             colorizer = SbgnColorizer(sbgn)
             colorizer.set_style_expression_mutation(current_model,
                                                     cell_line=cell_line)

@@ -396,6 +396,7 @@ def get_ambiguities(tp):
 
 def make_diagrams(pysb_model, model_id, current_model, context=None):
     sbgn = make_sbgn(pysb_model, model_id)
+    sbgn = bytes(bytearray(sbgn, encoding='utf-8'))
     if sbgn is not None:
         if context:
             try:

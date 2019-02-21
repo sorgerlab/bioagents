@@ -37,7 +37,7 @@ script:
         export RUN_SLOW=true;
     fi
   - export NOSEATTR="";
-  - if [[ $TRAVIS_PULL_REQUEST ]]; then
+  - if [[ $TRAVIS_PULL_REQUEST != "false" ]]; then
       export NOSEATTR="!nonpublic";
     fi
   - if [[ $RUN_SLOW != "true" ]]; then

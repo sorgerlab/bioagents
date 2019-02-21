@@ -20,8 +20,6 @@ install:
   # Dependencies of Bioagents not covered by previous installs
   - sudo apt-get install graphviz
   - pip install pygraphviz ndex2==1.2.0.58
-  - pip install -U networkx>=2
-  - wget -nv "http://sorger.med.harvard.edu/data/bgyori/bioagents/drug_targets.db" -O bioagents/resources/drug_targets.db
   # Install utilities for running tests
   - pip install coverage
 before_script:

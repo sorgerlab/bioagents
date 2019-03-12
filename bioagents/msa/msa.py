@@ -163,8 +163,15 @@ class StatementFinder(object):
         return self._statements[:]
 
     def get_fixed_agents(self):
-        return {'subject': [self.query.subj], 'object': [self.query.obj],
-                'other': self.query.agents}
+        """Get a dict of the agents that were used as inputs, keyed by role."""
+        raw_dict = {'subject': [self.query.subj], 'object': [self.query.obj],
+                    'other': self.query.agents}
+        ret_dict = {}
+        for role, ag_list in raw_dict.keys():
+            new_list = [ag for ag in ag_list if ag is not None]
+            if new_list:
+                ret_dict[role] = new_list
+        return ret_dict
 
     def get_other_agents(self, entities=None, other_role=None, block=None):
         """Find all the resulting agents besides the one given.

@@ -166,17 +166,18 @@ class StatementFinder(object):
         return {'subject': [self.query.subj], 'object': [self.query.obj],
                 'other': self.query.agents}
 
-    def get_other_agents(self, entity, other_role=None, block=None):
+    def get_other_agents(self, entities=None, other_role=None, block=None):
         """Find all the resulting agents besides the one given.
 
         It is assumed that the given entity was one of the inputs.
 
         Parameters
         ----------
-        entity : str or Agent.
+        entities : list[Agent] or None
             Either an original entity string or Agent, or Agent name. This
             method will find other entities that occur within the statements
-            besides this one.
+            besides this one. If None, the entity is assumed to be the original
+            queried entity.
         other_role : 'subject', 'object', or None
             The part of speech/role of the other names. Limits the results to
             subjects, if 'subject', objects if 'object', or places no limit
@@ -192,7 +193,17 @@ class StatementFinder(object):
                              % (type(other_role), other_role))
 
         # Get the namespace and id of the original entity.
-        dbn, dbi = self.query.entities[entity.name]
+        if entities is None:
+            entities = set(self.query.entites.keys())
+
+        # Define a comparison
+        def matches_none(ag):
+            if ag is None:
+                return False
+            for dbn, dbi in (self.query.entities[e] for e in entities):
+                if ag is not None and ag.db_refs.get(dbn) == dbi:
+                    return False
+            return True
 
         # Build up a dict of names, counting how often they occur.
         counts = defaultdict(lambda: 0)
@@ -207,7 +218,7 @@ class StatementFinder(object):
             ags = s.agent_list()
             if other_role is None:
                 for ag in ags:
-                    if ag is not None and ag.db_refs.get(dbn) != dbi:
+                    if matches_none(ag):
                         counts[ag.name] += ev_totals[s.get_hash()]
                         oa_dict[ag.name].append(ag)
             # If the role is specified, look at just those agents.
@@ -217,7 +228,7 @@ class StatementFinder(object):
                     raise ValueError('Could not apply role %s, not enough '
                                      'agents: %s' % (other_role, ags))
                 ag = s.agent_list()[idx]
-                if ag is not None and ag.db_refs.get(dbn) != dbi:
+                if matches_none(ag):
                     counts[ag.name] += ev_totals[s.get_hash()]
                     oa_dict[ag.name].append(ag)
 

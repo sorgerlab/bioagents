@@ -356,38 +356,13 @@ class StatementFinder(object):
             subjects, if 'subject', objects if 'object', or places no limit
             if None. Default is None.
         """
-        # Check to make sure role is valid.
-        if other_role not in ['subject', 'object', None]:
-            raise ValueError('Invalid role of type %s: %s'
-                             % (type(other_role), other_role))
-
-        # Get the namespace and id of the original entity.
-        dbn, dbi = self.query.entities[entity.name]
-
-        # Build up a dict of names, counting how often they occur.
-        name_dict = defaultdict(lambda: 0)
-        ev_totals = self.get_ev_totals()
-        for s in self.get_statements():
-
-            # If the role is None, look at all the agents.
-            ags = s.agent_list()
-            if other_role is None:
-                for ag in ags:
-                    if ag is not None and ag.db_refs.get(dbn) != dbi:
-                        name_dict[ag.name] += ev_totals[s.get_hash()]
-            # If the role is specified, look at just those agents.
-            else:
-                idx = 0 if other_role == 'subject' else 1
-                if idx+1 > len(ags):
-                    raise ValueError('Could not apply role %s, not enough '
-                                     'agents: %s' % (other_role, ags))
-                ag = s.agent_list()[idx]
-                if ag is not None and ag.db_refs.get(dbn) != dbi:
-                    name_dict[ag.name] += ev_totals[s.get_hash()]
-
-        # Create a list of names sorted with the most frequent first.
-        names = list(sorted(name_dict.keys(), key=lambda t: name_dict[t],
-                            reverse=True))
+        other_ags = self.get_other_agents(entity, other_role=other_role)
+        names = []
+        for ag in other_ags:
+            # We know the agents are ordered by name, so this is sufficient.
+            if names and ag.name == names[-1]:
+                continue
+            names.append(ag.name)
         return names
 
 

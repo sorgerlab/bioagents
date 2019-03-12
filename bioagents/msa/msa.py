@@ -56,7 +56,7 @@ class StatementQuery(object):
         preference (most preferable first). If None, the default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', 'TEXT'].
     """
-    def __init__(self, subj, obj, entities, verb, settings,
+    def __init__(self, subj, obj, agents, verb, settings,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
@@ -65,8 +65,8 @@ class StatementQuery(object):
         self.subj_key = self.get_key(subj)
         self.obj = obj
         self.obj_key = self.get_key(obj)
-        self.agents = entities
-        self.agent_keys = [self.get_key(e) for e in entities]
+        self.agents = agents
+        self.agent_keys = [self.get_key(e) for e in agents]
 
         self.verb = verb
         if verb in mod_map.keys():
@@ -161,6 +161,71 @@ class StatementFinder(object):
         self._statements = self._filter_stmts(self._processor.statements[:])
 
         return self._statements[:]
+
+    def get_fixed_agents(self):
+        return {'subject': [self.query.subj], 'object': [self.query.obj],
+                'other': self.query.agents}
+
+    def get_other_agents(self, entity, other_role=None, block=None):
+        """Find all the resulting agents besides the one given.
+
+        It is assumed that the given entity was one of the inputs.
+
+        Parameters
+        ----------
+        entity : str or Agent.
+            Either an original entity string or Agent, or Agent name. This
+            method will find other entities that occur within the statements
+            besides this one.
+        other_role : 'subject', 'object', or None
+            The part of speech/role of the other names. Limits the results to
+            subjects, if 'subject', objects if 'object', or places no limit
+            if None. Default is None.
+        block : bool or None
+            If True, wait for the processor to finish, else return None if it
+            is not done. If None, the default set in the class instantiation
+            is used.
+        """
+        # Check to make sure role is valid.
+        if other_role not in ['subject', 'object', None]:
+            raise ValueError('Invalid role of type %s: %s'
+                             % (type(other_role), other_role))
+
+        # Get the namespace and id of the original entity.
+        dbn, dbi = self.query.entities[entity.name]
+
+        # Build up a dict of names, counting how often they occur.
+        counts = defaultdict(lambda: 0)
+        oa_dict = defaultdict(list)
+        ev_totals = self.get_ev_totals()
+        stmts = self.get_statements(block)
+        if not stmts:
+            return None
+        for s in stmts:
+
+            # If the role is None, look at all the agents.
+            ags = s.agent_list()
+            if other_role is None:
+                for ag in ags:
+                    if ag is not None and ag.db_refs.get(dbn) != dbi:
+                        counts[ag.name] += ev_totals[s.get_hash()]
+                        oa_dict[ag.name].append(ag)
+            # If the role is specified, look at just those agents.
+            else:
+                idx = 0 if other_role == 'subject' else 1
+                if idx+1 > len(ags):
+                    raise ValueError('Could not apply role %s, not enough '
+                                     'agents: %s' % (other_role, ags))
+                ag = s.agent_list()[idx]
+                if ag is not None and ag.db_refs.get(dbn) != dbi:
+                    counts[ag.name] += ev_totals[s.get_hash()]
+                    oa_dict[ag.name].append(ag)
+
+        # Create a list of names sorted with the most frequent first.
+        names = set(sorted(counts.keys(), key=lambda t: counts[t],
+                           reverse=True))
+        other_agents = [ag for name in names for ag in oa_dict[name]]
+        return other_agents
 
     def get_ev_totals(self):
         """Get a dictionary of evidence total counts from the processor."""
@@ -391,8 +456,8 @@ class PhosActiveforms(Activeforms):
 
 
 class BinaryDirected(StatementFinder):
-    def _regularize_input(self, subject, object, verb=None, **params):
-        return StatementQuery(subject, object, [], verb, params)
+    def _regularize_input(self, source, target, verb=None, **params):
+        return StatementQuery(source, target, [], verb, params)
 
     def describe(self, limit=None):
         verbs = self.get_unique_verb_list()

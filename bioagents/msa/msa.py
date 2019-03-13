@@ -540,6 +540,9 @@ class ToTarget(StatementFinder):
         desc += ps
         return desc
 
+    def _filter_stmts(self, stmts):
+        return [s for s in stmts if None not in s.agent_list()]
+
 
 class ComplexOneSide(StatementFinder):
     def _regularize_input(self, entity, **params):

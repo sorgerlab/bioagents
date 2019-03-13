@@ -3,10 +3,12 @@ from time import sleep
 from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
 
-from kqml.kqml_list import KQMLList
-from indra.statements import Agent
-from bioagents.msa import msa_module
 from bioagents.msa.msa import MSA
+from indra.statements import Agent
+
+from kqml.kqml_list import KQMLList
+
+from bioagents.msa import msa, msa_module
 from bioagents.tests.util import ekb_from_text, get_request
 from bioagents.tests.integration import _IntegrationTest
 
@@ -395,3 +397,14 @@ def test_get_finder_agents():
     # The other names should be sorted with PIM1 first (most evidence)
     other_names = finder.get_other_names(ag)
     assert other_names[0] == 'PIM1'
+
+
+@attr('nonpublic')
+def test_activeform_finder_get_agents():
+    finder = msa.Activeforms(Agent('MEK', db_refs={'FPLX': 'MEK'}))
+    fa = finder.get_fixed_agents()
+    assert set(fa.keys()) == {'other'}, fa
+    assert len(fa['other']) == 1, len(fa['other'])
+    assert fa['other'][0].name == 'MEK', fa['other'][0]
+    oa = finder.get_other_agents(block=True)
+    assert len(oa) == 0, len(oa)

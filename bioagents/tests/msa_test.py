@@ -382,11 +382,13 @@ def test_msa_paper_retrieval_failure():
 
 def test_get_finder_agents():
     msa = MSA()
-    finder = msa.find_mechanisms('to_target',
-                                 Agent('SOCS1', db_refs={'HGNC': '19383'}))
+    ag = Agent('SOCS1', db_refs={'HGNC': '19383'})
+    finder = msa.find_mechanisms('to_target', ag)
     other_agents = finder.get_other_agents()
     assert all(isinstance(a, Agent) for a in other_agents)
 
     fixed_agents = finder.get_fixed_agents()
     assert 'object' in fixed_agents, fixed_agents
     assert fixed_agents['object'][0].name == 'SOCS1', fixed_agents['target']
+
+    other_names = finder.get_other_names(ag)

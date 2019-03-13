@@ -242,10 +242,9 @@ class StatementFinder(object):
                 if matches_none(ag):
                     counts[ag.name] += ev_totals[s.get_hash()]
                     oa_dict[ag.name].append(ag)
-
         # Create a list of names sorted with the most frequent first.
-        names = set(sorted(counts.keys(), key=lambda t: counts[t],
-                           reverse=True))
+        names = list(sorted(counts.keys(), key=lambda t: counts[t],
+                     reverse=True))
         other_agents = [ag for name in names for ag in oa_dict[name]]
         return other_agents
 

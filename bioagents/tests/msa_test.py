@@ -421,3 +421,10 @@ def test_commons_finder_get_agents():
 
     oa = finder.get_other_agents(block=True)
     assert len(oa) > 3
+
+
+@attr('nonpublic')
+def test_to_target_ERK():
+    finder = msa.ToTarget(Agent('ERK', db_refs={'FPLX': 'ERK'}), persist=False)
+    stmts = finder.get_statements(block=True)
+    assert not any(None in s.agent_list() for s in stmts), stmts

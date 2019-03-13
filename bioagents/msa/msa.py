@@ -301,7 +301,9 @@ class StatementFinder(object):
     def get_html(self):
         """Get html for these statements."""
         import boto3
+        ev_totals = self.get_ev_totals()
         html_assembler = HtmlAssembler(self.get_statements(),
+                                       ev_totals=ev_totals,
                                        db_rest_url=DB_REST_URL)
         html = html_assembler.make_model()
         s3 = boto3.client('s3')
@@ -501,7 +503,8 @@ class FromSource(StatementFinder):
                                            other_role='object')
 
         if len(other_names) > limit:
-            desc += ', for example, '
+            # We trim the trailing space of desc here before appending
+            desc = desc[:-1] + ', for example, '
             desc += _join_list(other_names[:limit]) + '.\n'
         elif 0 < len(other_names) <= limit:
             desc += _join_list(other_names) + '.\n'

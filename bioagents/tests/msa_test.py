@@ -419,5 +419,5 @@ def test_commons_finder_get_agents():
     assert len(fa['other']) == 2, len(fa['other'])
     assert {ag.name for ag in fa['other']} == {'MEK', 'RAF'}
 
-    oa = finder.get_other_agents()
+    oa = finder.get_other_agents(block=True)
     assert len(oa) > 3

@@ -199,9 +199,14 @@ class StatementFinder(object):
             raise ValueError('Invalid role of type %s: %s'
                              % (type(other_role), other_role))
 
-        # Get the namespace and id of the original entity.
+        # If the entities are not given, get them from the query itself
         if entities is None:
             entities = set(self.query.entities.keys())
+        # If entities is actually a single Agent (e.g., when passed in from
+        # all the describe methods of finder classes, we just take its name
+        # and make it a set.
+        elif isinstance(entities, Agent):
+            entities = {entities.name}
 
         # Define a comparison
         def matches_none(ag):

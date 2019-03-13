@@ -167,7 +167,7 @@ class StatementFinder(object):
         raw_dict = {'subject': [self.query.subj], 'object': [self.query.obj],
                     'other': self.query.agents}
         ret_dict = {}
-        for role, ag_list in raw_dict.keys():
+        for role, ag_list in raw_dict.items():
             new_list = [ag for ag in ag_list if ag is not None]
             if new_list:
                 ret_dict[role] = new_list
@@ -201,7 +201,7 @@ class StatementFinder(object):
 
         # Get the namespace and id of the original entity.
         if entities is None:
-            entities = set(self.query.entites.keys())
+            entities = set(self.query.entities.keys())
 
         # Define a comparison
         def matches_none(ag):
@@ -220,7 +220,6 @@ class StatementFinder(object):
         if not stmts:
             return None
         for s in stmts:
-
             # If the role is None, look at all the agents.
             ags = s.agent_list()
             if other_role is None:

@@ -408,3 +408,16 @@ def test_activeform_finder_get_agents():
     assert fa['other'][0].name == 'MEK', fa['other'][0]
     oa = finder.get_other_agents(block=True)
     assert len(oa) == 0, len(oa)
+
+
+@attr('nonpublic')
+def test_commons_finder_get_agents():
+    finder = msa.CommonDownstreams(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                                   Agent('RAF', db_refs={'FPLX': 'RAF'}))
+    fa = finder.get_fixed_agents()
+    assert set(fa.keys()) == {'other'}, fa
+    assert len(fa['other']) == 2, len(fa['other'])
+    assert {ag.name for ag in fa['other']} == {'MEK', 'RAF'}
+
+    oa = finder.get_other_agents()
+    assert len(oa) > 3

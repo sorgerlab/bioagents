@@ -1,12 +1,14 @@
 import re
 from time import sleep
+from nose.plugins.attrib import attr
+from nose.plugins.skip import SkipTest
 
-from bioagents.msa import msa_module
 from kqml.kqml_list import KQMLList
+from indra.statements import Agent
+from bioagents.msa import msa_module
+from bioagents.msa.msa import MSA
 from bioagents.tests.util import ekb_from_text, get_request
 from bioagents.tests.integration import _IntegrationTest
-from nose.plugins.skip import SkipTest
-from nose.plugins.attrib import attr
 
 
 if not msa_module.CAN_CHECK_STATEMENTS:
@@ -376,3 +378,15 @@ def test_msa_paper_retrieval_failure():
     resp = msa.respond_get_paper_model(content)
     assert resp.head() == 'FAILURE', str(resp)
     assert resp.get('reason') == 'MISSING_MECHANISM'
+
+
+def test_get_finder_agents():
+    msa = MSA()
+    finder = msa.find_mechanisms('to_target',
+                                 Agent('SOCS1', db_refs={'HGNC': '19383'}))
+    other_agents = finder.get_other_agents()
+    assert all(isinstance(a, Agent) for a in other_agents)
+
+    fixed_agents = finder.get_fixed_agents()
+    assert 'object' in fixed_agents, fixed_agents
+    assert fixed_agents['object'][0].name == 'SOCS1', fixed_agents['target']

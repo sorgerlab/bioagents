@@ -56,7 +56,7 @@ class StatementQuery(object):
         preference (most preferable first). If None, the default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', 'TEXT'].
     """
-    def __init__(self, subj, obj, entities, verb, settings,
+    def __init__(self, subj, obj, agents, verb, settings,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
@@ -65,8 +65,8 @@ class StatementQuery(object):
         self.subj_key = self.get_key(subj)
         self.obj = obj
         self.obj_key = self.get_key(obj)
-        self.agents = entities
-        self.agent_keys = [self.get_key(e) for e in entities]
+        self.agents = agents
+        self.agent_keys = [self.get_key(e) for e in agents]
 
         self.verb = verb
         if verb in mod_map.keys():
@@ -162,6 +162,89 @@ class StatementFinder(object):
 
         return self._statements[:]
 
+    def get_fixed_agents(self):
+        """Get a dict of the agents that were used as inputs, keyed by role."""
+        raw_dict = {'subject': [self.query.subj], 'object': [self.query.obj],
+                    'other': self.query.agents}
+        ret_dict = {}
+        for role, ag_list in raw_dict.items():
+            new_list = [ag for ag in ag_list if ag is not None]
+            if new_list:
+                ret_dict[role] = new_list
+        return ret_dict
+
+    def get_other_agents(self, entities=None, other_role=None, block=None):
+        """Find all the resulting agents besides the one given.
+
+        It is assumed that the given entity was one of the inputs.
+
+        Parameters
+        ----------
+        entities : list[Agent] or None
+            Either an original entity string or Agent, or Agent name. This
+            method will find other entities that occur within the statements
+            besides this one. If None, the entity is assumed to be the original
+            queried entity.
+        other_role : 'subject', 'object', or None
+            The part of speech/role of the other names. Limits the results to
+            subjects, if 'subject', objects if 'object', or places no limit
+            if None. Default is None.
+        block : bool or None
+            If True, wait for the processor to finish, else return None if it
+            is not done. If None, the default set in the class instantiation
+            is used.
+        """
+        # Check to make sure role is valid.
+        if other_role not in ['subject', 'object', None]:
+            raise ValueError('Invalid role of type %s: %s'
+                             % (type(other_role), other_role))
+
+        # If the entities are not given, get them from the query itself
+        if entities is None:
+            entity_names = set(self.query.entities.keys())
+        else:
+            entity_names = {ag.name for ag in entities}
+
+        # Define a comparison
+        def matches_none(ag):
+            if ag is None:
+                return False
+            for dbn, dbi in (self.query.entities[e] for e in entity_names):
+                if ag is not None and ag.db_refs.get(dbn) == dbi:
+                    return False
+            return True
+
+        # Build up a dict of names, counting how often they occur.
+        counts = defaultdict(lambda: 0)
+        oa_dict = defaultdict(list)
+        ev_totals = self.get_ev_totals()
+        stmts = self.get_statements(block)
+        if not stmts:
+            return None
+        for s in stmts:
+            # If the role is None, look at all the agents.
+            ags = s.agent_list()
+            if other_role is None:
+                for ag in ags:
+                    if matches_none(ag):
+                        counts[ag.name] += ev_totals[s.get_hash()]
+                        oa_dict[ag.name].append(ag)
+            # If the role is specified, look at just those agents.
+            else:
+                idx = 0 if other_role == 'subject' else 1
+                if idx+1 > len(ags):
+                    raise ValueError('Could not apply role %s, not enough '
+                                     'agents: %s' % (other_role, ags))
+                ag = s.agent_list()[idx]
+                if matches_none(ag):
+                    counts[ag.name] += ev_totals[s.get_hash()]
+                    oa_dict[ag.name].append(ag)
+        # Create a list of names sorted with the most frequent first.
+        names = list(sorted(counts.keys(), key=lambda t: counts[t],
+                     reverse=True))
+        other_agents = [ag for name in names for ag in oa_dict[name]]
+        return other_agents
+
     def get_ev_totals(self):
         """Get a dictionary of evidence total counts from the processor."""
         # Getting statements applies any filters, so the counts are consistent
@@ -215,7 +298,9 @@ class StatementFinder(object):
     def get_html(self):
         """Get html for these statements."""
         import boto3
+        ev_totals = self.get_ev_totals()
         html_assembler = HtmlAssembler(self.get_statements(),
+                                       ev_totals=ev_totals,
                                        db_rest_url=DB_REST_URL)
         html = html_assembler.make_model()
         s3 = boto3.client('s3')
@@ -291,38 +376,13 @@ class StatementFinder(object):
             subjects, if 'subject', objects if 'object', or places no limit
             if None. Default is None.
         """
-        # Check to make sure role is valid.
-        if other_role not in ['subject', 'object', None]:
-            raise ValueError('Invalid role of type %s: %s'
-                             % (type(other_role), other_role))
-
-        # Get the namespace and id of the original entity.
-        dbn, dbi = self.query.entities[entity.name]
-
-        # Build up a dict of names, counting how often they occur.
-        name_dict = defaultdict(lambda: 0)
-        ev_totals = self.get_ev_totals()
-        for s in self.get_statements():
-
-            # If the role is None, look at all the agents.
-            ags = s.agent_list()
-            if other_role is None:
-                for ag in ags:
-                    if ag is not None and ag.db_refs.get(dbn) != dbi:
-                        name_dict[ag.name] += ev_totals[s.get_hash()]
-            # If the role is specified, look at just those agents.
-            else:
-                idx = 0 if other_role == 'subject' else 1
-                if idx+1 > len(ags):
-                    raise ValueError('Could not apply role %s, not enough '
-                                     'agents: %s' % (other_role, ags))
-                ag = s.agent_list()[idx]
-                if ag is not None and ag.db_refs.get(dbn) != dbi:
-                    name_dict[ag.name] += ev_totals[s.get_hash()]
-
-        # Create a list of names sorted with the most frequent first.
-        names = list(sorted(name_dict.keys(), key=lambda t: name_dict[t],
-                            reverse=True))
+        other_ags = self.get_other_agents([entity], other_role=other_role)
+        names = []
+        for ag in other_ags:
+            # We know the agents are ordered by name, so this is sufficient.
+            if names and ag.name == names[-1]:
+                continue
+            names.append(ag.name)
         return names
 
 
@@ -391,8 +451,8 @@ class PhosActiveforms(Activeforms):
 
 
 class BinaryDirected(StatementFinder):
-    def _regularize_input(self, subject, object, verb=None, **params):
-        return StatementQuery(subject, object, [], verb, params)
+    def _regularize_input(self, source, target, verb=None, **params):
+        return StatementQuery(source, target, [], verb, params)
 
     def describe(self, limit=None):
         verbs = self.get_unique_verb_list()
@@ -440,7 +500,8 @@ class FromSource(StatementFinder):
                                            other_role='object')
 
         if len(other_names) > limit:
-            desc += ', for example, '
+            # We trim the trailing space of desc here before appending
+            desc = desc[:-1] + ', for example, '
             desc += _join_list(other_names[:limit]) + '.\n'
         elif 0 < len(other_names) <= limit:
             desc += _join_list(other_names) + '.\n'
@@ -478,6 +539,9 @@ class ToTarget(StatementFinder):
 
         desc += ps
         return desc
+
+    def _filter_stmts(self, stmts):
+        return [s for s in stmts if None not in s.agent_list()]
 
 
 class ComplexOneSide(StatementFinder):

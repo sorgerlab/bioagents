@@ -1,12 +1,16 @@
 import re
 from time import sleep
+from nose.plugins.attrib import attr
+from nose.plugins.skip import SkipTest
 
-from bioagents.msa import msa_module
+from bioagents.msa.msa import MSA
+from indra.statements import Agent
+
 from kqml.kqml_list import KQMLList
+
+from bioagents.msa import msa, msa_module
 from bioagents.tests.util import ekb_from_text, get_request
 from bioagents.tests.integration import _IntegrationTest
-from nose.plugins.skip import SkipTest
-from nose.plugins.attrib import attr
 
 
 if not msa_module.CAN_CHECK_STATEMENTS:
@@ -376,3 +380,51 @@ def test_msa_paper_retrieval_failure():
     resp = msa.respond_get_paper_model(content)
     assert resp.head() == 'FAILURE', str(resp)
     assert resp.get('reason') == 'MISSING_MECHANISM'
+
+
+@attr('nonpublic')
+def test_get_finder_agents():
+    msa = MSA()
+    ag = Agent('SOCS1', db_refs={'HGNC': '19383'})
+    finder = msa.find_mechanisms('to_target', ag, verb='phosphorylate')
+    other_agents = finder.get_other_agents()
+    assert all(isinstance(a, Agent) for a in other_agents)
+
+    fixed_agents = finder.get_fixed_agents()
+    assert 'object' in fixed_agents, fixed_agents
+    assert fixed_agents['object'][0].name == 'SOCS1', fixed_agents['target']
+
+    # The other names should be sorted with PIM1 first (most evidence)
+    other_names = finder.get_other_names(ag)
+    assert other_names[0] == 'PIM1'
+
+
+@attr('nonpublic')
+def test_activeform_finder_get_agents():
+    finder = msa.Activeforms(Agent('MEK', db_refs={'FPLX': 'MEK'}))
+    fa = finder.get_fixed_agents()
+    assert set(fa.keys()) == {'other'}, fa
+    assert len(fa['other']) == 1, len(fa['other'])
+    assert fa['other'][0].name == 'MEK', fa['other'][0]
+    oa = finder.get_other_agents(block=True)
+    assert len(oa) == 0, len(oa)
+
+
+@attr('nonpublic')
+def test_commons_finder_get_agents():
+    finder = msa.CommonDownstreams(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                                   Agent('RAF', db_refs={'FPLX': 'RAF'}))
+    fa = finder.get_fixed_agents()
+    assert set(fa.keys()) == {'other'}, fa
+    assert len(fa['other']) == 2, len(fa['other'])
+    assert {ag.name for ag in fa['other']} == {'MEK', 'RAF'}
+
+    oa = finder.get_other_agents(block=True)
+    assert len(oa) > 3
+
+
+@attr('nonpublic')
+def test_to_target_ERK():
+    finder = msa.ToTarget(Agent('ERK', db_refs={'FPLX': 'ERK'}), persist=False)
+    stmts = finder.get_statements(block=True)
+    assert not any(None in s.agent_list() for s in stmts), stmts

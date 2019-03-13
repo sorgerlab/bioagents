@@ -201,18 +201,15 @@ class StatementFinder(object):
 
         # If the entities are not given, get them from the query itself
         if entities is None:
-            entities = set(self.query.entities.keys())
-        # If entities is actually a single Agent (e.g., when passed in from
-        # all the describe methods of finder classes, we just take its name
-        # and make it a set.
-        elif isinstance(entities, Agent):
-            entities = {entities.name}
+            entity_names = set(self.query.entities.keys())
+        else:
+            entity_names = {ag.name for ag in entities}
 
         # Define a comparison
         def matches_none(ag):
             if ag is None:
                 return False
-            for dbn, dbi in (self.query.entities[e] for e in entities):
+            for dbn, dbi in (self.query.entities[e] for e in entity_names):
                 if ag is not None and ag.db_refs.get(dbn) == dbi:
                     return False
             return True
@@ -379,7 +376,7 @@ class StatementFinder(object):
             subjects, if 'subject', objects if 'object', or places no limit
             if None. Default is None.
         """
-        other_ags = self.get_other_agents(entity, other_role=other_role)
+        other_ags = self.get_other_agents([entity], other_role=other_role)
         names = []
         for ag in other_ags:
             # We know the agents are ordered by name, so this is sufficient.

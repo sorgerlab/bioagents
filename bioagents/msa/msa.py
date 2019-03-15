@@ -52,15 +52,18 @@ class StatementQuery(object):
         A dictionary containing other parameters used by the
         IndraDbRestProcessor.
     valid_name_spaces : list[str] or None
-        A list of name spaces that are allowed as grounding, in order of
-        preference (most preferable first). If None, the default list will be
-        used: ['HGNC', 'FPLX', 'CHEBI', 'TEXT'].
+        A list of name spaces in order of preference (most preferable first).
+        The special key !OTHER! can be used as a place holder for any other
+        grounding not explicitly mentioned. The key !NAME! is  place holder
+        for the Agent name (that doesn't appear in db_refs).
+        If not provided, the following default list will be
+        used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
     """
     def __init__(self, subj, obj, agents, verb, settings,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
-            else ['HGNC', 'FPLX', 'CHEBI', 'TEXT']
+            else ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!']
         self.subj = subj
         self.subj_key = self.get_key(subj)
         self.obj = obj
@@ -84,15 +87,32 @@ class StatementQuery(object):
         if agent is None:
             return None
 
-        # Get the key
-        for key in self._ns_keys:
-            if key in agent.db_refs.keys():
-                dbn = key
-                dbi = agent.db_refs[key]
+        dbn, dbi = None, None
+        # Iterate over all the keys in order
+        for idx, key in enumerate(self._ns_keys):
+            # If we hit OTHER, we need to make sure we only return on keys
+            # that don't appear in the tail part of the list
+            if key == '!OTHER!':
+                low_priority_keys = self._ns_keys[idx+1:]
+                for key, value in agent.db_refs.items():
+                    if key not in low_priority_keys:
+                        dbn, dbi = key, value
+                        break
+            # If we have name here, we use the Agent name for TEXT search
+            elif key == '!NAME!':
+                dbn, dbi = 'TEXT', agent.name
                 break
-        else:
-            raise EntityError("Could not get valid grounding (%s) for %s."
-                              % (', '.join(self._ns_keys), agent))
+            # Otherwise, this is a regular key, and we just look for it in
+            # the Agent's db_refs
+            elif key in agent.db_refs:
+                dbn, dbi = key, agent.db_refs[key]
+                break
+
+        if dbn is None:
+            raise EntityError(("Could not get valid grounding (%s) for %s "
+                               "with db_refs=%s.")
+                               % (', '.join(self._ns_keys), agent,
+                                  agent.db_refs))
         self.entities[agent.name] = (dbn, dbi)
 
         return '%s@%s' % (dbi, dbn)

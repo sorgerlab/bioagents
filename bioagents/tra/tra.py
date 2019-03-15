@@ -116,8 +116,8 @@ class TRA(object):
 
         # Run model checker on all patterns
         all_patterns = get_all_patterns(obs.name)
-        for fs, pat in all_patterns:
-            logger.info('Testing pattern: %s' % pat)
+        for fs, kpat, pat_obj in all_patterns:
+            logger.info('Testing pattern: %s' % kpat)
             truths = []
             for yobs in yobs_list:
                 MC = mc.ModelChecker(fs, yobs)
@@ -126,9 +126,9 @@ class TRA(object):
             sat_rate_new = numpy.count_nonzero(truths) / (1.0*num_sim)
             if sat_rate_new > 0.5:
                 if not given_pattern:
-                    return sat_rate_new, num_sim, pat, fig_path
+                    return sat_rate_new, num_sim, kpat, pat_obj, fig_path
                 else:
-                    return sat_rate, num_sim, pat, fig_path
+                    return sat_rate, num_sim, kpat, pat_obj, fig_path
 
     def compare_conditions(self, model, condition_agent, target_agent, up_dn):
         obs = get_create_observable(model, target_agent)

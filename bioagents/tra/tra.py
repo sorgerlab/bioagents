@@ -112,7 +112,7 @@ class TRA(object):
 
         # If no suggestion is to be made, we return
         if not make_suggestion:
-            return sat_rate, num_sim, None, fig_path
+            return sat_rate, num_sim, None, None, fig_path
 
         # Run model checker on all patterns
         all_patterns = get_all_patterns(obs.name)
@@ -463,7 +463,7 @@ def get_all_patterns(obs_name):
     fstr = mc.sustained_formula(obs_name)
     kpattern = '(:type "sustained")'
     pattern = TemporalPattern('sustained', [], None)
-    patterns.append((fstr, kpattern, sustained))
+    patterns.append((fstr, kpattern, pattern))
 
     # Sometime high/low
     for val_num, val_str in zip((0, 1), ('low', 'high')):
@@ -475,7 +475,7 @@ def get_all_patterns(obs_name):
         pattern = TemporalPattern('sometime_value', [], None,
                                   value=MolecularQuantity('qualitative',
                                                           '%s' % val_str))
-        patterns.append((fstr, kpatternm, pattern))
+        patterns.append((fstr, kpattern, pattern))
 
     # No change any value
     fstr = mc.noact_formula(obs_name)

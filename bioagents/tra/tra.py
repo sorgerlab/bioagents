@@ -112,12 +112,12 @@ class TRA(object):
 
         # If no suggestion is to be made, we return
         if not make_suggestion:
-            return sat_rate, num_sim, None, fig_path
+            return sat_rate, num_sim, None, None, fig_path
 
         # Run model checker on all patterns
         all_patterns = get_all_patterns(obs.name)
-        for fs, pat in all_patterns:
-            logger.info('Testing pattern: %s' % pat)
+        for fs, kpat, pat_obj in all_patterns:
+            logger.info('Testing pattern: %s' % kpat)
             truths = []
             for yobs in yobs_list:
                 MC = mc.ModelChecker(fs, yobs)
@@ -126,9 +126,9 @@ class TRA(object):
             sat_rate_new = numpy.count_nonzero(truths) / (1.0*num_sim)
             if sat_rate_new > 0.5:
                 if not given_pattern:
-                    return sat_rate_new, num_sim, pat, fig_path
+                    return sat_rate_new, num_sim, kpat, pat_obj, fig_path
                 else:
-                    return sat_rate, num_sim, pat, fig_path
+                    return sat_rate, num_sim, kpat, pat_obj, fig_path
 
     def compare_conditions(self, model, condition_agent, target_agent, up_dn):
         obs = get_create_observable(model, target_agent)
@@ -428,36 +428,61 @@ def get_sim_result(kappa_plot):
 
 def get_all_patterns(obs_name):
     patterns = []
+
+    # Always high/low
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.always_formula(obs_name, val_num)
-        pattern = (
+        kpattern = (
             '(:type "no_change" '
             ':value (:type "qualitative" :value "%s"))' % val_str
             )
-        patterns.append((fstr, pattern))
+        pattern = TemporalPattern('no_change', [], None,
+                                  value=MolecularQuantity('qualitative',
+                                                          '%s' % val_str))
+        patterns.append((fstr, kpattern, pattern))
+
+    # Eventually high/low
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.eventual_formula(obs_name, val_num)
-        pattern = (
+        kpattern = (
             '(:type "eventual_value" '
             ':value (:type "qualitative" :value "%s"))' % val_str
             )
-        patterns.append((fstr, pattern))
+        pattern = TemporalPattern('eventual_value', [], None,
+                                  value=MolecularQuantity('qualitative',
+                                                          '%s' % val_str))
+        patterns.append((fstr, kpattern, pattern))
+
+    # Transient
     fstr = mc.transient_formula(obs_name)
-    pattern = '(:type "transient")'
-    patterns.append((fstr, pattern))
+    kpattern = '(:type "transient")'
+    pattern = TemporalPattern('transient', [], None)
+    patterns.append((fstr, kpattern, pattern))
+
+    # Sustined
     fstr = mc.sustained_formula(obs_name)
-    pattern = '(:type "sustained")'
-    patterns.append((fstr, pattern))
+    kpattern = '(:type "sustained")'
+    pattern = TemporalPattern('sustained', [], None)
+    patterns.append((fstr, kpattern, pattern))
+
+    # Sometime high/low
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.sometime_formula(obs_name, val_num)
-        pattern = (
+        kpattern = (
             '(:type "sometime_value" '
             ':value (:type "qualitative" :value "%s"))' % val_str
             )
-        patterns.append((fstr, pattern))
+        pattern = TemporalPattern('sometime_value', [], None,
+                                  value=MolecularQuantity('qualitative',
+                                                          '%s' % val_str))
+        patterns.append((fstr, kpattern, pattern))
+
+    # No change any value
     fstr = mc.noact_formula(obs_name)
-    pattern = '(:type "no_change")'
-    patterns.append((fstr, pattern))
+    kpattern = '(:type "no_change")'
+    pattern = TemporalPattern('no_change', [], None)
+    patterns.append((fstr, kpattern, pattern))
+
     return patterns
 
 

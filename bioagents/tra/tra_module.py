@@ -86,7 +86,7 @@ class TRA_Module(Bioagent):
                 return reply_content
 
         try:
-            sat_rate, num_sim, suggestion, fig_path = \
+            sat_rate, num_sim, suggestion_kqml, suggestion_obj, fig_path = \
                 self.tra.check_property(model, pattern, conditions)
         except tra.MissingMonomerError as e:
             logger.exception(e)
@@ -111,8 +111,8 @@ class TRA_Module(Bioagent):
         content = KQMLList()
         content.set('satisfies-rate', '%.1f' % sat_rate)
         content.set('num-sim', '%d' % num_sim)
-        if suggestion:
-            sugg = KQMLList.from_string(suggestion)
+        if suggestion_kqml:
+            sugg = KQMLList.from_string(suggestion_kqml)
             content.set('suggestion', sugg)
         reply.set('content', content)
         return reply

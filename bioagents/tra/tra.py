@@ -428,36 +428,61 @@ def get_sim_result(kappa_plot):
 
 def get_all_patterns(obs_name):
     patterns = []
+
+    # Always high/low
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.always_formula(obs_name, val_num)
-        pattern = (
+        kpattern = (
             '(:type "no_change" '
             ':value (:type "qualitative" :value "%s"))' % val_str
             )
-        patterns.append((fstr, pattern))
+        pattern = TemporalPattern('no_change', [], None,
+                                  value=MolecularQuantity('qualitative',
+                                                          '%s' % val_str))
+        patterns.append((fstr, kpattern, pattern))
+
+    # Eventually high/low
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.eventual_formula(obs_name, val_num)
-        pattern = (
+        kpattern = (
             '(:type "eventual_value" '
             ':value (:type "qualitative" :value "%s"))' % val_str
             )
-        patterns.append((fstr, pattern))
+        pattern = TemporalPattern('eventual_value', [], None,
+                                  value=MolecularQuantity('qualitative',
+                                                          '%s' % val_str))
+        patterns.append((fstr, kpattern, pattern))
+
+    # Transient
     fstr = mc.transient_formula(obs_name)
-    pattern = '(:type "transient")'
-    patterns.append((fstr, pattern))
+    kpattern = '(:type "transient")'
+    pattern = TemporalPattern('transient', [], None)
+    patterns.append((fstr, kpattern, pattern))
+
+    # Sustined
     fstr = mc.sustained_formula(obs_name)
-    pattern = '(:type "sustained")'
-    patterns.append((fstr, pattern))
+    kpattern = '(:type "sustained")'
+    pattern = TemporalPattern('sustained', [], None)
+    patterns.append((fstr, kpattern, sustained))
+
+    # Sometime high/low
     for val_num, val_str in zip((0, 1), ('low', 'high')):
         fstr = mc.sometime_formula(obs_name, val_num)
-        pattern = (
+        kpattern = (
             '(:type "sometime_value" '
             ':value (:type "qualitative" :value "%s"))' % val_str
             )
-        patterns.append((fstr, pattern))
+        pattern = TemporalPattern('sometime_value', [], None,
+                                  value=MolecularQuantity('qualitative',
+                                                          '%s' % val_str))
+        patterns.append((fstr, kpatternm, pattern))
+
+    # No change any value
     fstr = mc.noact_formula(obs_name)
-    pattern = '(:type "no_change")'
-    patterns.append((fstr, pattern))
+    kpattern = '(:type "no_change")'
+    pattern = TemporalPattern('no_change', [], None)
+    patterns.append((fstr, kpattern, pattern))
+
     return patterns
 
 

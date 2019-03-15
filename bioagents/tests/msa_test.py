@@ -383,6 +383,16 @@ def test_msa_paper_retrieval_failure():
 
 
 @attr('nonpublic')
+def test_valid_keys_no_text():
+    # We test that an agent with just a PUBCHEM ID can still be queried
+    msa = MSA()
+    ag = Agent('vemurafenib', db_refs={'PUBCHEM': '42611257'})
+    finder = msa.find_mechanisms('from_source', ag)
+    stmts = finder.get_statements(block=True)
+    assert stmts
+
+
+@attr('nonpublic')
 def test_get_finder_agents():
     msa = MSA()
     ag = Agent('SOCS1', db_refs={'HGNC': '19383'})

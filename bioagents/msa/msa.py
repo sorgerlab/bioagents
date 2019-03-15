@@ -55,13 +55,13 @@ class StatementQuery(object):
         A list of name spaces in order of preference (most preferable first).
         The special key !OTHER! can be used as a place holder for any other
         grounding not explicitly mentioned. If None, the default list will be
-        used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT'].
+        used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
     """
     def __init__(self, subj, obj, agents, verb, settings,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
-            else ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT']
+            else ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!']
         self.subj = subj
         self.subj_key = self.get_key(subj)
         self.obj = obj
@@ -96,6 +96,10 @@ class StatementQuery(object):
                     if key not in low_priority_keys:
                         dbn, dbi = key, value
                         break
+            # If we have name here, we use the Agent name for TEXT search
+            elif key == '!NAME!':
+                dbn, dbi = 'TEXT', agent.name
+                break
             # Otherwise, this is a regular key, and we just look for it in
             # the Agent's db_refs
             elif key in agent.db_refs:

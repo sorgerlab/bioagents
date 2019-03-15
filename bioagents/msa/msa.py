@@ -54,7 +54,9 @@ class StatementQuery(object):
     valid_name_spaces : list[str] or None
         A list of name spaces in order of preference (most preferable first).
         The special key !OTHER! can be used as a place holder for any other
-        grounding not explicitly mentioned. If None, the default list will be
+        grounding not explicitly mentioned. The key !NAME! is  place holder
+        for the Agent name (that doesn't appear in db_refs).
+        If not provided, the following default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
     """
     def __init__(self, subj, obj, agents, verb, settings,

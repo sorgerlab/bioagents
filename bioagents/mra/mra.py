@@ -79,6 +79,9 @@ class MRA(object):
     def build_model_from_json(self, model_json):
         """Build a model using INDRA JSON."""
         stmts = stmts_from_json(json.loads(model_json))
+        return self.build_model_from_stmts(stmts)
+
+    def build_model_from_stmts(self, stmts):
         model_id = self.new_model(stmts)
         res = {'model_id': model_id,
                'model': stmts}
@@ -115,6 +118,30 @@ class MRA(object):
         self.run_diagnoser(res, model_stmts, model_exec)
         return res
 
+    def expand_model_from_json(self, model_json, model_id):
+        """Expand a model using INDRA JSON."""
+        stmts = stmts_from_json(json.loads(model_json))
+        return self.expand_model_from_stmts(stmts)
+
+    def expand_model_from_stmts(self, stmts, model_id):
+        """Expand a model using INDRA JSON."""
+        stmts = stmts_from_json(json.loads(model_json))
+        new_model_id, new_stmts = self.extend_model(stmts, model_id)
+        logger.info('Old model id: %s, New model id: %s' %
+                    (model_id, new_model_id))
+        model_stmts = self.models[new_model_id]
+        res = {'model_id': new_model_id,
+               'model': model_stmts}
+        if not model_stmts:
+            return res
+        res['model_new'] = new_stmts
+        model_exec = self.assemble_pysb(model_stmts)
+        res['model_exec'] = model_exec
+        res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                        self.models[new_model_id],
+                                        self.context)
+        return res
+
     def run_diagnoser(self, res, model_stmts, model_exec):
         # Use a model diagnoser to identify explanations given the executable
         # model, the current statements, and the explanation goal
@@ -139,25 +166,6 @@ class MRA(object):
         if acts:
             res['stmt_corrections'] = acts
 
-    def expand_model_from_json(self, model_json, model_id):
-        """Expand a model using INDRA JSON."""
-        stmts = stmts_from_json(json.loads(model_json))
-        new_model_id, new_stmts = self.extend_model(stmts, model_id)
-        logger.info('Old model id: %s, New model id: %s' %
-                    (model_id, new_model_id))
-        model_stmts = self.models[new_model_id]
-        res = {'model_id': new_model_id,
-               'model': model_stmts}
-        if not model_stmts:
-            return res
-        res['model_new'] = new_stmts
-        model_exec = self.assemble_pysb(model_stmts)
-        res['model_exec'] = model_exec
-        res['diagrams'] = make_diagrams(model_exec, new_model_id,
-                                        self.models[new_model_id],
-                                        self.context)
-        return res
-
     def has_mechanism(self, mech_ekb, model_id):
         """Return True if the given model contains the given mechanism."""
         tp = trips.process_xml(mech_ekb)
@@ -179,6 +187,9 @@ class MRA(object):
         """Return a new model with the given mechanism having been removed."""
         tp = trips.process_xml(mech_ekb)
         rem_stmts = tp.statements
+        return self.remove_mechanism_from_stmts(rem_stmts, model_id)
+
+    def remove_mechanism_from_stmts(self, rem_stmts, model_id):
         logger.info('Removing statements: %s' % rem_stmts)
         new_stmts = []
         removed_stmts = []

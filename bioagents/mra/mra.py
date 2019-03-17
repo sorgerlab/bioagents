@@ -127,7 +127,6 @@ class MRA(object):
 
     def expand_model_from_stmts(self, stmts, model_id):
         """Expand a model using INDRA JSON."""
-        stmts = stmts_from_json(json.loads(model_json))
         new_model_id, new_stmts = self.extend_model(stmts, model_id)
         logger.info('Old model id: %s, New model id: %s' %
                     (model_id, new_model_id))

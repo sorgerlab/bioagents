@@ -56,6 +56,8 @@ class MRA(object):
         pa.add_default_initial_conditions(self.default_initial_amount)
         return pa.model
 
+    # BUILD / EXPAND / REMOVE / UNDO
+
     def build_model_from_ekb(self, model_ekb):
         """Build a model using DRUM extraction knowledge base."""
         tp = trips.process_xml(model_ekb)
@@ -79,6 +81,9 @@ class MRA(object):
     def build_model_from_json(self, model_json):
         """Build a model using INDRA JSON."""
         stmts = stmts_from_json(json.loads(model_json))
+        return self.build_model_from_stmts(stmts)
+
+    def build_model_from_stmts(self, stmts):
         model_id = self.new_model(stmts)
         res = {'model_id': model_id,
                'model': stmts}
@@ -115,33 +120,13 @@ class MRA(object):
         self.run_diagnoser(res, model_stmts, model_exec)
         return res
 
-    def run_diagnoser(self, res, model_stmts, model_exec):
-        # Use a model diagnoser to identify explanations given the executable
-        # model, the current statements, and the explanation goal
-        if self.explain:
-            md = ModelDiagnoser(model_stmts, model=model_exec,
-                                explain=self.explain)
-            md_result = md.check_explanation()
-            res.update(md_result)
-            # If we got a proposal for a statement, get a specific
-            # recommendation
-            connect_stmts = res.get('connect_stmts')
-            if connect_stmts:
-                u_stmt, v_stmt = connect_stmts
-                stmt_suggestions = md.suggest_statements(u_stmt, v_stmt)
-                if stmt_suggestions:
-                    agents = [a.name for a in stmt_suggestions[0].agent_list()
-                              if a is not None]
-                    if len(set(agents)) > 1:
-                        res['stmt_suggestions'] = stmt_suggestions
-        md = ModelDiagnoser(model_stmts)
-        acts = md.get_missing_activities()
-        if acts:
-            res['stmt_corrections'] = acts
-
     def expand_model_from_json(self, model_json, model_id):
         """Expand a model using INDRA JSON."""
         stmts = stmts_from_json(json.loads(model_json))
+        return self.expand_model_from_stmts(stmts, model_id)
+
+    def expand_model_from_stmts(self, stmts, model_id):
+        """Expand a model using INDRA JSON."""
         new_model_id, new_stmts = self.extend_model(stmts, model_id)
         logger.info('Old model id: %s, New model id: %s' %
                     (model_id, new_model_id))
@@ -158,27 +143,72 @@ class MRA(object):
                                         self.context)
         return res
 
-    def has_mechanism(self, mech_ekb, model_id):
-        """Return True if the given model contains the given mechanism."""
-        tp = trips.process_xml(mech_ekb)
-        res = {}
-        if not tp.statements:
-            res['has_mechanism'] = False
-            return res
-        query_st = tp.statements[0]
-        res['query'] = query_st
-        model_stmts = self.models[model_id]
-        for model_st in model_stmts:
-            if model_st.refinement_of(query_st, hierarchies):
-                res['has_mechanism'] = True
-                return res
-        res['has_mechanism'] = False
-        return res
+    def extend_model(self, new_stmts, model_id):
+        # Lists to keep track of types of statements by their
+        # relation compared to the old set of statements
+        old_stmts = self.models[model_id]
+        stmts_old_to_propagate = []
+        stmts_old_matched = []
+        stmts_old_refined = []
+        stmts_old_refinement = []
+        stmts_new_to_add = []
+        stmts_new_refined = []
+        stmts_new_matched = []
+        # Look at each old statement and determine the relationship
+        # of each new statement with respect to it
+        for ost in old_stmts:
+            for nst in new_stmts:
+                # The old and the new statements are exact matches
+                # We propagate the old one
+                if ost.matches(nst):
+                    if ost not in stmts_old_matched:
+                        stmts_old_matched.append(ost)
+                    if nst not in stmts_new_matched:
+                        stmts_new_matched.append(nst)
+                # The old statement is a refinement of the new one
+                # We propagate the old one
+                elif ost.refinement_of(nst, hierarchies):
+                    if ost not in stmts_old_refinement:
+                        stmts_old_refinement.append(ost)
+                    if nst not in stmts_new_refined:
+                        stmts_new_refined.append(nst)
+                # The new statement is a refinement of the old one
+                # We add the new statement and don't propagate the old one
+                elif nst.refinement_of(ost, hierarchies):
+                    if ost not in stmts_old_refined:
+                        stmts_old_refined.append(ost)
+                    if nst not in stmts_new_to_add:
+                        stmts_new_to_add.append(nst)
+                # Otherwise there is no relation so the old statement
+                # won't be added to any of the lists above for this
+                # new statement
+            # Unless the old statement is refined, it is propagated
+            if ost not in stmts_old_refined:
+                stmts_old_to_propagate.append(ost)
+
+        # Add any new Statement that has not already been added
+        # or is not matched or refined by an old statement
+        for nst in new_stmts:
+            if nst not in stmts_new_refined + stmts_new_matched + \
+                    stmts_new_to_add:
+                stmts_new_to_add.append(nst)
+
+        logger.debug('Statements to propagate: %s' % stmts_old_to_propagate)
+        logger.debug('Statements to add: %s' % stmts_new_to_add)
+        new_model_id = self.get_new_id()
+        self.models[new_model_id] = stmts_old_to_propagate + stmts_new_to_add
+        # FIXME: Would undo-s work after a refinement?
+        self.transformations.append(('add_stmts', stmts_new_to_add, model_id,
+                                     new_model_id))
+        return new_model_id, stmts_new_to_add
 
     def remove_mechanism(self, mech_ekb, model_id):
         """Return a new model with the given mechanism having been removed."""
         tp = trips.process_xml(mech_ekb)
         rem_stmts = tp.statements
+        return self.remove_mechanism_from_stmts(rem_stmts, model_id)
+
+    def remove_mechanism_from_stmts(self, rem_stmts, model_id):
         logger.info('Removing statements: %s' % rem_stmts)
         new_stmts = []
         removed_stmts = []
@@ -247,6 +277,55 @@ class MRA(object):
                                         self.context)
         return res
 
+    def new_model(self, stmts):
+        model_id = self.get_new_id()
+        self.models[model_id] = stmts
+        self.transformations.append(('add_stmts', stmts, None, model_id))
+        return model_id
+
+    # MODEL DIAGNOSIS
+
+    def run_diagnoser(self, res, model_stmts, model_exec):
+        # Use a model diagnoser to identify explanations given the executable
+        # model, the current statements, and the explanation goal
+        if self.explain:
+            md = ModelDiagnoser(model_stmts, model=model_exec,
+                                explain=self.explain)
+            md_result = md.check_explanation()
+            res.update(md_result)
+            # If we got a proposal for a statement, get a specific
+            # recommendation
+            connect_stmts = res.get('connect_stmts')
+            if connect_stmts:
+                u_stmt, v_stmt = connect_stmts
+                stmt_suggestions = md.suggest_statements(u_stmt, v_stmt)
+                if stmt_suggestions:
+                    agents = [a.name for a in stmt_suggestions[0].agent_list()
+                              if a is not None]
+                    if len(set(agents)) > 1:
+                        res['stmt_suggestions'] = stmt_suggestions
+        md = ModelDiagnoser(model_stmts)
+        acts = md.get_missing_activities()
+        if acts:
+            res['stmt_corrections'] = acts
+
+    def has_mechanism(self, mech_ekb, model_id):
+        """Return True if the given model contains the given mechanism."""
+        tp = trips.process_xml(mech_ekb)
+        res = {}
+        if not tp.statements:
+            res['has_mechanism'] = False
+            return res
+        query_st = tp.statements[0]
+        res['query'] = query_st
+        model_stmts = self.models[model_id]
+        for model_st in model_stmts:
+            if model_st.refinement_of(query_st, hierarchies):
+                res['has_mechanism'] = True
+                return res
+        res['has_mechanism'] = False
+        return res
+
     def get_upstream(self, target, model_id):
         """Get upstream agents in model."""
         stmts = self.models[model_id]
@@ -282,71 +361,6 @@ class MRA(object):
         except Exception as e:
             logger.error('MRA could not set context from USER-GOAL')
             logger.error(e)
-
-    def new_model(self, stmts):
-        model_id = self.get_new_id()
-        self.models[model_id] = stmts
-        self.transformations.append(('add_stmts', stmts, None, model_id))
-        return model_id
-
-    def extend_model(self, new_stmts, model_id):
-        # Lists to keep track of types of statements by their
-        # relation compared to the old set of statements
-        old_stmts = self.models[model_id]
-        stmts_old_to_propagate = []
-        stmts_old_matched = []
-        stmts_old_refined = []
-        stmts_old_refinement = []
-        stmts_new_to_add = []
-        stmts_new_refined = []
-        stmts_new_matched = []
-        # Look at each old statement and determine the relationship
-        # of each new statement with respect to it
-        for ost in old_stmts:
-            for nst in new_stmts:
-                # The old and the new statements are exact matches
-                # We propagate the old one
-                if ost.matches(nst):
-                    if ost not in stmts_old_matched:
-                        stmts_old_matched.append(ost)
-                    if nst not in stmts_new_matched:
-                        stmts_new_matched.append(nst)
-                # The old statement is a refinement of the new one
-                # We propagate the old one
-                elif ost.refinement_of(nst, hierarchies):
-                    if ost not in stmts_old_refinement:
-                        stmts_old_refinement.append(ost)
-                    if nst not in stmts_new_refined:
-                        stmts_new_refined.append(nst)
-                # The new statement is a refinement of the old one
-                # We add the new statement and don't propagate the old one
-                elif nst.refinement_of(ost, hierarchies):
-                    if ost not in stmts_old_refined:
-                        stmts_old_refined.append(ost)
-                    if nst not in stmts_new_to_add:
-                        stmts_new_to_add.append(nst)
-                # Otherwise there is no relation so the old statement
-                # won't be added to any of the lists above for this
-                # new statement
-            # Unless the old statement is refined, it is propagated
-            if ost not in stmts_old_refined:
-                stmts_old_to_propagate.append(ost)
-
-        # Add any new Statement that has not already been added
-        # or is not matched or refined by an old statement
-        for nst in new_stmts:
-            if nst not in stmts_new_refined + stmts_new_matched + \
-                    stmts_new_to_add:
-                stmts_new_to_add.append(nst)
-
-        logger.debug('Statements to propagate: %s' % stmts_old_to_propagate)
-        logger.debug('Statements to add: %s' % stmts_new_to_add)
-        new_model_id = self.get_new_id()
-        self.models[new_model_id] = stmts_old_to_propagate + stmts_new_to_add
-        # FIXME: Would undo-s work after a refinement?
-        self.transformations.append(('add_stmts', stmts_new_to_add, model_id,
-                                     new_model_id))
-        return new_model_id, stmts_new_to_add
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):
         """Replace an agent in a model with other agents.

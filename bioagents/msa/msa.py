@@ -65,11 +65,11 @@ class StatementQuery(object):
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!']
         self.subj = subj
-        self.subj_key = self.get_key(subj)
+        self.subj_key = self.get_query_key(subj)
         self.obj = obj
-        self.obj_key = self.get_key(obj)
+        self.obj_key = self.get_query_key(obj)
         self.agents = agents
-        self.agent_keys = [self.get_key(e) for e in agents]
+        self.agent_keys = [self.get_query_key(e) for e in agents]
 
         self.verb = verb
         if verb in mod_map.keys():
@@ -82,7 +82,15 @@ class StatementQuery(object):
             raise EntityError("Did not get any usable entity constraints!")
         return
 
-    def get_key(self, agent):
+    def get_query_key(self, agent):
+        if agent is None:
+            return None
+        dbi, dbn = self.get_agent_grounding(agent)
+        self.entities[agent.name] = (dbi, dbn)
+        key = '%s@%s' % (dbi, dbn)
+        return key
+
+    def get_agent_grounding(self, agent):
         """If the entity is not already an agent, form an agent."""
         if agent is None:
             return None
@@ -113,9 +121,7 @@ class StatementQuery(object):
                                "with db_refs=%s.")
                                % (', '.join(self._ns_keys), agent,
                                   agent.db_refs))
-        self.entities[agent.name] = (dbn, dbi)
-
-        return '%s@%s' % (dbi, dbn)
+        return dbi, dbn
 
 
 class StatementFinder(object):

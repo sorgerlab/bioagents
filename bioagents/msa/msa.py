@@ -227,15 +227,16 @@ class StatementFinder(object):
 
         # If the entities are not given, get them from the query itself
         if entities is None:
-            entity_names = set(self.query.entities.keys())
+            entity_names = set(self.query.entities.values())
         else:
-            entity_names = {ag.name for ag in entities}
+            entity_names = set(self.query.entities.values()) & \
+                set(self.query.get_agent_grounding(e) for e in entities)
 
         # Define a comparison
         def matches_none(ag):
             if ag is None:
                 return False
-            for dbn, dbi in (self.query.entities[e] for e in entity_names):
+            for dbn, dbi in entity_names:
                 if ag is not None and ag.db_refs.get(dbn) == dbi:
                     return False
             return True
@@ -253,8 +254,9 @@ class StatementFinder(object):
             if other_role is None:
                 for ag in ags:
                     if matches_none(ag):
-                        counts[ag.name] += ev_totals[s.get_hash()]
-                        oa_dict[ag.name].append(ag)
+                        gr = self.query.get_agent_grounding(ag)
+                        counts[gr] += ev_totals[s.get_hash()]
+                        oa_dict[gr].append(ag)
             # If the role is specified, look at just those agents.
             else:
                 idx = 0 if other_role == 'subject' else 1
@@ -263,8 +265,9 @@ class StatementFinder(object):
                                      'agents: %s' % (other_role, ags))
                 ag = s.agent_list()[idx]
                 if matches_none(ag):
-                    counts[ag.name] += ev_totals[s.get_hash()]
-                    oa_dict[ag.name].append(ag)
+                    gr = self.query.get_agent_grounding(ag)
+                    counts[gr] += ev_totals[s.get_hash()]
+                    oa_dict[gr].append(ag)
         # Create a list of names sorted with the most frequent first.
         names = list(sorted(counts.keys(), key=lambda t: counts[t],
                      reverse=True))

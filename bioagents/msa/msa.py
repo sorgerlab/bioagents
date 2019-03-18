@@ -6,7 +6,8 @@ import logging
 
 from collections import defaultdict
 
-from bioagents import group_and_sort_statements, make_string_from_sort_key
+from bioagents import group_and_sort_statements, make_string_from_sort_key, \
+    make_stmt_from_sort_key
 from indra import get_config
 from indra.statements import stmts_to_json, Agent, get_all_descendants
 from indra.sources import indra_db_rest as idbr
@@ -314,8 +315,18 @@ class StatementFinder(object):
         msg += self.get_html() + '\n'
         return msg
 
+    def get_summary_stmts(self, num=5):
+        stmts = self.get_statements()
+        sorted_groups = group_and_sort_statements(stmts, self.get_ev_totals())
+        summary_stmts = []
+        for key, verb, stmts in sorted_groups[:num]:
+            summary_stmts.append(make_stmt_from_sort_key(key, verb))
+        return summary_stmts
+
     def get_summary(self, num=5):
-        """List the top statements in plane english."""
+        """List the top statements in plain English."""
+        # TODO: refactor to use get_summary_stmts and turn Statements into
+        # English here
         stmts = self.get_statements()
         sorted_groups = group_and_sort_statements(stmts, self.get_ev_totals())
         lines = []

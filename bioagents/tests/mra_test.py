@@ -554,12 +554,13 @@ class TestModelBuildExpandRemove(_IntegrationTest):
     def create_remove(self):
         content = KQMLList('MODEL-REMOVE-MECHANISM')
         content.set('model-id', '2')
-        content.sets('description', ekb_kstring_from_text('KRAS activates BRAF'))
+        content.sets('description',
+                     ekb_kstring_from_text('KRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
     def check_response_to_remove(self, output):
-        assert output.head() == 'SUCCESS'
+        assert output.head() == 'SUCCESS', output
         assert output.get('model-id') == '3'
         model = json.loads(output.gets('model'))
         assert len(model) == 1
@@ -572,7 +573,8 @@ class TestModelBuildExpandRemove(_IntegrationTest):
     def create_remove2(self):
         content = KQMLList('MODEL-REMOVE-MECHANISM')
         content.set('model-id', '3')
-        content.sets('description', ekb_kstring_from_text('NRAS activates BRAF'))
+        content.sets('description',
+                     ekb_kstring_from_text('NRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 

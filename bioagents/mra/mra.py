@@ -210,30 +210,42 @@ class MRA(object):
 
     def remove_mechanism_from_stmts(self, rem_stmts, model_id):
         logger.info('Removing statements: %s' % rem_stmts)
-        new_stmts = []
-        removed_stmts = []
+
         model_stmts = self.models[model_id]
-        for model_st in model_stmts:
-            found = False
-            for rem_st in rem_stmts:
-                if model_st.refinement_of(rem_st, hierarchies):
-                    found = True
-                    break
-            if not found:
-                new_stmts.append(model_st)
-            else:
-                removed_stmts.append(model_st)
-        new_model_id = self.new_model(new_stmts)
-        model_exec = self.assemble_pysb(new_stmts)
-        res = {'model_id': new_model_id, 'model': new_stmts}
-        res['model_exec'] = model_exec
-        if removed_stmts:
-            res['removed'] = removed_stmts
-        if not new_stmts:
-            return res
-        res['diagrams'] = make_diagrams(model_exec, new_model_id,
-                                        self.models[new_model_id],
-                                        self.context)
+        # Statements that are matched in the model and will be removed
+        stmts_old_to_remove = []
+        # Statements to be removed that are matched in the model
+        stmts_rem_matched = []
+        for ost in model_stmts:
+            for rst in rem_stmts:
+                if ost.refinement_of(rst, hierarchies):
+                    if ost not in stmts_old_to_remove:
+                        stmts_old_to_remove.append(ost)
+                    if rst not in stmts_rem_matched:
+                        stmts_rem_matched.append(rst)
+        # Statements that to be removed that didn't have any matching
+        # Statements in the model
+        stmts_rem_unmatched = [st for st in rem_stmts if st not in
+                               stmts_rem_matched]
+        # Statements in the model that weren't matched by and to-remove
+        # Statements and therefore remain in the model.
+        stmts_old_propagate = [st for st in model_stmts if st not in
+                               stmts_old_to_remove]
+        # Make a new model ID
+        # FIXME: this should result in a proper remove transformation added
+        #  to the set of transformations.
+        new_model_id = self.new_model(stmts_old_propagate)
+        model_exec = self.assemble_pysb(self.models[new_model_id])
+        res = {'model_id': new_model_id, 'model': self.models[new_model_id],
+               'model_exec': model_exec}
+        if stmts_old_to_remove:
+            res['removed'] = stmts_old_to_remove
+        if stmts_rem_unmatched:
+            res['remove_unmatched'] = stmts_rem_unmatched
+        if self.models[new_model_id]:
+            res['diagrams'] = make_diagrams(model_exec, new_model_id,
+                                            self.models[new_model_id],
+                                            self.context)
         return res
 
     def model_undo(self):

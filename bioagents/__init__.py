@@ -5,7 +5,7 @@ from datetime import datetime
 
 from indra.assemblers.html import HtmlAssembler
 from indra.util.statement_presentation import group_and_sort_statements, \
-    make_string_from_sort_key, make_stmt_from_sort_key
+    make_string_from_sort_key, make_stmt_from_sort_key, stmt_to_english
 
 from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
 

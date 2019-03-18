@@ -268,10 +268,16 @@ class StatementFinder(object):
                     gr = self.query.get_agent_grounding(ag)
                     counts[gr] += ev_totals[s.get_hash()]
                     oa_dict[gr].append(ag)
+
+        def get_aggregate_agent(agents, dbn, dbi):
+            agent = Agent(agents[0].name, db_refs={dbn: dbi})
+            return agent
+
         # Create a list of names sorted with the most frequent first.
-        names = list(sorted(counts.keys(), key=lambda t: counts[t],
-                     reverse=True))
-        other_agents = [ag for name in names for ag in oa_dict[name]]
+        sorted_groundings = list(sorted(counts.keys(), key=lambda t: counts[t],
+                                        reverse=True))
+        other_agents = [get_aggregate_agent(oa_dict[gr], *gr) for gr in
+                        sorted_groundings]
         return other_agents
 
     def get_ev_totals(self):

@@ -55,7 +55,7 @@ class StatementQuery(object):
         An entity type e.g., 'protein', 'kinase' describing the type of
         entities that are of interest as other agents in the resulting
         statements.
-    settings : dict
+    params : dict
         A dictionary containing other parameters used by the
         IndraDbRestProcessor.
     valid_name_spaces : list[str] or None
@@ -66,7 +66,7 @@ class StatementQuery(object):
         If not provided, the following default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
     """
-    def __init__(self, subj, obj, agents, verb, ent_type, settings,
+    def __init__(self, subj, obj, agents, verb, ent_type, params,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
@@ -85,8 +85,9 @@ class StatementQuery(object):
             self.stmt_type = verb
 
         self.ent_type = ent_type
+        self.filter_agents = params.pop('filter_agents', [])
 
-        self.settings = settings
+        self.settings = params
         if not self.subj_key and not self.obj_key and not self.agent_keys:
             raise EntityError("Did not get any usable entity constraints!")
         return
@@ -176,6 +177,34 @@ class StatementFinder(object):
         """
         return stmts
 
+    def _filter_stmts_for_agents(self, stmts):
+        """Internal method to filter statements involving particular agents."""
+        if not self.query.filter_agents:
+            return stmts
+
+        filtered_stmts = []
+        for stmt in stmts:
+
+            # Look for any of the agents we are filtering to
+            for filter_agent in self.query.filter_agents:
+
+                # Get the prefered grounding
+                dbi, dbn = self.query.get_agent_grounding(filter_agent)
+
+                # Look for a match in any of the statements' agents.
+                for agent in stmt.agent_list():
+                    if agent is None:
+                        continue
+
+                    if agent.db_refs.get(dbn) == dbi:
+                        filtered_stmts.append(stmt)
+                        break  # found one.
+                else:
+                    continue  # keep looking
+                break  # found one.
+
+        return filtered_stmts
+
     def get_statements(self, block=None, timeout=10):
         """Get the full list of statements if available."""
         if self._statements is not None:
@@ -194,6 +223,7 @@ class StatementFinder(object):
                 return None
 
         self._statements = self._filter_stmts(self._processor.statements[:])
+        self._statements = self._filter_stmts_for_agents(self._statements)
 
         return self._statements[:]
 
@@ -489,6 +519,9 @@ class Neighborhood(StatementFinder):
 
 class Activeforms(StatementFinder):
     def _regularize_input(self, entity, **params):
+        if 'filter_agents' in params.keys():
+            logger.warning("Parameter `filter_agents` is not meaningful for "
+                           "Activeforms or PhosActiveforms.")
         return StatementQuery(None, None, [entity], 'ActiveForm', None, params)
 
 
@@ -539,6 +572,9 @@ class PhosActiveforms(Activeforms):
 
 class BinaryDirected(StatementFinder):
     def _regularize_input(self, source, target, verb=None, **params):
+        if 'filter_agents' in params.keys():
+            logger.warning("Parameter `filter_agents` is not meaningful for "
+                           "Binary queries.")
         return StatementQuery(source, target, [], verb, None, params)
 
     def describe(self, limit=None):
@@ -555,6 +591,9 @@ class BinaryDirected(StatementFinder):
 
 class BinaryUndirected(StatementFinder):
     def _regularize_input(self, entity1, entity2, **params):
+        if 'filter_agents' in params.keys():
+            logger.warning("Parameter `filter_agents` is not meaningful for "
+                           "Binary queries.")
         return StatementQuery(None, None, [entity1, entity2], None, None,
                               params)
 
@@ -760,6 +799,7 @@ class _Commons(StatementFinder):
             self._statements = [s for data in self.commons.values()
                                 for s_list in data.values()
                                 for s in s_list]
+        self._statements = self._filter_stmts_for_agents(self._statements)
         return self._statements
 
     def get_common_entities(self):

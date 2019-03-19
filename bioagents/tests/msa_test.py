@@ -504,10 +504,25 @@ def test_from_source_entity_filter():
     assert 'proliferation' not in oa_names
 
 
+def _braf():
+    return Agent('BRAF', db_refs={'HGNC': '1097'})
+
+
+def _kras():
+    return Agent('KRAS', db_refs={'HGNC': '6407'})
+
+
+def _mek():
+    return Agent('MEK', db_refs={'FPLX': 'MEK'})
+
+
+def _erk():
+    return Agent('ERK', db_refs={'FPLX': 'ERK'})
+
+
 @attr('nonpublic')
-def test_from_source_entity_filter():
-    finder = msa.ComplexOneSide(Agent('BRAF', db_refs={'HGNC': '1097'}),
-                                persist=False)
+def test_complex_one_side_entity_filter():
+    finder = msa.ComplexOneSide(_braf(), persist=False)
     oa = finder.get_other_agents(block=True)
     oa_names = [a.name for a in oa]
     # Make sure we can get the query entity itself if it's another member of
@@ -515,10 +530,42 @@ def test_from_source_entity_filter():
     assert 'BRAF' in oa_names
 
     # Phosphatases
-    finder = msa.ComplexOneSide(Agent('BRAF', db_refs={'HGNC': '1097'}),
-                                ent_type='phosphatase', persist=False)
+    finder = msa.ComplexOneSide(_braf(), ent_type='phosphatase', persist=False)
     oa = finder.get_other_agents(block=True)
     oa_names = [a.name for a in oa]
     assert 'RAF1' not in oa_names
     assert 'PTEN' in oa_names
     assert 'BRAF' not in oa_names
+
+
+@attr('nonpublic')
+def test_neighbors_agent_filter():
+    finder = msa.Neighborhood(_braf(), filter_agents=[_mek(), _erk()])
+    stmts = finder.get_statements(block=True)
+    assert len(stmts)
+    for stmt in stmts:
+        ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
+        assert ag_names & {'ERK', 'MEK'}
+
+
+@attr('nonpublic')
+def test_upstreams_agent_filter():
+    finder = msa.CommonUpstreams(_mek(), _erk(),
+                                 filter_agents=[_braf(), _kras()])
+    stmts = finder.get_statements(block=True)
+    assert len(stmts)
+    exp_ags = {'BRAF', 'KRAS'}
+    for stmt in stmts:
+        ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
+        assert ag_names & exp_ags, ag_names - exp_ags - {'MEK', 'ERK'}
+
+
+@attr('nonpublic', 'slow')
+def test_to_target_agent_filter():
+    finder = msa.ToTarget(_erk(), filter_agents=[_mek(), _braf(), _kras()])
+    stmts = finder.get_statements()
+    assert len(stmts)
+    exp_ags = {'MEK', 'BRAF', 'KRAS'}
+    for stmt in stmts:
+        ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
+        assert ag_names & exp_ags, ag_names - exp_ags - {'ERK'}

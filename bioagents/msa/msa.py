@@ -6,7 +6,10 @@ import logging
 
 from collections import defaultdict
 
-from bioagents import group_and_sort_statements, make_string_from_sort_key
+from bioagents import group_and_sort_statements, make_string_from_sort_key, \
+    make_stmt_from_sort_key, stmt_to_english
+from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
+    _read_tfs
 from indra import get_config
 from indra.statements import stmts_to_json, Agent, get_all_descendants
 from indra.sources import indra_db_rest as idbr
@@ -48,6 +51,10 @@ class StatementQuery(object):
     verb : str or None
         A string describing a type of interaction between the subject, object,
         and/or agents. Must be mappable to a subclass of Statement.
+    ent_type : str or None
+        An entity type e.g., 'protein', 'kinase' describing the type of
+        entities that are of interest as other agents in the resulting
+        statements.
     settings : dict
         A dictionary containing other parameters used by the
         IndraDbRestProcessor.
@@ -59,17 +66,17 @@ class StatementQuery(object):
         If not provided, the following default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
     """
-    def __init__(self, subj, obj, agents, verb, settings,
+    def __init__(self, subj, obj, agents, verb, ent_type, settings,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!']
         self.subj = subj
-        self.subj_key = self.get_key(subj)
+        self.subj_key = self.get_query_key(subj)
         self.obj = obj
-        self.obj_key = self.get_key(obj)
+        self.obj_key = self.get_query_key(obj)
         self.agents = agents
-        self.agent_keys = [self.get_key(e) for e in agents]
+        self.agent_keys = [self.get_query_key(e) for e in agents]
 
         self.verb = verb
         if verb in mod_map.keys():
@@ -77,12 +84,22 @@ class StatementQuery(object):
         else:
             self.stmt_type = verb
 
+        self.ent_type = ent_type
+
         self.settings = settings
         if not self.subj_key and not self.obj_key and not self.agent_keys:
             raise EntityError("Did not get any usable entity constraints!")
         return
 
-    def get_key(self, agent):
+    def get_query_key(self, agent):
+        if agent is None:
+            return None
+        dbi, dbn = self.get_agent_grounding(agent)
+        self.entities[agent.name] = (dbi, dbn)
+        key = '%s@%s' % (dbi, dbn)
+        return key
+
+    def get_agent_grounding(self, agent):
         """If the entity is not already an agent, form an agent."""
         if agent is None:
             return None
@@ -113,9 +130,7 @@ class StatementQuery(object):
                                "with db_refs=%s.")
                                % (', '.join(self._ns_keys), agent,
                                   agent.db_refs))
-        self.entities[agent.name] = (dbn, dbi)
-
-        return '%s@%s' % (dbi, dbn)
+        return dbi, dbn
 
 
 class StatementFinder(object):
@@ -220,49 +235,82 @@ class StatementFinder(object):
                              % (type(other_role), other_role))
 
         # If the entities are not given, get them from the query itself
-        if entities is None:
-            entity_names = set(self.query.entities.keys())
-        else:
-            entity_names = {ag.name for ag in entities}
+        query_entities = set(self.query.entities.values())
+        if entities:
+            query_entities &= set(self.query.get_agent_grounding(e)
+                                  for e in entities)
 
-        # Define a comparison
-        def matches_none(ag):
-            if ag is None:
-                return False
-            for dbn, dbi in (self.query.entities[e] for e in entity_names):
-                if ag is not None and ag.db_refs.get(dbn) == dbi:
-                    return False
-            return True
-
-        # Build up a dict of names, counting how often they occur.
+        # Build up a dict of groundings, counting how often they occur.
         counts = defaultdict(lambda: 0)
         oa_dict = defaultdict(list)
         ev_totals = self.get_ev_totals()
         stmts = self.get_statements(block)
         if not stmts:
             return None
-        for s in stmts:
-            # If the role is None, look at all the agents.
-            ags = s.agent_list()
-            if other_role is None:
-                for ag in ags:
-                    if matches_none(ag):
-                        counts[ag.name] += ev_totals[s.get_hash()]
-                        oa_dict[ag.name].append(ag)
-            # If the role is specified, look at just those agents.
+        for stmt in stmts:
+            other_agents = self.get_other_agents_for_stmt(stmt, query_entities,
+                                                          other_role)
+            for ag in other_agents:
+                gr = self.query.get_agent_grounding(ag)
+                counts[gr] += ev_totals[stmt.get_hash()]
+                oa_dict[gr].append(ag)
+
+        def get_aggregate_agent(agents, dbn, dbi):
+            agent = Agent(agents[0].name, db_refs={dbn: dbi})
+            return agent
+
+        # Create a list of groundings sorted with the most frequent first.
+        sorted_groundings = list(sorted(counts.keys(), key=lambda t: counts[t],
+                                        reverse=True))
+        other_agents = [get_aggregate_agent(oa_dict[gr], *gr) for gr in
+                        sorted_groundings]
+        return other_agents
+
+    @staticmethod
+    def get_other_agents_for_stmt(stmt, query_entities, other_role=None):
+        """Return a list of other agents for a given statement."""
+
+        def matches_none(ag):
+            """Return True if the given agent doesn't match any of the query
+            entities."""
+            if ag is None:
+                return False
+            for dbi, dbn in query_entities:
+                if ag is not None and ag.db_refs.get(dbn) == dbi:
+                    return False
+            return True
+
+        other_agents = []
+        # If the role is None, look at all the agents.
+        ags = stmt.agent_list()
+        if other_role is None:
+            # List of agents that don't match any of the query entities
+            match_none_others = [ag for ag in ags if matches_none(ag)]
+            # Handle a special case in which an agent that isn't matches none
+            # needs to be returned. This is relevant for instance if we ask for
+            # "things that interact with X" and get back Complex(X,X).
+            # In this case len(query_entities) == 1, len(ags) == 2, and
+            # match_none_others == [], in this case we add X to the other
+            # agent list. In addition, to avoid adding X if the Statement
+            # is something like Phosphorylation(None, X), we look at the
+            # length of not-none Agents and only add another agent is there
+            # is more than 1 not None Agent.
+            if len(query_entities) < len(ags) and not match_none_others:
+                not_none_agents = [ag for ag in ags if ag is not None]
+                if len(not_none_agents) > 1:
+                    other_agents.append(not_none_agents[0])
+            # Otherwise we add all other agents that do not match any of the
+            # query agents.
             else:
-                idx = 0 if other_role == 'subject' else 1
-                if idx+1 > len(ags):
-                    raise ValueError('Could not apply role %s, not enough '
-                                     'agents: %s' % (other_role, ags))
-                ag = s.agent_list()[idx]
-                if matches_none(ag):
-                    counts[ag.name] += ev_totals[s.get_hash()]
-                    oa_dict[ag.name].append(ag)
-        # Create a list of names sorted with the most frequent first.
-        names = list(sorted(counts.keys(), key=lambda t: counts[t],
-                     reverse=True))
-        other_agents = [ag for name in names for ag in oa_dict[name]]
+                other_agents += match_none_others
+        # If the role is specified, look at just those agents.
+        else:
+            idx = 0 if other_role == 'subject' else 1
+            if idx + 1 > len(ags):
+                raise ValueError('Could not apply role %s, not enough '
+                                 'agents: %s' % (other_role, ags))
+            other_agents.append(ags[idx])
+
         return other_agents
 
     def get_ev_totals(self):
@@ -299,14 +347,18 @@ class StatementFinder(object):
         msg += self.get_html() + '\n'
         return msg
 
-    def get_summary(self, num=5):
-        """List the top statements in plane english."""
+    def get_summary_stmts(self, num=5):
         stmts = self.get_statements()
         sorted_groups = group_and_sort_statements(stmts, self.get_ev_totals())
-        lines = []
+        summary_stmts = []
         for key, verb, stmts in sorted_groups[:num]:
-            line = '<li>%s</li>' % make_string_from_sort_key(key, verb)
-            lines.append(line)
+            summary_stmts.append(make_stmt_from_sort_key(key, verb))
+        return summary_stmts
+
+    def get_summary(self, num=5):
+        """List the top statements in plain English."""
+        stmts = self.get_summary_stmts(num)
+        lines = ['<li>%s</li>' % stmt_to_english(stmt) for stmt in stmts]
 
         # Build the overall html.
         if lines:
@@ -405,10 +457,25 @@ class StatementFinder(object):
             names.append(ag.name)
         return names
 
+    def filter_other_agent_type(self, stmts, ent_type, other_role=None):
+        query_entities = set(self.query.entities.values())
+        stmts_out = []
+        for stmt in stmts:
+            other_agents = \
+                self.get_other_agents_for_stmt(stmt,
+                                               query_entities=query_entities,
+                                               other_role=other_role)
+
+            matches = [entity_type_filter.is_ent_type(agent, ent_type)
+                       for agent in other_agents]
+            if all(matches):
+                stmts_out.append(stmt)
+        return stmts_out
+
 
 class Neighborhood(StatementFinder):
     def _regularize_input(self, entity, **params):
-        return StatementQuery(None, None, [entity], None, params)
+        return StatementQuery(None, None, [entity], None, None, params)
 
     def describe(self, max_names=20):
         desc = super(Neighborhood, self).describe()
@@ -422,7 +489,7 @@ class Neighborhood(StatementFinder):
 
 class Activeforms(StatementFinder):
     def _regularize_input(self, entity, **params):
-        return StatementQuery(None, None, [entity], 'ActiveForm', params)
+        return StatementQuery(None, None, [entity], 'ActiveForm', None, params)
 
 
 class PhosActiveforms(Activeforms):
@@ -472,7 +539,7 @@ class PhosActiveforms(Activeforms):
 
 class BinaryDirected(StatementFinder):
     def _regularize_input(self, source, target, verb=None, **params):
-        return StatementQuery(source, target, [], verb, params)
+        return StatementQuery(source, target, [], verb, None, params)
 
     def describe(self, limit=None):
         verbs = self.get_unique_verb_list()
@@ -504,8 +571,8 @@ class BinaryUndirected(StatementFinder):
 
 
 class FromSource(StatementFinder):
-    def _regularize_input(self, source, verb=None, **params):
-        return StatementQuery(source, None, [], verb, params)
+    def _regularize_input(self, source, verb=None, ent_type=None, **params):
+        return StatementQuery(source, None, [], verb, ent_type, params)
 
     def describe(self, limit=10):
         if self.query.stmt_type is None:
@@ -531,10 +598,19 @@ class FromSource(StatementFinder):
         desc += ps
         return desc
 
+    def _filter_stmts(self, stmts):
+        if self.query.ent_type:
+            stmts_out = self.filter_other_agent_type(stmts,
+                                                     self.query.ent_type,
+                                                     other_role='object')
+            return stmts_out
+        else:
+            return stmts
+
 
 class ToTarget(StatementFinder):
-    def _regularize_input(self, target, verb=None, **params):
-        return StatementQuery(None, target, [], verb, params)
+    def _regularize_input(self, target, verb=None, ent_type=None, **params):
+        return StatementQuery(None, target, [], verb, ent_type, params)
 
     def describe(self, limit=5):
         if self.query.stmt_type is None:
@@ -561,18 +637,35 @@ class ToTarget(StatementFinder):
         return desc
 
     def _filter_stmts(self, stmts):
-        return [s for s in stmts if None not in s.agent_list()]
+        # First we filter for None objects
+        stmts_out = [s for s in stmts if s.agent_list()[0] is not None]
+        if self.query.ent_type:
+            stmts_out = self.filter_other_agent_type(stmts_out,
+                                                     self.query.ent_type,
+                                                     other_role='subject')
+        return stmts_out
 
 
 class ComplexOneSide(StatementFinder):
-    def _regularize_input(self, entity, **params):
-        return StatementQuery(None, None, [entity], 'Complex', params)
+    def _regularize_input(self, entity, ent_type=None, **params):
+        return StatementQuery(None, None, [entity], 'Complex', ent_type,
+                              params)
 
     def describe(self, max_names=20):
-        desc = "Overall, I found that %s can be in a complex with: "
+        desc = "Overall, I found that %s can be in a complex with: " % \
+               self.query.agents[0].name
         other_names = self.get_other_names(self.query.agents[0])
         desc += _join_list(other_names[:max_names])
         return desc
+
+    def _filter_stmts(self, stmts):
+        # First we filter for None objects
+        if self.query.ent_type:
+            stmts_out = self.filter_other_agent_type(stmts,
+                                                     self.query.ent_type)
+            return stmts_out
+        else:
+            return stmts
 
 
 class _Commons(StatementFinder):
@@ -586,7 +679,7 @@ class _Commons(StatementFinder):
         return
 
     def _regularize_input(self, *entities, **params):
-        return StatementQuery(None, None, list(entities), None, params,
+        return StatementQuery(None, None, list(entities), None, None, params,
                               ['HGNC', 'FPLX'])
 
     def _iter_stmts(self, stmts):
@@ -795,3 +888,28 @@ class MSA(object):
                              % (subject, object, agents))
 
 
+class EntityTypeFilter(object):
+    def __init__(self):
+        self.tfs = _read_tfs()
+        self.phosphatases = _read_phosphatases()
+        self.kinases = _read_kinases()
+
+    def is_ent_type(self, agent, ent_type):
+        if ent_type in ('gene', 'protein'):
+            return set(agent.db_refs.keys()) & {'UP', 'HGNC', 'FPLX'}
+        elif ent_type in ('transcription factor', 'TF'):
+            return agent.name in self.tfs
+        elif ent_type == 'kinase':
+            return agent.name in self.kinases
+        elif ent_type == 'phosphatase':
+            return agent.name in self.phosphatases
+        elif ent_type == 'enzyme':
+            return (agent.name in self.phosphatases or
+                    agent.name in self.kinases)
+        # By default we just return True here, implying not filtering
+        # out the agent
+        else:
+            return True
+
+
+entity_type_filter = EntityTypeFilter()

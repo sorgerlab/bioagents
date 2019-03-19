@@ -406,7 +406,7 @@ def test_get_finder_agents():
 
     # The other names should be sorted with PIM1 first (most evidence)
     other_names = finder.get_other_names(ag)
-    assert other_names[0] == 'PIM1'
+    assert other_names[0] == 'PIM1', other_names
 
 
 @attr('nonpublic')
@@ -438,3 +438,87 @@ def test_to_target_ERK():
     finder = msa.ToTarget(Agent('ERK', db_refs={'FPLX': 'ERK'}), persist=False)
     stmts = finder.get_statements(block=True)
     assert not any(None in s.agent_list() for s in stmts), stmts
+
+
+@attr('nonpublic')
+def test_to_target_entity_filter():
+    # Kinases
+    finder = msa.ToTarget(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                          ent_type='kinase', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    # RAF1 as a kinase is in the list
+    assert 'RAF1' in oa_names
+    # RAS, which normally is in the list should not be since it's not a kinase
+    assert 'RAS' not in oa_names
+    assert 'ESR1' not in oa_names
+
+    # Transcription factors
+    finder = msa.ToTarget(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                          ent_type='transcription factor', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    assert 'ESR1' in oa_names
+    assert 'RAF1' not in oa_names
+
+    # Proteins
+    finder = msa.ToTarget(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                          ent_type='protein', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    assert 'ESR1' in oa_names
+    assert 'RAF1' in oa_names
+    assert 'U0126' not in oa_names
+    assert 'trametinib' not in oa_names
+
+
+@attr('nonpublic')
+def test_from_source_entity_filter():
+    # Kinases
+    finder = msa.FromSource(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                            ent_type='kinase', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    # RAF1 as a kinase is in the list
+    assert 'MAPK1' in oa_names
+    # RAS, which normally is in the list should not be since it's not a kinase
+    assert 'apoptosis' not in oa_names
+    assert 'RAS' not in oa_names
+
+    # Transcription factors
+    finder = msa.FromSource(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                            ent_type='transcription factor', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    assert 'ESR1' in oa_names
+    assert 'RAF1' not in oa_names
+
+    # Proteins
+    finder = msa.FromSource(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                            ent_type='protein', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    assert 'ERK' in oa_names
+    assert 'MAPK1' in oa_names
+    assert 'apoptosis' not in oa_names
+    assert 'proliferation' not in oa_names
+
+
+@attr('nonpublic')
+def test_from_source_entity_filter():
+    finder = msa.ComplexOneSide(Agent('BRAF', db_refs={'HGNC': '1097'}),
+                                persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    # Make sure we can get the query entity itself if it's another member of
+    # the complex
+    assert 'BRAF' in oa_names
+
+    # Phosphatases
+    finder = msa.ComplexOneSide(Agent('BRAF', db_refs={'HGNC': '1097'}),
+                                ent_type='phosphatase', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    assert 'RAF1' not in oa_names
+    assert 'PTEN' in oa_names
+    assert 'BRAF' not in oa_names

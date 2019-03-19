@@ -233,15 +233,6 @@ class StatementFinder(object):
             entity_names = set(self.query.entities.values()) & \
                 set(self.query.get_agent_grounding(e) for e in entities)
 
-        # Define a comparison
-        def matches_none(ag):
-            if ag is None:
-                return False
-            for dbn, dbi in entity_names:
-                if ag is not None and ag.db_refs.get(dbn) == dbi:
-                    return False
-            return True
-
         # Build up a dict of names, counting how often they occur.
         counts = defaultdict(lambda: 0)
         oa_dict = defaultdict(list)
@@ -250,25 +241,12 @@ class StatementFinder(object):
         if not stmts:
             return None
         for s in stmts:
-            # If the role is None, look at all the agents.
-            ags = s.agent_list()
-            if other_role is None:
-                for ag in ags:
-                    if matches_none(ag):
-                        gr = self.query.get_agent_grounding(ag)
-                        counts[gr] += ev_totals[s.get_hash()]
-                        oa_dict[gr].append(ag)
-            # If the role is specified, look at just those agents.
-            else:
-                idx = 0 if other_role == 'subject' else 1
-                if idx+1 > len(ags):
-                    raise ValueError('Could not apply role %s, not enough '
-                                     'agents: %s' % (other_role, ags))
-                ag = s.agent_list()[idx]
-                if matches_none(ag):
-                    gr = self.query.get_agent_grounding(ag)
-                    counts[gr] += ev_totals[s.get_hash()]
-                    oa_dict[gr].append(ag)
+            other_agents = self.get_other_agents_for_stmt(entity_names,
+                                                          other_role)
+            for ag in other_agents:
+                gr = self.query.get_agent_grounding(ag)
+                counts[gr] += ev_totals[s.get_hash()]
+                oa_dict[gr].append(ag)
 
         def get_aggregate_agent(agents, dbn, dbi):
             agent = Agent(agents[0].name, db_refs={dbn: dbi})
@@ -312,7 +290,6 @@ class StatementFinder(object):
                 other_agents.append(ag)
 
         return other_agents
-
 
     def get_ev_totals(self):
         """Get a dictionary of evidence total counts from the processor."""

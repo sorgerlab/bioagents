@@ -66,8 +66,8 @@ class StatementQuery(object):
         If not provided, the following default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
     """
-    def __init__(self, subj, obj, agents, verb, ent_type, settings,
-                 valid_name_spaces=None):
+    def __init__(self, subj, obj, agents, verb, ent_type, filter_agents,
+                 settings, valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!']
@@ -85,6 +85,7 @@ class StatementQuery(object):
             self.stmt_type = verb
 
         self.ent_type = ent_type
+        self.filter_agents = filter_agents
 
         self.settings = settings
         if not self.subj_key and not self.obj_key and not self.agent_keys:
@@ -176,6 +177,28 @@ class StatementFinder(object):
         """
         return stmts
 
+    def _filter_stmts_for_agents(self, stmts):
+        """Internal method to filter statements involving particular agents."""
+        filtered_stmts = []
+        for stmt in stmts:
+
+            # Look for any of the agents we are filtering to
+            for filter_agent in self.query.filter_agents:
+
+                # Get the prefered grounding
+                dbi, dbn = self.query.get_agent_grounding(filter_agent)
+
+                # Look for a match in any of the statements' agents.
+                for agent in stmt.agent_list():
+                    if agent.db_resf[dbi] == dbn:
+                        filtered_stmts.append(stmt)
+                        break  # found one.
+                else:
+                    continue  # keep looking
+                break  # found one.
+
+        return filtered_stmts
+
     def get_statements(self, block=None, timeout=10):
         """Get the full list of statements if available."""
         if self._statements is not None:
@@ -194,6 +217,7 @@ class StatementFinder(object):
                 return None
 
         self._statements = self._filter_stmts(self._processor.statements[:])
+        self._statements = self._filter_stmts_for_agents(self._statements)
 
         return self._statements[:]
 

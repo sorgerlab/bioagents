@@ -1,6 +1,7 @@
 import sys
 import logging
 import indra
+from indra.databases import uniprot_client
 from .biosense import BioSense, _get_urls
 from .biosense import InvalidAgentError, UnknownCategoryError, \
     SynonymsUnknownError
@@ -39,7 +40,7 @@ class BioSense_Module(Bioagent):
         else:
             kagents = []
             for term_id, agent_tuple in agents.items():
-                kagent = get_kagent(agent_tuple, term_id)
+                kagent = get_kagent(agent_tuple, term_id, add_description=True)
                 kagents.append(kagent)
             msg.set('agents', KQMLList(kagents))
         if ambiguities:
@@ -119,7 +120,7 @@ class BioSense_Module(Bioagent):
         return msg
 
 
-def get_kagent(agent_tuple, term_id=None):
+def get_kagent(agent_tuple, term_id=None, add_description=False):
     agent, ont_type, urls = agent_tuple
     db_refs = '|'.join('%s:%s' % (k, v) for k, v in
                        agent.db_refs.items())
@@ -134,6 +135,11 @@ def get_kagent(agent_tuple, term_id=None):
         url_list.append(url_part)
     kagent.set('id-urls', url_list)
     kagent.set('ont-type', ont_type)
+
+    if add_description and 'UP' in agent.db_refs:
+        description = uniprot_client.get_function(agent.db_refs['UP'])
+        if description:
+            kagent.sets('description', description)
     return kagent
 
 

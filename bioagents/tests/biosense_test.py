@@ -208,6 +208,8 @@ def test_respond_choose_sense():
     assert name == 'MAP2K1'
     ont_type = agent.get('ont-type')
     assert ont_type == 'ONT::GENE'
+    description = agent.gets('description')
+    assert 'Dual specificity' in description
 
 
 def test_respond_choose_nonsense():

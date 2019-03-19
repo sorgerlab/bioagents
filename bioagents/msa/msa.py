@@ -240,12 +240,12 @@ class StatementFinder(object):
         stmts = self.get_statements(block)
         if not stmts:
             return None
-        for s in stmts:
-            other_agents = self.get_other_agents_for_stmt(entity_names,
+        for stmt in stmts:
+            other_agents = self.get_other_agents_for_stmt(stmt, entity_names,
                                                           other_role)
             for ag in other_agents:
                 gr = self.query.get_agent_grounding(ag)
-                counts[gr] += ev_totals[s.get_hash()]
+                counts[gr] += ev_totals[stmt.get_hash()]
                 oa_dict[gr].append(ag)
 
         def get_aggregate_agent(agents, dbn, dbi):
@@ -260,7 +260,7 @@ class StatementFinder(object):
         return other_agents
 
     @staticmethod
-    def get_other_agents_for_stmt(query_entities, other_role=None):
+    def get_other_agents_for_stmt(stmt, query_entities, other_role=None):
         """Return a list of other agents for a given statement."""
 
         def matches_none(ag):
@@ -268,17 +268,16 @@ class StatementFinder(object):
             entities."""
             if ag is None:
                 return False
-            for dbn, dbi in query_entities:
+            for dbi, dbn in query_entities:
                 if ag is not None and ag.db_refs.get(dbn) == dbi:
                     return False
             return True
 
         other_agents = []
-
         # If the role is None, look at all the agents.
-        ags = s.agent_list()
+        ags = stmt.agent_list()
         if other_role is None:
-            other_agents += [ag for ag in ages if matches_none(ag)]
+            other_agents += [ag for ag in ags if matches_none(ag)]
         # If the role is specified, look at just those agents.
         else:
             idx = 0 if other_role == 'subject' else 1

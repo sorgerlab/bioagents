@@ -521,7 +521,7 @@ def _erk():
 
 
 @attr('nonpublic')
-def test_from_source_entity_filter():
+def test_complex_one_side_entity_filter():
     finder = msa.ComplexOneSide(_braf(), persist=False)
     oa = finder.get_other_agents(block=True)
     oa_names = [a.name for a in oa]

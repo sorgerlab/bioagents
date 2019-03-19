@@ -799,6 +799,7 @@ class _Commons(StatementFinder):
             self._statements = [s for data in self.commons.values()
                                 for s_list in data.values()
                                 for s in s_list]
+        self._statements = self._filter_stmts_for_agents(self._statements)
         return self._statements
 
     def get_common_entities(self):

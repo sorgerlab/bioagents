@@ -624,7 +624,8 @@ class ToTarget(StatementFinder):
         # First we filter for None objects
         stmts_out = [s for s in stmts if s.agent_list()[0] is not None]
         if self.query.ent_type:
-            stmts_out = self.filter_other_agent_type(stmts_out, ent_type,
+            stmts_out = self.filter_other_agent_type(stmts_out,
+                                                     self.query.ent_type,
                                                      other_role='subject')
         return stmts_out
 

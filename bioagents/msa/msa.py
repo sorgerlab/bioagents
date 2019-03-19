@@ -292,9 +292,7 @@ class StatementFinder(object):
             if idx + 1 > len(ags):
                 raise ValueError('Could not apply role %s, not enough '
                                  'agents: %s' % (other_role, ags))
-            ag = ags[idx]
-            if matches_none(ag):
-                other_agents.append(ag)
+            other_agents.append(ags[idx])
 
         return other_agents
 

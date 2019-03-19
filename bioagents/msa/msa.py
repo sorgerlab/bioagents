@@ -49,6 +49,10 @@ class StatementQuery(object):
     verb : str or None
         A string describing a type of interaction between the subject, object,
         and/or agents. Must be mappable to a subclass of Statement.
+    ent_type : str or None
+        An entity type e.g., 'protein', 'kinase' describing the type of
+        entities that are of interest as other agents in the resulting
+        statements.
     settings : dict
         A dictionary containing other parameters used by the
         IndraDbRestProcessor.
@@ -60,7 +64,7 @@ class StatementQuery(object):
         If not provided, the following default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
     """
-    def __init__(self, subj, obj, agents, verb, settings,
+    def __init__(self, subj, obj, agents, verb, ent_type, settings,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
@@ -77,6 +81,8 @@ class StatementQuery(object):
             self.stmt_type = mod_map[verb]
         else:
             self.stmt_type = verb
+
+        self.ent_type = ent_type
 
         self.settings = settings
         if not self.subj_key and not self.obj_key and not self.agent_keys:
@@ -437,7 +443,7 @@ class StatementFinder(object):
 
 class Neighborhood(StatementFinder):
     def _regularize_input(self, entity, **params):
-        return StatementQuery(None, None, [entity], None, params)
+        return StatementQuery(None, None, [entity], None, None, params)
 
     def describe(self, max_names=20):
         desc = super(Neighborhood, self).describe()
@@ -451,7 +457,7 @@ class Neighborhood(StatementFinder):
 
 class Activeforms(StatementFinder):
     def _regularize_input(self, entity, **params):
-        return StatementQuery(None, None, [entity], 'ActiveForm', params)
+        return StatementQuery(None, None, [entity], 'ActiveForm', None, params)
 
 
 class PhosActiveforms(Activeforms):
@@ -501,7 +507,7 @@ class PhosActiveforms(Activeforms):
 
 class BinaryDirected(StatementFinder):
     def _regularize_input(self, source, target, verb=None, **params):
-        return StatementQuery(source, target, [], verb, params)
+        return StatementQuery(source, target, [], verb, None, params)
 
     def describe(self, limit=None):
         verbs = self.get_unique_verb_list()
@@ -533,8 +539,8 @@ class BinaryUndirected(StatementFinder):
 
 
 class FromSource(StatementFinder):
-    def _regularize_input(self, source, verb=None, **params):
-        return StatementQuery(source, None, [], verb, params)
+    def _regularize_input(self, source, verb=None, ent_type=None, **params):
+        return StatementQuery(source, None, [], verb, ent_type, params)
 
     def describe(self, limit=10):
         if self.query.stmt_type is None:
@@ -562,8 +568,8 @@ class FromSource(StatementFinder):
 
 
 class ToTarget(StatementFinder):
-    def _regularize_input(self, target, verb=None, **params):
-        return StatementQuery(None, target, [], verb, params)
+    def _regularize_input(self, target, verb=None, ent_type=None, **params):
+        return StatementQuery(None, target, [], verb, ent_type, params)
 
     def describe(self, limit=5):
         if self.query.stmt_type is None:
@@ -594,8 +600,9 @@ class ToTarget(StatementFinder):
 
 
 class ComplexOneSide(StatementFinder):
-    def _regularize_input(self, entity, **params):
-        return StatementQuery(None, None, [entity], 'Complex', params)
+    def _regularize_input(self, entity, ent_type=None, **params):
+        return StatementQuery(None, None, [entity], 'Complex', ent_type,
+                              params)
 
     def describe(self, max_names=20):
         desc = "Overall, I found that %s can be in a complex with: "
@@ -615,7 +622,7 @@ class _Commons(StatementFinder):
         return
 
     def _regularize_input(self, *entities, **params):
-        return StatementQuery(None, None, list(entities), None, params,
+        return StatementQuery(None, None, list(entities), None, None, params,
                               ['HGNC', 'FPLX'])
 
     def _iter_stmts(self, stmts):

@@ -55,7 +55,7 @@ class StatementQuery(object):
         An entity type e.g., 'protein', 'kinase' describing the type of
         entities that are of interest as other agents in the resulting
         statements.
-    settings : dict
+    params : dict
         A dictionary containing other parameters used by the
         IndraDbRestProcessor.
     valid_name_spaces : list[str] or None
@@ -66,8 +66,8 @@ class StatementQuery(object):
         If not provided, the following default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
     """
-    def __init__(self, subj, obj, agents, verb, ent_type, filter_agents,
-                 settings, valid_name_spaces=None):
+    def __init__(self, subj, obj, agents, verb, ent_type, params,
+                 valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!']
@@ -85,9 +85,9 @@ class StatementQuery(object):
             self.stmt_type = verb
 
         self.ent_type = ent_type
-        self.filter_agents = filter_agents
+        self.filter_agents = params.pop('filter_agents', [])
 
-        self.settings = settings
+        self.settings = params
         if not self.subj_key and not self.obj_key and not self.agent_keys:
             raise EntityError("Did not get any usable entity constraints!")
         return
@@ -179,6 +179,9 @@ class StatementFinder(object):
 
     def _filter_stmts_for_agents(self, stmts):
         """Internal method to filter statements involving particular agents."""
+        if not self.query.filter_agents:
+            return stmts
+
         filtered_stmts = []
         for stmt in stmts:
 

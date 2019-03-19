@@ -285,7 +285,25 @@ class StatementFinder(object):
         # If the role is None, look at all the agents.
         ags = stmt.agent_list()
         if other_role is None:
-            other_agents += [ag for ag in ags if matches_none(ag)]
+            # List of agents that don't match any of the query entities
+            match_none_others = [ag for ag in ags if matches_none(ag)]
+            # Handle a special case in which an agent that isn't matches none
+            # needs to be returned. This is relevant for instance if we ask for
+            # "things that interact with X" and get back Complex(X,X).
+            # In this case len(query_entities) == 1, len(ags) == 2, and
+            # match_none_others == [], in this case we add X to the other
+            # agent list. In addition, to avoid adding X if the Statement
+            # is something like Phosphorylation(None, X), we look at the
+            # length of not-none Agents and only add another agent is there
+            # is more than 1 not None Agent.
+            if len(query_entities) < len(ags) and not match_none_others:
+                not_none_agents = [ag for ag in ags if ag is not None]
+                if len(not_none_agents) > 1:
+                    other_agents.append(not_none_agents[0])
+            # Otherwise we add all other agents that do not match any of the
+            # query agents.
+            else:
+                other_agents += match_none_others
         # If the role is specified, look at just those agents.
         else:
             idx = 0 if other_role == 'subject' else 1

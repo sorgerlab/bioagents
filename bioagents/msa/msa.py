@@ -8,6 +8,8 @@ from collections import defaultdict
 
 from bioagents import group_and_sort_statements, make_string_from_sort_key, \
     make_stmt_from_sort_key, stmt_to_english
+from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
+    _read_tfs
 from indra import get_config
 from indra.statements import stmts_to_json, Agent, get_all_descendants
 from indra.sources import indra_db_rest as idbr
@@ -440,6 +442,21 @@ class StatementFinder(object):
             names.append(ag.name)
         return names
 
+    def filter_other_agent_type(self, stmts, ent_type, other_role=None):
+        query_entities = set(self.query.entities.values())
+        stmts_out = []
+        for stmt in stmts:
+            other_agents = \
+                self.get_other_agents_for_stmt(stmt,
+                                               query_entities=query_entities,
+                                               other_role=other_role)
+
+            matches = [entity_type_filter.is_ent_type(agent, ent_type)
+                       for agent in other_agents]
+            if all(matches):
+                stmts_out.append(stmt)
+        return stmts_out
+
 
 class Neighborhood(StatementFinder):
     def _regularize_input(self, entity, **params):
@@ -566,6 +583,14 @@ class FromSource(StatementFinder):
         desc += ps
         return desc
 
+    def _filter_stmts(self, stmts):
+        if self.query.ent_type:
+            stmts_out = self.filter_other_agent_type(stmts, ent_type,
+                                                     other_role='object')
+            return stmts_out
+        else:
+            return stmts
+
 
 class ToTarget(StatementFinder):
     def _regularize_input(self, target, verb=None, ent_type=None, **params):
@@ -596,7 +621,12 @@ class ToTarget(StatementFinder):
         return desc
 
     def _filter_stmts(self, stmts):
-        return [s for s in stmts if None not in s.agent_list()]
+        # First we filter for None objects
+        stmts_out = [s for s in stmts if s.agent_list()[0] is not None]
+        if self.query.ent_type:
+            stmts_out = self.filter_other_agent_type(stmts_out, ent_type,
+                                                     other_role='subject')
+        return stmts_out
 
 
 class ComplexOneSide(StatementFinder):
@@ -829,3 +859,30 @@ class MSA(object):
             raise ValueError("Invalid combination of entity arguments: "
                              "subject=%s, object=%s, agents=%s."
                              % (subject, object, agents))
+
+
+class EntityTypeFilter(object):
+    def __init__(self):
+        self.tfs = _read_tfs()
+        self.phosphatases = _read_phosphatases()
+        self.kinases = _read_kinases()
+
+    def is_ent_type(self, agent, ent_type):
+        if ent_type in ('gene', 'protein'):
+            return set(agent.db_refs.keys()) & {'UP', 'HGNC', 'FPLX'}
+        elif ent_type in ('transcription factor', 'TF'):
+            return agent.name in self.tfs
+        elif ent_type == 'kinase':
+            return agent.name in self.kinases
+        elif ent_type == 'phosphatase':
+            return agent.name in self.phosphatases
+        elif ent_type == 'enzyme':
+            return (agent.name in self.phosphatases or
+                    agent.name in self.kinases)
+        # By default we just return True here, implying not filtering
+        # out the agent
+        else:
+            return True
+
+
+entity_type_filter = EntityTypeFilter()

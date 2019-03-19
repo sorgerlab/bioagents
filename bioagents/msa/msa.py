@@ -193,7 +193,10 @@ class StatementFinder(object):
 
                 # Look for a match in any of the statements' agents.
                 for agent in stmt.agent_list():
-                    if agent.db_resf[dbi] == dbn:
+                    if agent is None:
+                        continue
+
+                    if agent.db_refs.get(dbn) == dbi:
                         filtered_stmts.append(stmt)
                         break  # found one.
                 else:

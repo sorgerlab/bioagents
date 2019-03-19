@@ -235,13 +235,12 @@ class StatementFinder(object):
                              % (type(other_role), other_role))
 
         # If the entities are not given, get them from the query itself
-        if entities is None:
-            entity_names = set(self.query.entities.values())
-        else:
-            entity_names = set(self.query.entities.values()) & \
-                set(self.query.get_agent_grounding(e) for e in entities)
+        query_entities = set(self.query.entities.values())
+        if entities:
+            query_entities &= set(self.query.get_agent_grounding(e)
+                                  for e in entities)
 
-        # Build up a dict of names, counting how often they occur.
+        # Build up a dict of groundings, counting how often they occur.
         counts = defaultdict(lambda: 0)
         oa_dict = defaultdict(list)
         ev_totals = self.get_ev_totals()
@@ -249,7 +248,7 @@ class StatementFinder(object):
         if not stmts:
             return None
         for stmt in stmts:
-            other_agents = self.get_other_agents_for_stmt(stmt, entity_names,
+            other_agents = self.get_other_agents_for_stmt(stmt, query_entities,
                                                           other_role)
             for ag in other_agents:
                 gr = self.query.get_agent_grounding(ag)
@@ -260,7 +259,7 @@ class StatementFinder(object):
             agent = Agent(agents[0].name, db_refs={dbn: dbi})
             return agent
 
-        # Create a list of names sorted with the most frequent first.
+        # Create a list of groundings sorted with the most frequent first.
         sorted_groundings = list(sorted(counts.keys(), key=lambda t: counts[t],
                                         reverse=True))
         other_agents = [get_aggregate_agent(oa_dict[gr], *gr) for gr in

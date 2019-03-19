@@ -470,3 +470,35 @@ def test_to_target_entity_filter():
     assert 'RAF1' in oa_names
     assert 'U0126' not in oa_names
     assert 'trametinib' not in oa_names
+
+
+@attr('nonpublic')
+def test_from_source_entity_filter():
+    # Kinases
+    finder = msa.FromSource(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                            ent_type='kinase', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    # RAF1 as a kinase is in the list
+    assert 'MAPK1' in oa_names
+    # RAS, which normally is in the list should not be since it's not a kinase
+    assert 'apoptosis' not in oa_names
+    assert 'RAS' not in oa_names
+
+    # Transcription factors
+    finder = msa.FromSource(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                            ent_type='transcription factor', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    assert 'ESR1' in oa_names
+    assert 'RAF1' not in oa_names
+
+    # Proteins
+    finder = msa.FromSource(Agent('MEK', db_refs={'FPLX': 'MEK'}),
+                            ent_type='protein', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    assert 'ERK' in oa_names
+    assert 'MAPK1' in oa_names
+    assert 'apoptosis' not in oa_names
+    assert 'proliferation' not in oa_names

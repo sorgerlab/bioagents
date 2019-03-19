@@ -585,7 +585,8 @@ class FromSource(StatementFinder):
 
     def _filter_stmts(self, stmts):
         if self.query.ent_type:
-            stmts_out = self.filter_other_agent_type(stmts, ent_type,
+            stmts_out = self.filter_other_agent_type(stmts,
+                                                     self.query.ent_type,
                                                      other_role='object')
             return stmts_out
         else:

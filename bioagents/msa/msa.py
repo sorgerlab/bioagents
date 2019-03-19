@@ -652,7 +652,8 @@ class ComplexOneSide(StatementFinder):
                               params)
 
     def describe(self, max_names=20):
-        desc = "Overall, I found that %s can be in a complex with: "
+        desc = "Overall, I found that %s can be in a complex with: " % \
+               self.query.agents[0].name
         other_names = self.get_other_names(self.query.agents[0])
         desc += _join_list(other_names[:max_names])
         return desc

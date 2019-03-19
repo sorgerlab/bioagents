@@ -539,7 +539,8 @@ class PhosActiveforms(Activeforms):
 
 class BinaryDirected(StatementFinder):
     def _regularize_input(self, source, target, verb=None, **params):
-        return StatementQuery(source, target, [], verb, None, params)
+        return StatementQuery(source, target, [], verb, None, None,
+                              params)
 
     def describe(self, limit=None):
         verbs = self.get_unique_verb_list()
@@ -555,7 +556,8 @@ class BinaryDirected(StatementFinder):
 
 class BinaryUndirected(StatementFinder):
     def _regularize_input(self, entity1, entity2, **params):
-        return StatementQuery(None, None, [entity1, entity2], None, params)
+        return StatementQuery(None, None, [entity1, entity2], None, None,
+                              params)
 
     def describe(self, limit=None):
         verbs = self.get_unique_verb_list()

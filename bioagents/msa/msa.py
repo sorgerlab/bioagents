@@ -516,6 +516,9 @@ class Neighborhood(StatementFinder):
 
 class Activeforms(StatementFinder):
     def _regularize_input(self, entity, **params):
+        if 'filter_agents' in params.keys():
+            logger.warning("Parameter `filter_agents` is not meaningful for "
+                           "Activeforms or PhosActiveforms.")
         return StatementQuery(None, None, [entity], 'ActiveForm', None, params)
 
 
@@ -566,6 +569,9 @@ class PhosActiveforms(Activeforms):
 
 class BinaryDirected(StatementFinder):
     def _regularize_input(self, source, target, verb=None, **params):
+        if 'filter_agents' in params.keys():
+            logger.warning("Parameter `filter_agents` is not meaningful for "
+                           "Binary queries.")
         return StatementQuery(source, target, [], verb, None, params)
 
     def describe(self, limit=None):
@@ -582,6 +588,9 @@ class BinaryDirected(StatementFinder):
 
 class BinaryUndirected(StatementFinder):
     def _regularize_input(self, entity1, entity2, **params):
+        if 'filter_agents' in params.keys():
+            logger.warning("Parameter `filter_agents` is not meaningful for "
+                           "Binary queries.")
         return StatementQuery(None, None, [entity1, entity2], None, None,
                               params)
 

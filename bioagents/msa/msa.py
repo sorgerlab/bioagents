@@ -281,6 +281,39 @@ class StatementFinder(object):
                         sorted_groundings]
         return other_agents
 
+    @staticmethod
+    def get_other_agents_for_stmt(query_entities, other_role=None):
+        """Return a list of other agents for a given statement."""
+
+        def matches_none(ag):
+            """Return True if the given agent doesn't match any of the query
+            entities."""
+            if ag is None:
+                return False
+            for dbn, dbi in query_entities:
+                if ag is not None and ag.db_refs.get(dbn) == dbi:
+                    return False
+            return True
+
+        other_agents = []
+
+        # If the role is None, look at all the agents.
+        ags = s.agent_list()
+        if other_role is None:
+            other_agents += [ag for ag in ages if matches_none(ag)]
+        # If the role is specified, look at just those agents.
+        else:
+            idx = 0 if other_role == 'subject' else 1
+            if idx + 1 > len(ags):
+                raise ValueError('Could not apply role %s, not enough '
+                                 'agents: %s' % (other_role, ags))
+            ag = ags[idx]
+            if matches_none(ag):
+                other_agents.append(ag)
+
+        return other_agents
+
+
     def get_ev_totals(self):
         """Get a dictionary of evidence total counts from the processor."""
         # Getting statements applies any filters, so the counts are consistent
@@ -813,5 +846,3 @@ class MSA(object):
             raise ValueError("Invalid combination of entity arguments: "
                              "subject=%s, object=%s, agents=%s."
                              % (subject, object, agents))
-
-

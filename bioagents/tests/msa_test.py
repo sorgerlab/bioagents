@@ -406,7 +406,7 @@ def test_get_finder_agents():
 
     # The other names should be sorted with PIM1 first (most evidence)
     other_names = finder.get_other_names(ag)
-    assert other_names[0] == 'PIM1'
+    assert other_names[0] == 'PIM1', other_names
 
 
 @attr('nonpublic')

@@ -502,3 +502,14 @@ def test_from_source_entity_filter():
     assert 'MAPK1' in oa_names
     assert 'apoptosis' not in oa_names
     assert 'proliferation' not in oa_names
+
+
+@attr('nonpublic')
+def test_from_source_entity_filter():
+    # Phosphatases
+    finder = msa.ComplexOneSide(Agent('BRAF', db_refs={'HGNC': '1097'}),
+                                ent_type='phosphatase', persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    assert 'RAF1' not in oa_names
+    assert 'PTEN' in oa_names

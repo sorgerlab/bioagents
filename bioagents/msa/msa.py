@@ -642,6 +642,15 @@ class ComplexOneSide(StatementFinder):
         desc += _join_list(other_names[:max_names])
         return desc
 
+    def _filter_stmts(self, stmts):
+        # First we filter for None objects
+        if self.query.ent_type:
+            stmts_out = self.filter_other_agent_type(stmts,
+                                                     self.query.ent_type)
+            return stmts_out
+        else:
+            return stmts
+
 
 class _Commons(StatementFinder):
     _role = NotImplemented

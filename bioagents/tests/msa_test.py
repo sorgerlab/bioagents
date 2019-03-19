@@ -506,6 +506,14 @@ def test_from_source_entity_filter():
 
 @attr('nonpublic')
 def test_from_source_entity_filter():
+    finder = msa.ComplexOneSide(Agent('BRAF', db_refs={'HGNC': '1097'}),
+                                persist=False)
+    oa = finder.get_other_agents(block=True)
+    oa_names = [a.name for a in oa]
+    # Make sure we can get the query entity itself if it's another member of
+    # the complex
+    assert 'BRAF' in oa_names
+
     # Phosphatases
     finder = msa.ComplexOneSide(Agent('BRAF', db_refs={'HGNC': '1097'}),
                                 ent_type='phosphatase', persist=False)
@@ -513,3 +521,4 @@ def test_from_source_entity_filter():
     oa_names = [a.name for a in oa]
     assert 'RAF1' not in oa_names
     assert 'PTEN' in oa_names
+    assert 'BRAF' not in oa_names

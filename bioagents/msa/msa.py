@@ -200,7 +200,6 @@ class StatementFinder(object):
 
                     if agent.db_refs.get(dbn) == dbi:
                         filtered_stmts.append(stmt)
-                        print(stmt)
                         break  # found one.
                 else:
                     continue  # keep looking

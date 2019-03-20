@@ -193,7 +193,8 @@ class StatementFinder(object):
                 dbi, dbn = self.query.get_agent_grounding(filter_agent)
 
                 # Look for a match in any of the statements' agents.
-                for agent in stmt.agent_list():
+                for agent in self.get_other_agents_for_stmt(stmt,
+                                                            self.query.entities):
                     if agent is None:
                         continue
 

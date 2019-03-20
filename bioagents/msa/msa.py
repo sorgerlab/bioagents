@@ -183,6 +183,7 @@ class StatementFinder(object):
             return stmts
 
         filtered_stmts = []
+        logger.info('Starting agent filter with %d statements' % len(stmts))
         for stmt in stmts:
 
             # Look for any of the agents we are filtering to
@@ -192,16 +193,21 @@ class StatementFinder(object):
                 dbi, dbn = self.query.get_agent_grounding(filter_agent)
 
                 # Look for a match in any of the statements' agents.
-                for agent in stmt.agent_list():
+                for agent in self.get_other_agents_for_stmt(stmt,
+                                        list(self.query.entities.values())):
                     if agent is None:
                         continue
 
                     if agent.db_refs.get(dbn) == dbi:
                         filtered_stmts.append(stmt)
+                        print(stmt)
                         break  # found one.
                 else:
                     continue  # keep looking
                 break  # found one.
+
+        logger.info('Finished agent filter with %d statements' %
+                    len(filtered_stmts))
 
         return filtered_stmts
 
@@ -621,7 +627,6 @@ class FromSource(StatementFinder):
         else:
             verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
             ps = ''
-
         desc = "Overall, I found that " + self.query.subj.name + verb_wrap
         other_names = self.get_other_names(self.query.subj,
                                            other_role='object')

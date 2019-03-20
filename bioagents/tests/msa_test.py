@@ -569,3 +569,14 @@ def test_to_target_agent_filter():
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
         assert ag_names & exp_ags, ag_names - exp_ags - {'ERK'}
+
+
+@attr('nonpublic', 'slow')
+def test_to_target_agent_filter():
+    finder = msa.FromSource(_erk(), filter_agents=[_mek(), _braf(), _erk()])
+    stmts = finder.get_statements()
+    assert len(stmts)
+    exp_ags = {'MEK', 'BRAF', 'KRAS', 'ERK'}
+    for stmt in stmts:
+        ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
+        assert ag_names & exp_ags, ag_names - exp_ags

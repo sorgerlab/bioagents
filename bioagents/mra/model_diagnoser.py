@@ -125,12 +125,14 @@ class ModelDiagnoser(object):
                 (ns, id) = ('CHEBI', ag.db_refs['CHEBI'])
             ag_str = ('%s@%s' % (id, ns)) if ns else None
             return ag_str
-        subj = query_agent(u_stmt.agent_list()[1])
-        obj = query_agent(v_stmt.agent_list()[0])
+        subj_agent = u_stmt.agent_list()[1]
+        obj_agent = v_stmt.agent_list()[0]
+        subj = query_agent(subj_agent)
+        obj = query_agent(obj_agent)
         if not (subj and obj):
             return []
         stmts = get_statements(subject=subj, object=obj, persist=False,
                                ev_limit=10, simple_response=True)
         stmts.sort(key=lambda s: len(s.evidence), reverse=True)
         end_ix = len(stmts) if len(stmts) < num_statements else num_statements
-        return stmts[0:end_ix]
+        return stmts[0:end_ix], subj_agent, obj_agent

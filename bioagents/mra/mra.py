@@ -93,6 +93,7 @@ class MRA(object):
         res['model_exec'] = model_exec
         res['diagrams'] = make_diagrams(model_exec, model_id,
                                         self.models[model_id], self.context)
+        self.run_diagnoser(res, stmts, model_exec)
         return res
 
     def expand_model_from_ekb(self, model_ekb, model_id):
@@ -141,6 +142,7 @@ class MRA(object):
         res['diagrams'] = make_diagrams(model_exec, new_model_id,
                                         self.models[new_model_id],
                                         self.context)
+        self.run_diagnoser(res, model_stmts, model_exec)
         return res
 
     def extend_model(self, new_stmts, model_id):
@@ -310,15 +312,19 @@ class MRA(object):
             connect_stmts = res.get('connect_stmts')
             if connect_stmts:
                 u_stmt, v_stmt = connect_stmts
-                stmt_suggestions = md.suggest_statements(u_stmt, v_stmt)
+                stmt_suggestions, sugg_subj, sugg_obj = \
+                    md.suggest_statements(u_stmt, v_stmt)
                 if stmt_suggestions:
                     agents = [a.name for a in stmt_suggestions[0].agent_list()
                               if a is not None]
                     if len(set(agents)) > 1:
                         res['stmt_suggestions'] = stmt_suggestions
+                        res['stmt_suggestions_subj'] = sugg_subj
+                        res['stmt_suggestions_obj'] = sugg_obj
         md = ModelDiagnoser(model_stmts)
         acts = md.get_missing_activities()
         if acts:
+            logger.info('Missing activities found: %s' % acts)
             res['stmt_corrections'] = acts
 
     def has_mechanism(self, mech_ekb, model_id):

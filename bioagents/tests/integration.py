@@ -107,6 +107,7 @@ class _IntegrationTest(TestCase):
     above paradigm. Note that message_funcs would not be needed in such cases.
     """
     message_funcs = []
+    timeout = 40  # seconds
 
     def __init__(self, bioagent, **kwargs):
         self.bioagent = bioagent(testing=True, **kwargs)
@@ -193,7 +194,7 @@ class _IntegrationTest(TestCase):
             self.bioagent.receive_request(*request_args)
             end = datetime.now()
             dt = end - start
-            assert dt.total_seconds() < 40, \
+            assert dt.total_seconds() < self.timeout, \
                 "Task took too long (%.2f seconds). BA would have timed out." \
                 % dt.total_seconds()
             output = self.get_output_log()[-1].get('content')

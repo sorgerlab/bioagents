@@ -24,7 +24,7 @@ from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 
 from pysb.export import export
-from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
+from indra.assemblers.pysb.kappa_util import im_json_to_graph, cm_json_to_graph
 from bioagents.mra.sbgn_colorizer import SbgnColorizer
 from bioagents.mra.model_diagnoser import ModelDiagnoser
 logger = logging.getLogger('MRA')

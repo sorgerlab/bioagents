@@ -24,7 +24,7 @@ from pysb.bng import BngInterfaceError
 from pysb.tools import render_reactions
 
 from pysb.export import export
-from indra.util.kappa_util import im_json_to_graph, cm_json_to_graph
+from indra.assemblers.pysb.kappa_util import im_json_to_graph, cm_json_to_graph
 from bioagents.mra.sbgn_colorizer import SbgnColorizer
 from bioagents.mra.model_diagnoser import ModelDiagnoser
 logger = logging.getLogger('MRA')
@@ -492,17 +492,9 @@ def draw_influence_map(pysb_model, model_id):
 
 def make_influence_map(pysb_model):
     """Return a Kappa influence map."""
-    kappa = kappy.KappaStd()
-    model_str = export(pysb_model, 'kappa')
-    kappa.add_model_string(model_str)
-    kappa.project_parse()
-    imap = kappa.analyses_influence_map()
-    im = im_json_to_graph(imap)
-    for param in pysb_model.parameters:
-        try:
-            im.remove_node(param.name)
-        except:
-            pass
+    pa = PysbAssembler()
+    pa.model = pysb_model
+    im = pa.export_model('kappa_im')
     return im
 
 
@@ -520,12 +512,9 @@ def draw_contact_map(pysb_model, model_id):
 
 def make_contact_map(pysb_model):
     """Return a Kappa contact map."""
-    kappa = kappy.KappaStd()
-    model_str = export(pysb_model, 'kappa')
-    kappa.add_model_string(model_str)
-    kappa.project_parse()
-    cmap = kappa.analyses_contact_map()
-    cm = cm_json_to_graph(cmap)
+    pa = PysbAssembler()
+    pa.model = pysb_model
+    cm = pa.export_model('kappa_cm')
     return cm
 
 

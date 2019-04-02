@@ -492,17 +492,9 @@ def draw_influence_map(pysb_model, model_id):
 
 def make_influence_map(pysb_model):
     """Return a Kappa influence map."""
-    kappa = kappy.KappaStd()
-    model_str = export(pysb_model, 'kappa')
-    kappa.add_model_string(model_str)
-    kappa.project_parse()
-    imap = kappa.analyses_influence_map()
-    im = im_json_to_graph(imap)
-    for param in pysb_model.parameters:
-        try:
-            im.remove_node(param.name)
-        except:
-            pass
+    pa = PysbAssembler()
+    pa.model = pysb_model
+    im = pa.export_model('kappa_im')
     return im
 
 
@@ -520,12 +512,9 @@ def draw_contact_map(pysb_model, model_id):
 
 def make_contact_map(pysb_model):
     """Return a Kappa contact map."""
-    kappa = kappy.KappaStd()
-    model_str = export(pysb_model, 'kappa')
-    kappa.add_model_string(model_str)
-    kappa.project_parse()
-    cmap = kappa.analyses_contact_map()
-    cm = cm_json_to_graph(cmap)
+    pa = PysbAssembler()
+    pa.model = pysb_model
+    cm = pa.export_model('kappa_cm')
     return cm
 
 

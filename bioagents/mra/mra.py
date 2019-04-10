@@ -448,12 +448,13 @@ def make_diagrams(pysb_model, model_id, current_model, context=None):
         except Exception as e:
             logger.error('Could not set SBGN colors')
             logger.error(e)
+    sif = make_sif(current_model, model_id)
 
     rxn = draw_reaction_network(pysb_model, model_id)
     cm = draw_contact_map(pysb_model, model_id)
     im = draw_influence_map(pysb_model, model_id)
     diagrams = {'reactionnetwork': rxn, 'contactmap': cm,
-                'influencemap': im, 'sbgn': sbgn}
+                'influencemap': im, 'sbgn': sbgn, 'sif': sig}
     return diagrams
 
 
@@ -474,6 +475,25 @@ def make_sbgn(pysb_model, model_id):
         logger.error('Reaction network could not be generated for SBGN.')
         return None
     return sbgn_str
+
+
+def make_sif(model, model_id):
+    def agent_key(agent):
+        return agent.name
+
+    def rows_to_sbgn(rows):
+        return '\n'.join(['\t'.join(row) for row in rows])
+
+    rows = []
+    for stmt in model:
+        agents = stmt.agent_list()
+        if len(agents) != 2:
+            continue
+        row = (agent_key(agents[0]),
+               type(stmt).__name__,
+               agent_key(agents[1]))
+        rows.append(row)
+    return rows_to_sbgn(rows)
 
 
 def draw_influence_map(pysb_model, model_id):

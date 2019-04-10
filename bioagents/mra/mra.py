@@ -454,7 +454,7 @@ def make_diagrams(pysb_model, model_id, current_model, context=None):
     cm = draw_contact_map(pysb_model, model_id)
     im = draw_influence_map(pysb_model, model_id)
     diagrams = {'reactionnetwork': rxn, 'contactmap': cm,
-                'influencemap': im, 'sbgn': sbgn, 'sif': sig}
+                'influencemap': im, 'sbgn': sbgn, 'sif': sif}
     return diagrams
 
 
@@ -488,6 +488,9 @@ def make_sif(model, model_id):
     for stmt in model:
         agents = stmt.agent_list()
         if len(agents) != 2:
+            continue
+        not_none_agents = [a for a in agents if a is not None]
+        if len(not_none_agents) != 2:
             continue
         row = (agent_key(agents[0]),
                type(stmt).__name__,

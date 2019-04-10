@@ -407,10 +407,11 @@ class MRA_Module(Bioagent):
                 content = KQMLList('display-sbgn')
                 content.set('type', diagram_type)
                 content.sets('graph', resource)
-            if diagram_type == 'sif':
+            elif diagram_type == 'sif':
                 content = KQMLList('display-sif')
                 content.set('type', diagram_type)
                 content.sets('graph', resource)
+                content.sets('cyId', '1')
             else:
                 content = KQMLList('display-image')
                 content.set('type', diagram_type)

@@ -3,11 +3,13 @@ import logging
 from os import path
 from datetime import datetime
 
+from indra.statements import Agent, Statement
 from indra.assemblers.html import HtmlAssembler
 from indra.util.statement_presentation import group_and_sort_statements, \
-    make_string_from_sort_key, make_stmt_from_sort_key, stmt_to_english
+    make_string_from_sort_key
 
 from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
+from kqml.cl_json import cl_to_json, cl_from_json
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -48,6 +50,25 @@ class Bioagent(KQMLModule):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
         return log_file_name
+
+    def get_agent(self, cl_agent):
+        """Get an agent from the kqml cl-json representation (KQMLList)."""
+        agent_json = cl_to_json(cl_agent)
+        return Agent._from_json(agent_json)
+
+    def get_statement(self, cl_statement):
+        """Get an INDRA Statement from cl-json"""
+        stmt_json = cl_to_json(cl_statement)
+        return Statement._from_json(stmt_json)
+
+    def make_cljson(self, entity):
+        """Convert an Agent or a Statement into cljson.
+
+        `entity` is expected to have a method `to_json` which returns valid
+        json.
+        """
+        entity_json = entity.to_json()
+        return cl_from_json(entity_json)
 
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()

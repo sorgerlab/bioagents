@@ -77,7 +77,7 @@ class EKB(object):
         type.text = node['type']
         term.append(type)
         # Find the name of the TERM and get the value with W:: stripped
-        name_node = self.graph.get_matching_node(term_id, link='name-of')
+        name_node = self.graph.get_matching_node(term_id, link='name')
         if not name_node:
             name_node = self.graph.get_matching_node(term_id, link='W')
         name_val = self.graph.node[name_node]['label']

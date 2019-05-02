@@ -36,8 +36,7 @@ class BioSense_Module(Bioagent):
         context = content.get('context').to_string()
         graph = KQMLGraph(context)
         agent = agent_from_term(graph, id)
-        jd = agent.to_json()
-        js = json.dumps(jd)
+        js = self.make_cljson(agent)
         msg = KQMLPerformative('done')
         msg.sets('result', js)
         return msg

@@ -26,10 +26,9 @@ class TestGetIndraRepresentationOneAgent(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'done'
-        res = output.gets('result')
+        res = output.get('result')
         assert res
-        indra_json = json.loads(res)
-        agent = Agent._from_json(indra_json)
+        agent = self.bioagent.get_agent(res)
         assert agent.name == 'TOFACITINIB'
 
 

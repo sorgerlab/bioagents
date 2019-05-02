@@ -1,11 +1,36 @@
+import json
 import unittest
 from nose.tools import raises
-from kqml import KQMLList
+from kqml import KQMLList, KQMLPerformative
+from indra.statements import Agent
+from .integration import _IntegrationTest
+from .test_ekb import _load_kqml
+from .util import get_request
 from bioagents.tests.util import ekb_from_text
 from bioagents.biosense.biosense_module import BioSense_Module
 from bioagents.biosense.biosense import BioSense, InvalidAgentError, \
     InvalidCollectionError, UnknownCategoryError, \
     CollectionNotFamilyOrComplexError, SynonymsUnknownError
+
+
+class TestGetIndraRepresentationOneAgent(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(BioSense_Module)
+
+    def create_message(self):
+        kql = KQMLList.from_string(_load_kqml('tofacitinib.kqml'))
+        content = KQMLList('get-indra-representation')
+        content.set('context', kql)
+        content.set('ids', KQMLList(['V34850']))
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'done'
+        res = output.gets('result')
+        assert res
+        indra_json = json.loads(res)
+        agent = Agent._from_json(indra_json)
+        assert agent.name == 'TOFACITINIB'
 
 
 # example ekb terms

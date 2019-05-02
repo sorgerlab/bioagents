@@ -1,4 +1,5 @@
 import sys
+import json
 import logging
 import indra
 from indra.databases import uniprot_client
@@ -8,6 +9,7 @@ from .biosense import InvalidAgentError, UnknownCategoryError, \
 from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
 from bioagents import Bioagent
 from kqml import KQMLPerformative, KQMLList, KQMLString
+from bioagents.ekb import KQMLGraph, agent_from_term
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -27,7 +29,18 @@ class BioSense_Module(Bioagent):
     name = 'BioSense'
     tasks = ['CHOOSE-SENSE', 'CHOOSE-SENSE-CATEGORY',
              'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER',
-             'GET-SYNONYMS']
+             'GET-SYNONYMS', 'GET-INDRA-REPRESENTATION']
+
+    def respond_get_indra_representation(self, content):
+        id = content.get('ids')[0].to_string()
+        context = content.get('context').to_string()
+        graph = KQMLGraph(context)
+        agent = agent_from_term(graph, id)
+        jd = agent.to_json()
+        js = json.dumps(jd)
+        msg = KQMLPerformative('done')
+        msg.sets('result', js)
+        return msg
 
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""

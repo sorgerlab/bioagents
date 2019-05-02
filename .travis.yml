@@ -14,7 +14,7 @@ install:
   - export BNGPATH=`pwd`/BioNetGen-2.2.6-stable
   - pip install git+https://github.com/pysb/pysb.git
   # PyKQML
-  - pip install git+https://github.com/bgyori/pykqml.git
+  - pip install git+https://github.com/bgyori/pykqml.git@cl-json
   # INDRA
   - pip install git+https://github.com/sorgerlab/indra.git
   # Dependencies of Bioagents not covered by previous installs

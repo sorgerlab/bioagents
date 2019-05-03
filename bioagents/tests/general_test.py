@@ -1,3 +1,4 @@
+from indra.statements import Agent, Phosphorylation, ModCondition, BoundCondition
 from bioagents.tests.integration import _IntegrationTest
 from bioagents import Bioagent, BioagentException
 from kqml import KQMLList, KQMLPerformative
@@ -42,3 +43,22 @@ class TestErrorHandling(_IntegrationTest):
         assert output.get('reason') == self.reason,\
             ("Exception caught too soon (wrong reason: %s)."
              % output.get('reason'))
+
+
+def test_cljson():
+    ag = Agent('BRAF',
+               mods=[ModCondition('phosphorylation', 'T', '396', False)],
+               db_refs={'TEXT': 'Braf', 'HGNC': '123'})
+    cj = Bioagent.make_cljson(ag)
+    ag2 = Bioagent.get_agent(cj)
+    assert ag.equals(ag2)
+
+
+def test_cljson_stmt():
+    gtp = Agent('GTP')
+    kras_bound = Agent("KRAS", bound_conditions=[BoundCondition(gtp, True)])
+    braf = Agent('BRAF')
+    stmt = Phosphorylation(kras_bound, braf, position='373')
+    cj = Bioagent.make_cljson(stmt)
+    stmt2 = Bioagent.get_statement(cj)
+    assert stmt.equals(stmt2)

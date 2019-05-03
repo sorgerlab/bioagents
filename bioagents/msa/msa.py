@@ -6,8 +6,8 @@ import logging
 
 from collections import defaultdict
 
-from bioagents import group_and_sort_statements, make_string_from_sort_key, \
-    make_stmt_from_sort_key, stmt_to_english
+from indra.util.statement_presentation import group_and_sort_statements, \
+    make_string_from_sort_key, make_stmt_from_sort_key, stmt_to_english
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config

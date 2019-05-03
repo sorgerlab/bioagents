@@ -51,17 +51,20 @@ class Bioagent(KQMLModule):
         logger.addHandler(handler)
         return log_file_name
 
-    def get_agent(self, cl_agent):
+    @staticmethod
+    def get_agent(cl_agent):
         """Get an agent from the kqml cl-json representation (KQMLList)."""
         agent_json = cl_to_json(cl_agent)
         return Agent._from_json(agent_json)
 
-    def get_statement(self, cl_statement):
+    @staticmethod
+    def get_statement(cl_statement):
         """Get an INDRA Statement from cl-json"""
         stmt_json = cl_to_json(cl_statement)
         return Statement._from_json(stmt_json)
 
-    def make_cljson(self, entity):
+    @staticmethod
+    def make_cljson(entity):
         """Convert an Agent or a Statement into cljson.
 
         `entity` is expected to have a method `to_json` which returns valid

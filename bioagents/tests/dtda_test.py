@@ -206,8 +206,8 @@ class _TestIsDrugTarget(_IntegrationTest):
         super(_TestIsDrugTarget, self).__init__(DTDA_Module)
 
     def create_message(self):
-        target = ekb_kstring_from_text(self.target)
-        drug = ekb_kstring_from_text(self.drug)
+        target = self.bioagent.make_cljson(Agent(self.target))
+        drug = self.bioagent.make_cljson(Agent(self.drug))
         content = KQMLList('IS-DRUG-TARGET')
         content.set('target', target)
         content.set('drug', drug)

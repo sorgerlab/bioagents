@@ -1,6 +1,7 @@
 import json
 
 from kqml import KQMLList
+from kqml.cl_json import cl_from_json
 
 from indra.statements import Agent, Activation, BoundCondition, stmts_to_json, \
     ActivityCondition, Phosphorylation
@@ -32,7 +33,8 @@ class _NlgTestBase(_IntegrationTest):
 
     def create_statements(self):
         content = KQMLList('INDRA-TO-NL')
-        content.sets('statements', json.dumps(stmts_to_json(self.statements)))
+        stmts_cl_json = cl_from_json(stmts_to_json(self.statements))
+        content.set('statements', stmts_cl_json)
         return get_request(content), content
 
     def check_response_to_statements(self, output):

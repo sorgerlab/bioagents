@@ -21,7 +21,7 @@ class TestGetIndraRepresentationOneAgent(_IntegrationTest):
         kql = KQMLList.from_string(_load_kqml('tofacitinib.kqml'))
         content = KQMLList('get-indra-representation')
         content.set('context', kql)
-        content.set('ids', KQMLList(['V34850']))
+        content.set('ids', KQMLList(['ONT::V34850']))
         return get_request(content), content
 
     def check_response_to_message(self, output):
@@ -30,6 +30,9 @@ class TestGetIndraRepresentationOneAgent(_IntegrationTest):
         assert res
         agent = self.bioagent.get_agent(res)
         assert agent.name == 'TOFACITINIB'
+        assert agent.db_refs['TRIPS'] == 'ONT::V34850'
+        assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE', \
+            agent.db_refs
 
 
 class TestGetIndraRepresentationOneAgent2(_IntegrationTest):
@@ -46,6 +49,8 @@ class TestGetIndraRepresentationOneAgent2(_IntegrationTest):
         assert res
         agent = self.bioagent.get_agent(res)
         assert agent.name == 'SELUMETINIB'
+        assert agent.db_refs['TRIPS'] == 'ONT::V34821', agent.db_refs
+        assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE'
 
 
 # example ekb terms

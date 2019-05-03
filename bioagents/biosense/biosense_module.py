@@ -33,6 +33,8 @@ class BioSense_Module(Bioagent):
 
     def respond_get_indra_representation(self, content):
         id = content.get('ids')[0].to_string()
+        if id.startswith('ONT::'):
+            id = id[5:]
         context = content.get('context').to_string()
         graph = KQMLGraph(context)
         agent = agent_from_term(graph, id)

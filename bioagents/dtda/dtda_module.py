@@ -31,16 +31,16 @@ class DTDA_Module(Bioagent):
     def respond_is_drug_target(self, content):
         """Response content to is-drug-target request."""
         try:
-            drug_arg = content.gets('drug')
+            drug_arg = content.get('drug')
         except Exception:
             return self.make_failure('INVALID_DRUG')
         try:
-            drug = self._get_agent(drug_arg)
+            drug = self.get_agent(drug_arg)
         except Exception:
             return self.make_failure('DRUG_NOT_FOUND')
         try:
-            target_arg = content.gets('target')
-            target = self._get_agent(target_arg)
+            target_arg = content.get('target')
+            target = self.get_agent(target_arg)
         except Exception:
             return self.make_failure('INVALID_TARGET')
 

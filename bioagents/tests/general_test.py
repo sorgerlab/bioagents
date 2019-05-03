@@ -1,4 +1,4 @@
-from indra.statements import Agent, Phosphorylation, ModCondition
+from indra.statements import Agent, Phosphorylation, ModCondition, BoundCondition
 from bioagents.tests.integration import _IntegrationTest
 from bioagents import Bioagent, BioagentException
 from kqml import KQMLList, KQMLPerformative
@@ -52,3 +52,13 @@ def test_cljson():
     cj = Bioagent.make_cljson(ag)
     ag2 = Bioagent.get_agent(cj)
     assert ag.equals(ag2)
+
+
+def test_cljson_stmt():
+    gtp = Agent('GTP')
+    kras_bound = Agent("KRAS", bound_conditions=[BoundCondition(gtp, True)])
+    braf = Agent('BRAF')
+    stmt = Phosphorylation(kras_bound, braf, position='373')
+    cj = Bioagent.make_cljson(stmt)
+    stmt2 = Bioagent.get_statement(cj)
+    assert stmt.equals(stmt2)

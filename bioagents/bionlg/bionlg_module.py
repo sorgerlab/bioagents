@@ -5,6 +5,7 @@ from bioagents import Bioagent
 from indra.statements import stmts_from_json
 from indra.assemblers.english import EnglishAssembler
 from kqml import KQMLList, KQMLPerformative, KQMLString
+from kqml.cl_json import cl_to_json
 
 
 logger = logging.getLogger('BIONLG')
@@ -46,14 +47,20 @@ class BioNLG_Module(Bioagent):
 
     def respond_indra_to_nl(self, content):
         """Return response content to build-model request."""
-        stmts_json_str = content.gets('statements')
-        stmts = decode_indra_stmts(stmts_json_str)
+        stmts_cl_json = content.get('statements')
+        stmts = stmts_from_cl_json(stmts_cl_json)
         txts = assemble_english(stmts)
         txts_kqml = [KQMLString(txt) for txt in txts]
         txts_list = KQMLList(txts_kqml)
         reply = KQMLList('OK')
         reply.set('NL', txts_list)
         return reply
+
+
+def stmts_from_cl_json(stmts_cl_json):
+    stmts_json = cl_to_json(stmts_cl_json)
+    stmts = stmts_from_json(stmts_json)
+    return stmts
 
 
 def decode_indra_stmts(stmts_json_str):

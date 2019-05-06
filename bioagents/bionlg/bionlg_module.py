@@ -5,7 +5,6 @@ from bioagents import Bioagent
 from indra.statements import stmts_from_json
 from indra.assemblers.english import EnglishAssembler
 from kqml import KQMLList, KQMLPerformative, KQMLString
-from kqml.cl_json import cl_to_json
 
 
 logger = logging.getLogger('BIONLG')
@@ -58,8 +57,7 @@ class BioNLG_Module(Bioagent):
 
 
 def stmts_from_cl_json(stmts_cl_json):
-    stmts_json = cl_to_json(stmts_cl_json)
-    stmts = stmts_from_json(stmts_json)
+    stmts = [Bioagent.get_statement(cl_stmt) for cl_stmt in stmts_cl_json]
     return stmts
 
 

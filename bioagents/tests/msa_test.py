@@ -117,13 +117,50 @@ class _TestMsaGeneralLookup(_IntegrationTest):
             print("WARNING: Provenance took more than 10 seconds to post.")
 
 
+def _BRAF():
+    return Bioagent.make_cljson(Agent('BRAF', db_refs={'HGNC': '1097'}))
+
+
+def _TP53():
+    return Bioagent.make_cljson(Agent('TP53', db_refs={'HGNC': '11998'}))
+
+
+def _MEK():
+    return Bioagent.make_cljson(Agent('MEK', db_refs={'FPLX': 'MEK'}))
+
+
+def _ERK():
+    return Bioagent.make_cljson(Agent('ERK', db_refs={'FPLX': 'ERK'}))
+
+
+def _MAPK1():
+    return Bioagent.make_cljson(Agent('MAPK1', db_refs={'HGNC': '6871'}))
+
+
+def _MAP2K1():
+    return Bioagent.make_cljson(Agent('MAP2K1', db_refs={'HGNC': '6840'}))
+
+
+def _AKT1():
+    return Bioagent.make_cljson(Agent('AKT1', db_refs={'HGNC': '391'}))
+
+
+def _Vemurafenib():
+    return Bioagent.make_cljson(Agent('Vemurafenib',
+                                      db_refs={'CHEBI': 'CHEBI:63637'}))
+
+
+def _NONE():
+    return KQMLList()
+
+
 @attr('nonpublic')
 class TestMSATypeAndTargetBRAF(_TestMsaGeneralLookup):
     def create_type_and_target(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
-                                 source=KQMLList(),
+                                 source=_NONE(),
                                  type='Phosphorylation',
-                                 target=Bioagent.make_cljson(Agent('BRAF', db_refs={'HGNC': '1097'})))
+                                 target=_BRAF())
 
     def check_response_to_type_and_target(self, output):
         return self._check_find_response(output)
@@ -134,8 +171,8 @@ class TestMSATypeAndSourceBRAF(_TestMsaGeneralLookup):
     def create_type_and_source(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  type='Phosphorylation',
-                                 source=ekb_from_text('BRAF'),
-                                 target=ekb_from_text('None'))
+                                 source=_BRAF(),
+                                 target=_NONE())
 
     def check_response_to_type_and_source(self, output):
         return self._check_find_response(output)
@@ -146,8 +183,8 @@ class TestMSATypeAndTargetTP53(_TestMsaGeneralLookup):
     def create_type_and_source(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  type='Phosphorylation',
-                                 source=ekb_from_text('None'),
-                                 target=ekb_from_text('TP53'))
+                                 source=_NONE(),
+                                 target=_TP53())
 
     def check_response_to_type_and_source(self, output):
         return self._check_find_response(output)
@@ -158,8 +195,8 @@ class TestMSAConfirm1(_TestMsaGeneralLookup):
     def create_message(self):
         return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
                                  type='phosphorylation',
-                                 source=ekb_from_text('MEK'),
-                                 target=ekb_from_text('ERK'))
+                                 source=_MEK(),
+                                 target=_ERK())
 
     def check_response_to_message(self, output):
         return self._check_find_response(output)
@@ -170,8 +207,8 @@ class TestMSAConfirm2(_TestMsaGeneralLookup):
     def create_message(self):
         return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
                                  type='phosphorylation',
-                                 source=ekb_from_text('MAP2K1'),
-                                 target=ekb_from_text('MAPK1'))
+                                 source=_MAP2K1(),
+                                 target=_MAPK1())
 
     def check_response_to_message(self, output):
         return self._check_find_response(output)
@@ -215,7 +252,7 @@ class TestMsaProvenance(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('PHOSPHORYLATION-ACTIVATING')
-        content.sets('target', ekb_from_text('MAPK1'))
+        content.sets('target', _MAPK1())
         for name, value in [('residue', 'T'), ('position', '185')]:
             if value is not None:
                 content.sets(name, value)
@@ -251,8 +288,7 @@ class TestMsaCommonUpstreamsMEKERK(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
-        ekb = ekb_from_text('MEK, ERK')
-        content.sets('genes', ekb)
+        content.set('genes', KQMLList([_MEK(), _ERK()]))
         content.sets('up-down', 'ONT::MORE')
         msg = get_request(content)
         return msg, content
@@ -274,8 +310,7 @@ class TestMsaCommonDownstreamsMEKERK(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
-        ekb = ekb_from_text('MEK, ERK')
-        content.sets('genes', ekb)
+        content.set('genes', KQMLList([_MEK(), _ERK()]))
         content.sets('up-down', 'ONT::SUCCESSOR')
         msg = get_request(content)
         return msg, content
@@ -297,8 +332,7 @@ class TestMsaCommonUpstreamsTP53AKT1(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
-        ekb = ekb_from_text('TP53, AKT1')
-        content.sets('genes', ekb)
+        content.set('genes', KQMLList([_TP53(), _AKT1()]))
         content.sets('up-down', 'ONT::MORE')
         msg = get_request(content)
         return msg, content
@@ -320,8 +354,7 @@ class TestMsaCommonDownstreamsTP53AKT1(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
-        ekb = ekb_from_text('TP53, AKT1')
-        content.sets('genes', ekb)
+        content.set('genes', KQMLList([_TP53(), _AKT1()]))
         content.sets('up-down', 'ONT::SUCCESSOR')
         msg = get_request(content)
         return msg, content
@@ -343,8 +376,7 @@ class TestMsaCommonDownstreamsMEKVemurafenib(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
-        ekb = ekb_from_text('MEK, Vemurafenib')
-        content.sets('genes', ekb)
+        content.set('genes', KQMLList([_MEK(), _Vemurafenib()]))
         content.sets('up-down', 'ONT::SUCCESSOR')
         msg = get_request(content)
         return msg, content
@@ -362,8 +394,7 @@ class TestMsaCommonDownstreamsMEKonly(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
-        ekb = ekb_from_text('MEK')
-        content.sets('genes', ekb)
+        content.set('genes', KQMLList([_MEK()]))
         content.sets('up-down', 'ONT::SUCCESSOR')
         msg = get_request(content)
         return msg, content

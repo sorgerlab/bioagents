@@ -111,10 +111,8 @@ class MSA_Module(Bioagent):
 
         # Create the reply
         resp = KQMLPerformative('SUCCESS')
-        gene_list = KQMLList()
-        for gene in finder.get_common_entities():
-            gene_list.append(gene)
-        resp.set('commons', gene_list)
+        agents = finder.get_other_agents()
+        resp.set('entities-found', self.make_cljson(agents))
         resp.sets('prefix', prefix)
         return resp
 
@@ -167,6 +165,7 @@ class MSA_Module(Bioagent):
                                            ev_counts=finder.get_ev_totals())
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
+            msg.set('relations-found', self.make_cljson(stmts))
             return msg
 
     def _get_query_info(self, content):
@@ -224,10 +223,12 @@ class MSA_Module(Bioagent):
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
 
+        agents = finder.get_other_agents()
         self.say(finder.describe())
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
-        resp.set('relations-found', str(len(stmts)))
+        resp.set('relations-found', self.make_cljson(stmts))
+        resp.set('entities-found', self.make_cljson(agents))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 

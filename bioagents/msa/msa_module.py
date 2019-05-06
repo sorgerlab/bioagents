@@ -73,8 +73,8 @@ class MSA_Module(Bioagent):
                 'NO_KNOWLEDGE_ACCESS',
                 'Cannot access the database through the web api.'
                 )
-        genes_ekb = content.gets('genes')
-        agents = _get_agents(genes_ekb)
+        genes_cljson = content.get('genes')
+        agents = [self.get_agent(ag) for ag in genes_cljson]
         if len(agents) < 2:
             return self.make_failure('NO_TARGET',
                                      'Only %d < 2 agents given.' % len(agents))
@@ -130,10 +130,10 @@ class MSA_Module(Bioagent):
         if m is None:
             return self.make_failure('UNKNOWN_ACTION')
         action, polarity = [s.lower() for s in m.groups()]
-        target_ekb = content.gets('target')
-        if target_ekb is None or target_ekb == '':
+        target_cljson = content.get('target')
+        if target_cljson is None or not len(target_cljson):
             return self.make_failure('MISSING_TARGET')
-        agent = _get_agent(target_ekb)
+        agent = self.get_agent(target_cljson)
         logger.debug('Found agent (target): %s.' % agent.name)
         site = content.gets('site')
         if site is None:

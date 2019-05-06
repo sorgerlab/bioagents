@@ -1,11 +1,11 @@
 import json
 
 from kqml import KQMLList
-from kqml.cl_json import cl_from_json
 
 from indra.statements import Agent, Activation, BoundCondition, stmts_to_json, \
     ActivityCondition, Phosphorylation
 
+from bioagents import Bioagent
 from bioagents.tests.util import get_request
 from bioagents.bionlg.bionlg_module import BioNLG_Module
 from bioagents.tests.integration import _IntegrationTest
@@ -33,7 +33,7 @@ class _NlgTestBase(_IntegrationTest):
 
     def create_statements(self):
         content = KQMLList('INDRA-TO-NL')
-        stmts_cl_json = cl_from_json(stmts_to_json(self.statements))
+        stmts_cl_json = [Bioagent.make_cljson(stmt) for stmt in self.statements]
         content.set('statements', stmts_cl_json)
         return get_request(content), content
 

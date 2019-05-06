@@ -55,12 +55,12 @@ class DTDA_Module(Bioagent):
     def respond_find_target_drug(self, content):
         """Response content to find-target-drug request."""
         try:
-            target_arg = content.gets('target')
-            target = self._get_agent(target_arg)
+            target_arg = content.get('target')
+            target = self.get_agent(target_arg)
         except Exception:
             return self.make_failure('INVALID_TARGET')
         drug_results = self.dtda.find_target_drugs(target)
-        drugs = self._get_drug_kqml(drug_results)
+        drugs = [self.make_cljson(drug) for drug in drug_results]
         reply = KQMLList('SUCCESS')
         reply.set('drugs', drugs)
         return reply

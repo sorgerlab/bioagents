@@ -46,6 +46,9 @@ class BioSense_Module(Bioagent):
             agent.db_refs['TYPE'] = agent_type
             js = self.make_cljson(agent)
         except Exception as e:
+            logger.info("Encountered an error while parsing: %s."
+                        "Returning empty list." % content.to_string())
+            logger.exception(e)
             js = KQMLList()
         msg = KQMLPerformative('done')
         msg.sets('result', js)

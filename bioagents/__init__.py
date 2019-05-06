@@ -78,7 +78,10 @@ class Bioagent(KQMLModule):
         `entity` is expected to have a method `to_json` which returns valid
         json.
         """
-        entity_json = entity.to_json()
+        if isinstance(entity, list):
+            entity_json = [e.to_json() for e in entity]
+        else:
+            entity_json = entity.to_json()
         return cls.converter.cl_from_json(entity_json)
 
     @classmethod

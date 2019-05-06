@@ -12,3 +12,5 @@ venv
 lib
 *~
 \#*#
+*.log
+*.DS_Store

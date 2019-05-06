@@ -1,4 +1,5 @@
 import sys
+import json
 import logging
 import indra
 from indra.databases import uniprot_client
@@ -8,6 +9,7 @@ from .biosense import InvalidAgentError, UnknownCategoryError, \
 from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
 from bioagents import Bioagent
 from kqml import KQMLPerformative, KQMLList, KQMLString
+from bioagents.ekb import KQMLGraph, agent_from_term
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -27,7 +29,30 @@ class BioSense_Module(Bioagent):
     name = 'BioSense'
     tasks = ['CHOOSE-SENSE', 'CHOOSE-SENSE-CATEGORY',
              'CHOOSE-SENSE-IS-MEMBER', 'CHOOSE-SENSE-WHAT-MEMBER',
-             'GET-SYNONYMS']
+             'GET-SYNONYMS', 'GET-INDRA-REPRESENTATION']
+
+    def respond_get_indra_representation(self, content):
+        id = content.get('ids')[0].to_string()
+        if id.startswith('ONT::'):
+            id_base = id[5:]
+        context = content.get('context').to_string()
+        graph = KQMLGraph(context)
+        try:
+            agent = agent_from_term(graph, id_base)
+            # Set the TRIPS ID in db_refs
+            agent.db_refs['TRIPS'] = id
+            # Infer the type from db_refs
+            agent_type = infer_type(agent)
+            agent.db_refs['TYPE'] = agent_type
+            js = self.make_cljson(agent)
+        except Exception as e:
+            logger.info("Encountered an error while parsing: %s."
+                        "Returning empty list." % content.to_string())
+            logger.exception(e)
+            js = KQMLList()
+        msg = KQMLPerformative('done')
+        msg.sets('result', js)
+        return msg
 
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""
@@ -176,6 +201,18 @@ def make_failure(reason):
     msg = KQMLList('FAILURE')
     msg.set('reason', reason)
     return msg
+
+
+def infer_type(agent):
+    if 'FPLX' in agent.db_refs:
+        return 'ONT::PROTEIN-FAMILY'
+    elif 'HGNC' in agent.db_refs or 'UP' in agent.db_refs:
+        return 'ONT::GENE-PROTEIN'
+    elif 'CHEBI' in agent.db_refs or 'PUBCHEM' in agent.db_refs:
+        return 'ONT::PHARMACOLOGIC-SUBSTANCE'
+    elif 'GO' in agent.db_refs or 'MESH' in agent.db_refs:
+        return 'ONT::BIOLOGICAL-PROCESS'
+    return None
 
 
 if __name__ == "__main__":

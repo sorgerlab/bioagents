@@ -1,0 +1,39 @@
+((ONT::TERM ONT::V34745 :INSTANCE-OF ONT::GENE-PROTEIN :NAME W::BRAF :DRUM
+  ((:DRUM
+    (TERM :ID HGNC::|1097| :NAME
+     "B-Raf proto-oncogene, serine/threonine kinase" :SCORE 0.85366
+     :MATCHES
+     ((MATCH :SCORE 0.85366 :MATCHED "BRAF" :STATUS "Approved Symbol"
+       :EXACT 1))
+     :DBXREFS (UP::P15056) :ONT-TYPES (ONT::GENE))
+    (TERM :ID NCIT::C51194 :NAME "BRAF" :SCORE 0.85366 :MATCHES
+     ((MATCH :SCORE 0.85366 :MATCHED "BRAF" :STATUS "name" :EXACT 1))
+     :MAPPINGS
+     ((MAP :THROUGH
+           (CONCEPT NCIT::C16612
+            (SENSE (MORPH (POS N) (WORD GENE))
+             (PROVENANCE (NAME NCIT)
+              (FILENAME
+               "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+           :TO ONT::GENE))
+     :ONT-TYPES (ONT::GENE))
+    (TERM :ID NCIT::C17476 :NAME "B-RAF protein kinase" :SCORE 0.70732
+     :MATCHES
+     ((MATCH :SCORE 0.70732 :MATCHED "BRAF" :STATUS "synonym" :EXACT 1))
+     :MAPPINGS
+     ((MAP :THROUGH
+           (CONCEPT NCIT::C17021
+            (SENSE (MORPH (POS N) (WORD PROTEIN))
+             (PROVENANCE (NAME NCIT)
+              (FILENAME
+               "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+           :TO ONT::PROTEIN))
+     :ONT-TYPES (ONT::PROTEIN))))
+  :RULE -SIMPLE-REF :RULE -ADD-SPEC :SPEC ONT::THE :NAME-OF W::BRAF)
+ (ONT::EVENT ONT::V34730 :INSTANCE-OF ONT::MODULATE :RULE -NEUTRALTOAGENT
+  :AGENT ONT::V34721 :AFFECTED ONT::V34745 :RULE -RULE10_1_NEUTRAL_NEUTRAL1
+  :RULE -NOOP :RULE -ADD-SPEC :FORCE ONT::TRUE :TYPE
+  (:* ONT::DIRECT-AT W::TARGET) :SPEC ONT::F :TENSE W::PRES)
+ (ONT::TERM ONT::V34721 :INSTANCE-OF ONT::MEDICATION :PRO W::WHAT :RULE
+  -ROBUSTWHAT :RULE -ADD-SPEC :SPEC ONT::WH-TERM-SET :PROFORM W::WHAT :LEX
+  W::DRUG)))

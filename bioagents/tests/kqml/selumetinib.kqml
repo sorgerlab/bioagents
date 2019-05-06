@@ -1,0 +1,32 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V34821) :CONTEXT
+((ONT::TERM ONT::V34821 :INSTANCE-OF ONT::PHARMACOLOGIC-SUBSTANCE :DRUM
+  ((:DRUM
+    (TERM :ID CHEBI::|90227| :NAME "selumetinib" :SCORE 0.85542 :MATCHES
+     ((MATCH :SCORE 0.85542 :MATCHED "selumetinib" :STATUS "name" :EXACT
+       1))
+     :MAPPINGS
+     ((MAP :THROUGH
+           (CONCEPT CHEBI::|52217|
+            (SENSE (MORPH (POS N) (WORD PHARMACEUTICAL))
+             (PROVENANCE (NAME CHEBI)
+              (FILENAME
+               "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/CHEBI/005221.lisp"))))
+           :TO ONT::PHARMACOLOGIC-SUBSTANCE)
+      (MAP :THROUGH
+           (CONCEPT CHEBI::|24432|
+            (SENSE (MORPH (POS N) (WORD (BIOLOGICAL ROLE)))
+             (PROVENANCE (NAME CHEBI)
+              (FILENAME
+               "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/CHEBI/002443.lisp"))))
+           :TO ONT::CHEMICAL)
+      (MAP :THROUGH
+           (CONCEPT CHEBI::|23367|
+            (SENSE (MORPH (POS N) (WORD (MOLECULAR ENTITY)))
+             (PROVENANCE (NAME CHEBI)
+              (FILENAME
+               "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/CHEBI/002336.lisp"))))
+           :TO ONT::MOLECULE))
+     :ONT-TYPES
+     (ONT::PHARMACOLOGIC-SUBSTANCE ONT::CHEMICAL ONT::MOLECULE))))
+  :NAME W::SELUMETINIB :DBID "CHEBI:90227" :DBNAME "selumetinib"
+  :DB-TERM-ID "CHEBI:90227" :SPEC ONT::BARE)))

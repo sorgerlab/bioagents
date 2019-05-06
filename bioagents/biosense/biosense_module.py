@@ -37,13 +37,16 @@ class BioSense_Module(Bioagent):
             id_base = id[5:]
         context = content.get('context').to_string()
         graph = KQMLGraph(context)
-        agent = agent_from_term(graph, id_base)
-        # Set the TRIPS ID in db_refs
-        agent.db_refs['TRIPS'] = id
-        # Infer the type from db_refs
-        agent_type = infer_type(agent)
-        agent.db_refs['TYPE'] = agent_type
-        js = self.make_cljson(agent)
+        try:
+            agent = agent_from_term(graph, id_base)
+            # Set the TRIPS ID in db_refs
+            agent.db_refs['TRIPS'] = id
+            # Infer the type from db_refs
+            agent_type = infer_type(agent)
+            agent.db_refs['TYPE'] = agent_type
+            js = self.make_cljson(agent)
+        except Exception as e:
+            js = KQMLList()
         msg = KQMLPerformative('done')
         msg.sets('result', js)
         return msg

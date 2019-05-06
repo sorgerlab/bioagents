@@ -60,7 +60,7 @@ class DTDA_Module(Bioagent):
         except Exception:
             return self.make_failure('INVALID_TARGET')
         drug_results = self.dtda.find_target_drugs(target)
-        drugs = [self.make_cljson(drug) for drug in drug_results]
+        drugs = self._get_drug_cljson(drug_results)
         reply = KQMLList('SUCCESS')
         reply.set('drugs', drugs)
         return reply
@@ -163,6 +163,17 @@ class DTDA_Module(Bioagent):
         drugs = self._get_drug_kqml(drug_results)
         reply.set('drugs', drugs)
         return reply
+
+
+    @staticmethod
+    def _get_drug_cljson(drug_list):
+        drugs = []
+        for dn, pci in drug_list:
+            name = dn.replace(' ', '-')
+            if pci:
+                db_refs = {'PUBCHEM': pci}
+            drugs.append(Agent(name, db_refs=db_refs))
+        return Bioagent.make_cljson_from_list(drugs)
 
     @staticmethod
     def _get_drug_kqml(drug_list):

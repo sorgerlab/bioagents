@@ -4,7 +4,7 @@ from kqml import KQMLList
 from bioagents.dtda.dtda import DTDA, get_disease
 from bioagents.dtda.dtda_module import DTDA_Module
 from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
-    get_request
+    get_request, agent_from_name
 from bioagents.tests.integration import _IntegrationTest
 from nose.plugins.attrib import attr
 
@@ -84,14 +84,14 @@ class _TestFindTargetDrug(_IntegrationTest):
         super(_TestFindTargetDrug, self).__init__(DTDA_Module)
 
     def create_message(self):
-        target = ekb_kstring_from_text(self.target)
+        target = self.bioagent.make_cljson(agent_from_name(self.target))
         content = KQMLList('FIND-TARGET-DRUG')
         content.set('target', target)
         return get_request(content), content
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 9, output
+        assert len(output.get('drugs')) == 9, (len(output.get('drugs')), output)
 
 
 @attr('nonpublic')
@@ -100,7 +100,7 @@ class TestFindTargetDrugBRAF(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 9, output
+        assert len(output.get('drugs')) >= 9, (len(output.get('drugs')), output)
 
 
 @attr('nonpublic')
@@ -109,7 +109,8 @@ class TestFindTargetDrugAKT(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 0, output
+        assert isinstance(output.get('drugs'), KQMLList), output.get('drugs')
+        assert len(output.get('drugs')) == 0, (len(output.get('drugs')), output)
 
 
 @attr('nonpublic')
@@ -119,16 +120,21 @@ class TestFindTargetDrugPAK4(_TestFindTargetDrug):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         drugs = output.get('drugs')
+        assert isinstance(output.get('drugs'), KQMLList), output.get('drugs')
         assert drugs, drugs
-        assert len(drugs) >= 1, drugs
+        assert len(drugs) >= 1, (len(drugs), drugs)
         drug_names = [drug.gets('name') for drug in drugs]
         exp_drug_name = 'PF-3758309'
         assert exp_drug_name in drug_names,\
             "Expected to find %s; not among %s." % (exp_drug_name, drug_names)
-        pubchem_ids = [drug.gets('pubchem_id') for drug in drugs]
+        pubchem_ids = []
+        for drug in drugs:
+            drug = self.bioagent.get_agent(drug)
+            if drug.db_refs:
+                pubchem_ids.append(drug.db_refs.get('PUBCHEM'))
         exp_pubchem_id = '25227462'
         assert exp_pubchem_id in pubchem_ids,\
-            ("Got pubchem ids %s for drugs %s; expected to find id %d."
+            ("Got pubchem ids %s for drugs %s; expected to find id %s."
              % (pubchem_ids, drug_names, exp_pubchem_id))
 
 
@@ -138,7 +144,7 @@ class TestFindTargetDrugKRAS(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 0, output
+        assert len(output.get('drugs')) == 0, (len(output.get('drugs')), output)
 
 
 @attr('nonpublic')
@@ -147,7 +153,7 @@ class TestFindTargetDrugJAK2(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 9, (len(output), output)
+        assert len(output.get('drugs')) >= 9, (len(output.get('drugs')), output)
 
 
 @attr('nonpublic')
@@ -156,7 +162,7 @@ class TestFindTargetDrugJAK1(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 6, (len(output), output)
+        assert len(output.get('drugs')) >= 6, (len(output.get('drugs')), output)
 
 
 # FIND-DRUG-TARGETS tests

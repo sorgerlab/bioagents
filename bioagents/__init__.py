@@ -74,6 +74,12 @@ class Bioagent(KQMLModule):
         entity_json = entity.to_json()
         return cls.converter.cl_from_json(entity_json)
 
+    @classmethod
+    def make_cljson_from_list(cls, entities):
+        """Convert a list of Agents or Statements into cljson."""
+        entities_json = [entity.to_json() for entity in entities]
+        return cls.converter.cl_from_json(entities_json)
+
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()
         if tell_content == 'START-CONVERSATION':

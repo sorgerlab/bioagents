@@ -3,6 +3,8 @@ from time import sleep
 from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
 
+from bioagents import Bioagent
+from bioagents.biosense.biosense_module import BioSense_Module
 from bioagents.msa.msa import MSA
 from indra.statements import Agent
 
@@ -119,9 +121,9 @@ class _TestMsaGeneralLookup(_IntegrationTest):
 class TestMSATypeAndTargetBRAF(_TestMsaGeneralLookup):
     def create_type_and_target(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
-                                 source=ekb_from_text('None'),
+                                 source=KQMLList(),
                                  type='Phosphorylation',
-                                 target=ekb_from_text('BRAF'))
+                                 target=Bioagent.make_cljson(Agent('BRAF', db_refs={'HGNC': '1097'})))
 
     def check_response_to_type_and_target(self, output):
         return self._check_find_response(output)

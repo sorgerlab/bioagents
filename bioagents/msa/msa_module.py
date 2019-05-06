@@ -170,8 +170,8 @@ class MSA_Module(Bioagent):
             return msg
 
     def _get_query_info(self, content):
-        subj = _get_agent(content.gets('source'))
-        obj = _get_agent(content.gets('target'))
+        subj = self.get_agent(content.get('source'))
+        obj = self.get_agent(content.get('target'))
         if not subj and not obj:
             raise MSALookupError('MISSING_MECHANISM')
 
@@ -333,12 +333,12 @@ def _make_diagrams(stmts):
     return diagrams
 
 
-def _get_agent(agent_ekb):
+def _get_agent(agent_cljson):
     try:
-        agents = _get_agents(agent_ekb)
+        agents = (agent_cljson)
     except Exception as e:
         logger.error("Got exception while converting ekb in an agent:\n"
-                     "%s" % agent_ekb)
+                     "%s" % agent_cljson)
         logger.exception(e)
         raise MSALookupError('MISSING_TARGET')
     agent = None

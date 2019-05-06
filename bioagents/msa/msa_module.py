@@ -6,8 +6,6 @@ import logging
 from datetime import datetime
 from threading import Thread
 
-from indra.statements import Agent
-
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA-module')
@@ -15,7 +13,6 @@ logger = logging.getLogger('MSA-module')
 from kqml import KQMLPerformative, KQMLList
 
 from indra import has_config
-from indra.sources.trips.processor import TripsProcessor
 from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
@@ -332,27 +329,6 @@ def _make_diagrams(stmts):
     sbgn = _make_sbgn(stmts)
     diagrams = {'sbgn': sbgn.decode('utf-8')}
     return diagrams
-
-
-def _get_agent(agent_cljson):
-    try:
-        agents = (agent_cljson)
-    except Exception as e:
-        logger.error("Got exception while converting ekb in an agent:\n"
-                     "%s" % agent_cljson)
-        logger.exception(e)
-        raise MSALookupError('MISSING_TARGET')
-    agent = None
-    if len(agents):
-        agent = agents[0]
-    return agent
-
-
-def _get_agents(ekb):
-    tp = TripsProcessor(ekb)
-    terms = tp.tree.findall('TERM')
-    results = [tp._get_agent_by_id(t.attrib['id'], None) for t in terms]
-    return [ag for ag in results if isinstance(ag, Agent)]
 
 
 if __name__ == "__main__":

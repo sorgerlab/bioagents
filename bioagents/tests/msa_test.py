@@ -4,7 +4,6 @@ from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
 
 from bioagents import Bioagent
-from bioagents.biosense.biosense_module import BioSense_Module
 from bioagents.msa.msa import MSA
 from indra.statements import Agent
 
@@ -24,7 +23,7 @@ def _get_message(heading, target=None, residue=None, position=None):
     msa = msa_module.MSA_Module(testing=True)
     content = KQMLList(heading)
     if target is not None:
-        content.sets('target', ekb_from_text(target))
+        content.sets('target', target)
     if residue and position:
         content.sets('site', '%s-%s' % (residue, position))
     return msa.respond_phosphorylation_activating(content)
@@ -39,7 +38,7 @@ def _check_failure(msg, flaw, reason):
 @attr('nonpublic')
 def test_respond_phosphorylation_activating():
     "Test the msa_module response to a query regarding phosphorylation."
-    msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'MAP2K1', 'S', '222')
+    msg = _get_message('PHOSPHORYLATION-ACTIVATING', _MAP2K1(), 'S', '222')
     assert msg.head() == 'SUCCESS', \
         "MSA could not perform this task because \"%s\"." % msg.gets('reason')
     assert msg.data[1].to_string() == ':is-activating', \
@@ -56,19 +55,19 @@ def test_no_target_failure():
 
 @attr('nonpublic')
 def test_invalid_target_failure():
-    msg = _get_message('PHOSPHORYLATION-ACTIVATING', 'JUND')
+    msg = _get_message('PHOSPHORYLATION-ACTIVATING', _JUND())
     _check_failure(msg, 'missing mechanism', 'MISSING_MECHANISM')
 
 
 @attr('nonpublic')
 def test_not_phosphorylation():
-    msg = _get_message('BOGUS-ACTIVATING', 'MAP2K1', 'S', '222')
+    msg = _get_message('BOGUS-ACTIVATING', _MAP2K1(), 'S', '222')
     _check_failure(msg, 'getting a bogus action', 'MISSING_MECHANISM')
 
 
 @attr('nonpublic')
 def test_not_activating():
-    msg = _get_message('PHOSPHORYLATION-INHIBITING', 'MAP2K1', 'S', '222')
+    msg = _get_message('PHOSPHORYLATION-INHIBITING', _MAP2K1(), 'S', '222')
     _check_failure(msg, 'getting inhibition instead of activation',
                    'MISSING_MECHANISM')
 
@@ -143,6 +142,10 @@ def _MAP2K1():
 
 def _AKT1():
     return Bioagent.make_cljson(Agent('AKT1', db_refs={'HGNC': '391'}))
+
+
+def _JUND():
+    return Bioagent.make_cljson(Agent('JUND', db_refs={'HGNC': '6206'}))
 
 
 def _Vemurafenib():

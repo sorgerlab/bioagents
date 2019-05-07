@@ -3,7 +3,7 @@ import requests
 from nose import SkipTest
 from bioagents import Bioagent
 from bioagents.tests.util import (ekb_kstring_from_text, ekb_from_text,
-                                  get_request, agent_from_name)
+                                  get_request, agent_clj_from_text)
 from bioagents.tests.integration import _IntegrationTest
 from indra.statements import stmts_from_json, Gef
 from kqml import KQMLList
@@ -26,10 +26,8 @@ def _get_qca_content(task, source, target):
         The KQML content to be sent to the QCA module as part of the request.
     """
     content = KQMLList(task)
-    source_agent = agent_from_name(source)
-    target_agent = agent_from_name(target)
-    content.set('source', Bioagent.make_cljson(source_agent))
-    content.set('target', Bioagent.make_cljson(target_agent))
+    content.set('source', agent_clj_from_text(source))
+    content.set('target', agent_clj_from_text(target))
     return content
 
 

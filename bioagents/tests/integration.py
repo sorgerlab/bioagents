@@ -197,7 +197,9 @@ class _IntegrationTest(TestCase):
             assert dt.total_seconds() < self.timeout, \
                 ("Task took too long (%.2f > %d seconds). BA would have "
                  "timed out." % (dt.total_seconds(), self.timeout))
-            output = self.get_output_log()[-1].get('content')
+            output_log = self.get_output_log()
+            latest_log = output_log[-1]
+            output = latest_log.get('content')
             if check_resp is not None:
                 check_resp(self, output)
         return

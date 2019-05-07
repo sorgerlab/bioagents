@@ -1,7 +1,6 @@
 import json
 import requests
 from nose import SkipTest
-from bioagents import Bioagent
 from bioagents.tests.util import (ekb_kstring_from_text, ekb_from_text,
                                   get_request, agent_clj_from_text)
 from bioagents.tests.integration import _IntegrationTest
@@ -33,7 +32,7 @@ def _get_qca_content(task, source, target):
 
 class TestSosKras(_IntegrationTest):
     def __init__(self, *args):
-        super(TestSosKras, self).__init__(QCA_Module)
+        super().__init__(QCA_Module)
 
     def create_message(self):
         content = _get_qca_content('FIND-QCA-PATH', 'SOS1', 'KRAS')
@@ -46,7 +45,7 @@ class TestSosKras(_IntegrationTest):
         print(paths)
         assert len(paths) == 1, len(paths)
         path = paths[0]
-        stmts = [Bioagent.get_statement(stmt) for stmt in path]
+        stmts = self.bioagent.get_statements(path)
         assert len(stmts) == 1, stmts
         assert isinstance(stmts[0], Gef), stmts[0]
         assert stmts[0].ras.name == 'KRAS', stmts[0].ras.name
@@ -57,7 +56,7 @@ class _SimpleQcaTest(_IntegrationTest):
     agents = []
 
     def __init__(self, *args):
-        super(_SimpleQcaTest, self).__init__(QCA_Module)
+        super().__init__(QCA_Module)
 
     def create_message(self):
         content = _get_qca_content('FIND-QCA-PATH', *self.agents)
@@ -67,7 +66,7 @@ class _SimpleQcaTest(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         paths = output.get('paths')
         for path in paths:
-            stmts = [Bioagent.get_statement(stmt) for stmt in path]
+            stmts = self.bioagent.get_statements(path)
             assert stmts[0].agent_list()[0].name == self.agents[0]
             assert stmts[-1].agent_list()[1].name == self.agents[1]
 
@@ -115,7 +114,7 @@ class ProvenanceTest(_IntegrationTest):
     """
 
     def __init__(self, *args):
-        super(ProvenanceTest, self).__init__(QCA_Module)
+        super().__init__(QCA_Module)
 
     def create_message(self):
         content = _get_qca_content('FIND-QCA-PATH', 'MAP2K1', 'BRAF')

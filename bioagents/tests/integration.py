@@ -212,7 +212,7 @@ class _IntegrationTest(TestCase):
 class _StringCompareTest(_IntegrationTest):
     """Integration test in which the expected result is a verbatim string."""
     def __init__(self, *args, **kwargs):
-        super(_StringCompareTest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.expected = NotImplemented
 
     def create_message(self):
@@ -231,7 +231,7 @@ class _StringCompareTest(_IntegrationTest):
 class _FailureTest(_IntegrationTest):
     """Integration test in which the expected result is a failure."""
     def __init__(self, *args, **kwargs):
-        super(_FailureTest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.expected_reason = NotImplemented
 
     def check_response_to_message(self, output):

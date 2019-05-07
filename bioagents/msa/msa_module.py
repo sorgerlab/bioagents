@@ -162,7 +162,6 @@ class MSA_Module(Bioagent):
                                            ev_counts=finder.get_ev_totals())
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
-            msg.set('relations-found', self.make_cljson(stmts))
             return msg
 
     def _get_query_info(self, content):
@@ -224,8 +223,8 @@ class MSA_Module(Bioagent):
         self.say(finder.describe())
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
-        resp.set('relations-found', self.make_cljson(stmts))
         resp.set('entities-found', self.make_cljson(agents))
+        resp.set('num-relations-found', str(len(stmts)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 

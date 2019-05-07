@@ -68,8 +68,8 @@ class DTDA_Module(Bioagent):
     def respond_find_drug_targets(self, content):
         """Response content to find-drug-target request."""
         try:
-            drug_arg = content.gets('drug')
-            drug = self._get_agent(drug_arg)
+            drug_arg = content.get('drug')
+            drug = self.get_agent(drug_arg)
         except Exception as e:
             return self.make_failure('INVALID_DRUG')
         logger.info('DTDA looking for targets of %s' % drug.name)

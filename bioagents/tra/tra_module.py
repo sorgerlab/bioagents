@@ -45,12 +45,12 @@ class TRA_Module(Bioagent):
 
     def respond_satisfies_pattern(self, content):
         """Return response content to satisfies-pattern request."""
-        model_indra_str = content.gets('model')
+        model_indra_clj = content.get('model')
         pattern_lst = content.get('pattern')
         conditions_lst = content.get('conditions')
 
         try:
-            stmts = decode_indra_stmts(model_indra_str)
+            stmts = decode_indra_stmts(model_indra_clj)
             model = assemble_model(stmts)
         except Exception as e:
             logger.exception(e)
@@ -120,10 +120,10 @@ class TRA_Module(Bioagent):
     def respond_model_compare_conditions(self, content):
         condition_agent_clj = content.get('agent')
         target_agent_clj = content.get('affected')
-        model_indra_str = content.gets('model')
+        model_indra_clj = content.get('model')
         up_dn = content.gets('up-dn')
         try:
-            stmts = decode_indra_stmts(model_indra_str)
+            stmts = decode_indra_stmts(model_indra_clj)
             model = assemble_model(stmts)
         except Exception as e:
             logger.exception(e)
@@ -172,10 +172,8 @@ class TRA_Module(Bioagent):
         self.send(msg)
 
 
-def decode_indra_stmts(stmts_json_str):
-    stmts_json = json.loads(stmts_json_str)
-    stmts = stmts_from_json(stmts_json)
-    return stmts
+def decode_indra_stmts(stmts_clj):
+    return TRA_Module.get_statements(stmts_clj)
 
 
 def assemble_model(stmts):

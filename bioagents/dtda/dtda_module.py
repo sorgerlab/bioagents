@@ -173,7 +173,7 @@ class DTDA_Module(Bioagent):
             if pci:
                 db_refs = {'PUBCHEM': pci}
             drugs.append(Agent(name, db_refs=db_refs))
-        return Bioagent.make_cljson_from_list(drugs)
+        return Bioagent.make_cljson(drugs)
 
     @staticmethod
     def _get_drug_kqml(drug_list):

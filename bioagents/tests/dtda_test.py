@@ -172,7 +172,7 @@ class TestFindDrugTargetsVemurafenib(_IntegrationTest):
         super(self.__class__, self).__init__(DTDA_Module)
 
     def create_message(self):
-        drug = ekb_kstring_from_text('Vemurafenib')
+        drug = agent_clj_from_text('Vemurafenib')
         content = KQMLList('FIND-DRUG-TARGETS')
         content.set('drug', drug)
         return get_request(content), content
@@ -191,7 +191,7 @@ class TestFindDrugTargetsSB525334(_IntegrationTest):
         super(self.__class__, self).__init__(DTDA_Module)
 
     def create_message(self):
-        drug = ekb_kstring_from_text('SB525334')
+        drug = agent_clj_from_text('SB525334')
         content = KQMLList('FIND-DRUG-TARGETS')
         content.set('drug', drug)
         return get_request(content), content

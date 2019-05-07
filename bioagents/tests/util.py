@@ -3,41 +3,69 @@ import json
 from collections import OrderedDict
 import xml.etree.ElementTree as ET
 from kqml import KQMLString, KQMLPerformative
-from indra.statements import stmts_to_json, Agent
 from indra.sources import trips
+from indra.statements import stmts_to_json, Agent
+from bioagents import Bioagent
 
-
-def agent_from_text(text):
-    ekb_xml = ekb_from_text(text)
-    tp = trips.process_xml(ekb_xml)
-    agents = tp.get_agents()
-    return agents[0]
 
 def ekb_from_text(text):
+    """Return an EKB XML from the cache or by TRIPS reading from text."""
     ekb_xml = read_or_load(text)
     return ekb_xml
 
 
 def ekb_kstring_from_text(text):
+    """Return a KQML string representation of an EKB from text."""
     ekb_xml = ekb_from_text(text)
     ks = KQMLString(ekb_xml)
     return ks
 
 
-def stmts_json_from_text(text):
+def agent_from_text(text):
+    """Return a single INDRA Agent from text."""
+    ekb_xml = ekb_from_text(text)
+    tp = trips.process_xml(ekb_xml)
+    agents = tp.get_agents()
+    return agents[0]
+
+
+def agent_clj_from_text(text):
+    """Return an INDRA Agent CL-JSON from text."""
+    agent = agent_from_text(text)
+    clj = Bioagent.make_cljson(agent)
+    return clj
+
+
+def stmts_from_text(text):
+    """Return a list of INDRA Statements from text."""
     ekb_xml = read_or_load(text)
     tp = trips.process_xml(ekb_xml)
-    stmts_json = stmts_to_json(tp.statements)
+    return tp.statements
+
+
+def stmts_json_from_text(text):
+    """Return an INDRA Statements JSON from text."""
+    stmts_json = stmts_to_json(stmts_from_text(text))
     return stmts_json
 
 
+def stmts_clj_from_text(text):
+    """Return a CL-JSON representation of INDRA Statements from text."""
+    stmts = stmts_from_text(text)
+    stmts_clj = Bioagent.make_cljson_from_list(stmts)
+    return stmts_clj
+
+
 def stmts_kstring_from_text(text):
+    """Return a KQML string representation of INDRA Statements JSON from
+    text."""
     stmts_json = stmts_json_from_text(text)
     ks = KQMLString(json.dumps(stmts_json))
     return ks
 
 
 def get_request(content):
+    """Make a request KQML performative wrapping some KQML content."""
     msg = KQMLPerformative('REQUEST')
     msg.set('content', content)
     msg.set('reply-with', 'IO-1')

@@ -8,14 +8,12 @@ from indra.statements import *
 from kqml import KQMLPerformative, KQMLList, KQMLToken
 from bioagents import Bioagent
 from bioagents.tests.integration import _StringCompareTest, _IntegrationTest
-from bioagents.tests.util import stmts_kstring_from_text, \
-    ekb_kstring_from_text, get_request
+from bioagents.tests.util import *
 
 
-ekb_map2k1 = Bioagent.make_cljson(Agent('MAP2K1'))
-ekb_braf = Bioagent.make_cljson(Agent('BRAF'))
-ekb_complex = Bioagent.make_cljson(Agent('BRAF', bound_conditions=[
-    BoundCondition(Agent('KRAS'))]))
+ekb_map2k1 = agent_clj_from_text('MAP2K1')
+ekb_braf = agent_clj_from_text('BRAF')
+ekb_complex = agent_clj_from_text('BRAF bound to KRAS')
 
 
 def test_time_interval():
@@ -492,8 +490,8 @@ class TraTestModel3(_IntegrationTest):
         super(TraTestModel3, self).__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
-        model = stmts_kstring_from_text('MEK phosphorylates ERK')
-        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+        model = stmts_clj_from_text('MEK phosphorylates ERK')
+        entity = agent_clj_from_text('ERK that is phosphorylated')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -523,8 +521,8 @@ class TraTestModelAlwaysValue(_IntegrationTest):
                                                       use_kappa=False)
 
     def create_message(self):
-        model = stmts_kstring_from_text('MEK phosphorylates ERK')
-        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+        model = stmts_clj_from_text('MEK phosphorylates ERK')
+        entity = agent_clj_from_text('ERK that is phosphorylated')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()

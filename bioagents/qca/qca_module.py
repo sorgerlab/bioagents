@@ -106,10 +106,11 @@ class QCA_Module(Bioagent):
             txt = EnglishAssembler([stmt]).make_model()
             self.send_provenance_for_stmts(
                 [stmt], "the path from %s to %s (%s)" % (source, target, txt))
-        
         edges_cl_json = self.make_cljson(indra_edge_stmts)
+        paths = KQMLList()
+        paths.append(edges_cl_json)
         reply = KQMLList('SUCCESS')
-        reply.set('paths', edges_cl_json)
+        reply.set('paths', paths)
 
         return reply
 

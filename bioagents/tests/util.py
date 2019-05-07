@@ -52,7 +52,7 @@ def stmts_json_from_text(text):
 def stmts_clj_from_text(text):
     """Return a CL-JSON representation of INDRA Statements from text."""
     stmts = stmts_from_text(text)
-    stmts_clj = Bioagent.make_cljson_from_list(stmts)
+    stmts_clj = Bioagent.make_cljson(stmts)
     return stmts_clj
 
 

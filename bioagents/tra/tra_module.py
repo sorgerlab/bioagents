@@ -259,7 +259,7 @@ def get_chemical_agents(stmts):
 
 def get_molecular_entity(lst):
     description_clj = lst.get('description')
-    return self.get_agent(description_clj)
+    return TRA_Module.get_agent(description_clj)
 
 
 """

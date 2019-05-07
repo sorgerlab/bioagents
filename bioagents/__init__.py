@@ -67,8 +67,7 @@ class Bioagent(KQMLModule):
     @classmethod
     def get_statements(cls, cl_statements):
         """Get a list of INDRA Statements from cl-json"""
-        stmts = [Statement._from_json(
-                    cls.converter.cl_from_json(cl_statement))
+        stmts = [Statement._from_json(cls.converter.cl_to_json(cl_statement))
                  for cl_statement in cl_statements]
         return stmts
 

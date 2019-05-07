@@ -4,18 +4,18 @@ import sympy.physics.units as units
 from bioagents.tra import tra_module
 from bioagents.tra import tra
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
-from indra.statements import stmts_to_json, Agent, Phosphorylation, \
-                             Dephosphorylation, Activation, Inhibition, \
-                             ActivityCondition, ModCondition
+from indra.statements import *
 from kqml import KQMLPerformative, KQMLList, KQMLToken
+from bioagents import Bioagent
 from bioagents.tests.integration import _StringCompareTest, _IntegrationTest
-from bioagents.tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
-                                get_request
+from bioagents.tests.util import stmts_kstring_from_text, \
+    ekb_kstring_from_text, get_request
 
 
-ekb_map2k1 = ekb_kstring_from_text('MAP2K1')
-ekb_braf = ekb_kstring_from_text('BRAF')
-ekb_complex = ekb_kstring_from_text('BRAF-KRAS complex')
+ekb_map2k1 = Bioagent.make_cljson(Agent('MAP2K1'))
+ekb_braf = Bioagent.make_cljson(Agent('BRAF'))
+ekb_complex = Bioagent.make_cljson(Agent('BRAF', bound_conditions=[
+    BoundCondition(Agent('KRAS'))]))
 
 
 def test_time_interval():

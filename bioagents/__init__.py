@@ -3,7 +3,7 @@ import logging
 from os import path
 from datetime import datetime
 
-from indra.statements import Agent, Statement
+from indra.statements import Agent, Statement, stmts_from_json
 from indra.assemblers.html import HtmlAssembler
 from indra.util.statement_presentation import group_and_sort_statements, \
     make_string_from_sort_key
@@ -56,13 +56,19 @@ class Bioagent(KQMLModule):
     def get_agent(cls, cl_agent):
         """Get an agent from the kqml cl-json representation (KQMLList)."""
         agent_json = cls.converter.cl_to_json(cl_agent)
-        return Agent._from_json(agent_json)
+        if isinstance(agent_json, list):
+            return [Agent._from_json(agj) for agj in agent_json]
+        else:
+            return Agent._from_json(agent_json)
 
     @classmethod
     def get_statement(cls, cl_statement):
         """Get an INDRA Statement from cl-json"""
         stmt_json = cls.converter.cl_to_json(cl_statement)
-        return Statement._from_json(stmt_json)
+        if isinstance(stmt_json, list):
+            return stmts_from_json(stmt_json)
+        else:
+            return Statement._from_json(stmt_json)
 
     @classmethod
     def get_statements(cls, cl_statements):

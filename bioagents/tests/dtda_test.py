@@ -81,7 +81,7 @@ def test_find_drug_targets2():
 
 class _TestFindTargetDrug(_IntegrationTest):
     def __init__(self, *args):
-        super(_TestFindTargetDrug, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         target = agent_clj_from_text(self.target)
@@ -169,7 +169,7 @@ class TestFindTargetDrugJAK1(_TestFindTargetDrug):
 @attr('nonpublic')
 class TestFindDrugTargetsVemurafenib(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         drug = agent_clj_from_text('Vemurafenib')
@@ -188,7 +188,7 @@ class TestFindDrugTargetsVemurafenib(_IntegrationTest):
 @attr('nonpublic')
 class TestFindDrugTargetsSB525334(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         drug = agent_clj_from_text('SB525334')
@@ -209,7 +209,7 @@ class _TestIsDrugTarget(_IntegrationTest):
     drug = NotImplemented
 
     def __init__(self, *args):
-        super(_TestIsDrugTarget, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         target = self.bioagent.make_cljson(Agent(self.target))
@@ -274,7 +274,7 @@ class TestIsDrugTarget4(_TestIsDrugTarget):
 @attr('nonpublic')
 class TestFindDiseaseTargets1(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         disease = ekb_kstring_from_text('pancreatic cancer')
@@ -294,7 +294,7 @@ class TestFindDiseaseTargets1(_IntegrationTest):
 @attr('nonpublic')
 class TestFindDiseaseTargets2(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         disease = ekb_kstring_from_text('lung cancer')
@@ -311,7 +311,7 @@ class TestFindDiseaseTargets2(_IntegrationTest):
 @attr('nonpublic')
 class TestFindDiseaseTargets3(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         disease = ekb_kstring_from_text('common cold')
@@ -328,7 +328,7 @@ class TestFindDiseaseTargets3(_IntegrationTest):
 @attr('nonpublic')
 class TestFindTreatment1(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         disease = ekb_kstring_from_text('pancreatic cancer')
@@ -346,7 +346,7 @@ class TestFindTreatment1(_IntegrationTest):
 @attr('nonpublic')
 class TestFindTreatment2(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         disease = ekb_kstring_from_text('lung cancer')
@@ -363,7 +363,7 @@ class TestFindTreatment2(_IntegrationTest):
 @attr('nonpublic')
 class TestFindTreatment3(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
         disease = ekb_kstring_from_text('common cold')

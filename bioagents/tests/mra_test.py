@@ -262,7 +262,7 @@ def _get_expand_model_request(text, model_id):
 
 class TestBuildModelAmbiguity(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModelAmbiguity, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         return _get_build_model_request('MEK1 phosphorylates ERK2')
@@ -294,7 +294,7 @@ class TestBuildModelAmbiguity(_IntegrationTest):
 
 class TestBuildModelBoundCondition(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModelBoundCondition, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         txt = 'KRAS bound to GTP phosphorylates BRAF on T373.'
@@ -314,7 +314,7 @@ class TestBuildModelBoundCondition(_IntegrationTest):
 
 class TestBuildModelProvenance(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModelProvenance, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         txt = 'MEK binds ERK.'
@@ -326,7 +326,7 @@ class TestBuildModelProvenance(_IntegrationTest):
 
 class TestBuildModelComplex(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModelComplex, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         txt = 'The EGFR-EGF complex activates SOS1.'
@@ -346,7 +346,7 @@ class TestBuildModelComplex(_IntegrationTest):
 
 class TestModelUndo(_IntegrationTest):
     def __init__(self, *args):
-        super(TestModelUndo, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
         # Start off with a model
         msg, content = _get_build_model_request('MEK1 phosphorylates ERK2')
         self.bioagent.receive_request(msg, content)
@@ -368,7 +368,7 @@ class TestModelUndo(_IntegrationTest):
 
 class TestSmallModelDescription(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
         # Start off with a model
         msg, content = _get_build_model_request('MEK1 phosphorylates ERK2')
         self.bioagent.receive_request(msg, content)
@@ -395,7 +395,7 @@ class TestLargeModelDescription(_IntegrationTest):
     ]
 
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
         # Start off with a model
         msg, content = _get_build_model_request(self.model_build_list[0])
         self.bioagent.receive_request(msg, content)
@@ -421,7 +421,7 @@ class TestLargeModelDescription(_IntegrationTest):
 
 class TestMissingDescriptionFailure(_FailureTest):
     def __init__(self, *args):
-        super(TestMissingDescriptionFailure, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
         self.expected_reason = 'INVALID_DESCRIPTION'
 
     def create_message(self):
@@ -433,7 +433,7 @@ class TestMissingDescriptionFailure(_FailureTest):
 
 class TestModelBuildExpandUndo(_IntegrationTest):
     def __init__(self, *args):
-        super(TestModelBuildExpandUndo, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand', 'undo']
 
@@ -470,7 +470,7 @@ class TestModelBuildExpandUndo(_IntegrationTest):
 
 class TestGetModelJson(_IntegrationTest):
     def __init__(self, *args):
-        super(TestGetModelJson, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'get_json']
 
@@ -500,7 +500,7 @@ class TestGetModelJson(_IntegrationTest):
 
 class TestGetModelJsonNoID(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'get_json']
 
@@ -529,7 +529,7 @@ class TestGetModelJsonNoID(_IntegrationTest):
 
 class TestModelBuildExpandRemove(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand', 'remove', 'remove2']
 
@@ -605,7 +605,7 @@ class TestModelBuildExpandRemove(_IntegrationTest):
 
 class TestModelRemoveWrong(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'remove']
 
@@ -632,7 +632,7 @@ class TestModelRemoveWrong(_IntegrationTest):
 
 class TestModelHasMechanism(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'hasmech1', 'hasmech2']
 
@@ -670,7 +670,7 @@ class TestModelHasMechanism(_IntegrationTest):
 
 class TestUserGoal(_IntegrationTest):
     def __init__(self, *args):
-        super(TestUserGoal, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         txt = 'Selumetinib decreases FOS in BT20 cells'
@@ -688,7 +688,7 @@ class TestUserGoal(_IntegrationTest):
 
 class TestModelMeetsGoal(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand']
 
@@ -719,7 +719,7 @@ class TestModelMeetsGoal(_IntegrationTest):
 
 class TestModelMeetsGoalBuildOnly(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build']
 
@@ -741,7 +741,7 @@ class TestModelMeetsGoalBuildOnly(_IntegrationTest):
 @attr('nonpublic')
 class TestModelGapSuggest(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand']
 
@@ -770,7 +770,7 @@ class TestModelGapSuggest(_IntegrationTest):
 
 class TestDegradeSbgn(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand']
 
@@ -795,7 +795,7 @@ class TestDegradeSbgn(_IntegrationTest):
 
 class TestModelRefinement(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'refine', 'refine2', 'refine3', 'refine4']
 

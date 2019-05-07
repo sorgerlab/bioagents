@@ -6,8 +6,6 @@ import logging
 from datetime import datetime
 from threading import Thread
 
-from indra.statements import Agent
-
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('MSA-module')
@@ -15,7 +13,6 @@ logger = logging.getLogger('MSA-module')
 from kqml import KQMLPerformative, KQMLList
 
 from indra import has_config
-from indra.sources.trips.processor import TripsProcessor
 from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
@@ -73,8 +70,8 @@ class MSA_Module(Bioagent):
                 'NO_KNOWLEDGE_ACCESS',
                 'Cannot access the database through the web api.'
                 )
-        genes_ekb = content.gets('genes')
-        agents = _get_agents(genes_ekb)
+        genes_cljson = content.get('genes')
+        agents = [self.get_agent(ag) for ag in genes_cljson]
         if len(agents) < 2:
             return self.make_failure('NO_TARGET',
                                      'Only %d < 2 agents given.' % len(agents))
@@ -111,10 +108,8 @@ class MSA_Module(Bioagent):
 
         # Create the reply
         resp = KQMLPerformative('SUCCESS')
-        gene_list = KQMLList()
-        for gene in finder.get_common_entities():
-            gene_list.append(gene)
-        resp.set('commons', gene_list)
+        agents = finder.get_other_agents()
+        resp.set('entities-found', self.make_cljson(agents))
         resp.sets('prefix', prefix)
         return resp
 
@@ -130,10 +125,10 @@ class MSA_Module(Bioagent):
         if m is None:
             return self.make_failure('UNKNOWN_ACTION')
         action, polarity = [s.lower() for s in m.groups()]
-        target_ekb = content.gets('target')
-        if target_ekb is None or target_ekb == '':
+        target_cljson = content.get('target')
+        if target_cljson is None or not len(target_cljson):
             return self.make_failure('MISSING_TARGET')
-        agent = _get_agent(target_ekb)
+        agent = self.get_agent(target_cljson)
         logger.debug('Found agent (target): %s.' % agent.name)
         site = content.gets('site')
         if site is None:
@@ -170,8 +165,8 @@ class MSA_Module(Bioagent):
             return msg
 
     def _get_query_info(self, content):
-        subj = _get_agent(content.gets('source'))
-        obj = _get_agent(content.gets('target'))
+        subj = self.get_agent(content.get('source'))
+        obj = self.get_agent(content.get('target'))
         if not subj and not obj:
             raise MSALookupError('MISSING_MECHANISM')
 
@@ -224,10 +219,12 @@ class MSA_Module(Bioagent):
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
 
+        agents = finder.get_other_agents()
         self.say(finder.describe())
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
-        resp.set('relations-found', str(len(stmts)))
+        resp.set('entities-found', self.make_cljson(agents))
+        resp.set('num-relations-found', str(len(stmts)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         return resp
 
@@ -331,27 +328,6 @@ def _make_diagrams(stmts):
     sbgn = _make_sbgn(stmts)
     diagrams = {'sbgn': sbgn.decode('utf-8')}
     return diagrams
-
-
-def _get_agent(agent_ekb):
-    try:
-        agents = _get_agents(agent_ekb)
-    except Exception as e:
-        logger.error("Got exception while converting ekb in an agent:\n"
-                     "%s" % agent_ekb)
-        logger.exception(e)
-        raise MSALookupError('MISSING_TARGET')
-    agent = None
-    if len(agents):
-        agent = agents[0]
-    return agent
-
-
-def _get_agents(ekb):
-    tp = TripsProcessor(ekb)
-    terms = tp.tree.findall('TERM')
-    results = [tp._get_agent_by_id(t.attrib['id'], None) for t in terms]
-    return [ag for ag in results if isinstance(ag, Agent)]
 
 
 if __name__ == "__main__":

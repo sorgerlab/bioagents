@@ -1,7 +1,9 @@
 import json
 import requests
 from nose import SkipTest
-from bioagents.tests.util import ekb_kstring_from_text, ekb_from_text, get_request
+from bioagents import Bioagent
+from bioagents.tests.util import (ekb_kstring_from_text, ekb_from_text,
+                                  get_request, agent_from_name)
 from bioagents.tests.integration import _IntegrationTest
 from indra.statements import stmts_from_json, Gef
 from kqml import KQMLList
@@ -24,8 +26,10 @@ def _get_qca_content(task, source, target):
         The KQML content to be sent to the QCA module as part of the request.
     """
     content = KQMLList(task)
-    content.set('source', ekb_kstring_from_text(source))
-    content.set('target', ekb_kstring_from_text(target))
+    source_agent = agent_from_name(source)
+    target_agent = agent_from_name(target)
+    content.set('source', Bioagent.make_cljson(source_agent))
+    content.set('target', Bioagent.make_cljson(target_agent))
     return content
 
 
@@ -41,10 +45,10 @@ class TestSosKras(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         paths = output.get('paths')
+        print(paths)
         assert len(paths) == 1, len(paths)
-        path = paths[0].string_value()
-        path_json = json.loads(path)
-        stmts = stmts_from_json(path_json)
+        path = paths[0]
+        stmts = [Bioagent.get_statement(stmt) for stmt in path]
         assert len(stmts) == 1, stmts
         assert isinstance(stmts[0], Gef), stmts[0]
         assert stmts[0].ras.name == 'KRAS', stmts[0].ras.name
@@ -65,7 +69,7 @@ class _SimpleQcaTest(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         paths = output.get('paths')
         for path in paths:
-            stmts = stmts_from_json(json.loads(path.string_value()))
+            stmts = [Bioagent.get_statement(stmt) for stmt in path]
             assert stmts[0].agent_list()[0].name == self.agents[0]
             assert stmts[-1].agent_list()[1].name == self.agents[1]
 

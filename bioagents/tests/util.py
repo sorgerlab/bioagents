@@ -7,15 +7,11 @@ from indra.statements import stmts_to_json, Agent
 from indra.sources import trips
 
 
-def agent_from_name(name):
-    ekb_xml = ET.fromstring(ekb_from_text(name))
-    term = ekb_xml.find('TERM')
-    drum_term = term.find('drum-terms/drum-term')
-    dbid = drum_term.attrib['dbid']
-    dbids = dbid.split('|')
-    db_refs = {k: v for k, v in [d.split(':') for d in dbids]}
-    agent = Agent(name, db_refs=db_refs)
-    return agent
+def agent_from_text(text):
+    ekb_xml = ekb_from_text(text)
+    tp = trips.process_xml(ekb_xml)
+    agents = tp.get_agents()
+    return agents[0]
 
 def ekb_from_text(text):
     ekb_xml = read_or_load(text)

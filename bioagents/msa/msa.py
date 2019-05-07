@@ -304,7 +304,7 @@ class StatementFinder(object):
                 counts[gr] += ev_totals[stmt.get_hash()]
                 oa_dict[gr].append(ag)
 
-        def get_aggregate_agent(agents, dbn, dbi):
+        def get_aggregate_agent(agents, dbi, dbn):
             agent = Agent(agents[0].name, db_refs={dbn: dbi})
             return agent
 

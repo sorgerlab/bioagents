@@ -77,11 +77,8 @@ class DTDA_Module(Bioagent):
         all_targets = sorted(list(set(drug_targets)))
 
         reply = KQMLList('SUCCESS')
-        targets = KQMLList()
-        for target_name in all_targets:
-            target = KQMLList()
-            target.sets('name', target_name)
-            targets.append(target)
+        target_list = [Agent(target_name) for target_name in all_targets]
+        targets = self.make_cljson(target_list)
         reply.set('targets', targets)
         return reply
 
@@ -168,10 +165,9 @@ class DTDA_Module(Bioagent):
     @staticmethod
     def _get_drug_cljson(drug_list):
         drugs = []
-        for dn, pci in drug_list:
-            name = dn.replace(' ', '-')
-            if pci:
-                db_refs = {'PUBCHEM': pci}
+        for name, pubchem_id in drug_list:
+            if pubchem_id:
+                db_refs = {'PUBCHEM': pubchem_id}
             drugs.append(Agent(name, db_refs=db_refs))
         return Bioagent.make_cljson(drugs)
 

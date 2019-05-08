@@ -114,10 +114,8 @@ class DTDA_Module(Bioagent):
         # TODO: add list of actual mutations to response (get from agents)
         # TODO: get fraction not percentage from DTDA (edit get_top_mutation)
         reply = KQMLList('SUCCESS')
-        protein = KQMLList()
-        protein.set('name', mut_protein)
-        protein.set('hgnc', mut_protein)
-        reply.set('protein', protein)
+        protein = Agent(mut_protein, db_refs={'HGNC': mut_protein})
+        reply.set('protein', self.make_cljson(protein))
         reply.set('prevalence', '%.2f' % (mut_percent/100.0))
         reply.set('functional-effect', 'ACTIVE')
         return reply
@@ -155,17 +153,15 @@ class DTDA_Module(Bioagent):
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
         reply = KQMLList('SUCCESS')
-        protein = KQMLList()
-        protein.set('name', mut_protein)
-        protein.set('hgnc', mut_protein)
-        reply.set('protein', protein)
-        reply.sets('disease', disease_arg)
+        protein = Agent(mut_protein, db_refs={'HGNC': mut_protein})
+        reply.set('protein', self.make_cljson(protein))
+        reply.set('disease', disease_arg)
         reply.set('prevalence', '%.2f' % (mut_percent/100.0))
         reply.set('functional-effect', 'ACTIVE')
         # These differ only in mutation, which isn't relevant.
         an_agent = agents[0]
         drug_results = self.dtda.find_target_drugs(an_agent)
-        drugs = self._get_drug_kqml(drug_results)
+        drugs = self._get_drug_cljson(drug_results)
         reply.set('drugs', drugs)
         return reply
 

@@ -285,7 +285,7 @@ class TestFindDiseaseTargets1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         protein = output.get('protein')
-        assert protein.get('name') == 'KRAS'
+        assert protein.gets('name') == 'KRAS', protein.gets('name')
         assert 0.8 < float(output.gets('prevalence')) < 0.9,\
             output.gets('prevalence')
         assert output.gets('functional-effect') == 'ACTIVE'

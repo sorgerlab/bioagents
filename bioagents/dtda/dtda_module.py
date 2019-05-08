@@ -85,22 +85,27 @@ class DTDA_Module(Bioagent):
     def respond_find_disease_targets(self, content):
         """Response content to find-disease-targets request."""
         try:
-            disease_arg = content.gets('disease')
-            disease = get_disease(ET.fromstring(disease_arg))
+            disease_arg = content.get('disease')
+            disease = self.get_agent(disease_arg)
         except Exception as e:
             logger.error(e)
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
-        if not trips_isa(disease.disease_type, 'ont::cancer'):
-            reply = self.make_failure('DISEASE_NOT_FOUND')
-            return reply
+        # NOTE This code is currently not used as disease type is not in Agent
+        # NOTE representation of a disease. We currently only check the disease
+        # NOTE using their standard name
+        # if not trips_isa(disease.disease_type, 'ont::cancer'):
+        #     reply = self.make_failure('DISEASE_NOT_FOUND')
+        #     return reply
 
-        logger.debug('Disease: %s' % disease.name)
+        disease_name = disease.name.lower().replace('-', ' ')
+        disease_name = disease_name.replace('cancer', 'carcinoma')
+        logger.debug('Disease: %s' % disease_name)
 
         try:
             mut_protein, mut_percent, agents = \
-                self.dtda.get_top_mutation(disease.name)
+                self.dtda.get_top_mutation(disease_name)
         except DiseaseNotFoundException:
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
@@ -120,25 +125,28 @@ class DTDA_Module(Bioagent):
     def respond_find_treatment(self, content):
         """Response content to find-treatment request."""
         try:
-            disease_arg = content.gets('disease')
-            disease = get_disease(ET.fromstring(disease_arg))
+            disease_arg = content.get('disease')
+            disease = self.get_agent(disease_arg)
         except Exception as e:
             logger.error(e)
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
-        logger.info('Disease type: %s' % disease.disease_type)
+        # NOTE This code is currently not used as disease type is not in Agent
+        # NOTE representation of a disease. We currently only check the disease
+        # NOTE using their standard name
+        # if not trips_isa(disease.disease_type, 'ont::cancer'):
+        #     logger.info('Disease is not a type of cancer.')
+        #     reply = self.make_failure('DISEASE_NOT_FOUND')
+        #     return reply
 
-        if not trips_isa(disease.disease_type, 'ont::cancer'):
-            logger.info('Disease is not a type of cancer.')
-            reply = self.make_failure('DISEASE_NOT_FOUND')
-            return reply
-
-        logger.debug('Disease: %s' % disease.name)
+        disease_name = disease.name.lower().replace('-', ' ')
+        disease_name = disease_name.replace('cancer', 'carcinoma')
+        logger.debug('Disease: %s' % disease_name)
 
         try:
             mut_protein, mut_percent, agents = \
-                self.dtda.get_top_mutation(disease.name)
+                self.dtda.get_top_mutation(disease_name)
         except DiseaseNotFoundException:
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply

@@ -277,7 +277,7 @@ class TestFindDiseaseTargets1(_IntegrationTest):
         super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('pancreatic cancer')
+        disease = agent_clj_from_text('pancreatic cancer')
         content = KQMLList('FIND-DISEASE-TARGETS')
         content.set('disease', disease)
         return get_request(content), content
@@ -297,7 +297,7 @@ class TestFindDiseaseTargets2(_IntegrationTest):
         super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('lung cancer')
+        disease = agent_clj_from_text('lung cancer')
         content = KQMLList('FIND-DISEASE-TARGETS')
         content.set('disease', disease)
         return get_request(content), content
@@ -314,7 +314,7 @@ class TestFindDiseaseTargets3(_IntegrationTest):
         super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('common cold')
+        disease = agent_clj_from_text('common cold')
         content = KQMLList('FIND-DISEASE-TARGETS')
         content.set('disease', disease)
         return get_request(content), content
@@ -331,7 +331,7 @@ class TestFindTreatment1(_IntegrationTest):
         super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('pancreatic cancer')
+        disease = agent_clj_from_text('pancreatic cancer')
         content = KQMLList('FIND-TREATMENT')
         content.set('disease', disease)
         return get_request(content), content
@@ -349,7 +349,7 @@ class TestFindTreatment2(_IntegrationTest):
         super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('lung cancer')
+        disease = agent_clj_from_text('lung cancer')
         content = KQMLList('FIND-TREATMENT')
         content.set('disease', disease)
         return get_request(content), content
@@ -366,7 +366,7 @@ class TestFindTreatment3(_IntegrationTest):
         super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('common cold')
+        disease = agent_clj_from_text('common cold')
         content = KQMLList('FIND-TREATMENT')
         content.set('disease', disease)
         return get_request(content), content

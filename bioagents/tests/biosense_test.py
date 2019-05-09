@@ -2,7 +2,7 @@ import json
 import unittest
 from nose.tools import raises
 from kqml import KQMLList, KQMLPerformative
-from indra.statements import Agent
+from indra.statements import Agent, Phosphorylation
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from .util import get_request
@@ -65,10 +65,12 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         assert output.head() == 'done'
         res = output.get('result')
         assert res
-        agent = self.bioagent.get_agent(res)
-        assert agent.name == 'SELUMETINIB'
-        assert agent.db_refs['TRIPS'] == 'ONT::V34821', agent.db_refs
-        assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE'
+        stmts = self.bioagent.get_statements(res)
+        assert len(stmts) == 1
+        stmt = stmts[0]
+        assert isinstance(stmt, Phosphorylation)
+        assert stmt.enz.name == 'BRAF'
+        assert stmt.sub.name == 'MAP2K1'
 
 
 # example ekb terms

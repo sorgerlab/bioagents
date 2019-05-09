@@ -72,7 +72,7 @@ class EKB(object):
             if arg_node:
                 tag_name = 'arg%d' % arg_counter
                 tag_type = ':%s' % event_arg.upper()
-                arg_tag = etree.Element(tag_name, id=arg_node, type=tag_type)
+                arg_tag = etree.Element(tag_name, id=arg_node, role=tag_type)
                 event.append(arg_tag)
                 arg_counter += 1
                 if arg_node not in self.components:

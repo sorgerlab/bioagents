@@ -77,8 +77,34 @@ class EKB(object):
                 arg_counter += 1
                 if arg_node not in self.components:
                     self.term_to_ekb(arg_node)
+        # Extract any sites attached to the event
+        site_node = self.graph.get_matching_node(event_node, link='site')
+        if site_node:
+            site_tag = etree.Element('site', id=site_node)
+            event.append(site_tag)
+            site_term = self.get_site_term(site_node)
+            self.ekb.append(site_term)
+
         self.components.append(event_node)
         self.ekb.append(event)
+
+    def get_site_term(self, site_node):
+        site_term = etree.Element('TERM', id=site_node)
+        type_elem = etree.Element('type')
+        type_elem.text = 'ONT::AMINO-ACID'
+        site_term.append(type_elem)
+        site_name = self.graph.get_matching_node(site_node, link='dbname')
+        label = self.graph.node[site_name]['label'][1:-1].lower()
+        if label.startswith('serine'):
+            label = 'SERINE'
+        elif label.startswith('threonine'):
+            label = 'THREONINE'
+        elif label.startswith('tyrosine'):
+            label = 'TYROSINE'
+        name_elem = etree.Element('name')
+        name_elem.text = label
+        site_term.append(name_elem)
+        return site_term
 
     def term_to_ekb(self, term_id):
         node = self.graph.node[term_id]

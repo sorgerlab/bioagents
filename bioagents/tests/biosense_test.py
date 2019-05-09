@@ -71,6 +71,8 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         assert isinstance(stmt, Phosphorylation)
         assert stmt.enz.name == 'BRAF'
         assert stmt.sub.name == 'MAP2K1'
+        assert stmt.residue == 'S'
+        assert stmt.position is None
 
 
 # example ekb terms

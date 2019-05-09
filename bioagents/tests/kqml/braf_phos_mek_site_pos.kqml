@@ -1,0 +1,120 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V35421) :CONTEXT
+    ((ONT::TERM ONT::V35417 :INSTANCE-OF ONT::GENE-PROTEIN :DRUM
+      ((:DRUM
+        (TERM :ID HGNC::|1097| :NAME
+         "B-Raf proto-oncogene, serine/threonine kinase" :SCORE 0.85542
+         :MATCHES
+         ((MATCH :SCORE 0.85542 :MATCHED "BRAF" :STATUS "Approved Symbol"
+           :EXACT 1))
+         :DBXREFS (UP::P15056) :ONT-TYPES (ONT::GENE))
+        (TERM :ID NCIT::C51194 :NAME "BRAF" :SCORE 0.85542 :MATCHES
+         ((MATCH :SCORE 0.85542 :MATCHED "BRAF" :STATUS "name" :EXACT 1))
+         :MAPPINGS
+         ((MAP :THROUGH
+               (CONCEPT NCIT::C16612
+                (SENSE (MORPH (POS N) (WORD GENE))
+                 (PROVENANCE (NAME NCIT)
+                  (FILENAME
+                   "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+               :TO ONT::GENE))
+         :ONT-TYPES (ONT::GENE))
+        (TERM :ID NCIT::C17476 :NAME "B-RAF protein kinase" :SCORE 0.71084
+         :MATCHES
+         ((MATCH :SCORE 0.71084 :MATCHED "BRAF" :STATUS "synonym" :EXACT 1))
+         :MAPPINGS
+         ((MAP :THROUGH
+               (CONCEPT NCIT::C17021
+                (SENSE (MORPH (POS N) (WORD PROTEIN))
+                 (PROVENANCE (NAME NCIT)
+                  (FILENAME
+                   "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+               :TO ONT::PROTEIN))
+         :ONT-TYPES (ONT::PROTEIN))))
+      :GENE-PROTEIN :NAME :NAME W::BRAF :BRAF :DRUM :DBID "HGNC:1097" :DBNAME
+      "B-Raf proto-oncogene, serine/threonine kinase" :DB-TERM-ID "HGNC:1097"
+      :DB-TERM-ID "NCIT:C51194" :DB-TERM-ID "NCIT:C17476" :-SIMPLE-REF :RULE
+      :-ADD-SPEC :SPEC :SPEC ONT::THE :THE :NAME-OF :NAME-OF W::BRAF :BRAF
+      NONE)
+     (ONT::TERM ONT::V35486 :INSTANCE-OF ONT::GENE-PROTEIN :DRUM
+      ((:DRUM
+        (TERM :ID HGNC::|6840| :NAME
+         "mitogen-activated protein kinase kinase 1" :SCORE 0.85542 :MATCHES
+         ((MATCH :SCORE 0.85542 :MATCHED "MAP2K1" :STATUS "Approved Symbol"
+           :EXACT 2)
+          (MATCH :SCORE 0.85542 :MATCHED "MAP2K1" :STATUS "Approved Symbol"
+           :MAYBE-DEPLURALIZED 1 :SURELY-DEPLURALIZED 0 :DEPLURALIZATION-SCORE
+           1 :EXACT 2)
+          (MATCH :SCORE 0.85468 :MATCHED "MAP2K1" :STATUS "Approved Symbol"
+           :MAYBE-DEPLURALIZED 2 :SURELY-DEPLURALIZED 0 :DEPLURALIZATION-SCORE
+           0.85528755 :EXACT 1 :NO-CAPS-SINGLE-CAP 1))
+         :DBXREFS (UP::Q02750) :ONT-TYPES (ONT::GENE))
+        (TERM :ID NCIT::C52823 :NAME "MAP2K1" :SCORE 0.85542 :MATCHES
+         ((MATCH :SCORE 0.85542 :MATCHED "MAP2K1" :STATUS "name" :EXACT 2)
+          (MATCH :SCORE 0.85542 :MATCHED "MAP2K1" :STATUS "name"
+           :MAYBE-DEPLURALIZED 1 :SURELY-DEPLURALIZED 0 :DEPLURALIZATION-SCORE
+           1 :EXACT 2)
+          (MATCH :SCORE 0.85468 :MATCHED "MAP2K1" :STATUS "name"
+           :MAYBE-DEPLURALIZED 2 :SURELY-DEPLURALIZED 0 :DEPLURALIZATION-SCORE
+           0.85528755 :EXACT 1 :NO-CAPS-SINGLE-CAP 1))
+         :MAPPINGS
+         ((MAP :THROUGH
+               (CONCEPT NCIT::C16612
+                (SENSE (MORPH (POS N) (WORD GENE))
+                 (PROVENANCE (NAME NCIT)
+                  (FILENAME
+                   "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+               :TO ONT::GENE))
+         :ONT-TYPES (ONT::GENE))
+        (TERM :ID NCIT::C17808 :NAME "MAP2K1 protein" :SCORE 0.71084 :MATCHES
+         ((MATCH :SCORE 0.71084 :MATCHED "MAP2K1" :STATUS "synonym" :EXACT 2)
+          (MATCH :SCORE 0.71084 :MATCHED "MAP2K1" :STATUS "synonym"
+           :MAYBE-DEPLURALIZED 1 :SURELY-DEPLURALIZED 0 :DEPLURALIZATION-SCORE
+           1 :EXACT 2)
+          (MATCH :SCORE 0.71011 :MATCHED "MAP2K1" :STATUS "synonym"
+           :MAYBE-DEPLURALIZED 2 :SURELY-DEPLURALIZED 0 :DEPLURALIZATION-SCORE
+           0.85528755 :EXACT 1 :NO-CAPS-SINGLE-CAP 1))
+         :MAPPINGS
+         ((MAP :THROUGH
+               (CONCEPT NCIT::C17021
+                (SENSE (MORPH (POS N) (WORD PROTEIN))
+                 (PROVENANCE (NAME NCIT)
+                  (FILENAME
+                   "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+               :TO ONT::PROTEIN))
+         :ONT-TYPES (ONT::PROTEIN))))
+      :GENE-PROTEIN :NAME :NAME W::MAP-2-K-1 :MAP-2-K-1 :DRUM :DBID "HGNC:6840"
+      :DBNAME "mitogen-activated protein kinase kinase 1" :DB-TERM-ID
+      "HGNC:6840" :DB-TERM-ID "NCIT:C52823" :DB-TERM-ID "NCIT:C17808"
+      :-SIMPLE-REF :RULE :-ADD-SPEC :SPEC :SPEC ONT::THE :THE :NAME-OF :NAME-OF
+      W::MAP-2-K-1 :MAP-2-K-1 NONE)
+     (ONT::TERM ONT::V35571 :INSTANCE-OF ONT::MOLECULAR-SITE :DRUM
+      ((:DRUM (AA-SITE :NAME "Serine" :LETTER "S" :INDEX 222))) :MOLECULAR-SITE
+      :NAME :NAME W::S-222 :S-222 :DRUM :SITE-NAME "Serine" :SITE-CODE "S"
+      :SITE-POS 222 :-SIMPLE-REF :RULE :-ADD-SPEC :SPEC :SPEC ONT::THE :THE
+      :NAME-OF :NAME-OF W::S-222 :S-222 NONE)
+     (ONT::RELN ONT::V35492 :INSTANCE-OF ONT::ON :ON :RULE :-NOOP :RULE
+      :-ADD-SPEC :SPEC :SPEC ONT::F :F :GROUND :GROUND ONT::V35571 :V35571
+      :FORCE :FORCE ONT::TRUE :TRUE :LEX :LEX W::ON :ON NONE)
+     (ONT::EVENT ONT::V35421 :INSTANCE-OF ONT::PHOSPHORYLATION :DRUM
+      ((:DRUM
+        (TERM :ID GO::|0006468| :NAME "protein phosphorylation" :SCORE 0.85542
+         :MATCHES
+         ((MATCH :SCORE 0.85542 :MATCHED "protein phosphorylation" :STATUS
+           "name" :EXACT 2))
+         :MAPPINGS
+         ((MAP :THROUGH
+               (CONCEPT GO::|0006464|
+                (SENSE
+                 (MORPH (POS N) (WORD (CELLULAR PROTEIN MODIFICATION PROCESS)))
+                 (PROVENANCE (NAME GO)
+                  (FILENAME
+                   "/Users/ben/src/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/GO/000646.lisp"))))
+               :TO ONT::POST-TRANSLATIONAL-MODIFICATION))
+         :ONT-TYPES (ONT::POST-TRANSLATIONAL-MODIFICATION))))
+      :PHOSPHORYLATION :RULE :-RULE60_4_AGENT_AFFECTED-LOC4-GD :AGENT :AGENT
+      ONT::V35417 :V35417 :AFFECTED :AFFECTED ONT::V35486 :V35486 :SITEMOD
+      :SITEMOD (:* ONT::ON W::ON) :SITE ONT::V35571 :V35571 :FORCE :FORCE
+      ONT::TRUE :TRUE :TYPE :TYPE (:* ONT::PHOSPHORYLATION W::PHOSPHORYLATE)
+      :DBID "GO:0006468" :DBNAME "protein phosphorylation" :DB-TERM-ID
+      "GO:0006468" :-NOOP :RULE :-ADD-SPEC :SPEC :SPEC ONT::F :F :LOCATION
+      :LOCATION ONT::V35492 :V35492 :TENSE :TENSE W::PRES :PRES NONE)))

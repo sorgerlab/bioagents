@@ -33,16 +33,22 @@ class BioSense_Module(Bioagent):
              'GET-SYNONYMS', 'GET-INDRA-REPRESENTATION']
 
     def respond_get_indra_representation(self, content):
+        """Return the INDRA CL-JSON corresponding to the given content."""
         id = content.get('ids')[0].to_string()
         if id.startswith('ONT::'):
             id_base = id[5:]
         context = content.get('context').to_string()
+        # First get the KQML graph object for the given context
         graph = KQMLGraph(context)
+        # Then turn the graph into an EKB XML object, expanding around the
+        # given ID
         ekb = EKB(graph, id_base)
-        print(ekb.to_string())
+        # Now process the EKB using the TRIPS processor to extract Statements
         tp = trips.process_xml(ekb.to_string())
+        # If there are any statements then we can return the CL-JSON of those
         if tp.statements:
             js = self.make_cljson(tp.statements)
+        # Otherwise, we try extracting an Agent and return that
         else:
             try:
                 agent = agent_from_term(graph, id_base)

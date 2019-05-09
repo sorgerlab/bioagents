@@ -98,12 +98,11 @@ class EKB(object):
         site_name = self.graph.get_matching_node_value(site_node, link='site-name')
         site_code = self.graph.get_matching_node_value(site_node, link='site-code')
         if site_dbname:
-            label = self.graph.node[site_dbname]['label'][1:-1].lower()
-            if label.startswith('serine'):
+            if site_dbname.lower().startswith('serine'):
                 code = 'S'
-            elif label.startswith('threonine'):
+            elif site_dbname.lower().startswith('threonine'):
                 code = 'T'
-            elif label.startswith('tyrosine'):
+            elif site_dbname.lower().startswith('tyrosine'):
                 code = 'Y'
         elif site_code:
             label = site_name

@@ -6,6 +6,7 @@ from indra.sources.trips.processor import TripsProcessor
 class EKB(object):
     def __init__(self, graph, term_node):
         self.graph = graph
+        self.graph.draw('test.pdf')
         self.root_term = term_node
         self.ekb = None
         self.components = [term_node]
@@ -13,11 +14,20 @@ class EKB(object):
 
     def build(self):
         self.ekb = etree.Element('ekb')
-        self.term_to_ekb(self.root_term)
+        # Determine if the root term is a TERM or EVENT
+        root_node = self.graph.node[self.root_term]
+        if root_node['category'] == 'ONT::TERM':
+            self.term_to_ekb(self.root_term)
+        else:
+            self.generic_event_to_ekb(self.root_term)
 
-    def get_agent(self):
+    def to_string(self):
         ekb_str = etree.tounicode(self.ekb, pretty_print=True)
         ekb_str = '<?xml version="1.0"?>' + ekb_str
+        return ekb_str
+
+    def get_agent(self):
+        ekb_str = self.to_string()
         tp = TripsProcessor(ekb_str)
         agent = tp._get_agent_by_id(self.root_term, None)
         return agent
@@ -65,13 +75,15 @@ class EKB(object):
                 arg_tag = etree.Element(tag_name, id=arg_node, type=tag_type)
                 event.append(arg_tag)
                 arg_counter += 1
+                if arg_node not in self.components:
+                    self.term_to_ekb(arg_node)
         self.components.append(event_node)
         self.ekb.append(event)
 
     def term_to_ekb(self, term_id):
         node = self.graph.node[term_id]
 
-        term = etree.Element("TERM", id=term_id)
+        term = etree.Element('TERM', id=term_id)
         # Set the type of the TERM
         type = etree.Element('type')
         type.text = node['type']

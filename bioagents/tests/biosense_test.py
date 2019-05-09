@@ -53,6 +53,24 @@ class TestGetIndraRepresentationOneAgent2(_IntegrationTest):
         assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE'
 
 
+class TestGetIndraRepresentationStatement(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(BioSense_Module)
+
+    def create_message(self):
+        content = KQMLList.from_string(_load_kqml('braf_phos_mek.kqml'))
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'done'
+        res = output.get('result')
+        assert res
+        agent = self.bioagent.get_agent(res)
+        assert agent.name == 'SELUMETINIB'
+        assert agent.db_refs['TRIPS'] == 'ONT::V34821', agent.db_refs
+        assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE'
+
+
 # example ekb terms
 mek1_ekb = ekb_from_text('MAP2K1')  # agent
 dusp_ekb = ekb_from_text('DUSP6')  # agent

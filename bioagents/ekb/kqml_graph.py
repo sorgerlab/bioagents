@@ -43,7 +43,7 @@ class KQMLGraph(networkx.DiGraph):
 
     def from_kqml_list(self, kqml_list):
         # We ignore edges that talk about offsets in text
-        drop_edges = ['RULE', 'SPEC', 'FORCE']
+        drop_edges = ['RULE', 'SPEC', 'FORCE', '-NOOP', '-ADD-SPEC']
         # Look at the elements in the list and convert into nodes
         for elem in kqml_list:
             # Get the category of the element (TERM, EVENT, etc.)
@@ -59,7 +59,8 @@ class KQMLGraph(networkx.DiGraph):
 
             # We now add the node with its ID, type and label
             self.add_node(elem_id, type=elem_type,
-                          label='%s (%s)' % (elem_type, elem_id))
+                          label='%s (%s)' % (elem_type, elem_id),
+                          category=elem_category)
 
             # The rest of the entry is always a list of keyword args like
             # :ARG VALUE which we iterate over

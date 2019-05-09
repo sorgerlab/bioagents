@@ -1,2 +1,2 @@
 from .kqml_graph import KQMLGraph
-from .ekb import agent_from_term
+from .ekb import EKB, agent_from_term

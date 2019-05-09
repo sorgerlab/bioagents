@@ -20,6 +20,8 @@ install:
   # Dependencies of Bioagents not covered by previous installs
   - sudo apt-get install graphviz
   - pip install pygraphviz ndex2==1.2.0.58
+  # This is needed because ndex2 downgrades networkx
+  - pip install -U networkx
   # Install utilities for running tests
   - pip install coverage
 before_script:

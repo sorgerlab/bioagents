@@ -6,6 +6,7 @@ from indra.sources.trips.processor import TripsProcessor
 class EKB(object):
     def __init__(self, graph, term_node):
         self.graph = graph
+        self.graph.draw('test.pdf')
         self.root_term = term_node
         self.ekb = None
         self.components = [term_node]
@@ -13,11 +14,20 @@ class EKB(object):
 
     def build(self):
         self.ekb = etree.Element('ekb')
-        self.term_to_ekb(self.root_term)
+        # Determine if the root term is a TERM or EVENT
+        root_node = self.graph.node[self.root_term]
+        if root_node['category'] == 'ONT::TERM':
+            self.term_to_ekb(self.root_term)
+        else:
+            self.generic_event_to_ekb(self.root_term)
 
-    def get_agent(self):
+    def to_string(self):
         ekb_str = etree.tounicode(self.ekb, pretty_print=True)
         ekb_str = '<?xml version="1.0"?>' + ekb_str
+        return ekb_str
+
+    def get_agent(self):
+        ekb_str = self.to_string()
         tp = TripsProcessor(ekb_str)
         agent = tp._get_agent_by_id(self.root_term, None)
         return agent
@@ -62,16 +72,66 @@ class EKB(object):
             if arg_node:
                 tag_name = 'arg%d' % arg_counter
                 tag_type = ':%s' % event_arg.upper()
-                arg_tag = etree.Element(tag_name, id=arg_node, type=tag_type)
+                arg_tag = etree.Element(tag_name, id=arg_node, role=tag_type)
                 event.append(arg_tag)
                 arg_counter += 1
+                if arg_node not in self.components:
+                    self.term_to_ekb(arg_node)
+        # Extract any sites attached to the event
+        site_node = self.graph.get_matching_node(event_node, link='site')
+        if site_node:
+            site_tag = etree.Element('site', id=site_node)
+            event.append(site_tag)
+            site_term = self.get_site_term(site_node)
+            self.ekb.append(site_term)
+
         self.components.append(event_node)
         self.ekb.append(event)
+
+    def get_site_term(self, site_node):
+        site_term = etree.Element('TERM', id=site_node)
+        type_elem = etree.Element('type')
+        site_term.append(type_elem)
+        type_elem.text = 'ONT::MOLECULAR-SITE'
+        # Now we need to look for the site
+        site_dbname = self.graph.get_matching_node_value(site_node, link='dbname')
+        site_name = self.graph.get_matching_node_value(site_node, link='site-name')
+        site_code = self.graph.get_matching_node_value(site_node, link='site-code')
+        if site_dbname:
+            if site_dbname.lower().startswith('serine'):
+                code = 'S'
+            elif site_dbname.lower().startswith('threonine'):
+                code = 'T'
+            elif site_dbname.lower().startswith('tyrosine'):
+                code = 'Y'
+        elif site_code:
+            label = site_name
+            code = site_code
+        else:
+            raise ValueError('No site code found')
+        site_pos = self.graph.get_matching_node_value(site_node, link='site-pos')
+        name_elem = etree.Element('name')
+        name_elem.text = label
+        site_term.append(name_elem)
+        features_tag = etree.Element('features')
+        site_tag = etree.Element('site')
+        site_name_tag = etree.Element('name')
+        site_name_tag.text = label
+        site_code_tag = etree.Element('code')
+        site_code_tag.text = code
+        site_pos_tag = etree.Element('pos')
+        site_pos_tag.text = site_pos
+        site_tag.append(site_name_tag)
+        site_tag.append(site_code_tag)
+        site_tag.append(site_pos_tag)
+        features_tag.append(site_tag)
+        site_term.append(features_tag)
+        return site_term
 
     def term_to_ekb(self, term_id):
         node = self.graph.node[term_id]
 
-        term = etree.Element("TERM", id=term_id)
+        term = etree.Element('TERM', id=term_id)
         # Set the type of the TERM
         type = etree.Element('type')
         type.text = node['type']

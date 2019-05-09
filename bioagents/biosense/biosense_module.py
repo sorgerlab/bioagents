@@ -2,6 +2,7 @@ import sys
 import json
 import logging
 import indra
+from indra.sources import trips
 from indra.databases import uniprot_client
 from .biosense import BioSense, _get_urls
 from .biosense import InvalidAgentError, UnknownCategoryError, \
@@ -9,7 +10,7 @@ from .biosense import InvalidAgentError, UnknownCategoryError, \
 from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
 from bioagents import Bioagent
 from kqml import KQMLPerformative, KQMLList, KQMLString
-from bioagents.ekb import KQMLGraph, agent_from_term
+from bioagents.ekb import KQMLGraph, EKB, agent_from_term
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -32,24 +33,36 @@ class BioSense_Module(Bioagent):
              'GET-SYNONYMS', 'GET-INDRA-REPRESENTATION']
 
     def respond_get_indra_representation(self, content):
+        """Return the INDRA CL-JSON corresponding to the given content."""
         id = content.get('ids')[0].to_string()
         if id.startswith('ONT::'):
             id_base = id[5:]
         context = content.get('context').to_string()
+        # First get the KQML graph object for the given context
         graph = KQMLGraph(context)
-        try:
-            agent = agent_from_term(graph, id_base)
-            # Set the TRIPS ID in db_refs
-            agent.db_refs['TRIPS'] = id
-            # Infer the type from db_refs
-            agent_type = infer_type(agent)
-            agent.db_refs['TYPE'] = agent_type
-            js = self.make_cljson(agent)
-        except Exception as e:
-            logger.info("Encountered an error while parsing: %s."
-                        "Returning empty list." % content.to_string())
-            logger.exception(e)
-            js = KQMLList()
+        # Then turn the graph into an EKB XML object, expanding around the
+        # given ID
+        ekb = EKB(graph, id_base)
+        # Now process the EKB using the TRIPS processor to extract Statements
+        tp = trips.process_xml(ekb.to_string())
+        # If there are any statements then we can return the CL-JSON of those
+        if tp.statements:
+            js = self.make_cljson(tp.statements)
+        # Otherwise, we try extracting an Agent and return that
+        else:
+            try:
+                agent = agent_from_term(graph, id_base)
+                # Set the TRIPS ID in db_refs
+                agent.db_refs['TRIPS'] = id
+                # Infer the type from db_refs
+                agent_type = infer_type(agent)
+                agent.db_refs['TYPE'] = agent_type
+                js = self.make_cljson(agent)
+            except Exception as e:
+                logger.info("Encountered an error while parsing: %s."
+                            "Returning empty list." % content.to_string())
+                logger.exception(e)
+                js = KQMLList()
         msg = KQMLPerformative('done')
         msg.sets('result', js)
         return msg

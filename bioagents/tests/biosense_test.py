@@ -58,11 +58,11 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         super().__init__(BioSense_Module)
 
     def create_message(self):
-        content = KQMLList.from_string(_load_kqml('braf_phos_mek.kqml'))
+        content = KQMLList.from_string(_load_kqml('braf_phos_mek_site_pos.kqml'))
         return get_request(content), content
 
     def check_response_to_message(self, output):
-        assert output.head() == 'done'
+        assert output.head() == 'done', output
         res = output.get('result')
         assert res
         stmts = self.bioagent.get_statements(res)
@@ -72,7 +72,7 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         assert stmt.enz.name == 'BRAF'
         assert stmt.sub.name == 'MAP2K1'
         assert stmt.residue == 'S'
-        assert stmt.position is None
+        assert stmt.position == '222', stmt.position
 
 
 # example ekb terms

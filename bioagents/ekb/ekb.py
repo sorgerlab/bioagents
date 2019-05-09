@@ -91,19 +91,42 @@ class EKB(object):
     def get_site_term(self, site_node):
         site_term = etree.Element('TERM', id=site_node)
         type_elem = etree.Element('type')
-        type_elem.text = 'ONT::AMINO-ACID'
         site_term.append(type_elem)
-        site_name = self.graph.get_matching_node(site_node, link='dbname')
-        label = self.graph.node[site_name]['label'][1:-1].lower()
-        if label.startswith('serine'):
-            label = 'SERINE'
-        elif label.startswith('threonine'):
-            label = 'THREONINE'
-        elif label.startswith('tyrosine'):
-            label = 'TYROSINE'
+        type_elem.text = 'ONT::MOLECULAR-SITE'
+        # Now we need to look for the site
+        site_dbname = self.graph.get_matching_node_value(site_node, link='dbname')
+        site_name = self.graph.get_matching_node_value(site_node, link='site-name')
+        site_code = self.graph.get_matching_node_value(site_node, link='site-code')
+        if site_dbname:
+            label = self.graph.node[site_dbname]['label'][1:-1].lower()
+            if label.startswith('serine'):
+                code = 'S'
+            elif label.startswith('threonine'):
+                code = 'T'
+            elif label.startswith('tyrosine'):
+                code = 'Y'
+        elif site_code:
+            label = site_name
+            code = site_code
+        else:
+            raise ValueError('No site code found')
+        site_pos = self.graph.get_matching_node_value(site_node, link='site-pos')
         name_elem = etree.Element('name')
         name_elem.text = label
         site_term.append(name_elem)
+        features_tag = etree.Element('features')
+        site_tag = etree.Element('site')
+        site_name_tag = etree.Element('name')
+        site_name_tag.text = label
+        site_code_tag = etree.Element('code')
+        site_code_tag.text = code
+        site_pos_tag = etree.Element('pos')
+        site_pos_tag.text = site_pos
+        site_tag.append(site_name_tag)
+        site_tag.append(site_code_tag)
+        site_tag.append(site_pos_tag)
+        features_tag.append(site_tag)
+        site_term.append(features_tag)
         return site_term
 
     def term_to_ekb(self, term_id):

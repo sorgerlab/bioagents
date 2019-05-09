@@ -147,6 +147,16 @@ class KQMLGraph(networkx.DiGraph):
             return None
         return nodes[0]
 
+    def get_matching_node_value(self, node, link=None, target_type=None):
+        node_id = self.get_matching_node(node, link, target_type)
+        if node_id is None:
+            return None
+        node = self.nodes[node_id]
+        label = node['label']
+        if label.startswith('"'):
+            label = label[1:-1]
+        return label
+
     def get_matching_nodes(self, node, link=None, target_type=None):
         """Return all matching nodes or empty list if there is no match.
 

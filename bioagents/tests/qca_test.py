@@ -45,7 +45,7 @@ class TestSosKras(_IntegrationTest):
         print(paths)
         assert len(paths) == 1, len(paths)
         path = paths[0]
-        stmts = self.bioagent.get_statements(path)
+        stmts = self.bioagent.get_statement(path)
         assert len(stmts) == 1, stmts
         assert isinstance(stmts[0], Gef), stmts[0]
         assert stmts[0].ras.name == 'KRAS', stmts[0].ras.name
@@ -66,7 +66,7 @@ class _SimpleQcaTest(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         paths = output.get('paths')
         for path in paths:
-            stmts = self.bioagent.get_statements(path)
+            stmts = self.bioagent.get_statement(path)
             assert stmts[0].agent_list()[0].name == self.agents[0]
             assert stmts[-1].agent_list()[1].name == self.agents[1]
 

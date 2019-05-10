@@ -235,7 +235,7 @@ class _FailureTest(_IntegrationTest):
         self.expected_reason = NotImplemented
 
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', 'Head is not FAILURE'
+        assert output.head() == 'FAILURE', 'Head is not FAILURE: %s' % output
         reason = output.gets('reason')
         assert reason == self.expected_reason, \
             'Reason mismatch: %s instead of %s' % \

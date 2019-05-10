@@ -69,16 +69,20 @@ class MRA_Module(Bioagent):
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
-        descr = content.get('description')
         descr_format = content.gets('format')
+        if descr_format:
+            logger.info('Building model from format: %s' % descr_format)
         no_display = content.get('no-display')
         if not descr_format:
+            descr = content.get('description')
             js = json.dumps(self.converter.cl_to_json(descr))
             res = self.mra.build_model_from_json(js)
         elif descr_format == 'ekb':
-            res = self.mra.build_model_from_ekb(descr.to_string())
+            descr = content.gets('description')
+            res = self.mra.build_model_from_ekb(descr)
         elif descr_format == 'indra_json':
-            res = self.mra.build_model_from_json(descr.to_string())
+            descr = content.gets('description')
+            res = self.mra.build_model_from_json(descr)
         else:
             err_msg = 'Invalid description format: %s' % descr_format
             raise InvalidModelDescriptionError(err_msg)
@@ -129,14 +133,19 @@ class MRA_Module(Bioagent):
 
     def respond_expand_model(self, content):
         """Return response content to expand-model request."""
-        descr = content.gets('description')
         model_id = self._get_model_id(content)
         descr_format = content.gets('format')
         no_display = content.get('no-display')
         try:
-            if not descr_format or descr_format == 'ekb':
+            if not descr_format:
+                descr = content.get('description')
+                js = json.dumps(self.converter.cl_to_json(descr))
+                res = self.mra.expand_model_from_json(js, model_id)
+            elif descr_format == 'ekb':
+                descr = content.gets('description')
                 res = self.mra.expand_model_from_ekb(descr, model_id)
             elif descr_format == 'indra_json':
+                descr = content.gets('description')
                 res = self.mra.expand_model_from_json(descr, model_id)
             else:
                 err_msg = 'Invalid description format: %s' % descr_format

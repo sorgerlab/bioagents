@@ -173,7 +173,7 @@ class TRA_Module(Bioagent):
 
 
 def decode_indra_stmts(stmts_clj):
-    return TRA_Module.get_statements(stmts_clj)
+    return TRA_Module.get_statement(stmts_clj)
 
 
 def assemble_model(stmts):

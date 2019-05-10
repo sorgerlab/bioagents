@@ -69,13 +69,16 @@ class MRA_Module(Bioagent):
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
-        descr = content.gets('description')
+        descr = content.get('description')
         descr_format = content.gets('format')
         no_display = content.get('no-display')
-        if not descr_format or descr_format == 'ekb':
-            res = self.mra.build_model_from_ekb(descr)
+        if not descr_format:
+            js = json.dumps(self.converter.cl_to_json(descr))
+            res = self.mra.build_model_from_json(js)
+        elif descr_format == 'ekb':
+            res = self.mra.build_model_from_ekb(descr.to_string())
         elif descr_format == 'indra_json':
-            res = self.mra.build_model_from_json(descr)
+            res = self.mra.build_model_from_json(descr.to_string())
         else:
             err_msg = 'Invalid description format: %s' % descr_format
             raise InvalidModelDescriptionError(err_msg)

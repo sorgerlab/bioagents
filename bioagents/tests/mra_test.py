@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from kqml.kqml_list import KQMLList
 import indra.statements as sts
 from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
-        get_request, stmts_json_from_text
+        get_request, stmts_json_from_text, stmts_clj_from_text
 from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
@@ -247,14 +247,14 @@ def test_get_matching_statements():
 
 def _get_build_model_request(text):
     content = KQMLList('BUILD-MODEL')
-    descr = ekb_kstring_from_text(text)
+    descr = stmts_clj_from_text(text)
     content.set('description', descr)
     return get_request(content), content
 
 
 def _get_expand_model_request(text, model_id):
     content = KQMLList('EXPAND-MODEL')
-    descr = ekb_kstring_from_text(text)
+    descr = stmts_clj_from_text(text)
     content.set('description', descr)
     content.set('model-id', model_id)
     return get_request(content), content

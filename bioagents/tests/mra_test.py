@@ -245,10 +245,15 @@ def test_get_matching_statements():
 # MRA integration tests
 # #####################
 
-def _get_build_model_request(text):
+def _get_build_model_request(text, format=None):
     content = KQMLList('BUILD-MODEL')
-    descr = stmts_clj_from_text(text)
-    content.set('description', descr)
+    if format == 'ekb':
+        descr = ekb_kstring_from_text(text)
+        content.sets('description', descr)
+        content.sets('format', 'ekb')
+    else:
+        descr = stmts_clj_from_text(text)
+        content.set('description', descr)
     return get_request(content), content
 
 
@@ -265,7 +270,7 @@ class TestBuildModelAmbiguity(_IntegrationTest):
         super().__init__(MRA_Module)
 
     def create_message(self):
-        return _get_build_model_request('MEK1 phosphorylates ERK2')
+        return _get_build_model_request('MEK1 phosphorylates ERK2', format='ekb')
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS',\
@@ -361,7 +366,6 @@ class TestModelUndo(_IntegrationTest):
         assert output.get('model-id') == '2'
         assert output.gets('model') == '[]'
         output_log = self.get_output_log(get_full_log=True)
-        print(output_log)
         assert any([(msg.head() == 'tell') #and 'display' in line)
                     for msg in output_log])
 
@@ -427,6 +431,7 @@ class TestMissingDescriptionFailure(_FailureTest):
     def create_message(self):
         content = KQMLList('BUILD-MODEL')
         content.sets('description', '')
+        content.sets('format', 'ekb')
         msg = get_request(content)
         return msg, content
 

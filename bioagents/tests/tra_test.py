@@ -128,7 +128,7 @@ def test_molecular_quantity_ref():
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
     assert mqr.quant_type == 'total'
-    assert len(mqr.entity.bound_conditions) == 1
+    assert len(mqr.entity.bound_conditions) == 1, len(mqr.entity.bound_conditions)
 
 
 def test_molecular_quantity_ref2():
@@ -136,7 +136,7 @@ def test_molecular_quantity_ref2():
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
     assert mqr.quant_type == 'initial'
-    assert len(mqr.entity.bound_conditions) == 1
+    assert len(mqr.entity.bound_conditions) == 1, len(mqr.entity.bound_conditions)
 
 
 @raises(tra.InvalidMolecularQuantityRefError)
@@ -257,7 +257,7 @@ def test_apply_condition_decrease():
 def test_get_molecular_entity():
     me = KQMLList.from_string('(:description %s)' % clj_complex)
     ent = tra_module.get_molecular_entity(me)
-    assert len(ent.bound_conditions) == 1
+    assert len(ent.bound_conditions) == 1, len(ent.bound_conditions)
 
 
 def test_get_temporal_pattern():

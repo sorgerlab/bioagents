@@ -26,6 +26,9 @@ def agent_from_text(text):
     ekb_xml = ekb_from_text(text)
     tp = trips.process_xml(ekb_xml)
     agents = tp.get_agents()
+    for agent in agents:
+        if agent.bound_conditions:
+            return agent
     return agents[0]
 
 

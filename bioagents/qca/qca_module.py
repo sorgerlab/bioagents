@@ -42,8 +42,8 @@ class QCA_Module(Bioagent):
             reply = self.make_failure('SERVICE_UNAVAILABLE')
             return reply
 
-        source_arg = content.gets('SOURCE')
-        target_arg = content.gets('TARGET')
+        source_arg = content.get('SOURCE')
+        target_arg = content.get('TARGET')
         reltype_arg = content.get('RELTYPE')
 
         if not source_arg:
@@ -51,14 +51,14 @@ class QCA_Module(Bioagent):
         if not target_arg:
             raise ValueError("Target list is empty")
 
-        target = self._get_term_name(target_arg)
+        target = self.get_agent(target_arg)
         if target is None:
             reply = self.make_failure('NO_PATH_FOUND')
             # NOTE: use the one below if it's handled by NLG
             #reply = self.make_failure('TARGET_MISSING')
             return reply
 
-        source = self._get_term_name(source_arg)
+        source = self.get_agent(source_arg)
         if source is None:
             reply = self.make_failure('NO_PATH_FOUND')
             # NOTE: use the one below if it's handled by NLG
@@ -70,7 +70,7 @@ class QCA_Module(Bioagent):
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
 
-        results_list = self.qca.find_causal_path([source], [target],
+        results_list = self.qca.find_causal_path([source.name], [target.name],
                                                  relation_types=relation_types)
         if not results_list:
             reply = self.make_failure('NO_PATH_FOUND')
@@ -106,11 +106,11 @@ class QCA_Module(Bioagent):
             txt = EnglishAssembler([stmt]).make_model()
             self.send_provenance_for_stmts(
                 [stmt], "the path from %s to %s (%s)" % (source, target, txt))
-        indra_edges_str = json.dumps(indra_edges)
-        ks = KQMLString(indra_edges_str)
-
+        edges_cl_json = self.make_cljson(indra_edge_stmts)
+        paths = KQMLList()
+        paths.append(edges_cl_json)
         reply = KQMLList('SUCCESS')
-        reply.set('paths', KQMLList([ks]))
+        reply.set('paths', paths)
 
         return reply
 
@@ -130,8 +130,8 @@ class QCA_Module(Bioagent):
 
     def respond_has_qca_path(self, content):
         """Response content to find-qca-path request."""
-        target_arg = content.gets('TARGET')
-        source_arg = content.gets('SOURCE')
+        target_arg = content.get('TARGET')
+        source_arg = content.get('SOURCE')
         reltype_arg = content.get('RELTYPE')
 
         if not source_arg:
@@ -139,15 +139,15 @@ class QCA_Module(Bioagent):
         if not target_arg:
             raise ValueError("Target list is empty")
 
-        target = self._get_term_name(target_arg)
-        source = self._get_term_name(source_arg)
+        target = self.get_agent(target_arg)
+        source = self.get_agent(source_arg)
 
         if reltype_arg is None or len(reltype_arg) == 0:
             relation_types = None
         else:
             relation_types = [str(k.data) for k in reltype_arg.data]
 
-        has_path = self.qca.has_path([source], [target])
+        has_path = self.qca.has_path([source.name], [target.name])
 
         reply = KQMLList('SUCCESS')
         reply.set('haspath', 'TRUE' if has_path else 'FALSE')

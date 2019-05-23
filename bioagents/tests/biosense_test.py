@@ -65,7 +65,7 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         assert output.head() == 'done', output
         res = output.get('result')
         assert res
-        stmts = self.bioagent.get_statements(res)
+        stmts = self.bioagent.get_statement(res)
         assert len(stmts) == 1
         stmt = stmts[0]
         assert isinstance(stmt, Phosphorylation)

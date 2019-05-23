@@ -1,7 +1,8 @@
 import json
 import requests
 from nose import SkipTest
-from bioagents.tests.util import ekb_kstring_from_text, ekb_from_text, get_request
+from bioagents.tests.util import (ekb_kstring_from_text, ekb_from_text,
+                                  get_request, agent_clj_from_text)
 from bioagents.tests.integration import _IntegrationTest
 from indra.statements import stmts_from_json, Gef
 from kqml import KQMLList
@@ -24,14 +25,14 @@ def _get_qca_content(task, source, target):
         The KQML content to be sent to the QCA module as part of the request.
     """
     content = KQMLList(task)
-    content.set('source', ekb_kstring_from_text(source))
-    content.set('target', ekb_kstring_from_text(target))
+    content.set('source', agent_clj_from_text(source))
+    content.set('target', agent_clj_from_text(target))
     return content
 
 
 class TestSosKras(_IntegrationTest):
     def __init__(self, *args):
-        super(TestSosKras, self).__init__(QCA_Module)
+        super().__init__(QCA_Module)
 
     def create_message(self):
         content = _get_qca_content('FIND-QCA-PATH', 'SOS1', 'KRAS')
@@ -41,10 +42,10 @@ class TestSosKras(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         paths = output.get('paths')
+        print(paths)
         assert len(paths) == 1, len(paths)
-        path = paths[0].string_value()
-        path_json = json.loads(path)
-        stmts = stmts_from_json(path_json)
+        path = paths[0]
+        stmts = self.bioagent.get_statement(path)
         assert len(stmts) == 1, stmts
         assert isinstance(stmts[0], Gef), stmts[0]
         assert stmts[0].ras.name == 'KRAS', stmts[0].ras.name
@@ -55,7 +56,7 @@ class _SimpleQcaTest(_IntegrationTest):
     agents = []
 
     def __init__(self, *args):
-        super(_SimpleQcaTest, self).__init__(QCA_Module)
+        super().__init__(QCA_Module)
 
     def create_message(self):
         content = _get_qca_content('FIND-QCA-PATH', *self.agents)
@@ -65,7 +66,7 @@ class _SimpleQcaTest(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         paths = output.get('paths')
         for path in paths:
-            stmts = stmts_from_json(json.loads(path.string_value()))
+            stmts = self.bioagent.get_statement(path)
             assert stmts[0].agent_list()[0].name == self.agents[0]
             assert stmts[-1].agent_list()[1].name == self.agents[1]
 
@@ -113,7 +114,7 @@ class ProvenanceTest(_IntegrationTest):
     """
 
     def __init__(self, *args):
-        super(ProvenanceTest, self).__init__(QCA_Module)
+        super().__init__(QCA_Module)
 
     def create_message(self):
         content = _get_qca_content('FIND-QCA-PATH', 'MAP2K1', 'BRAF')

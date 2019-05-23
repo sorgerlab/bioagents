@@ -27,7 +27,7 @@ class TestErrorHandling(_IntegrationTest):
             def respond_test(self, content):
                 raise FindMe()
 
-        super(TestErrorHandling, self).__init__(TestAgent)
+        super().__init__(TestAgent)
 
     def create_message(self):
         content = KQMLList('TEST')

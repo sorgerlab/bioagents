@@ -80,7 +80,7 @@ def test_no_activity_given():
 
 class _TestMsaGeneralLookup(_IntegrationTest):
     def __init__(self, *args, **kwargs):
-        super(_TestMsaGeneralLookup, self).__init__(msa_module.MSA_Module)
+        super().__init__(msa_module.MSA_Module)
 
     def _get_content(self, task, **contents):
         content = KQMLList(task)
@@ -251,7 +251,7 @@ class TestMSAConfirm2(_TestMsaGeneralLookup):
 class TestMsaProvenance(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TestMsaProvenance, self).__init__(msa_module.MSA_Module)
+        super().__init__(msa_module.MSA_Module)
 
     def create_message(self):
         content = KQMLList('PHOSPHORYLATION-ACTIVATING')
@@ -290,7 +290,7 @@ class _MsaCommonsCheck(_IntegrationTest):
     param_dict = {'up': 'ONT::MORE', 'down': 'ONT::SUCCESSOR'}
 
     def __init__(self, *args, **kwargs):
-        super(_MsaCommonsCheck, self).__init__(msa_module.MSA_Module)
+        super().__init__(msa_module.MSA_Module)
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
@@ -341,8 +341,7 @@ class TestMsaCommonDownstreamsTP53AKT1(_MsaCommonsCheck):
 @attr('nonpublic')
 class TestMsaCommonDownstreamsMEKVemurafenib(_IntegrationTest):
     def __init__(self, *args, **kwargs):
-        super(TestMsaCommonDownstreamsMEKVemurafenib, self).__init__(
-            msa_module.MSA_Module)
+        super().__init__(msa_module.MSA_Module)
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
@@ -359,8 +358,7 @@ class TestMsaCommonDownstreamsMEKVemurafenib(_IntegrationTest):
 @attr('nonpublic')
 class TestMsaCommonDownstreamsMEKonly(_IntegrationTest):
     def __init__(self, *args, **kwargs):
-        super(TestMsaCommonDownstreamsMEKonly, self).__init__(
-            msa_module.MSA_Module)
+        super().__init__(msa_module.MSA_Module)
 
     def create_message(self):
         content = KQMLList('GET-COMMON')

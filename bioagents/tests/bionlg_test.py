@@ -28,11 +28,12 @@ class _NlgTestBase(_IntegrationTest):
     sentences = []
 
     def __init__(self, *args, **kwargs):
-        super(_NlgTestBase, self).__init__(BioNLG_Module)
+        super().__init__(BioNLG_Module)
 
     def create_statements(self):
         content = KQMLList('INDRA-TO-NL')
-        content.sets('statements', json.dumps(stmts_to_json(self.statements)))
+        stmts_cl_json = self.bioagent.make_cljson(self.statements)
+        content.set('statements', stmts_cl_json)
         return get_request(content), content
 
     def check_response_to_statements(self, output):

@@ -46,20 +46,14 @@ class BioNLG_Module(Bioagent):
 
     def respond_indra_to_nl(self, content):
         """Return response content to build-model request."""
-        stmts_json_str = content.gets('statements')
-        stmts = decode_indra_stmts(stmts_json_str)
+        stmts_cl_json = content.get('statements')
+        stmts = self.get_statement(stmts_cl_json)
         txts = assemble_english(stmts)
         txts_kqml = [KQMLString(txt) for txt in txts]
         txts_list = KQMLList(txts_kqml)
         reply = KQMLList('OK')
         reply.set('NL', txts_list)
         return reply
-
-
-def decode_indra_stmts(stmts_json_str):
-    stmts_json = json.loads(stmts_json_str)
-    stmts = stmts_from_json(stmts_json)
-    return stmts
 
 
 def assemble_english(stmts):

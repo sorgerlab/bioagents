@@ -71,13 +71,6 @@ class Bioagent(KQMLModule):
             return Statement._from_json(stmt_json)
 
     @classmethod
-    def get_statements(cls, cl_statements):
-        """Get a list of INDRA Statements from cl-json"""
-        stmts = [Statement._from_json(cls.converter.cl_to_json(cl_statement))
-                 for cl_statement in cl_statements]
-        return stmts
-
-    @classmethod
     def make_cljson(cls, entity):
         """Convert an Agent or a Statement into cljson.
 
@@ -89,12 +82,6 @@ class Bioagent(KQMLModule):
         else:
             entity_json = entity.to_json()
         return cls.converter.cl_from_json(entity_json)
-
-    @classmethod
-    def make_cljson_from_list(cls, entities):
-        """Convert a list of Agents or Statements into cljson."""
-        entities_json = [entity.to_json() for entity in entities]
-        return cls.converter.cl_from_json(entities_json)
 
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()

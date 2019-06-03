@@ -390,6 +390,24 @@ class StatementFinder(object):
             summary_stmts.append(make_stmt_from_sort_key(key, verb))
         return summary_stmts
 
+    def get_stmt_types(self):
+        """Get the set of statement types found in the body of statements."""
+        # TODO: this could be sorted by total evidence for each stmt type
+        stmts = self.get_statements()
+        evs = self.get_ev_totals()
+        counts = {}
+        for stmt in stmts:
+            stmt_type = stmt.__class__.__name__.lower()
+            ev = evs.get(stmt.get_hash(), 0)
+            if stmt_type in counts:
+                counts[stmt_type] += ev
+            else:
+                counts[stmt_type] = ev
+        sorted_stmt_types = [k for k, v in sorted(counts.items(),
+                                                  key=lambda x: x[1],
+                                                  reverse=True)]
+        return sorted_stmt_types
+
     def get_summary(self, num=5):
         """List the top statements in plain English."""
         stmts = self.get_summary_stmts(num)
@@ -452,13 +470,6 @@ class StatementFinder(object):
         """Generate statement jsons and return the json bytes."""
         msg = json.dumps(stmts_to_json(self.get_statements()), indent=1)
         return msg
-
-    def get_unique_stmt_list(self):
-        """Get the set of statement types found in the body of statements."""
-        # TODO: this could be sorted by total evidence for each stmt type
-        stmt_types = {stmt.__class__.__name__.lower() for stmt in
-                      self.get_statements()}
-        return list(stmt_types)
 
     def get_other_names(self, entity, other_role=None):
         """Find all the resulting agents besides the one given.
@@ -576,11 +587,11 @@ class BinaryDirected(StatementFinder):
         return StatementQuery(source, target, [], verb, None, params)
 
     def describe(self, limit=None):
-        verbs = self.get_unique_stmt_list()
-        if len(verbs):
+        stmt_types = self.get_stmt_types()
+        if stmt_types:
             desc = "Overall, I found that %s can %s %s." % \
                    (self.query.subj.name,
-                    _join_list([statement_base_verb(v) for v in verbs]),
+                    _join_list([statement_base_verb(v) for v in stmt_types]),
                     self.query.obj.name)
         else:
             desc = 'Overall, I found that %s does not affect %s.' % names
@@ -596,7 +607,7 @@ class BinaryUndirected(StatementFinder):
                               params)
 
     def describe(self, limit=None):
-        verbs = self.get_unique_stmt_list()
+        stmt_types = self.get_stmt_types()
         names = [ag.name for ag in self.query.agents]
         overrides = {'increaseamount': 'increase amount',
                      'decreaseamount': 'decrease amount',
@@ -604,11 +615,11 @@ class BinaryUndirected(StatementFinder):
                      'gef': 'GEF interaction',
                      'gap': 'GAP interaction',
                      'complex': 'complex formation'}
-        if verbs:
+        if stmt_types:
             desc = "Overall, I found that %s and %s interact in the " \
                    "following ways: " % tuple(names)
             desc += (_join_list([v if v not in overrides else overrides[v]
-                                 for v in verbs]) + '.')
+                                 for v in stmt_types]) + '.')
         else:
             desc = 'Overall, I found that %s and %s do not interact.' \
                    % tuple(names)

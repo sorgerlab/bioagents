@@ -16,7 +16,7 @@ from indra.sources import indra_db_rest as idbr
 
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
-from indra.assemblers.english.assembler import _join_list
+from indra.assemblers.english.assembler import _join_list, statement_base_verb
 
 logger = logging.getLogger('MSA')
 
@@ -453,19 +453,12 @@ class StatementFinder(object):
         msg = json.dumps(stmts_to_json(self.get_statements()), indent=1)
         return msg
 
-    def get_unique_verb_list(self):
+    def get_unique_stmt_list(self):
         """Get the set of statement types found in the body of statements."""
-        overrides = {'increaseamount': 'increase amount',
-                     'decreaseamount': 'decrease amount',
-                     'gtpactivation': 'GTP-bound activation',
-                     'gef': 'GEF interaction',
-                     'gap': 'GAP interaction',
-                     'complex': 'complex formation'}
+        # TODO: this could be sorted by total evidence for each stmt type
         stmt_types = {stmt.__class__.__name__.lower() for stmt in
                       self.get_statements()}
-        verbs = {st if st not in overrides else overrides[st]
-                 for st in stmt_types}
-        return list(verbs)
+        return list(stmt_types)
 
     def get_other_names(self, entity, other_role=None):
         """Find all the resulting agents besides the one given.
@@ -583,12 +576,12 @@ class BinaryDirected(StatementFinder):
         return StatementQuery(source, target, [], verb, None, params)
 
     def describe(self, limit=None):
-        verbs = self.get_unique_verb_list()
-        names = (self.query.subj.name, self.query.obj.name)
+        verbs = self.get_unique_stmt_list()
         if len(verbs):
-            desc = "Overall, I found that %s can have the following effects " \
-                   "on %s: " % names
-            desc += _join_list(verbs) + '.'
+            desc = "Overall, I found that %s can %s %s." % \
+                   (self.query.subj.name,
+                    _join_list([statement_base_verb(v) for v in verbs]),
+                    self.query.obj.name)
         else:
             desc = 'Overall, I found that %s does not affect %s.' % names
         return desc
@@ -603,12 +596,19 @@ class BinaryUndirected(StatementFinder):
                               params)
 
     def describe(self, limit=None):
-        verbs = self.get_unique_verb_list()
+        verbs = self.get_unique_stmt_list()
         names = [ag.name for ag in self.query.agents]
-        if len(verbs):
+        overrides = {'increaseamount': 'increase amount',
+                     'decreaseamount': 'decrease amount',
+                     'gtpactivation': 'GTP-bound activation',
+                     'gef': 'GEF interaction',
+                     'gap': 'GAP interaction',
+                     'complex': 'complex formation'}
+        if verbs:
             desc = "Overall, I found that %s and %s interact in the " \
                    "following ways: " % tuple(names)
-            desc += _join_list(verbs) + '.'
+            desc += (_join_list([v if v not in overrides else overrides[v]
+                                 for v in verbs]) + '.')
         else:
             desc = 'Overall, I found that %s and %s do not interact.' \
                    % tuple(names)

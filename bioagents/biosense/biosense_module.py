@@ -1,15 +1,13 @@
 import sys
-import json
 import logging
 import indra
 from indra.sources import trips
-from indra.databases import uniprot_client
-from .biosense import BioSense, _get_urls
+from .biosense import BioSense
 from .biosense import InvalidAgentError, UnknownCategoryError, \
     SynonymsUnknownError
 from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
 from bioagents import Bioagent, add_agent_type
-from kqml import KQMLPerformative, KQMLList, KQMLString
+from kqml import KQMLPerformative, KQMLList
 from bioagents.ekb import KQMLGraph, EKB, agent_from_term
 
 

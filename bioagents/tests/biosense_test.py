@@ -123,7 +123,7 @@ def test_choose_sense_is_member_not_family_or_complex():
     bs.choose_sense_is_member(meka, mek1a)
 
 
-@raises(InvalidCollectionError)
+@raises(CollectionNotFamilyOrComplexError)
 def test_choose_sense_is_member_invalid_collection():
     """raises InvalidCollectionError if the collection we are testing
     membership in is not recognized
@@ -161,7 +161,7 @@ def test_get_synonyms_no_synonyms_for_type():
     """raises InvalidAgentError when the agent is not recognized or if the
     input submitted is not valid XML or is not in the correct format
     """
-    bs.get_synonyms(agent_clj_from_text('vemurafenib'))
+    bs.get_synonyms(Bioagent.get_agent(agent_clj_from_text('vemurafenib')))
 
 
 # BioSense module unit tests
@@ -183,7 +183,10 @@ def test_respond_choose_nonsense():
     res = bs.respond_choose_sense(msg_content)
     print(res)
     assert res.head() == 'SUCCESS'
-    assert res.get('agents')[0].gets('ont-type') is None
+    agents_clj = res.get('agents')
+    agent = Bioagent.get_agent(agents_clj)
+    assert agent.name == 'BAGEL'
+    assert len(agent.db_refs) == 1
 
 
 def test_respond_choose_sense_category():

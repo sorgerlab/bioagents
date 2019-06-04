@@ -1,13 +1,10 @@
 import sys
 import logging
-import xml.etree.ElementTree as ET
 from indra.sources.trips.processor import TripsProcessor
 from indra.statements import Agent
 from kqml import KQMLList
-from .dtda import DTDA, Disease, get_disease, \
-                  DrugNotFoundException, DiseaseNotFoundException
+from .dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
 from bioagents import Bioagent
-from bioagents.resources.trips_ont_manager import trips_isa
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',

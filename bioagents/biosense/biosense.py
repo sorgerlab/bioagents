@@ -1,8 +1,6 @@
 import logging
 from indra import __path__ as _indra_path
-from indra.sources import trips
-from indra.sources.trips.processor import TripsProcessor
-from indra.databases import get_identifiers_url, uniprot_client
+from indra.databases import uniprot_client
 from indra.util import read_unicode_csv
 from indra.tools import expand_families
 from indra.preassembler.hierarchy_manager import hierarchies
@@ -74,23 +72,24 @@ class BioSense(object):
 
         Parameters
         ----------
-        agent_ekb : string
-        XML for an extraction knowledge base (ekb) term.
-        collection_ekb : string
-        XML for the ekb term for a collection method tests for membership
+        agent : Agent
+            An Agent whose membership is to be checked
+        collection : Agent
+            Collection in which to check if the agent is a member.
 
         Returns
         -------
-        bool: True is agent is a member of the collection
+        bool
+            True if agent is a member of the collection
 
         Raises
         ------
-        InvalidAgentError
-        If agent_ekb does not correspond to a recognized agent
-
         InvalidCollectionError
-        If collection_ekb does not correspond to a recognized category
+            If collection does not correspond to a FamPlex entry
         """
+        if 'FPLX' not in collection.db_refs:
+            raise InvalidCollectionError('%s is not a family or complex' %
+                                         collection)
         return agent.isa(collection, hierarchies)
 
     def choose_sense_what_member(self, collection):
@@ -98,26 +97,23 @@ class BioSense(object):
 
         Parameters
         ----------
-        collection_ekb : string
-        XML for an extraction knowledge base (ekb) term for a family or
-        complex (from 'FMPLX' or 'BE')
+        collection : Agent
+            Collection to check for members.
 
         Returns
         -------
         members : list[indra.statements.Agent]
-        List of agents in collection
+            List of agents in collection
 
         Raises
         ------
         InvalidCollectionError
-        If collection_ekb does not correspond to a recognized collection
-
-        CollectionNotFamilyOrComplexError
-        collection is not from 'FMPLX' or 'BE'
+            If collection does not correspond to a FamPlex entry
         """
+        if 'FPLX' not in collection.db_refs:
+            raise InvalidCollectionError('%s is not a family or complex' %
+                                         collection)
         members = _get_members(collection)
-        if members is None:
-            raise CollectionNotFamilyOrComplexError('collection not in FPLX')
         return members
 
     def get_synonyms(self, agent):
@@ -125,18 +121,18 @@ class BioSense(object):
 
         Parameters
         -----------
-        agent_ekb : str
-            XML for an extraction knowledge base (ekb) term for an agent
+        agent : Agent
+            An Agent whose synonyms are to be returned.
 
         Returns
         -------
         synonyms : list[str]
-            list of synonyms for the agent
+            List of synonyms for the agent
 
         Raises
         ------
-        InvalidAgentError
-            agent_ekb does not correspond to a recognized agent
+        SynonymsUnknownError
+            We don't provide synonyms for this type of agent.
         """
         up_id = agent.db_refs.get('UP')
         fplx_id = agent.db_refs.get('FPLX')
@@ -147,14 +143,13 @@ class BioSense(object):
         else:
             raise SynonymsUnknownError('We don\'t provide synonyms for '
                                        'this type of agent.')
-
         return synonyms
 
 
 def _get_members(agent):
-    dbname, dbid = agent.get_grounding()
-    if dbname not in ['FPLX', 'BE']:
+    if 'FPLX' not in agent.db_refs:
         return None
+    dbname, dbid = 'FPLX', agent.db_refs['FPLX']
     eh = hierarchies['entity']
     uri = eh.get_uri(dbname, dbid)
     children_uris = sorted(eh.get_children(uri))

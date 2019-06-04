@@ -84,12 +84,12 @@ class BioSense(object):
 
         Raises
         ------
-        InvalidCollectionError
+        CollectionNotFamilyOrComplexError
             If collection does not correspond to a FamPlex entry
         """
         if 'FPLX' not in collection.db_refs:
-            raise InvalidCollectionError('%s is not a family or complex' %
-                                         collection)
+            raise CollectionNotFamilyOrComplexError(
+                '%s is not a family or complex' % collection)
         return agent.isa(collection, hierarchies)
 
     def choose_sense_what_member(self, collection):
@@ -107,12 +107,12 @@ class BioSense(object):
 
         Raises
         ------
-        InvalidCollectionError
+        CollectionNotFamilyOrComplexError
             If collection does not correspond to a FamPlex entry
         """
         if 'FPLX' not in collection.db_refs:
-            raise InvalidCollectionError('%s is not a family or complex' %
-                                         collection)
+            raise CollectionNotFamilyOrComplexError(
+                '%s is not a family or complex' % collection)
         members = _get_members(collection)
         return members
 

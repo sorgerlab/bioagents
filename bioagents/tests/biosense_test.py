@@ -4,6 +4,7 @@ from kqml import KQMLList
 from indra.statements import Phosphorylation
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
+from bioagents import Bioagent
 from bioagents.biosense.biosense_module import BioSense_Module
 from bioagents.biosense.biosense import BioSense, InvalidAgentError, \
     InvalidCollectionError, UnknownCategoryError, \
@@ -74,21 +75,26 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
 
 
 mek1 = agent_clj_from_text('MEK1')
+mek1a = Bioagent.get_agent(mek1)
 mek = agent_clj_from_text('MEK')
+meka = Bioagent.get_agent(mek)
 dusp6 = agent_clj_from_text('DUSP6')
+dusp6a = Bioagent.get_agent(dusp6)
 braf = agent_clj_from_text('BRAF')
+brafa = Bioagent.get_agent(braf)
+
 bs = BioSense()
 
 
 def test_choose_sense_category():
-    cases = [(mek1, [('kinase activity', 'TRUE'),
-                     ('enzyme', 'TRUE'),
-                     ('kinase', 'TRUE'),
-                     ('transcription-factor', 'FALSE'),
-                     ('W::KINASE', 'TRUE'),
-                     ('phosphatase', 'FALSE')]),
-             (dusp6, [('phosphatase', 'TRUE'), ('enzyme', 'TRUE')]),
-             (braf, [('kinase', 'TRUE')])]
+    cases = [(mek1a, [('kinase activity', 'TRUE'),
+                      ('enzyme', 'TRUE'),
+                      ('kinase', 'TRUE'),
+                      ('transcription-factor', 'FALSE'),
+                      ('W::KINASE', 'TRUE'),
+                      ('phosphatase', 'FALSE')]),
+             (dusp6a, [('phosphatase', 'TRUE'), ('enzyme', 'TRUE')]),
+             (brafa, [('kinase', 'TRUE')])]
     for agent, result_tuples in cases:
         for cat, result in result_tuples:
             print('Testing: %s. Expect result %s.' % (cat, result))
@@ -99,12 +105,12 @@ def test_choose_sense_category():
 @raises(UnknownCategoryError)
 def test_choose_sense_category_unknown_category():
     """should raise UnknownCategoryError if the category is not recognized"""
-    bs.choose_sense_category(mek1, 'foo')
+    bs.choose_sense_category(mek1a, 'foo')
 
 
 def test_choose_sense_is_member():
-    cases = [(mek1, mek, True),
-             (dusp6, mek, False)]
+    cases = [(mek1a, meka, True),
+             (dusp6a, meka, False)]
     for (agent, collection, result) in cases:
         assert bs.choose_sense_is_member(agent, collection) == result
 
@@ -114,7 +120,7 @@ def test_choose_sense_is_member_not_family_or_complex():
     """raises CollectionNotFamilyOrComplexError if the collection we test
     membership in is not a family or complex
     """
-    bs.choose_sense_is_member(mek, mek1)
+    bs.choose_sense_is_member(meka, mek1a)
 
 
 @raises(InvalidCollectionError)
@@ -122,11 +128,11 @@ def test_choose_sense_is_member_invalid_collection():
     """raises InvalidCollectionError if the collection we are testing
     membership in is not recognized
     """
-    bs.choose_sense_is_member(mek1, dusp6)
+    bs.choose_sense_is_member(mek1a, dusp6a)
 
 
 def test_choose_sense_what_member():
-    members = bs.choose_sense_what_member(mek)
+    members = bs.choose_sense_what_member(meka)
     member_names = [agent.name for agent in members]
     result = ['MAP2K1', 'MAP2K2']
     assert member_names == result
@@ -134,19 +140,19 @@ def test_choose_sense_what_member():
 
 @raises(CollectionNotFamilyOrComplexError)
 def test_choose_sense_what_member_not_family_or_complex():
-    bs.choose_sense_what_member(mek1)
+    bs.choose_sense_what_member(mek1a)
 
 
 def test_get_synonyms():
     example_synonyms = {'PRKMK1', 'MEK1', 'MAP2K1', 'ERK activator kinase 1',
                         'MKK1', 'MEK 1'}
-    synonyms = set(bs.get_synonyms(mek1))
+    synonyms = set(bs.get_synonyms(mek1a))
     assert example_synonyms.issubset(synonyms)
 
 
 def test_get_synonyms_fplx():
     example_synonyms = {'MEK', 'MEK1/2', 'MEK 1/2'}
-    synonyms = set(bs.get_synonyms(mek))
+    synonyms = set(bs.get_synonyms(meka))
     assert example_synonyms.issubset(synonyms), synonyms
 
 
@@ -162,60 +168,37 @@ def test_get_synonyms_no_synonyms_for_type():
 def test_respond_choose_sense():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE')
-    msg_content.sets('ekb-term', mek1_ekb)
+    msg_content.set('ekb-term', mek1)
     res = bs.respond_choose_sense(msg_content)
-    print(res)
-    agents = res.get('agents')
-    assert agents and agents.data
-    agent = agents[0]
-    name = agent.gets('name')
-    assert name == 'MAP2K1'
-    ont_type = agent.get('ont-type')
-    assert ont_type == 'ONT::GENE'
-    description = agent.gets('description')
-    assert 'Dual specificity' in description
+    agents_clj = res.get('agents')
+    assert agents_clj
+    agent = Bioagent.get_agent(agents_clj)
+    assert agent.name == 'MAP2K1'
 
 
 def test_respond_choose_nonsense():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE')
-    msg_content.sets('ekb-term', ekb_from_text('bagel'))
+    msg_content.set('ekb-term', agent_clj_from_text('bagel'))
     res = bs.respond_choose_sense(msg_content)
     print(res)
     assert res.head() == 'SUCCESS'
     assert res.get('agents')[0].gets('ont-type') is None
 
 
-@unittest.skip('No ambiguity reported here yet')
-def test_respond_choose_sense_ambiguity():
-    bs = BioSense_Module(testing=True)
-    msg_content = KQMLList('CHOOSE-SENSE')
-    pdk1_ekb = ekb_from_text('PDK1')
-    msg_content.sets('ekb-term', pdk1_ekb)
-    res = bs.respond_choose_sense(msg_content)
-    print(res)
-    agents = res.get('agents')
-    assert agents and agents.data
-    agent = agents[0]
-    name = agent.gets('name')
-    assert name == 'PDK1'
-    ont_type = agent.get('ont-type')
-    assert ont_type == 'ONT::GENE'
-
-
 def test_respond_choose_sense_category():
     bs = BioSense_Module(testing=True)
-    cases = [(mek1_ekb, [('kinase activity', 'TRUE'),
-                         ('enzyme', 'TRUE'),
-                         ('kinase', 'TRUE'),
-                         ('transcription-factor', 'FALSE'),
-                         ('W::KINASE', 'TRUE'),
-                         ('phosphatase', 'FALSE')]),
-             (dusp_ekb, [('phosphatase', 'TRUE'), ('enzyme', 'TRUE')]),
-             (ekb_from_text('BRAF'), [('kinase', 'TRUE')])]
-    for ekb, result_tuples in cases:
+    cases = [(mek1, [('kinase activity', 'TRUE'),
+                     ('enzyme', 'TRUE'),
+                     ('kinase', 'TRUE'),
+                     ('transcription-factor', 'FALSE'),
+                     ('W::KINASE', 'TRUE'),
+                     ('phosphatase', 'FALSE')]),
+             (dusp6, [('phosphatase', 'TRUE'), ('enzyme', 'TRUE')]),
+             (braf, [('kinase', 'TRUE')])]
+    for agent_clj, result_tuples in cases:
         msg_content = KQMLList('CHOOSE-SENSE-CATEGORY')
-        msg_content.sets('ekb-term', ekb)
+        msg_content.set('ekb-term', agent_clj)
         for cat, result in result_tuples:
             print('Testing: %s. Excpet result %s.' % (cat, result))
             msg_content.sets('category', cat)
@@ -229,8 +212,8 @@ def test_respond_choose_sense_category():
 def test_respond_choose_sense_is_member():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE-IS-MEMBER')
-    msg_content.sets('ekb-term', mek1_ekb)
-    msg_content.sets('collection', mek_ekb)
+    msg_content.set('ekb-term', mek1)
+    msg_content.set('collection', mek)
     print(msg_content)
     res = bs.respond_choose_sense_is_member(msg_content)
     print(res)
@@ -242,7 +225,7 @@ def test_respond_choose_sense_is_member():
 def test_respond_choose_sense_what_member():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE-WHAT-MEMBER')
-    msg_content.sets('collection', mek_ekb)
+    msg_content.set('collection', mek)
     print(msg_content)
     res = bs.respond_choose_sense_what_member(msg_content)
     print(res)
@@ -251,14 +234,16 @@ def test_respond_choose_sense_what_member():
     assert(len(res.get('members')) == 2)
     m1 = res.get('members')[0]
     m2 = res.get('members')[1]
-    assert m1.gets('name') == 'MAP2K1', m1.gets('name')
-    assert m2.gets('name') == 'MAP2K2', m2.gets('name')
+    a1 = Bioagent.get_agent(m1)
+    a2 = Bioagent.get_agent(m2)
+    assert a1.name == 'MAP2K1'
+    assert a2.name == 'MAP2K2'
 
 
 def test_respond_get_synonyms():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('GET-SYNONYMS')
-    msg_content.sets('entity', mek1_ekb)
+    msg_content.set('entity', mek1)
     res = bs.respond_get_synonyms(msg_content)
     assert res.head() == 'SUCCESS'
     syns = res.get('synonyms')

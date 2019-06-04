@@ -66,7 +66,7 @@ class BioSense_Module(Bioagent):
 
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""
-        term_arg = content.gets('ekb-term')
+        term_arg = content.get('ekb-term')
         term_agent = self.get_agent(term_arg)
         msg = KQMLPerformative('SUCCESS')
         agent_clj = self.make_cljson(term_agent)
@@ -75,7 +75,7 @@ class BioSense_Module(Bioagent):
 
     def respond_choose_sense_category(self, content):
         """Return response content to choose-sense-category request."""
-        term_arg = content.gets('ekb-term')
+        term_arg = content.get('ekb-term')
         term_agent = self.get_agent(term_arg)
         category = content.gets('category')
         try:

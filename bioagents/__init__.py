@@ -57,9 +57,9 @@ class Bioagent(KQMLModule):
         """Get an agent from the kqml cl-json representation (KQMLList)."""
         agent_json = cls.converter.cl_to_json(cl_agent)
         if isinstance(agent_json, list):
-            return [Agent._from_json(agj) for agj in agent_json]
+            return [add_agent_type(Agent._from_json(agj)) for agj in agent_json]
         else:
-            return Agent._from_json(agent_json)
+            return add_agent_type(Agent._from_json(agent_json))
 
     @classmethod
     def get_statement(cls, cl_statement):
@@ -322,3 +322,22 @@ def get_img_path(img_name):
         date_str = datetime.now().strftime('%Y%m%d%H%M%S')
         img_name = '%s_%s' % (date_str, img_name)
     return path.join(IMAGE_DIR, img_name)
+
+
+def infer_agent_type(agent):
+    if 'FPLX' in agent.db_refs:
+        return 'ONT::PROTEIN-FAMILY'
+    elif 'HGNC' in agent.db_refs or 'UP' in agent.db_refs:
+        return 'ONT::GENE-PROTEIN'
+    elif 'CHEBI' in agent.db_refs or 'PUBCHEM' in agent.db_refs:
+        return 'ONT::PHARMACOLOGIC-SUBSTANCE'
+    elif 'GO' in agent.db_refs or 'MESH' in agent.db_refs:
+        return 'ONT::BIOLOGICAL-PROCESS'
+    return None
+
+
+def add_agent_type(agent):
+    inferred_type = infer_agent_type(agent)
+    if inferred_type:
+        agent.db_refs['TYPE'] = inferred_type
+    return agent

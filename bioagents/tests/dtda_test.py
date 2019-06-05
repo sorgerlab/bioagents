@@ -3,8 +3,7 @@ from indra.statements import Agent
 from kqml import KQMLList
 from bioagents.dtda.dtda import DTDA, get_disease
 from bioagents.dtda.dtda_module import DTDA_Module
-from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
-    get_request, agent_clj_from_text
+from bioagents.tests.util import ekb_from_text, get_request, agent_clj_from_text
 from bioagents.tests.integration import _IntegrationTest
 from nose.plugins.attrib import attr
 

@@ -51,7 +51,9 @@ def test_cljson():
                db_refs={'TEXT': 'Braf', 'HGNC': '123'})
     cj = Bioagent.make_cljson(ag)
     ag2 = Bioagent.get_agent(cj)
-    assert ag.equals(ag2)
+    assert ag2.db_refs['TYPE'] == 'ONT::GENE-PROTEIN'
+    ag2.db_refs.pop('TYPE')
+    assert ag.equals(ag2), (ag, ag2)
 
 
 def test_cljson_stmt():

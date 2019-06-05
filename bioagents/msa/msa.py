@@ -11,7 +11,8 @@ from indra.util.statement_presentation import group_and_sort_statements, \
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
-from indra.statements import stmts_to_json, Agent, get_all_descendants
+from indra.statements import Statement, stmts_to_json, Agent, \
+    get_all_descendants
 from indra.sources import indra_db_rest as idbr
 
 from indra.assemblers.html import HtmlAssembler
@@ -20,14 +21,24 @@ from indra.assemblers.english.assembler import _join_list, statement_base_verb
 
 logger = logging.getLogger('MSA')
 
-mod_map = {'demethylate': 'Demethylation',
-           'methylate': 'Methylation',
-           'phosphorylate': 'Phosphorylation',
-           'dephosphorylate': 'Dephosphorylation',
-           'ubiquitinate': 'Ubiquitination',
-           'deubiquitinate': 'Deubiquitination',
-           'inhibit': 'Inhibition',
-           'activate': 'Activation'}
+
+def _build_mod_map():
+    stmts = get_all_descendants(Statement)
+    mod_map = {}
+    non_binary = ('hasactivity', 'activeform', 'selfmodification',
+                  'autophosphorylation', 'transphosphorylation',
+                  'event', 'unresolved', 'association', 'complex')
+    for stmt in stmts:
+        name = stmt.__name__
+        if name.lower() in non_binary:
+            continue
+        base_verb = statement_base_verb(name.lower())
+        mod_map[base_verb] = name
+    return mod_map
+
+
+mod_map = _build_mod_map()
+
 
 DB_REST_URL = get_config('INDRA_DB_REST_URL')
 

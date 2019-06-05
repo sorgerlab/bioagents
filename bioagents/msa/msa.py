@@ -405,10 +405,10 @@ class StatementFinder(object):
         return summary_stmts
 
     def get_stmt_types(self):
-        """Get the set of statement types found in the body of statements."""
-        # TODO: this could be sorted by total evidence for each stmt type
+        """Return the sorted set of types found in the body of statements."""
         stmts = self.get_statements()
         evs = self.get_ev_totals()
+        # We count the evidence for each type of statement
         counts = {}
         for stmt in stmts:
             stmt_type = stmt.__class__.__name__.lower()
@@ -417,6 +417,7 @@ class StatementFinder(object):
                 counts[stmt_type] += ev
             else:
                 counts[stmt_type] = ev
+        # We finally sort by decreasing evidence count
         sorted_stmt_types = [k for k, v in sorted(counts.items(),
                                                   key=lambda x: x[1],
                                                   reverse=True)]
@@ -646,7 +647,7 @@ class FromSource(StatementFinder):
 
     def describe(self, limit=10):
         if self.query.stmt_type is None:
-            verb_wrap = ' can be affected by '
+            verb_wrap = ' can affect '
             ps = super(FromSource, self).describe(limit=limit)
         else:
             verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type

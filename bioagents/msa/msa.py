@@ -17,7 +17,8 @@ from indra.sources import indra_db_rest as idbr
 
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
-from indra.assemblers.english.assembler import _join_list, statement_base_verb
+from indra.assemblers.english.assembler import english_join, \
+    statement_base_verb, statement_present_verb
 
 logger = logging.getLogger('MSA')
 
@@ -34,6 +35,8 @@ def _build_mod_map():
             continue
         base_verb = statement_base_verb(name.lower())
         mod_map[base_verb] = name
+        present_verb = statement_present_verb(name.lower())
+        mod_map[present_verb] = name
     return mod_map
 
 
@@ -532,7 +535,7 @@ class Neighborhood(StatementFinder):
         desc += "\nOverall, I found the following entities in the " \
                 "neighborhood of %s: " % self.query.agents[0].name
         other_names = self.get_other_names(self.query.agents[0])
-        desc += _join_list(other_names[:max_names])
+        desc += english_join(other_names[:max_names])
         desc += '.'
         return desc
 
@@ -602,7 +605,7 @@ class BinaryDirected(StatementFinder):
         if stmt_types:
             desc = "Overall, I found that %s can %s %s." % \
                    (self.query.subj.name,
-                    _join_list([statement_base_verb(v) for v in stmt_types]),
+                    english_join([statement_base_verb(v) for v in stmt_types]),
                     self.query.obj.name)
         else:
             desc = 'Overall, I found that %s does not affect %s.' % names
@@ -629,8 +632,8 @@ class BinaryUndirected(StatementFinder):
         if stmt_types:
             desc = "Overall, I found that %s and %s interact in the " \
                    "following ways: " % tuple(names)
-            desc += (_join_list([v if v not in overrides else overrides[v]
-                                 for v in stmt_types]) + '.')
+            desc += (english_join([v if v not in overrides else overrides[v]
+                                   for v in stmt_types]) + '.')
         else:
             desc = 'Overall, I found that %s and %s do not interact.' \
                    % tuple(names)
@@ -655,9 +658,9 @@ class FromSource(StatementFinder):
         if len(other_names) > limit:
             # We trim the trailing space of desc here before appending
             desc = desc[:-1] + ', for example, '
-            desc += _join_list(other_names[:limit]) + '.\n'
+            desc += english_join(other_names[:limit]) + '.\n'
         elif 0 < len(other_names) <= limit:
-            desc += _join_list(other_names) + '.\n'
+            desc += english_join(other_names) + '.\n'
         else:
             desc += 'nothing.\n'
 
@@ -691,9 +694,9 @@ class ToTarget(StatementFinder):
                                            other_role='subject')
         if len(other_names) > limit:
             desc += ', for example, '
-            desc += _join_list(other_names[:limit])
+            desc += english_join(other_names[:limit])
         elif 0 < len(other_names) <= limit:
-            desc += ' ' + _join_list(other_names)
+            desc += ' ' + english_join(other_names)
         else:
             desc += ' nothing'
         desc += verb_wrap
@@ -721,7 +724,7 @@ class ComplexOneSide(StatementFinder):
         desc = "Overall, I found that %s can be in a complex with: " % \
                self.query.agents[0].name
         other_names = self.get_other_names(self.query.agents[0])
-        desc += _join_list(other_names[:max_names])
+        desc += english_join(other_names[:max_names])
         return desc
 
     def _filter_stmts(self, stmts):
@@ -833,8 +836,8 @@ class _Commons(StatementFinder):
 
     def describe(self, *args, **kwargs):
         desc = "Overall, I found that %s have the following common %s: %s" \
-               % (_join_list([ag.name for ag in self.query.agents]),
-                  self._name, _join_list(self.get_common_entities()))
+               % (english_join([ag.name for ag in self.query.agents]),
+                  self._name, english_join(self.get_common_entities()))
         return desc
 
 

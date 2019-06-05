@@ -23,9 +23,9 @@ from indra.assemblers.english.assembler import english_join, \
 logger = logging.getLogger('MSA')
 
 
-def _build_mod_map():
+def _build_verb_map():
     stmts = get_all_descendants(Statement)
-    mod_map = {}
+    verb_map = {}
     non_binary = ('hasactivity', 'activeform', 'selfmodification',
                   'autophosphorylation', 'transphosphorylation',
                   'event', 'unresolved', 'association', 'complex')
@@ -34,13 +34,13 @@ def _build_mod_map():
         if name.lower() in non_binary:
             continue
         base_verb = statement_base_verb(name.lower())
-        mod_map[base_verb] = name
+        verb_map[base_verb] = name
         present_verb = statement_present_verb(name.lower())
-        mod_map[present_verb] = name
-    return mod_map
+        verb_map[present_verb] = name
+    return verb_map
 
 
-mod_map = _build_mod_map()
+verb_map = _build_verb_map()
 
 
 DB_REST_URL = get_config('INDRA_DB_REST_URL')
@@ -93,8 +93,8 @@ class StatementQuery(object):
         self.agent_keys = [self.get_query_key(e) for e in agents]
 
         self.verb = verb
-        if verb in mod_map.keys():
-            self.stmt_type = mod_map[verb]
+        if verb in verb_map:
+            self.stmt_type = verb_map[verb]
         else:
             self.stmt_type = verb
 
@@ -646,7 +646,7 @@ class FromSource(StatementFinder):
 
     def describe(self, limit=10):
         if self.query.stmt_type is None:
-            verb_wrap = ' can interact with '
+            verb_wrap = ' can be affected by '
             ps = super(FromSource, self).describe(limit=limit)
         else:
             verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
@@ -683,7 +683,7 @@ class ToTarget(StatementFinder):
 
     def describe(self, limit=5):
         if self.query.stmt_type is None:
-            verb_wrap = ' can interact with '
+            verb_wrap = ' can affect '
             ps = super(ToTarget, self).describe(limit=limit)
         else:
             verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type

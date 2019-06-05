@@ -77,30 +77,29 @@ class BioSense_Module(Bioagent):
         """Return response content to choose-sense-category request."""
         term_arg = content.get('ekb-term')
         term_agent = self.get_agent(term_arg)
+        if term_agent is None:
+            return self.make_failure('INVALID_AGENT')
         category = content.gets('category')
         try:
             in_category = self.bs.choose_sense_category(term_agent, category)
-        except InvalidAgentError:
-            msg = make_failure('INVALID_AGENT')
         except UnknownCategoryError:
-            msg = make_failure('UNKNOWN_CATEGORY')
-        else:
-            msg = KQMLList('SUCCESS')
-            msg.set('in-category', 'TRUE' if in_category else 'FALSE')
+            return self.make_failure('UNKNOWN_CATEGORY')
+        msg = KQMLList('SUCCESS')
+        msg.set('in-category', 'TRUE' if in_category else 'FALSE')
         return msg
 
     def respond_choose_sense_is_member(self, content):
         """Return response content to choose-sense-is-member request."""
         agent_arg = content.get('ekb-term')
         agent = self.get_agent(agent_arg)
+        if agent is None:
+            return self.make_failure('INVALID_AGENT')
         collection_arg = content.get('collection')
         collection = self.get_agent(collection_arg)
+        if collection is None:
+            return self.make_failure('INVALID_COLLECTION')
         try:
             is_member = self.bs.choose_sense_is_member(agent, collection)
-        except InvalidAgentError:
-            msg = make_failure('INVALID_AGENT')
-        except InvalidCollectionError:
-            msg = make_failure('INVALID_COLLECTION')
         except CollectionNotFamilyOrComplexError:
             msg = KQMLList('SUCCESS')
             msg.set('is-member', 'FALSE')
@@ -114,27 +113,26 @@ class BioSense_Module(Bioagent):
         # Get the collection agent
         collection_arg = content.get('collection')
         collection = self.get_agent(collection_arg)
+        if collection is None:
+            return self.make_failure('INVALID_COLLECTION')
         try:
             members = self.bs.choose_sense_what_member(collection)
-        except InvalidCollectionError:
-            msg = make_failure('INVALID_COLLECTION')
         except CollectionNotFamilyOrComplexError:
-            msg = make_failure('COLLECTION_NOT_FAMILY_OR_COMPLEX')
-        else:
-            msg = KQMLList('SUCCESS')
-            msg.set('members', self.make_cljson(members))
+            return self.make_failure('COLLECTION_NOT_FAMILY_OR_COMPLEX')
+        msg = KQMLList('SUCCESS')
+        msg.set('members', self.make_cljson(members))
         return msg
 
     def respond_get_synonyms(self, content):
         """Respond to a query looking for synonyms of a protein."""
         entity_arg = content.get('entity')
         entity = self.get_agent(entity_arg)
+        if entity is None:
+            return self.make_failure('INVALID_AGENT')
         try:
             synonyms = self.bs.get_synonyms(entity)
-        except InvalidAgentError:
-            msg = self.make_failure('INVALID_AGENT')
         except SynonymsUnknownError:
-            msg = self.make_failure('SYNONYMS_UNKNOWN')
+            return self.make_failure('SYNONYMS_UNKNOWN')
         else:
             syns_kqml = KQMLList()
             for s in synonyms:
@@ -144,12 +142,6 @@ class BioSense_Module(Bioagent):
             msg = KQMLList('SUCCESS')
             msg.set('synonyms', syns_kqml)
         return msg
-
-
-def make_failure(reason):
-    msg = KQMLList('FAILURE')
-    msg.set('reason', reason)
-    return msg
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ class _NlgTestBase(_IntegrationTest):
         nl_list = output.get('nl')
         for i, sent in enumerate(nl_list):
             assert sent.string_value() == self.sentences[i],\
-                "Expected %s, but got %s." % (sent, self.sentences[i])
+                "Expected %s, but got %s." % (self.sentences[i], sent)
 
 
 class TestActiveFlag(_NlgTestBase):
@@ -51,7 +51,7 @@ class TestActiveFlag(_NlgTestBase):
 class TestBoundConditionAndResidues(_NlgTestBase):
     statements = [Phosphorylation(kras_bound, braf, position='373'),
                   Phosphorylation(braf, mapk3, residue='T', position='202')]
-    sentences = ["KRAS bound to GTP phosphorylates BRAF",
+    sentences = ["KRAS bound to GTP phosphorylates BRAF at position 373",
                  "BRAF phosphorylates MAPK3 on T202"]
 
 

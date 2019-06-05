@@ -650,7 +650,8 @@ class FromSource(StatementFinder):
             verb_wrap = ' can affect '
             ps = super(FromSource, self).describe(limit=limit)
         else:
-            verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
+            verb_wrap = ' can %s ' % \
+                statement_base_verb(self.query.stmt_type.lower())
             ps = ''
         desc = "Overall, I found that " + self.query.subj.name + verb_wrap
         other_names = self.get_other_names(self.query.subj,
@@ -687,7 +688,8 @@ class ToTarget(StatementFinder):
             verb_wrap = ' can affect '
             ps = super(ToTarget, self).describe(limit=limit)
         else:
-            verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
+            verb_wrap = ' can %s ' % \
+                statement_base_verb(self.query.stmt_type.lower())
             ps = ''
 
         desc = "Overall, I found that"

@@ -11,23 +11,37 @@ from indra.util.statement_presentation import group_and_sort_statements, \
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
-from indra.statements import stmts_to_json, Agent, get_all_descendants
+from indra.statements import Statement, stmts_to_json, Agent, \
+    get_all_descendants
 from indra.sources import indra_db_rest as idbr
 
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
-from indra.assemblers.english.assembler import _join_list
+from indra.assemblers.english.assembler import english_join, \
+    statement_base_verb, statement_present_verb
 
 logger = logging.getLogger('MSA')
 
-mod_map = {'demethylate': 'Demethylation',
-           'methylate': 'Methylation',
-           'phosphorylate': 'Phosphorylation',
-           'dephosphorylate': 'Dephosphorylation',
-           'ubiquitinate': 'Ubiquitination',
-           'deubiquitinate': 'Deubiquitination',
-           'inhibit': 'Inhibition',
-           'activate': 'Activation'}
+
+def _build_verb_map():
+    stmts = get_all_descendants(Statement)
+    verb_map = {}
+    non_binary = ('hasactivity', 'activeform', 'selfmodification',
+                  'autophosphorylation', 'transphosphorylation',
+                  'event', 'unresolved', 'association', 'complex')
+    for stmt in stmts:
+        name = stmt.__name__
+        if name.lower() in non_binary:
+            continue
+        base_verb = statement_base_verb(name.lower())
+        verb_map[base_verb] = name
+        present_verb = statement_present_verb(name.lower())
+        verb_map[present_verb] = name
+    return verb_map
+
+
+verb_map = _build_verb_map()
+
 
 DB_REST_URL = get_config('INDRA_DB_REST_URL')
 
@@ -79,8 +93,8 @@ class StatementQuery(object):
         self.agent_keys = [self.get_query_key(e) for e in agents]
 
         self.verb = verb
-        if verb in mod_map.keys():
-            self.stmt_type = mod_map[verb]
+        if verb in verb_map:
+            self.stmt_type = verb_map[verb]
         else:
             self.stmt_type = verb
 
@@ -390,6 +404,25 @@ class StatementFinder(object):
             summary_stmts.append(make_stmt_from_sort_key(key, verb))
         return summary_stmts
 
+    def get_stmt_types(self):
+        """Return the sorted set of types found in the body of statements."""
+        stmts = self.get_statements()
+        evs = self.get_ev_totals()
+        # We count the evidence for each type of statement
+        counts = {}
+        for stmt in stmts:
+            stmt_type = stmt.__class__.__name__.lower()
+            ev = evs.get(stmt.get_hash(), 0)
+            if stmt_type in counts:
+                counts[stmt_type] += ev
+            else:
+                counts[stmt_type] = ev
+        # We finally sort by decreasing evidence count
+        sorted_stmt_types = [k for k, v in sorted(counts.items(),
+                                                  key=lambda x: x[1],
+                                                  reverse=True)]
+        return sorted_stmt_types
+
     def get_summary(self, num=5):
         """List the top statements in plain English."""
         stmts = self.get_summary_stmts(num)
@@ -453,20 +486,6 @@ class StatementFinder(object):
         msg = json.dumps(stmts_to_json(self.get_statements()), indent=1)
         return msg
 
-    def get_unique_verb_list(self):
-        """Get the set of statement types found in the body of statements."""
-        overrides = {'increaseamount': 'increase amount',
-                     'decreaseamount': 'decrease amount',
-                     'gtpactivation': 'GTP-bound activation',
-                     'gef': 'GEF interaction',
-                     'gap': 'GAP interaction',
-                     'complex': 'complex formation'}
-        stmt_types = {stmt.__class__.__name__.lower() for stmt in
-                      self.get_statements()}
-        verbs = {st if st not in overrides else overrides[st]
-                 for st in stmt_types}
-        return list(verbs)
-
     def get_other_names(self, entity, other_role=None):
         """Find all the resulting agents besides the one given.
 
@@ -517,7 +536,7 @@ class Neighborhood(StatementFinder):
         desc += "\nOverall, I found the following entities in the " \
                 "neighborhood of %s: " % self.query.agents[0].name
         other_names = self.get_other_names(self.query.agents[0])
-        desc += _join_list(other_names[:max_names])
+        desc += english_join(other_names[:max_names])
         desc += '.'
         return desc
 
@@ -583,12 +602,12 @@ class BinaryDirected(StatementFinder):
         return StatementQuery(source, target, [], verb, None, params)
 
     def describe(self, limit=None):
-        verbs = self.get_unique_verb_list()
-        names = (self.query.subj.name, self.query.obj.name)
-        if len(verbs):
-            desc = "Overall, I found that %s can have the following effects " \
-                   "on %s: " % names
-            desc += _join_list(verbs) + '.'
+        stmt_types = self.get_stmt_types()
+        if stmt_types:
+            desc = "Overall, I found that %s can %s %s." % \
+                   (self.query.subj.name,
+                    english_join([statement_base_verb(v) for v in stmt_types]),
+                    self.query.obj.name)
         else:
             desc = 'Overall, I found that %s does not affect %s.' % names
         return desc
@@ -603,12 +622,19 @@ class BinaryUndirected(StatementFinder):
                               params)
 
     def describe(self, limit=None):
-        verbs = self.get_unique_verb_list()
+        stmt_types = self.get_stmt_types()
         names = [ag.name for ag in self.query.agents]
-        if len(verbs):
+        overrides = {'increaseamount': 'increase amount',
+                     'decreaseamount': 'decrease amount',
+                     'gtpactivation': 'GTP-bound activation',
+                     'gef': 'GEF interaction',
+                     'gap': 'GAP interaction',
+                     'complex': 'complex formation'}
+        if stmt_types:
             desc = "Overall, I found that %s and %s interact in the " \
                    "following ways: " % tuple(names)
-            desc += _join_list(verbs) + '.'
+            desc += (english_join([v if v not in overrides else overrides[v]
+                                   for v in stmt_types]) + '.')
         else:
             desc = 'Overall, I found that %s and %s do not interact.' \
                    % tuple(names)
@@ -621,10 +647,11 @@ class FromSource(StatementFinder):
 
     def describe(self, limit=10):
         if self.query.stmt_type is None:
-            verb_wrap = ' can interact with '
+            verb_wrap = ' can affect '
             ps = super(FromSource, self).describe(limit=limit)
         else:
-            verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
+            verb_wrap = ' can %s ' % \
+                statement_base_verb(self.query.stmt_type.lower())
             ps = ''
         desc = "Overall, I found that " + self.query.subj.name + verb_wrap
         other_names = self.get_other_names(self.query.subj,
@@ -633,9 +660,9 @@ class FromSource(StatementFinder):
         if len(other_names) > limit:
             # We trim the trailing space of desc here before appending
             desc = desc[:-1] + ', for example, '
-            desc += _join_list(other_names[:limit]) + '.\n'
+            desc += english_join(other_names[:limit]) + '.\n'
         elif 0 < len(other_names) <= limit:
-            desc += _join_list(other_names) + '.\n'
+            desc += english_join(other_names) + '.\n'
         else:
             desc += 'nothing.\n'
 
@@ -658,10 +685,11 @@ class ToTarget(StatementFinder):
 
     def describe(self, limit=5):
         if self.query.stmt_type is None:
-            verb_wrap = ' can interact with '
+            verb_wrap = ' can affect '
             ps = super(ToTarget, self).describe(limit=limit)
         else:
-            verb_wrap = ' can have the effect of %s on ' % self.query.stmt_type
+            verb_wrap = ' can %s ' % \
+                statement_base_verb(self.query.stmt_type.lower())
             ps = ''
 
         desc = "Overall, I found that"
@@ -669,9 +697,9 @@ class ToTarget(StatementFinder):
                                            other_role='subject')
         if len(other_names) > limit:
             desc += ', for example, '
-            desc += _join_list(other_names[:limit])
+            desc += english_join(other_names[:limit])
         elif 0 < len(other_names) <= limit:
-            desc += ' ' + _join_list(other_names)
+            desc += ' ' + english_join(other_names)
         else:
             desc += ' nothing'
         desc += verb_wrap
@@ -699,7 +727,7 @@ class ComplexOneSide(StatementFinder):
         desc = "Overall, I found that %s can be in a complex with: " % \
                self.query.agents[0].name
         other_names = self.get_other_names(self.query.agents[0])
-        desc += _join_list(other_names[:max_names])
+        desc += english_join(other_names[:max_names])
         return desc
 
     def _filter_stmts(self, stmts):
@@ -811,8 +839,8 @@ class _Commons(StatementFinder):
 
     def describe(self, *args, **kwargs):
         desc = "Overall, I found that %s have the following common %s: %s" \
-               % (_join_list([ag.name for ag in self.query.agents]),
-                  self._name, _join_list(self.get_common_entities()))
+               % (english_join([ag.name for ag in self.query.agents]),
+                  self._name, english_join(self.get_common_entities()))
         return desc
 
 

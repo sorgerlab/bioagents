@@ -583,7 +583,8 @@ class BinaryDirected(StatementFinder):
         return StatementQuery(source, target, [], verb, None, params)
 
     def summarize(self):
-        summary = {'stmt_types': self.get_stmt_types(),
+        summary = {'stmt_types': [statement_base_verb(v)
+                                  for v in self.get_stmt_types()],
                    'query_subj': self.query.subj,
                    'query_obj': self.query.obj}
         return summary
@@ -593,7 +594,7 @@ class BinaryDirected(StatementFinder):
         if summary['stmt_types']:
             desc = "Overall, I found that %s can %s %s." % \
                    (summary['query_subj'].name,
-                    english_join([statement_base_verb(v) for v in stmt_types]),
+                    english_join(summary['stmt_types']),
                     summary['query_obj'].name)
         else:
             desc = 'Overall, I found that %s does not affect %s.' % \
@@ -610,24 +611,25 @@ class BinaryUndirected(StatementFinder):
                               params)
 
     def summarize(self):
-        summary = {'stmt_types': self.get_stmt_types(),
-                   'query_agents': self.query.agents}
-        return summary
-
-    def describe(self, limit=None):
-        summary = self.summarize()
-        names = [ag.name for ag in summary['query_agents']]
         overrides = {'increaseamount': 'increase amount',
                      'decreaseamount': 'decrease amount',
                      'gtpactivation': 'GTP-bound activation',
                      'gef': 'GEF interaction',
                      'gap': 'GAP interaction',
                      'complex': 'complex formation'}
-        if stmt_types:
+        stmt_types = [v if v not in overrides else overrides[v]
+                      for v in self.get_stmt_types()]
+        summary = {'stmt_types': stmt_types,
+                   'query_agents': self.query.agents}
+        return summary
+
+    def describe(self, limit=None):
+        summary = self.summarize()
+        names = [ag.name for ag in summary['query_agents']]
+        if summary['stmt_types']:
             desc = "Overall, I found that %s and %s interact in the " \
                    "following ways: " % tuple(names)
-            desc += (english_join([v if v not in overrides else overrides[v]
-                                   for v in stmt_types]) + '.')
+            desc += (english_join(summary['stmt_types']) + '.')
         else:
             desc = 'I couldn\'t find evidence that %s and %s interact.' \
                    % tuple(names)
@@ -640,7 +642,7 @@ class FromSource(StatementFinder):
 
     def summarize(self):
         summary = {'stmt_type': self.query.stmt_type,
-                   'query_agent': self.query.subj,
+                   'query_subj': self.query.subj,
                    'other_agents': self.get_other_agents(self.query.subj,
                                                          other_role='object')}
         return summary
@@ -654,8 +656,9 @@ class FromSource(StatementFinder):
             verb_wrap = ' can %s ' % \
                 statement_base_verb(summary['stmt_type'].lower())
             ps = ''
-        desc = "Overall, I found that " + summary['subj'].name + verb_wrap
-        other_names =
+        desc = "Overall, I found that " + summary['query_subj'].name + \
+               verb_wrap
+        other_names = [a.name for a in summary['other_agents']]
 
         if len(other_names) > limit:
             # We trim the trailing space of desc here before appending
@@ -686,7 +689,7 @@ class ToTarget(StatementFinder):
     def summarize(self):
         summary = {
             'stmt_type': self.query.stmt_type,
-            'query_agent': self.query.obj,
+            'query_obj': self.query.obj,
             'other_agents': self.get_other_agents(self.query.obj,
                                                   other_role='subject')
         }
@@ -734,7 +737,8 @@ class ComplexOneSide(StatementFinder):
 
     def summarize(self):
         summary = {'query_agent': self.query.agents[0],
-                   'other_agents': self.get_other_agents(self.query.agents[0])}
+                   'other_agents': self.get_other_agents(self.query.agents[0]),
+                   'stmt_type': 'complex'}
         return summary
 
     def describe(self, max_names=20):

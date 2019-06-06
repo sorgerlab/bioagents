@@ -641,7 +641,8 @@ class FromSource(StatementFinder):
         return StatementQuery(source, None, [], verb, ent_type, params)
 
     def summarize(self):
-        summary = {'stmt_type': self.query.stmt_type,
+        summary = {'stmt_type': statement_base_verb(
+                                    self.query.stmt_type.lower()),
                    'query_subj': self.query.subj,
                    'other_agents': self.get_other_agents([self.query.subj],
                                                          other_role='object')}
@@ -653,8 +654,7 @@ class FromSource(StatementFinder):
             verb_wrap = ' can affect '
             ps = super(FromSource, self).describe(limit=limit)
         else:
-            verb_wrap = ' can %s ' % \
-                statement_base_verb(summary['stmt_type'].lower())
+            verb_wrap = ' can %s ' % summary['stmt_type']
             ps = ''
         desc = "Overall, I found that " + summary['query_subj'].name + \
                verb_wrap
@@ -688,7 +688,7 @@ class ToTarget(StatementFinder):
 
     def summarize(self):
         summary = {
-            'stmt_type': self.query.stmt_type,
+            'stmt_type': statement_base_verb(self.query.stmt_type.lower()),
             'query_obj': self.query.obj,
             'other_agents': self.get_other_agents([self.query.obj],
                                                   other_role='subject')
@@ -701,8 +701,7 @@ class ToTarget(StatementFinder):
             verb_wrap = ' can affect '
             ps = super(ToTarget, self).describe(limit=limit)
         else:
-            verb_wrap = ' can %s ' % \
-                statement_base_verb(summary['stmt_type'].lower())
+            verb_wrap = ' can %s ' % summary['stmt_type']
             ps = ''
 
         desc = "Overall, I found that"

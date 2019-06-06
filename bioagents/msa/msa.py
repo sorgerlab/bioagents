@@ -486,31 +486,6 @@ class StatementFinder(object):
         msg = json.dumps(stmts_to_json(self.get_statements()), indent=1)
         return msg
 
-    def get_other_names(self, entity, other_role=None):
-        """Find all the resulting agents besides the one given.
-
-        It is assumed that the given entity was one of the inputs.
-
-        Parameters
-        ----------
-        entity : str or Agent.
-            Either an original entity string or Agent, or Agent name. This
-            method will find other entities that occur within the statements
-            besides this one.
-        other_role : 'subject', 'object', or None
-            The part of speech/role of the other names. Limits the results to
-            subjects, if 'subject', objects if 'object', or places no limit
-            if None. Default is None.
-        """
-        other_ags = self.get_other_agents([entity], other_role=other_role)
-        names = []
-        for ag in other_ags:
-            # We know the agents are ordered by name, so this is sufficient.
-            if names and ag.name == names[-1]:
-                continue
-            names.append(ag.name)
-        return names
-
     def filter_other_agent_type(self, stmts, ent_type, other_role=None):
         query_entities = set(self.query.entities.values())
         stmts_out = []

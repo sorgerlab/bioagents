@@ -531,13 +531,19 @@ class Neighborhood(StatementFinder):
     def _regularize_input(self, entity, **params):
         return StatementQuery(None, None, [entity], None, None, params)
 
+    def summarize(self):
+        summary = {'query_agent': self.query.agents[0],
+                   'other_agents': self.get_other_agents(self.query.agents[0])}
+        return summary
+
     def describe(self, max_names=20):
-        desc = super(Neighborhood, self).describe()
-        desc += "\nOverall, I found the following entities in the " \
-                "neighborhood of %s: " % self.query.agents[0].name
-        other_names = self.get_other_names(self.query.agents[0])
-        desc += english_join(other_names[:max_names])
+        summary = self.summarize()
+        desc = ('\nOverall, I found that %s interacts with ' %
+                summary['query_agent'].name)
+        desc += english_join([a.name for a in
+                              summary['other_agents'][:max_names]])
         desc += '.'
+        desc += super(Neighborhood, self).describe()
         return desc
 
 
@@ -601,15 +607,22 @@ class BinaryDirected(StatementFinder):
                            "Binary queries.")
         return StatementQuery(source, target, [], verb, None, params)
 
+    def summarize(self):
+        summary = {'stmt_types': self.get_stmt_types(),
+                   'query_subj': self.query.subj,
+                   'query_obj': self.query.obj}
+        return summary
+
     def describe(self, limit=None):
-        stmt_types = self.get_stmt_types()
-        if stmt_types:
+        summary = self.get_summary()
+        if summary['stmt_types']:
             desc = "Overall, I found that %s can %s %s." % \
-                   (self.query.subj.name,
+                   (summary['query_subj'].name,
                     english_join([statement_base_verb(v) for v in stmt_types]),
-                    self.query.obj.name)
+                    summary['query_obj'].name)
         else:
-            desc = 'Overall, I found that %s does not affect %s.' % names
+            desc = 'Overall, I found that %s does not affect %s.' % \
+                (summary['query_subj'].name, summary['query_obj'].name)
         return desc
 
 
@@ -621,9 +634,14 @@ class BinaryUndirected(StatementFinder):
         return StatementQuery(None, None, [entity1, entity2], None, None,
                               params)
 
+    def summarize(self):
+        summary = {'stmt_types': self.get_stmt_types(),
+                   'query_agents': self.query.agents}
+        return summary
+
     def describe(self, limit=None):
-        stmt_types = self.get_stmt_types()
-        names = [ag.name for ag in self.query.agents]
+        summary = self.summarize()
+        names = [ag.name for ag in summary['query_agents']]
         overrides = {'increaseamount': 'increase amount',
                      'decreaseamount': 'decrease amount',
                      'gtpactivation': 'GTP-bound activation',
@@ -636,7 +654,7 @@ class BinaryUndirected(StatementFinder):
             desc += (english_join([v if v not in overrides else overrides[v]
                                    for v in stmt_types]) + '.')
         else:
-            desc = 'Overall, I found that %s and %s do not interact.' \
+            desc = 'I couldn\'t find evidence that %s and %s interact.' \
                    % tuple(names)
         return desc
 
@@ -645,17 +663,24 @@ class FromSource(StatementFinder):
     def _regularize_input(self, source, verb=None, ent_type=None, **params):
         return StatementQuery(source, None, [], verb, ent_type, params)
 
+    def summarize(self):
+        summary = {'stmt_type': self.query.stmt_type,
+                   'query_agent': self.query.subj,
+                   'other_agents': self.get_other_agents(self.query.subj,
+                                                         other_role='object')}
+        return summary
+
     def describe(self, limit=10):
-        if self.query.stmt_type is None:
+        summary = self.summarize()
+        if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
             ps = super(FromSource, self).describe(limit=limit)
         else:
             verb_wrap = ' can %s ' % \
-                statement_base_verb(self.query.stmt_type.lower())
+                statement_base_verb(summary['stmt_type'].lower())
             ps = ''
-        desc = "Overall, I found that " + self.query.subj.name + verb_wrap
-        other_names = self.get_other_names(self.query.subj,
-                                           other_role='object')
+        desc = "Overall, I found that " + summary['subj'].name + verb_wrap
+        other_names =
 
         if len(other_names) > limit:
             # We trim the trailing space of desc here before appending
@@ -683,18 +708,27 @@ class ToTarget(StatementFinder):
     def _regularize_input(self, target, verb=None, ent_type=None, **params):
         return StatementQuery(None, target, [], verb, ent_type, params)
 
+    def summarize(self):
+        summary = {
+            'stmt_type': self.query.stmt_type,
+            'query_agent': self.query.obj,
+            'other_agents': self.get_other_agents(self.query.obj,
+                                                  other_role='subject')
+        }
+        return summary
+
     def describe(self, limit=5):
-        if self.query.stmt_type is None:
+        summary = self.summarize()
+        if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
             ps = super(ToTarget, self).describe(limit=limit)
         else:
             verb_wrap = ' can %s ' % \
-                statement_base_verb(self.query.stmt_type.lower())
+                statement_base_verb(summary['stmt_type'].lower())
             ps = ''
 
         desc = "Overall, I found that"
-        other_names = self.get_other_names(self.query.obj,
-                                           other_role='subject')
+        other_names = [a.name for a in summary['other_agents']]
         if len(other_names) > limit:
             desc += ', for example, '
             desc += english_join(other_names[:limit])
@@ -703,7 +737,7 @@ class ToTarget(StatementFinder):
         else:
             desc += ' nothing'
         desc += verb_wrap
-        desc += self.query.obj.name + '. '
+        desc += summary['query_agent'].name + '. '
 
         desc += ps
         return desc
@@ -723,11 +757,17 @@ class ComplexOneSide(StatementFinder):
         return StatementQuery(None, None, [entity], 'Complex', ent_type,
                               params)
 
+    def summarize(self):
+        summary = {'query_agent': self.query.agents[0],
+                   'other_agents': self.get_other_agents(self.query.agents[0])}
+        return summary
+
     def describe(self, max_names=20):
+        summary = self.summarize()
         desc = "Overall, I found that %s can be in a complex with: " % \
-               self.query.agents[0].name
-        other_names = self.get_other_names(self.query.agents[0])
-        desc += english_join(other_names[:max_names])
+               summary['query_agent']
+        desc += english_join([a.name for a in
+                              summary['other_agents'][:max_names])
         return desc
 
     def _filter_stmts(self, stmts):

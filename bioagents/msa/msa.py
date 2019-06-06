@@ -590,7 +590,7 @@ class BinaryDirected(StatementFinder):
         return summary
 
     def describe(self, limit=None):
-        summary = self.get_summary()
+        summary = self.summarize()
         if summary['stmt_types']:
             desc = "Overall, I found that %s can %s %s." % \
                    (summary['query_subj'].name,
@@ -643,7 +643,7 @@ class FromSource(StatementFinder):
     def summarize(self):
         summary = {'stmt_type': self.query.stmt_type,
                    'query_subj': self.query.subj,
-                   'other_agents': self.get_other_agents(self.query.subj,
+                   'other_agents': self.get_other_agents([self.query.subj],
                                                          other_role='object')}
         return summary
 
@@ -690,7 +690,7 @@ class ToTarget(StatementFinder):
         summary = {
             'stmt_type': self.query.stmt_type,
             'query_obj': self.query.obj,
-            'other_agents': self.get_other_agents(self.query.obj,
+            'other_agents': self.get_other_agents([self.query.obj],
                                                   other_role='subject')
         }
         return summary
@@ -715,7 +715,7 @@ class ToTarget(StatementFinder):
         else:
             desc += ' nothing'
         desc += verb_wrap
-        desc += summary['query_agent'].name + '. '
+        desc += summary['query_obj'].name + '. '
 
         desc += ps
         return desc
@@ -746,7 +746,7 @@ class ComplexOneSide(StatementFinder):
         desc = "Overall, I found that %s can be in a complex with: " % \
                summary['query_agent']
         desc += english_join([a.name for a in
-                              summary['other_agents'][:max_names])
+                              summary['other_agents'][:max_names]])
         return desc
 
     def _filter_stmts(self, stmts):

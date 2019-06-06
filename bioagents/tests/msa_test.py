@@ -399,14 +399,12 @@ def test_get_finder_agents():
     finder = msa.find_mechanisms('to_target', ag, verb='phosphorylate')
     other_agents = finder.get_other_agents()
     assert all(isinstance(a, Agent) for a in other_agents)
+    # The other names should be sorted with PIM1 first (most evidence)
+    assert other_agents[0].name == 'PIM1'
 
     fixed_agents = finder.get_fixed_agents()
     assert 'object' in fixed_agents, fixed_agents
     assert fixed_agents['object'][0].name == 'SOCS1', fixed_agents['target']
-
-    # The other names should be sorted with PIM1 first (most evidence)
-    other_names = finder.get_other_names(ag)
-    assert other_names[0] == 'PIM1', other_names
 
 
 @attr('nonpublic')

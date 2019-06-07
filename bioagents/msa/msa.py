@@ -659,8 +659,11 @@ class FromSource(StatementFinder):
         return StatementQuery(source, None, [], verb, ent_type, params)
 
     def summarize(self):
-        summary = {'stmt_type': statement_base_verb(
-                                    self.query.stmt_type.lower()),
+        if self.query.stmt_type:
+            stmt_type = statement_base_verb(self.query.stmt_type.lower())
+        else:
+            stmt_type = None
+        summary = {'stmt_type': stmt_type,
                    'query_subj': self.query.subj,
                    'other_agents': self.get_other_agents([self.query.subj],
                                                          other_role='object')}
@@ -706,8 +709,12 @@ class ToTarget(StatementFinder):
         return StatementQuery(None, target, [], verb, ent_type, params)
 
     def summarize(self):
+        if self.query.stmt_type:
+            stmt_type = statement_base_verb(self.query.stmt_type.lower())
+        else:
+            stmt_type = None
         summary = {
-            'stmt_type': statement_base_verb(self.query.stmt_type.lower()),
+            'stmt_type': stmt_type,
             'query_obj': self.query.obj,
             'other_agents': self.get_other_agents([self.query.obj],
                                                   other_role='subject')

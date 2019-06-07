@@ -7,7 +7,7 @@ import logging
 from collections import defaultdict
 
 from indra.util.statement_presentation import group_and_sort_statements, \
-    make_string_from_sort_key, make_stmt_from_sort_key, stmt_to_english
+    make_stmt_from_sort_key, stmt_to_english
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
@@ -378,31 +378,35 @@ class StatementFinder(object):
                 self._filter_stmts(self._processor.statements_sample[:])
         return self._sample[:]
 
-    def describe(self, limit=5):
-        """Turn the results dictionary into a coherent message."""
+    def describe(self, limit=5, include_negative=True):
+        """Turn the results dictionary into a coherent message.
+
+        Parameters
+        ----------
+        limit : int
+            The total number of top merged statements to include as an HTML
+            list in the response.
+        include_negative : bool
+            If True, when no results were found, a sentence is generated
+            saying so, otherwise an empty string is returned.
+        """
         num_stmts = len(self.get_statements())
         if num_stmts > limit:
             msg = 'Here are the top %d statements I found:\n' % limit
-            msg += self.get_summary(num=limit) + '\n'
+            msg += self.get_summary_stmts_html(num=limit) + '\n'
         elif 0 < num_stmts < limit:
             msg = 'Here are the statements I found:\n'
-            msg += self.get_summary() + '\n'
-        else:
+            msg += self.get_summary_stmts_html() + '\n'
+        elif include_negative:
             msg = 'I did not find any statements about that'
+        else:
+            msg = ''
         return msg
 
     def get_html_message(self):
         msg = 'The rest of the statements may be found here:\n'
         msg += self.get_html() + '\n'
         return msg
-
-    def get_summary_stmts(self, num=5):
-        stmts = self.get_statements()
-        sorted_groups = group_and_sort_statements(stmts, self.get_ev_totals())
-        summary_stmts = []
-        for key, verb, stmts in sorted_groups[:num]:
-            summary_stmts.append(make_stmt_from_sort_key(key, verb))
-        return summary_stmts
 
     def get_stmt_types(self):
         """Return the sorted set of types found in the body of statements."""
@@ -423,8 +427,19 @@ class StatementFinder(object):
                                                   reverse=True)]
         return sorted_stmt_types
 
-    def get_summary(self, num=5):
-        """List the top statements in plain English."""
+    def get_summary_stmts(self, num=5):
+        """Return the top summarized statements for the query."""
+        stmts = self.get_statements()
+        # Group statements by participants and type, aggregating evidence
+        sorted_groups = group_and_sort_statements(stmts, self.get_ev_totals())
+        # Create synthetic summary statements in a list
+        summary_stmts = []
+        for key, verb, stmts in sorted_groups[:num]:
+            summary_stmts.append(make_stmt_from_sort_key(key, verb))
+        return summary_stmts
+
+    def get_summary_stmts_html(self, num=5):
+        """Return top statements in plain English rendered as an HTML list."""
         stmts = self.get_summary_stmts(num)
         lines = ['<li>%s</li>' % stmt_to_english(stmt) for stmt in stmts]
 
@@ -515,10 +530,13 @@ class Neighborhood(StatementFinder):
         summary = self.summarize()
         desc = ('\nOverall, I found that %s interacts with ' %
                 summary['query_agent'].name)
-        desc += english_join([a.name for a in
-                              summary['other_agents'][:max_names]])
+        if summary['other_agents']:
+            desc += english_join([a.name for a in
+                                  summary['other_agents'][:max_names]])
+        else:
+            desc += 'nothing'
         desc += '.'
-        desc += super(Neighborhood, self).describe()
+        desc += super(Neighborhood, self).describe(include_negative=False)
         return desc
 
 
@@ -652,7 +670,8 @@ class FromSource(StatementFinder):
         summary = self.summarize()
         if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
-            ps = super(FromSource, self).describe(limit=limit)
+            ps = super(FromSource, self).describe(limit=limit,
+                                                  include_negative=False)
         else:
             verb_wrap = ' can %s ' % summary['stmt_type']
             ps = ''
@@ -699,7 +718,8 @@ class ToTarget(StatementFinder):
         summary = self.summarize()
         if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
-            ps = super(ToTarget, self).describe(limit=limit)
+            ps = super(ToTarget, self).describe(limit=limit,
+                                                include_negative=False)
         else:
             verb_wrap = ' can %s ' % summary['stmt_type']
             ps = ''
@@ -855,10 +875,18 @@ class _Commons(StatementFinder):
     def get_common_entities(self):
         return [ag_name for ag_name in self.commons.keys()]
 
+    def summarize(self):
+        summary = {'query_agents': self.query.agents,
+                   'other_agent_names': self.get_common_entities(),
+                   'query_direction': self._name}
+        return summary
+
     def describe(self, *args, **kwargs):
+        summary = self.summarize()
         desc = "Overall, I found that %s have the following common %s: %s" \
-               % (english_join([ag.name for ag in self.query.agents]),
-                  self._name, english_join(self.get_common_entities()))
+               % (english_join([ag.name for ag in summary['query_agents']]),
+                  summary['query_direction'],
+                  english_join(summary['other_agent_names']))
         return desc
 
 

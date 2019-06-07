@@ -547,6 +547,12 @@ class Activeforms(StatementFinder):
                            "Activeforms or PhosActiveforms.")
         return StatementQuery(None, None, [entity], 'ActiveForm', None, params)
 
+    def summarize(self):
+        # Note that the generic form of grouped ActiveForm statements is
+        # degenerate so we just choose the first few actual statements here
+        summary = {'summary_stmts': self.get_statements()[:5]}
+        return summary
+
 
 class PhosActiveforms(Activeforms):
     def __init__(self, *args, **kwargs):

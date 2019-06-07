@@ -523,7 +523,8 @@ class Neighborhood(StatementFinder):
 
     def summarize(self):
         summary = {'query_agent': self.query.agents[0],
-                   'other_agents': self.get_other_agents(self.query.agents[0])}
+                   'other_agents':
+                       self.get_other_agents([self.query.agents[0]])}
         return summary
 
     def describe(self, max_names=20):
@@ -769,7 +770,8 @@ class ComplexOneSide(StatementFinder):
 
     def summarize(self):
         summary = {'query_agent': self.query.agents[0],
-                   'other_agents': self.get_other_agents(self.query.agents[0]),
+                   'other_agents':
+                       self.get_other_agents([self.query.agents[0]]),
                    'stmt_type': 'complex'}
         return summary
 

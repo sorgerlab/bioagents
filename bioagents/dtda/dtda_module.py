@@ -5,6 +5,7 @@ from indra.statements import Agent
 from kqml import KQMLList
 from .dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
 from bioagents import Bioagent
+from indra.databases import hgnc_client
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -74,10 +75,23 @@ class DTDA_Module(Bioagent):
         all_targets = sorted(list(set(drug_targets)))
 
         reply = KQMLList('SUCCESS')
-        target_list = [Agent(target_name) for target_name in all_targets]
+        target_list = [self._get_agent_from_gene_name(target_name)
+                       for target_name in all_targets]
         targets = self.make_cljson(target_list)
         reply.set('targets', targets)
         return reply
+
+    @staticmethod
+    def _get_agent_from_gene_name(gene_name):
+        db_refs = {}
+        hgnc_id = hgnc_client.get_hgnc_id(gene_name)
+        if hgnc_id:
+            db_refs['HGNC'] = hgnc_id
+            up_id = hgnc_client.get_uniprot_id(hgnc_id)
+            if up_id:
+                db_refs['UP'] = up_id
+        agent = Agent(gene_name, db_refs=db_refs)
+        return agent
 
     def respond_find_disease_targets(self, content):
         """Response content to find-disease-targets request."""
@@ -111,7 +125,7 @@ class DTDA_Module(Bioagent):
         # TODO: add list of actual mutations to response (get from agents)
         # TODO: get fraction not percentage from DTDA (edit get_top_mutation)
         reply = KQMLList('SUCCESS')
-        protein = Agent(mut_protein, db_refs={'HGNC': mut_protein})
+        protein = self._get_agent_from_gene_name(mut_protein)
         reply.set('protein', self.make_cljson(protein))
         reply.set('prevalence', '%.2f' % (mut_percent/100.0))
         reply.set('functional-effect', 'ACTIVE')
@@ -150,7 +164,7 @@ class DTDA_Module(Bioagent):
         # TODO: add list of actual mutations to response
         # TODO: get fraction not percentage from DTDA
         reply = KQMLList('SUCCESS')
-        protein = Agent(mut_protein, db_refs={'HGNC': mut_protein})
+        protein = self._get_agent_from_gene_name(mut_protein)
         reply.set('protein', self.make_cljson(protein))
         reply.set('disease', disease_arg)
         reply.set('prevalence', '%.2f' % (mut_percent/100.0))

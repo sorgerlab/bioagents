@@ -100,7 +100,7 @@ class MRA_Module(Bioagent):
         if model and (descr_format == 'ekb' or not descr_format):
             self.send_background_support(model)
         model_msg = encode_indra_stmts(model)
-        msg.sets('model', model_msg)
+        msg.set('model', model_msg)
         # Add the diagrams
         diagrams = res.get('diagrams')
         if not no_display:
@@ -162,7 +162,7 @@ class MRA_Module(Bioagent):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.sets('model', model_msg)
+        msg.set('model', model_msg)
         # Add the INDRA model new json
         model_new = res.get('model_new')
 
@@ -183,7 +183,7 @@ class MRA_Module(Bioagent):
             self.send_background_support(model_new)
         if model_new:
             model_new_msg = encode_indra_stmts(model_new)
-            msg.sets('model-new', model_new_msg)
+            msg.set('model-new', model_new_msg)
         # Add the diagram
         if not no_display:
             diagrams = res.get('diagrams')
@@ -218,14 +218,14 @@ class MRA_Module(Bioagent):
             self.send_clean_model()
 
         model_msg = encode_indra_stmts(model)
-        msg.sets('model', model_msg)
+        msg.set('model', model_msg)
         # Get the action and add it to the message
         action = res.get('action')
         actionl = KQMLList()
         # Here we handle no action as effectively an empty remove action
         if action['action'] in ('no_op', 'remove_stmts'):
             actionl.append('remove_stmts')
-            actionl.sets(
+            actionl.set(
                 'statements',
                 encode_indra_stmts(action['statements'])
                 )
@@ -260,7 +260,7 @@ class MRA_Module(Bioagent):
         query = res.get('query')
         if query:
             query_msg = encode_indra_stmts([query])
-            msg.sets('query', query_msg)
+            msg.set('query', query_msg)
         return msg
 
     def respond_model_remove_mechanism(self, content):
@@ -283,7 +283,7 @@ class MRA_Module(Bioagent):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.sets('model', model_msg)
+        msg.set('model', model_msg)
 
         # Handle empty model
         if not model:
@@ -296,7 +296,7 @@ class MRA_Module(Bioagent):
             return msg
         else:
             actionl = KQMLList('remove_stmts')
-            actionl.sets('statements', encode_indra_stmts(removed))
+            actionl.set('statements', encode_indra_stmts(removed))
             msg.set('action', actionl)
 
         # Add the diagram
@@ -341,7 +341,7 @@ class MRA_Module(Bioagent):
         if model is not None:
             model_msg = encode_indra_stmts(model)
             reply = KQMLList('SUCCESS')
-            reply.sets('model', model_msg)
+            reply.set('model', model_msg)
         else:
             reply = self.make_failure('MISSING_MODEL')
         return reply
@@ -525,9 +525,8 @@ def encode_pysb_model(pysb_model):
 
 
 def encode_indra_stmts(stmts):
-    stmts_json = stmts_to_json(stmts)
-    json_str = json.dumps(stmts_json)
-    return json_str
+    stmts_clj = Bioagent.make_cljson(stmts)
+    return stmts_clj
 
 
 def get_ambiguities_msg(ambiguities):

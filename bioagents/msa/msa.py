@@ -309,8 +309,11 @@ class StatementFinder(object):
             return agent
 
         # Create a list of groundings sorted with the most frequent first.
-        sorted_groundings = list(sorted(counts.keys(), key=lambda t: counts[t],
-                                        reverse=True))
+        # We add t itself as a second element to the tuple to make sure the
+        # sort is deterministic, and take -counts so that we don't need to
+        # reverse the sort.
+        sorted_groundings = \
+            list(sorted(counts.keys(), key=lambda t: (-counts[t], t)))
         other_agents = [get_aggregate_agent(oa_dict[gr], *gr) for gr in
                         sorted_groundings]
         return other_agents

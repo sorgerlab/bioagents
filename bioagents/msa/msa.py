@@ -7,7 +7,7 @@ import logging
 from collections import defaultdict
 
 from indra.util.statement_presentation import group_and_sort_statements, \
-    make_string_from_sort_key, make_stmt_from_sort_key, stmt_to_english
+    make_stmt_from_sort_key, stmt_to_english
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
@@ -378,31 +378,35 @@ class StatementFinder(object):
                 self._filter_stmts(self._processor.statements_sample[:])
         return self._sample[:]
 
-    def describe(self, limit=5):
-        """Turn the results dictionary into a coherent message."""
+    def describe(self, limit=5, include_negative=True):
+        """Turn the results dictionary into a coherent message.
+
+        Parameters
+        ----------
+        limit : int
+            The total number of top merged statements to include as an HTML
+            list in the response.
+        include_negative : bool
+            If True, when no results were found, a sentence is generated
+            saying so, otherwise an empty string is returned.
+        """
         num_stmts = len(self.get_statements())
         if num_stmts > limit:
             msg = 'Here are the top %d statements I found:\n' % limit
-            msg += self.get_summary(num=limit) + '\n'
+            msg += self.get_summary_stmts_html(num=limit) + '\n'
         elif 0 < num_stmts < limit:
             msg = 'Here are the statements I found:\n'
-            msg += self.get_summary() + '\n'
-        else:
+            msg += self.get_summary_stmts_html() + '\n'
+        elif include_negative:
             msg = 'I did not find any statements about that'
+        else:
+            msg = ''
         return msg
 
     def get_html_message(self):
         msg = 'The rest of the statements may be found here:\n'
         msg += self.get_html() + '\n'
         return msg
-
-    def get_summary_stmts(self, num=5):
-        stmts = self.get_statements()
-        sorted_groups = group_and_sort_statements(stmts, self.get_ev_totals())
-        summary_stmts = []
-        for key, verb, stmts in sorted_groups[:num]:
-            summary_stmts.append(make_stmt_from_sort_key(key, verb))
-        return summary_stmts
 
     def get_stmt_types(self):
         """Return the sorted set of types found in the body of statements."""
@@ -423,8 +427,19 @@ class StatementFinder(object):
                                                   reverse=True)]
         return sorted_stmt_types
 
-    def get_summary(self, num=5):
-        """List the top statements in plain English."""
+    def get_summary_stmts(self, num=5):
+        """Return the top summarized statements for the query."""
+        stmts = self.get_statements()
+        # Group statements by participants and type, aggregating evidence
+        sorted_groups = group_and_sort_statements(stmts, self.get_ev_totals())
+        # Create synthetic summary statements in a list
+        summary_stmts = []
+        for key, verb, stmts in sorted_groups[:num]:
+            summary_stmts.append(make_stmt_from_sort_key(key, verb))
+        return summary_stmts
+
+    def get_summary_stmts_html(self, num=5):
+        """Return top statements in plain English rendered as an HTML list."""
         stmts = self.get_summary_stmts(num)
         lines = ['<li>%s</li>' % stmt_to_english(stmt) for stmt in stmts]
 
@@ -486,31 +501,6 @@ class StatementFinder(object):
         msg = json.dumps(stmts_to_json(self.get_statements()), indent=1)
         return msg
 
-    def get_other_names(self, entity, other_role=None):
-        """Find all the resulting agents besides the one given.
-
-        It is assumed that the given entity was one of the inputs.
-
-        Parameters
-        ----------
-        entity : str or Agent.
-            Either an original entity string or Agent, or Agent name. This
-            method will find other entities that occur within the statements
-            besides this one.
-        other_role : 'subject', 'object', or None
-            The part of speech/role of the other names. Limits the results to
-            subjects, if 'subject', objects if 'object', or places no limit
-            if None. Default is None.
-        """
-        other_ags = self.get_other_agents([entity], other_role=other_role)
-        names = []
-        for ag in other_ags:
-            # We know the agents are ordered by name, so this is sufficient.
-            if names and ag.name == names[-1]:
-                continue
-            names.append(ag.name)
-        return names
-
     def filter_other_agent_type(self, stmts, ent_type, other_role=None):
         query_entities = set(self.query.entities.values())
         stmts_out = []
@@ -531,13 +521,25 @@ class Neighborhood(StatementFinder):
     def _regularize_input(self, entity, **params):
         return StatementQuery(None, None, [entity], None, None, params)
 
+    def summarize(self):
+        summary = {'query_agent': self.query.agents[0],
+                   'other_agents':
+                       self.get_other_agents([self.query.agents[0]])}
+        return summary
+
     def describe(self, max_names=20):
-        desc = super(Neighborhood, self).describe()
-        desc += "\nOverall, I found the following entities in the " \
-                "neighborhood of %s: " % self.query.agents[0].name
-        other_names = self.get_other_names(self.query.agents[0])
-        desc += english_join(other_names[:max_names])
-        desc += '.'
+        summary = self.summarize()
+        desc = ('Overall, I found that %s interacts with%s ' %
+                (summary['query_agent'].name,
+                 ', for instance,' if len(summary['other_agents']) > max_names
+                 else ''))
+        if summary['other_agents'][:max_names]:
+            desc += english_join([a.name for a in
+                                  summary['other_agents'][:max_names]])
+        else:
+            desc += 'nothing'
+        desc += '. '
+        desc += super(Neighborhood, self).describe(include_negative=False)
         return desc
 
 
@@ -547,6 +549,12 @@ class Activeforms(StatementFinder):
             logger.warning("Parameter `filter_agents` is not meaningful for "
                            "Activeforms or PhosActiveforms.")
         return StatementQuery(None, None, [entity], 'ActiveForm', None, params)
+
+    def summarize(self):
+        # Note that the generic form of grouped ActiveForm statements is
+        # degenerate so we just choose the first few actual statements here
+        summary = {'summary_stmts': self.get_statements()[:5]}
+        return summary
 
 
 class PhosActiveforms(Activeforms):
@@ -601,15 +609,23 @@ class BinaryDirected(StatementFinder):
                            "Binary queries.")
         return StatementQuery(source, target, [], verb, None, params)
 
+    def summarize(self):
+        summary = {'stmt_types': [statement_base_verb(v)
+                                  for v in self.get_stmt_types()],
+                   'query_subj': self.query.subj,
+                   'query_obj': self.query.obj}
+        return summary
+
     def describe(self, limit=None):
-        stmt_types = self.get_stmt_types()
-        if stmt_types:
+        summary = self.summarize()
+        if summary['stmt_types']:
             desc = "Overall, I found that %s can %s %s." % \
-                   (self.query.subj.name,
-                    english_join([statement_base_verb(v) for v in stmt_types]),
-                    self.query.obj.name)
+                   (summary['query_subj'].name,
+                    english_join(summary['stmt_types']),
+                    summary['query_obj'].name)
         else:
-            desc = 'Overall, I found that %s does not affect %s.' % names
+            desc = 'Overall, I found that %s does not affect %s.' % \
+                (summary['query_subj'].name, summary['query_obj'].name)
         return desc
 
 
@@ -621,22 +637,28 @@ class BinaryUndirected(StatementFinder):
         return StatementQuery(None, None, [entity1, entity2], None, None,
                               params)
 
-    def describe(self, limit=None):
-        stmt_types = self.get_stmt_types()
-        names = [ag.name for ag in self.query.agents]
+    def summarize(self):
         overrides = {'increaseamount': 'increase amount',
                      'decreaseamount': 'decrease amount',
                      'gtpactivation': 'GTP-bound activation',
                      'gef': 'GEF interaction',
                      'gap': 'GAP interaction',
                      'complex': 'complex formation'}
-        if stmt_types:
+        stmt_types = [v if v not in overrides else overrides[v]
+                      for v in self.get_stmt_types()]
+        summary = {'stmt_types': stmt_types,
+                   'query_agents': self.query.agents}
+        return summary
+
+    def describe(self, limit=None):
+        summary = self.summarize()
+        names = [ag.name for ag in summary['query_agents']]
+        if summary['stmt_types']:
             desc = "Overall, I found that %s and %s interact in the " \
                    "following ways: " % tuple(names)
-            desc += (english_join([v if v not in overrides else overrides[v]
-                                   for v in stmt_types]) + '.')
+            desc += (english_join(summary['stmt_types']) + '.')
         else:
-            desc = 'Overall, I found that %s and %s do not interact.' \
+            desc = 'I couldn\'t find evidence that %s and %s interact.' \
                    % tuple(names)
         return desc
 
@@ -645,26 +667,38 @@ class FromSource(StatementFinder):
     def _regularize_input(self, source, verb=None, ent_type=None, **params):
         return StatementQuery(source, None, [], verb, ent_type, params)
 
-    def describe(self, limit=10):
-        if self.query.stmt_type is None:
-            verb_wrap = ' can affect '
-            ps = super(FromSource, self).describe(limit=limit)
+    def summarize(self):
+        if self.query.stmt_type:
+            stmt_type = statement_base_verb(self.query.stmt_type.lower())
         else:
-            verb_wrap = ' can %s ' % \
-                statement_base_verb(self.query.stmt_type.lower())
+            stmt_type = None
+        summary = {'stmt_type': stmt_type,
+                   'query_subj': self.query.subj,
+                   'other_agents': self.get_other_agents([self.query.subj],
+                                                         other_role='object')}
+        return summary
+
+    def describe(self, limit=10):
+        summary = self.summarize()
+        if summary['stmt_type'] is None:
+            verb_wrap = ' can affect '
+            ps = super(FromSource, self).describe(limit=limit,
+                                                  include_negative=False)
+        else:
+            verb_wrap = ' can %s ' % summary['stmt_type']
             ps = ''
-        desc = "Overall, I found that " + self.query.subj.name + verb_wrap
-        other_names = self.get_other_names(self.query.subj,
-                                           other_role='object')
+        desc = "Overall, I found that " + summary['query_subj'].name + \
+               verb_wrap
+        other_names = [a.name for a in summary['other_agents']]
 
         if len(other_names) > limit:
             # We trim the trailing space of desc here before appending
             desc = desc[:-1] + ', for example, '
-            desc += english_join(other_names[:limit]) + '.\n'
+            desc += english_join(other_names[:limit]) + '. '
         elif 0 < len(other_names) <= limit:
-            desc += english_join(other_names) + '.\n'
+            desc += english_join(other_names) + '. '
         else:
-            desc += 'nothing.\n'
+            desc += 'nothing. '
 
         desc += ps
         return desc
@@ -683,18 +717,31 @@ class ToTarget(StatementFinder):
     def _regularize_input(self, target, verb=None, ent_type=None, **params):
         return StatementQuery(None, target, [], verb, ent_type, params)
 
-    def describe(self, limit=5):
-        if self.query.stmt_type is None:
-            verb_wrap = ' can affect '
-            ps = super(ToTarget, self).describe(limit=limit)
+    def summarize(self):
+        if self.query.stmt_type:
+            stmt_type = statement_base_verb(self.query.stmt_type.lower())
         else:
-            verb_wrap = ' can %s ' % \
-                statement_base_verb(self.query.stmt_type.lower())
+            stmt_type = None
+        summary = {
+            'stmt_type': stmt_type,
+            'query_obj': self.query.obj,
+            'other_agents': self.get_other_agents([self.query.obj],
+                                                  other_role='subject')
+        }
+        return summary
+
+    def describe(self, limit=5):
+        summary = self.summarize()
+        if summary['stmt_type'] is None:
+            verb_wrap = ' can affect '
+            ps = super(ToTarget, self).describe(limit=limit,
+                                                include_negative=False)
+        else:
+            verb_wrap = ' can %s ' % summary['stmt_type']
             ps = ''
 
         desc = "Overall, I found that"
-        other_names = self.get_other_names(self.query.obj,
-                                           other_role='subject')
+        other_names = [a.name for a in summary['other_agents']]
         if len(other_names) > limit:
             desc += ', for example, '
             desc += english_join(other_names[:limit])
@@ -703,7 +750,7 @@ class ToTarget(StatementFinder):
         else:
             desc += ' nothing'
         desc += verb_wrap
-        desc += self.query.obj.name + '. '
+        desc += summary['query_obj'].name + '. '
 
         desc += ps
         return desc
@@ -723,11 +770,20 @@ class ComplexOneSide(StatementFinder):
         return StatementQuery(None, None, [entity], 'Complex', ent_type,
                               params)
 
+    def summarize(self):
+        summary = {'query_agent': self.query.agents[0],
+                   'other_agents':
+                       self.get_other_agents([self.query.agents[0]]),
+                   'stmt_type': 'complex'}
+        return summary
+
     def describe(self, max_names=20):
-        desc = "Overall, I found that %s can be in a complex with: " % \
-               self.query.agents[0].name
-        other_names = self.get_other_names(self.query.agents[0])
-        desc += english_join(other_names[:max_names])
+        summary = self.summarize()
+        desc = "Overall, I found that %s can be in a complex with " % \
+               summary['query_agent'].name
+        desc += english_join([a.name for a in
+                              summary['other_agents'][:max_names]])
+        desc += '.'
         return desc
 
     def _filter_stmts(self, stmts):
@@ -837,10 +893,18 @@ class _Commons(StatementFinder):
     def get_common_entities(self):
         return [ag_name for ag_name in self.commons.keys()]
 
+    def summarize(self):
+        summary = {'query_agents': self.query.agents,
+                   'other_agent_names': self.get_common_entities(),
+                   'query_direction': self._name}
+        return summary
+
     def describe(self, *args, **kwargs):
+        summary = self.summarize()
         desc = "Overall, I found that %s have the following common %s: %s" \
-               % (english_join([ag.name for ag in self.query.agents]),
-                  self._name, english_join(self.get_common_entities()))
+               % (english_join([ag.name for ag in summary['query_agents']]),
+                  summary['query_direction'],
+                  english_join(summary['other_agent_names']))
         return desc
 
 

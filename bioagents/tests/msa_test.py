@@ -399,14 +399,12 @@ def test_get_finder_agents():
     finder = msa.find_mechanisms('to_target', ag, verb='phosphorylate')
     other_agents = finder.get_other_agents()
     assert all(isinstance(a, Agent) for a in other_agents)
+    # The other names should be sorted with PIM1 first (most evidence)
+    assert other_agents[0].name == 'PIM1'
 
     fixed_agents = finder.get_fixed_agents()
     assert 'object' in fixed_agents, fixed_agents
     assert fixed_agents['object'][0].name == 'SOCS1', fixed_agents['target']
-
-    # The other names should be sorted with PIM1 first (most evidence)
-    other_names = finder.get_other_names(ag)
-    assert other_names[0] == 'PIM1', other_names
 
 
 @attr('nonpublic')
@@ -537,6 +535,12 @@ def test_complex_one_side_entity_filter():
     assert 'PTEN' in oa_names
     assert 'BRAF' not in oa_names
 
+    summ = finder.summarize()
+    assert 'PTEN' in {a.name for a in summ['other_agents']}
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that BRAF can be in a complex with '
+                    'PTEN, .* and DUSP4.', desc), desc
+
 
 @attr('nonpublic')
 def test_neighbors_agent_filter():
@@ -546,6 +550,12 @@ def test_neighbors_agent_filter():
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
         assert ag_names & {'ERK', 'MEK'}
+
+    summ = finder.summarize()
+    assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that BRAF interacts with, '
+                    r'for instance, ERK, .* Here are the top.*', desc), desc
 
 
 @attr('nonpublic')
@@ -560,23 +570,60 @@ def test_upstreams_agent_filter():
         assert ag_names & exp_ags, ag_names - exp_ags - {'MEK', 'ERK'}
 
 
-@attr('nonpublic', 'slow')
+@attr('nonpublic')
 def test_to_target_agent_filter():
-    finder = msa.ToTarget(_erk(), filter_agents=[_mek(), _braf(), _kras()])
+    zeb1 = Agent('ZEB1', db_refs={'HGNC': '11642'})
+    finder = msa.ToTarget(zeb1, filter_agents=[_mek(), _braf(), _kras()])
     stmts = finder.get_statements()
     assert len(stmts)
     exp_ags = {'MEK', 'BRAF', 'KRAS'}
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
         assert ag_names & exp_ags, ag_names - exp_ags - {'ERK'}
+    summ = finder.summarize()
+    assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that MEK and KRAS can affect '
+                    r'ZEB1. Here are the statements.*', desc), desc
 
 
-@attr('nonpublic', 'slow')
-def test_to_target_agent_filter():
-    finder = msa.FromSource(_erk(), filter_agents=[_mek(), _braf(), _erk()])
+@attr('nonpublic')
+def test_from_source_agent_filter():
+    cdk12 = Agent('CDK12', db_refs={'HGNC': '24224'})
+    samhd1 = Agent('SAMHD1', db_refs={'HGNC': '15925'})
+    ezh2 = Agent('EZH2', db_refs={'HGNC': '3527'})
+    finder = msa.FromSource(cdk12, filter_agents=[samhd1, ezh2])
     stmts = finder.get_statements()
     assert len(stmts)
-    exp_ags = {'MEK', 'BRAF', 'KRAS', 'ERK'}
+    exp_ags = {'SAMHD1', 'EZH2'}
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
         assert ag_names & exp_ags, ag_names - exp_ags
+    summ = finder.summarize()
+    assert 'SAMHD1' in {a.name for a in summ['other_agents']}, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that CDK12 can affect '
+                    r'SAMHD1 and EZH2. Here are the statements.*', desc), desc
+
+
+@attr('nonpublic')
+def test_binary_summary_description():
+    cdk12 = Agent('CDK12', db_refs={'HGNC': '24224'})
+    ezh2 = Agent('EZH2', db_refs={'HGNC': '3527'})
+
+    # Directed
+    finder = msa.BinaryDirected(cdk12, ezh2)
+    summ = finder.summarize()
+    assert 'EZH2' == summ['query_obj'].name, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that CDK12 can phosphorylate and '
+                    r'activate EZH2.', desc), desc
+
+    # Undirected
+    finder = msa.BinaryUndirected(cdk12, ezh2)
+    summ = finder.summarize()
+    assert 'EZH2' == summ['query_agents'][1].name, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that CDK12 and EZH2 interact in the '
+                    r'following ways: phosphorylation and activation.',
+                    desc), desc

@@ -243,10 +243,11 @@ class MRA_Module(Bioagent):
 
     def respond_model_has_mechanism(self, content):
         """Return response content to model-has-mechanism request."""
-        ekb = content.gets('description')
         model_id = self._get_model_id(content)
+        descr = content.get('description')
+        js = json.dumps(self.converter.cl_to_json(descr))
         try:
-            res = self.mra.has_mechanism(ekb, model_id)
+            res = self.mra.expand_model_from_json(js, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
         # Start a SUCCESS message

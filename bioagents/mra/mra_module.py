@@ -265,11 +265,12 @@ class MRA_Module(Bioagent):
 
     def respond_model_remove_mechanism(self, content):
         """Return response content to model-remove-mechanism request."""
-        ekb = content.gets('description')
         model_id = self._get_model_id(content)
+        descr = content.get('description')
+        js = json.dumps(self.converter.cl_to_json(descr))
         no_display = content.get('no-display')
         try:
-            res = self.mra.remove_mechanism(ekb, model_id)
+            res = self.mra.remove_mechanism(js, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
         model_id = res.get('model_id')
@@ -347,8 +348,9 @@ class MRA_Module(Bioagent):
 
     def respond_user_goal(self, content):
         """Record user goal and return success if possible"""
-        explain = content.gets('explain')
-        self.mra.set_user_goal(explain)
+        explain = content.get('explain')
+        explain_stmt = self.get_statement(explain)
+        self.mra.set_user_goal(explain_stmt)
         # We reset the explanations here
         self.have_explanation = False
         reply = KQMLList('SUCCESS')

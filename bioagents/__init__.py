@@ -66,7 +66,9 @@ class Bioagent(KQMLModule):
     def get_statement(cls, cl_statement):
         """Get an INDRA Statement from cl-json"""
         stmt_json = cls.converter.cl_to_json(cl_statement)
-        if isinstance(stmt_json, list):
+        if not stmt_json:
+            return None
+        elif isinstance(stmt_json, list):
             return stmts_from_json(stmt_json)
         else:
             return Statement._from_json(stmt_json)

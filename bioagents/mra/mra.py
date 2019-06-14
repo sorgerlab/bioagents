@@ -204,10 +204,9 @@ class MRA(object):
                                      new_model_id))
         return new_model_id, stmts_new_to_add
 
-    def remove_mechanism(self, mech_ekb, model_id):
+    def remove_mechanism(self, mech_js, model_id):
         """Return a new model with the given mechanism having been removed."""
-        tp = trips.process_xml(mech_ekb)
-        rem_stmts = tp.statements
+        rem_stmts = stmts_from_json(json.loads(mech_js))
         return self.remove_mechanism_from_stmts(rem_stmts, model_id)
 
     def remove_mechanism_from_stmts(self, rem_stmts, model_id):
@@ -327,14 +326,14 @@ class MRA(object):
             logger.info('Missing activities found: %s' % acts)
             res['stmt_corrections'] = acts
 
-    def has_mechanism(self, mech_ekb, model_id):
+    def has_mechanism(self, mech_json, model_id):
         """Return True if the given model contains the given mechanism."""
-        tp = trips.process_xml(mech_ekb)
+        stmts = stmts_from_json(json.loads(mech_json))
         res = {}
-        if not tp.statements:
+        if not stmts:
             res['has_mechanism'] = False
             return res
-        query_st = tp.statements[0]
+        query_st = stmts[0]
         res['query'] = query_st
         model_stmts = self.models[model_id]
         for model_st in model_stmts:
@@ -355,30 +354,12 @@ class MRA(object):
         return upstream_agents
 
     def set_user_goal(self, explain):
-        # Get the event itself
-        tp = trips.process_xml(explain)
-        if tp is None:
-            return {'error': 'Failed to process EKB.'}
-        print(tp.statements)
-        if not tp.statements:
-            return
-        self.explain = tp.statements[0]
-
-        # Look for a term representing a cell line
-        def get_context(explain_xml):
-            import xml.etree.ElementTree as ET
-            et = ET.fromstring(explain_xml)
-            cl_tag = et.find("TERM/[type='ONT::CELL-LINE']/text")
-            if cl_tag is not None:
-                cell_line = cl_tag.text
-                cell_line.replace('-', '')
-                return cell_line
-            return None
-        try:
-            self.context = get_context(explain)
-        except Exception as e:
-            logger.error('MRA could not set context from USER-GOAL')
-            logger.error(e)
+        # Set the given statement as context
+        self.explain = explain
+        # Set the cell line context if available
+        context = explain.evidence[0].context
+        if context and context.cell_line:
+            self.context = context.cell_line.name
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):
         """Replace an agent in a model with other agents.

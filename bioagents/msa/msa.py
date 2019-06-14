@@ -694,11 +694,11 @@ class FromSource(StatementFinder):
         if len(other_names) > limit:
             # We trim the trailing space of desc here before appending
             desc = desc[:-1] + ', for example, '
-            desc += english_join(other_names[:limit]) + '.\n'
+            desc += english_join(other_names[:limit]) + '. '
         elif 0 < len(other_names) <= limit:
-            desc += english_join(other_names) + '.\n'
+            desc += english_join(other_names) + '. '
         else:
-            desc += 'nothing.\n'
+            desc += 'nothing. '
 
         desc += ps
         return desc

@@ -587,12 +587,20 @@ def test_to_target_agent_filter():
                     r'ZEB1. Here are the statements.*', desc), desc
 
 
-@attr('nonpublic', 'slow')
+@attr('nonpublic')
 def test_from_source_agent_filter():
-    finder = msa.FromSource(_erk(), filter_agents=[_mek(), _braf(), _erk()])
+    cdk12 = Agent('CDK12', db_refs={'HGNC': '24224'})
+    samhd1 = Agent('SAMHD1', db_refs={'HGNC': '15925'})
+    ezh2 = Agent('EZH2', db_refs={'HGNC': '3527'})
+    finder = msa.FromSource(cdk12, filter_agents=[samhd1, ezh2])
     stmts = finder.get_statements()
     assert len(stmts)
-    exp_ags = {'MEK', 'BRAF', 'KRAS', 'ERK'}
+    exp_ags = {'SAMHD1', 'EZH2'}
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
         assert ag_names & exp_ags, ag_names - exp_ags
+    summ = finder.summarize()
+    assert 'SAMHD1' in {a.name for a in summ['other_agents']}, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that CDK12 can affect '
+                    r'SAMHD1 and EZH2. Here are the statements.*', desc), desc

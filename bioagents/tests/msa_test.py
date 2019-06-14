@@ -538,7 +538,7 @@ def test_complex_one_side_entity_filter():
     summ = finder.summarize()
     assert 'PTEN' in {a.name for a in summ['other_agents']}
     desc = finder.describe()
-    assert re.match(r'Overall, I found that BRAF can be in a complex with: ' \
+    assert re.match(r'Overall, I found that BRAF can be in a complex with '
                     'PTEN, .* and DUSP4.', desc), desc
 
 
@@ -550,6 +550,12 @@ def test_neighbors_agent_filter():
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
         assert ag_names & {'ERK', 'MEK'}
+
+    summ = finder.summarize()
+    assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that BRAF interacts with, '
+                    r'for instance, ERK, .* Here are the top.*', desc), desc
 
 
 @attr('nonpublic')

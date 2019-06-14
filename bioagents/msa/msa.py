@@ -529,14 +529,16 @@ class Neighborhood(StatementFinder):
 
     def describe(self, max_names=20):
         summary = self.summarize()
-        desc = ('\nOverall, I found that %s interacts with ' %
-                summary['query_agent'].name)
-        if summary['other_agents']:
+        desc = ('Overall, I found that %s interacts with%s ' %
+                (summary['query_agent'].name,
+                 ', for instance,' if len(summary['other_agents']) > max_names
+                 else ''))
+        if summary['other_agents'][:max_names]:
             desc += english_join([a.name for a in
                                   summary['other_agents'][:max_names]])
         else:
             desc += 'nothing'
-        desc += '.'
+        desc += '. '
         desc += super(Neighborhood, self).describe(include_negative=False)
         return desc
 
@@ -777,7 +779,7 @@ class ComplexOneSide(StatementFinder):
 
     def describe(self, max_names=20):
         summary = self.summarize()
-        desc = "Overall, I found that %s can be in a complex with: " % \
+        desc = "Overall, I found that %s can be in a complex with " % \
                summary['query_agent'].name
         desc += english_join([a.name for a in
                               summary['other_agents'][:max_names]])

@@ -114,6 +114,7 @@ class TestGetIndraRepresentationPathwayMAPK(_IntegrationTest):
         res = output.get('result')
         assert res
         agents = self.bioagent.get_agent(res)
+        assert isinstance(agents, list), agents
         assert len(agents) == 2, agents
         assert any(ag.name == 'SIGNALLING-PATHWAY' for ag in agents), agents
         assert any(ag.name == 'MAPK' for ag in agents), agents

@@ -48,9 +48,9 @@ class BioSense_Module(Bioagent):
 
         # If there are any statements then we can return the CL-JSON of those
         if tp.statements:
-            context = get_cell_line(ekb)
-            if context:
-                set_cell_line_context(tp.statements, context)
+            cell_line_context = get_cell_line(ekb.ekb)
+            if cell_line_context:
+                set_cell_line_context(tp.statements, cell_line_context)
             # Now make the CL-JSON for the given statements
             js = self.make_cljson(tp.statements)
         # Otherwise, we try extracting an Agent and return that

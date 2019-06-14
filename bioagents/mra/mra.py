@@ -204,10 +204,9 @@ class MRA(object):
                                      new_model_id))
         return new_model_id, stmts_new_to_add
 
-    def remove_mechanism(self, mech_ekb, model_id):
+    def remove_mechanism(self, mech_js, model_id):
         """Return a new model with the given mechanism having been removed."""
-        tp = trips.process_xml(mech_ekb)
-        rem_stmts = tp.statements
+        rem_stmts = stmts_from_json(json.loads(mech_js))
         return self.remove_mechanism_from_stmts(rem_stmts, model_id)
 
     def remove_mechanism_from_stmts(self, rem_stmts, model_id):
@@ -356,13 +355,7 @@ class MRA(object):
 
     def set_user_goal(self, explain):
         # Get the event itself
-        tp = trips.process_xml(explain)
-        if tp is None:
-            return {'error': 'Failed to process EKB.'}
-        print(tp.statements)
-        if not tp.statements:
-            return
-        self.explain = tp.statements[0]
+        self.explain = explain
 
         # Look for a term representing a cell line
         def get_context(explain_xml):

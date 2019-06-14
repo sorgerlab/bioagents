@@ -559,8 +559,7 @@ class TestModelBuildExpandRemove(_IntegrationTest):
     def create_remove(self):
         content = KQMLList('MODEL-REMOVE-MECHANISM')
         content.set('model-id', '2')
-        content.sets('description',
-                     ekb_kstring_from_text('KRAS activates BRAF'))
+        content.set('description', stmts_clj_from_text('KRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
@@ -578,8 +577,7 @@ class TestModelBuildExpandRemove(_IntegrationTest):
     def create_remove2(self):
         content = KQMLList('MODEL-REMOVE-MECHANISM')
         content.set('model-id', '3')
-        content.sets('description',
-                     ekb_kstring_from_text('NRAS activates BRAF'))
+        content.set('description', stmts_clj_from_text('NRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
@@ -607,7 +605,6 @@ class TestModelBuildExpandRemove(_IntegrationTest):
         assert len(model) == 1
 
 
-
 class TestModelRemoveWrong(_IntegrationTest):
     def __init__(self, *args):
         super().__init__(MRA_Module)
@@ -626,7 +623,7 @@ class TestModelRemoveWrong(_IntegrationTest):
     def create_remove(self):
         content = KQMLList('MODEL-REMOVE-MECHANISM')
         content.set('model-id', '1')
-        content.sets('description', ekb_kstring_from_text('Unphosphorylated ERK'))
+        content.set('description', stmts_clj_from_text('Unphosphorylated ERK'))
         msg = get_request(content)
         return msg, content
 
@@ -653,7 +650,7 @@ class TestModelHasMechanism(_IntegrationTest):
     def create_hasmech1(self):
         content = KQMLList('MODEL-HAS-MECHANISM')
         content.set('model-id', '1')
-        content.sets('description', ekb_kstring_from_text('KRAS activates BRAF'))
+        content.sets('description', stmts_clj_from_text('KRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
@@ -664,7 +661,7 @@ class TestModelHasMechanism(_IntegrationTest):
     def create_hasmech2(self):
         content = KQMLList('MODEL-HAS-MECHANISM')
         content.set('model-id', '1')
-        content.sets('description', ekb_kstring_from_text('NRAS activates BRAF'))
+        content.sets('description', stmts_clj_from_text('NRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
@@ -679,7 +676,9 @@ class TestUserGoal(_IntegrationTest):
 
     def create_message(self):
         txt = 'Selumetinib decreases FOS in BT20 cells'
-        explain = ekb_kstring_from_text(txt)
+        explain = stmts_clj_from_text(txt)
+        explain_stmt = self.bioagent.get_statement(explain)[0]
+        assert explain_stmt.evidence[0].context, explain_stmt.evidence[0]
         content = KQMLList('USER-GOAL')
         content.set('explain', explain)
         msg = get_request(content)

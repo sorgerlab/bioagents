@@ -6,6 +6,8 @@ from kqml import KQMLString, KQMLPerformative
 from indra.sources import trips
 from indra.statements import stmts_to_json, Agent
 from bioagents import Bioagent
+from bioagents.biosense.biosense_module import get_cell_line, \
+    set_cell_line_context
 
 
 def ekb_from_text(text):
@@ -44,6 +46,9 @@ def stmts_from_text(text):
     ekb_xml = read_or_load(text)
     print(ekb_xml)
     tp = trips.process_xml(ekb_xml)
+    context = get_cell_line(ET.fromstring(ekb_xml))
+    if context:
+        set_cell_line_context(tp.statements, context)
     return tp.statements
 
 

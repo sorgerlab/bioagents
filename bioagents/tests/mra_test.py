@@ -64,10 +64,10 @@ def test_get_upstream():
 
 def test_has_mechanism():
     m = MRA()
-    ekb = ekb_from_text('BRAF binds MEK')
-    m.build_model_from_ekb(ekb)
-    has_mechanism = m.has_mechanism(ekb, 1)
-    assert(has_mechanism)
+    stmtsj = json.dumps(stmts_json_from_text('BRAF binds MEK'))
+    m.build_model_from_json(stmtsj)
+    has_mechanism = m.has_mechanism(stmtsj, 1)
+    assert has_mechanism
 
 
 def test_transformations():

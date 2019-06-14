@@ -44,7 +44,6 @@ def agent_clj_from_text(text):
 def stmts_from_text(text):
     """Return a list of INDRA Statements from text."""
     ekb_xml = read_or_load(text)
-    print(ekb_xml)
     tp = trips.process_xml(ekb_xml)
     context = get_cell_line(ET.fromstring(ekb_xml))
     if context:

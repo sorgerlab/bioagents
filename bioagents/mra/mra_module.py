@@ -350,6 +350,8 @@ class MRA_Module(Bioagent):
         """Record user goal and return success if possible"""
         explain = content.get('explain')
         explain_stmt = self.get_statement(explain)
+        if explain_stmt and isinstance(explain_stmt, list):
+            explain_stmt = explain_stmt[0]
         self.mra.set_user_goal(explain_stmt)
         # We reset the explanations here
         self.have_explanation = False

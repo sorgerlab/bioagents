@@ -46,26 +46,11 @@ class BioSense_Module(Bioagent):
         # Now process the EKB using the TRIPS processor to extract Statements
         tp = trips.process_xml(ekb_str)
 
-        # Look for a term representing a cell line
-        def get_cell_line(et):
-            cl_tag = et.find("TERM/[type='ONT::CELL-LINE']/text")
-            if cl_tag is not None:
-                cell_line = cl_tag.text
-                cell_line.replace('-', '')
-                # TODO: add grounding here if available
-                clc = RefContext(cell_line)
-                return clc
-            return None
-
         # If there are any statements then we can return the CL-JSON of those
         if tp.statements:
-            # Set cell line context if available
-            cell_line = get_cell_line(ekb)
-            if cell_line:
-                for stmt in tp.statements:
-                    ev = stmt.evidence[0]
-                    if not ev.context:
-                        ev.context = BioContext(cell_line=context)
+            context = get_cell_line(ekb)
+            if context:
+                set_cell_line_context(tp.statements, context)
             # Now make the CL-JSON for the given statements
             js = self.make_cljson(tp.statements)
         # Otherwise, we try extracting an Agent and return that
@@ -164,6 +149,26 @@ class BioSense_Module(Bioagent):
             msg = KQMLList('SUCCESS')
             msg.set('synonyms', syns_kqml)
         return msg
+
+
+# Look for a term representing a cell line
+def get_cell_line(et):
+    cl_tag = et.find("TERM/[type='ONT::CELL-LINE']/text")
+    if cl_tag is not None:
+        cell_line = cl_tag.text
+        cell_line.replace('-', '')
+        # TODO: add grounding here if available
+        clc = RefContext(cell_line)
+        return clc
+    return None
+
+
+def set_cell_line_context(stmts, context):
+    # Set cell line context if available
+    for stmt in stmts:
+        ev = stmt.evidence[0]
+        if not ev.context:
+            ev.context = BioContext(cell_line=context)
 
 
 if __name__ == "__main__":

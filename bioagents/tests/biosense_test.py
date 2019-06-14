@@ -98,6 +98,27 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         assert stmt.position == '222', stmt.position
 
 
+class TestGetIndraRepresentationPathwayMAPK(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(BioSense_Module)
+
+    def create_message(self):
+        content = KQMLList.from_string(
+            _load_kqml('MAPK_signalling_pathway.kqml')
+        )
+        print(content)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'done', output
+        res = output.get('result')
+        assert res
+        agents = self.bioagent.get_agent(res)
+        assert len(agents) == 2, agents
+        assert any(ag.name == 'SIGNALLING-PATHWAY' for ag in agents), agents
+        assert any(ag.name == 'MAPK' for ag in agents), agents
+
+
 mek1 = agent_clj_from_text('MEK1')
 mek1a = Bioagent.get_agent(mek1)
 mek = agent_clj_from_text('MEK')

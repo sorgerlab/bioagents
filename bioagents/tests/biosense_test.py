@@ -57,7 +57,8 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         super().__init__(BioSense_Module)
 
     def create_message(self):
-        content = KQMLList.from_string(_load_kqml('braf_phos_mek_site_pos.kqml'))
+        content = KQMLList.from_string(
+            _load_kqml('braf_phos_mek_site_pos.kqml'))
         return get_request(content), content
 
     def check_response_to_message(self, output):

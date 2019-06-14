@@ -570,19 +570,25 @@ def test_upstreams_agent_filter():
         assert ag_names & exp_ags, ag_names - exp_ags - {'MEK', 'ERK'}
 
 
-@attr('nonpublic', 'slow')
+@attr('nonpublic')
 def test_to_target_agent_filter():
-    finder = msa.ToTarget(_erk(), filter_agents=[_mek(), _braf(), _kras()])
+    zeb1 = Agent('ZEB1', db_refs={'HGNC': '11642'})
+    finder = msa.ToTarget(zeb1, filter_agents=[_mek(), _braf(), _kras()])
     stmts = finder.get_statements()
     assert len(stmts)
     exp_ags = {'MEK', 'BRAF', 'KRAS'}
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
         assert ag_names & exp_ags, ag_names - exp_ags - {'ERK'}
+    summ = finder.summarize()
+    assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that MEK and KRAS can affect '
+                    r'ZEB1. Here are the statements.*', desc), desc
 
 
 @attr('nonpublic', 'slow')
-def test_to_target_agent_filter():
+def test_from_source_agent_filter():
     finder = msa.FromSource(_erk(), filter_agents=[_mek(), _braf(), _erk()])
     stmts = finder.get_statements()
     assert len(stmts)

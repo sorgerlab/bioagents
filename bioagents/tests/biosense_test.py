@@ -174,6 +174,7 @@ def test_respond_choose_sense():
     assert agents_clj
     agent = Bioagent.get_agent(agents_clj)
     assert agent.name == 'MAP2K1'
+    assert agent.db_refs['HGNC'] == '6840'
 
 
 def test_respond_choose_nonsense():
@@ -241,6 +242,8 @@ def test_respond_choose_sense_what_member():
     a2 = Bioagent.get_agent(m2)
     assert a1.name == 'MAP2K1'
     assert a2.name == 'MAP2K2'
+    assert a1.db_refs['HGNC'] == '6840'
+    assert a2.db_refs['UP'] == 'P36507'
 
 
 def test_respond_get_synonyms():

@@ -778,9 +778,10 @@ class ComplexOneSide(StatementFinder):
     def describe(self, max_names=20):
         summary = self.summarize()
         desc = "Overall, I found that %s can be in a complex with: " % \
-               summary['query_agent']
+               summary['query_agent'].name
         desc += english_join([a.name for a in
                               summary['other_agents'][:max_names]])
+        desc += '.'
         return desc
 
     def _filter_stmts(self, stmts):

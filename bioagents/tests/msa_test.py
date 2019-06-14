@@ -535,6 +535,12 @@ def test_complex_one_side_entity_filter():
     assert 'PTEN' in oa_names
     assert 'BRAF' not in oa_names
 
+    summ = finder.summarize()
+    assert 'PTEN' in {a.name for a in summ['other_agents']}
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that BRAF can be in a complex with: ' \
+                    'PTEN, .* and DUSP4.', desc), desc
+
 
 @attr('nonpublic')
 def test_neighbors_agent_filter():

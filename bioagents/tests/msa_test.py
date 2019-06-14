@@ -604,3 +604,26 @@ def test_from_source_agent_filter():
     desc = finder.describe()
     assert re.match(r'Overall, I found that CDK12 can affect '
                     r'SAMHD1 and EZH2. Here are the statements.*', desc), desc
+
+
+@attr('nonpublic')
+def test_binary_summary_description():
+    cdk12 = Agent('CDK12', db_refs={'HGNC': '24224'})
+    ezh2 = Agent('EZH2', db_refs={'HGNC': '3527'})
+
+    # Directed
+    finder = msa.BinaryDirected(cdk12, ezh2)
+    summ = finder.summarize()
+    assert 'EZH2' == summ['query_obj'].name, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that CDK12 can phosphorylate and '
+                    r'activate EZH2.', desc), desc
+
+    # Undirected
+    finder = msa.BinaryUndirected(cdk12, ezh2)
+    summ = finder.summarize()
+    assert 'EZH2' == summ['query_agents'][1].name, summ
+    desc = finder.describe()
+    assert re.match(r'Overall, I found that CDK12 and EZH2 interact in the '
+                    r'following ways: phosphorylation and activation.',
+                    desc), desc

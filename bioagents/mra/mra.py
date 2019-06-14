@@ -327,14 +327,14 @@ class MRA(object):
             logger.info('Missing activities found: %s' % acts)
             res['stmt_corrections'] = acts
 
-    def has_mechanism(self, mech_ekb, model_id):
+    def has_mechanism(self, mech_json, model_id):
         """Return True if the given model contains the given mechanism."""
-        tp = trips.process_xml(mech_ekb)
+        stmts = stmts_from_json(json.loads(mech_json))
         res = {}
-        if not tp.statements:
+        if not stmts:
             res['has_mechanism'] = False
             return res
-        query_st = tp.statements[0]
+        query_st = stmts[0]
         res['query'] = query_st
         model_stmts = self.models[model_id]
         for model_st in model_stmts:

@@ -354,24 +354,12 @@ class MRA(object):
         return upstream_agents
 
     def set_user_goal(self, explain):
-        # Get the event itself
+        # Set the given statement as context
         self.explain = explain
-
-        # Look for a term representing a cell line
-        def get_context(explain_xml):
-            import xml.etree.ElementTree as ET
-            et = ET.fromstring(explain_xml)
-            cl_tag = et.find("TERM/[type='ONT::CELL-LINE']/text")
-            if cl_tag is not None:
-                cell_line = cl_tag.text
-                cell_line.replace('-', '')
-                return cell_line
-            return None
-        try:
-            self.context = get_context(explain)
-        except Exception as e:
-            logger.error('MRA could not set context from USER-GOAL')
-            logger.error(e)
+        # Set the cell line context if available
+        context = explain.evidence[0].context
+        if context and context.cell_line:
+            self.context = context.cell_line.name
 
     def replace_agent(self, agent_name, agent_replacement_names, model_id):
         """Replace an agent in a model with other agents.

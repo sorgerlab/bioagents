@@ -90,7 +90,9 @@ class _TestFindTargetDrug(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 9, (len(output.get('drugs')), output)
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        for drug in drugs:
+            assert {'PUBCHEM', 'CHEBI'} & set(drug.db_refs.keys()), drug.db_refs
 
 
 @attr('nonpublic')
@@ -143,7 +145,8 @@ class TestFindTargetDrugKRAS(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 0, (len(output.get('drugs')), output)
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        assert not drugs
 
 
 @attr('nonpublic')
@@ -152,7 +155,10 @@ class TestFindTargetDrugJAK2(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 9, (len(output.get('drugs')), output)
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        assert len(drugs) >= 9
+        for drug in drugs:
+            assert {'PUBCHEM', 'CHEBI'} & set(drug.db_refs.keys()), drug.db_refs
 
 
 @attr('nonpublic')
@@ -161,7 +167,10 @@ class TestFindTargetDrugJAK1(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 6, (len(output.get('drugs')), output)
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        assert len(drugs) >= 6
+        for drug in drugs:
+            assert {'PUBCHEM', 'CHEBI'} & set(drug.db_refs.keys()), drug.db_refs
 
 
 # FIND-DRUG-TARGETS tests
@@ -180,8 +189,13 @@ class TestFindDrugTargetsVemurafenib(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         targets = output.get('targets')
         assert targets
-        assert len(targets) >= 1, targets
-        assert any(target.gets('name') == 'BRAF' for target in targets), targets
+        target_agents = self.bioagent.get_agent(targets)
+        assert isinstance(target_agents, list)
+        assert len(target_agents) >= 1, target_agents
+        for agent in target_agents:
+            assert 'HGNC' in agent.db_refs, agent.db_refs
+        assert any(target.name == 'BRAF' for target in target_agents), \
+            target_agents
 
 
 @attr('nonpublic')
@@ -283,8 +297,9 @@ class TestFindDiseaseTargets1(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        protein = output.get('protein')
-        assert protein.gets('name') == 'KRAS', protein.gets('name')
+        protein = self.bioagent.get_agent(output.get('protein'))
+        assert protein.name == 'KRAS'
+        assert protein.db_refs['HGNC'] == '6407'
         assert 0.8 < float(output.gets('prevalence')) < 0.9,\
             output.gets('prevalence')
         assert output.gets('functional-effect') == 'ACTIVE'
@@ -303,6 +318,9 @@ class TestFindDiseaseTargets2(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        protein = self.bioagent.get_agent(output.get('protein'))
+        assert protein.name == 'KRAS'
+        assert protein.db_refs['HGNC'] == '6407'
         assert output.gets('prevalence') == '0.19'
         assert output.gets('functional-effect') == 'ACTIVE'
 
@@ -337,6 +355,9 @@ class TestFindTreatment1(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        protein = self.bioagent.get_agent(output.get('protein'))
+        assert protein.name == 'KRAS'
+        assert protein.db_refs['HGNC'] == '6407'
         assert 0.8 < float(output.gets('prevalence')) < 0.9, \
             output.get('prevalence')
         assert len(output.get('drugs')) == 0

@@ -104,7 +104,7 @@ class TestGetIndraRepresentationPathwayMAPK(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList.from_string(
-            _load_kqml('MAPK_signalling_pathway.kqml')
+            _load_kqml('MAPK_signaling_pathway.kqml')
         )
         print(content)
         return get_request(content), content

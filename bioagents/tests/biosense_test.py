@@ -1,7 +1,7 @@
 import unittest
 from nose.tools import raises
 from kqml import KQMLList
-from indra.statements import Phosphorylation
+from indra.statements import Phosphorylation, Agent
 from .util import agent_clj_from_text
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
@@ -115,6 +115,10 @@ class TestGetIndraRepresentationPathwayMAPK(_IntegrationTest):
         assert res
         agents = self.bioagent.get_agent(res)
         assert isinstance(agents, list), agents
+        assert all(isinstance(ag, Agent) for ag in agents), \
+            [type(ag) for ag in agents]
+        assert all(bool(ag.db_refs) for ag in agents), \
+            [ag.db_refs for ag in agents]
         assert len(agents) == 2, agents
         assert any(ag.name == 'SIGNALLING-PATHWAY' for ag in agents), agents
         assert any(ag.name == 'MAPK' for ag in agents), agents

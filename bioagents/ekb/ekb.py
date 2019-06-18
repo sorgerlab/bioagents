@@ -2,8 +2,8 @@ from lxml import etree
 
 from bioagents import add_agent_type
 from kqml import KQMLList
-from indra.sources.trips.processor import TripsProcessor, RefContext, \
-    BioContext
+from indra.sources.trips.processor import TripsProcessor
+from indra.statements import RefContext, BioContext, Agent
 
 
 class EKB(object):
@@ -30,16 +30,11 @@ class EKB(object):
         ekb_str = '<?xml version="1.0"?>' + ekb_str
         return ekb_str
 
-    def get_cell_line(self):
-        # Look for a term representing a cell line
-        cl_tag = self.ekb.find("TERM/[type='ONT::CELL-LINE']/text")
-        if cl_tag is not None:
-            cell_line = cl_tag.text
-            cell_line.replace('-', '')
-            # TODO: add grounding here if available
-            clc = RefContext(cell_line)
-            return clc
-        return None
+    def set_cell_line_context(self, stmts):
+        cell_line_context = get_cell_line(self.ekb)
+        if cell_line_context:
+            set_cell_line_context(stmts, cell_line_context)
+        return get_cell_line(self.ekb)
 
     def get_entity(self):
         ekb_str = self.to_string()
@@ -48,9 +43,7 @@ class EKB(object):
 
         # If there are any statements then we can return the CL-JSON of those
         if tp.statements:
-            cell_line_context = self.get_cell_line()
-            if cell_line_context:
-                set_cell_line_context(tp.statements, cell_line_context)
+            self.set_cell_line_context(tp.statements)
             res = tp.statements
         # Otherwise, we try extracting an Agent and return that
         else:
@@ -272,9 +265,29 @@ def drum_term_to_ekb(drum_term):
     return dt
 
 
+def get_cell_line(ekb):
+    # Look for a term representing a cell line
+    cl_tag = ekb.find("TERM/[type='ONT::CELL-LINE']/text")
+    if cl_tag is not None:
+        cell_line = cl_tag.text
+        cell_line.replace('-', '')
+        # TODO: add grounding here if available
+        clc = RefContext(cell_line)
+        return clc
+    return None
+
+
 def set_cell_line_context(stmts, context):
     # Set cell line context if available
     for stmt in stmts:
         ev = stmt.evidence[0]
         if not ev.context:
             ev.context = BioContext(cell_line=context)
+
+
+def agent_from_term(graph, term_id):
+    ekb = EKB(graph, term_id)
+    agent = ekb.get_entity()
+    if not isinstance(agent, Agent):
+        return None
+    return agent

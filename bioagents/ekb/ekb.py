@@ -9,7 +9,10 @@ from indra.statements import RefContext, BioContext, Agent
 class EKB(object):
     def __init__(self, graph, term_node):
         self.graph = graph
+
+        # Do we still want to do this?
         self.graph.draw('test.pdf')
+
         self.root_term = term_node
         self.ekb = None
         self.type = None
@@ -49,7 +52,7 @@ class EKB(object):
         else:
             agent = tp._get_agent_by_id(self.root_term, None)
             # Set the TRIPS ID in db_refs
-            agent.db_refs['TRIPS'] = id
+            agent.db_refs['TRIPS'] = self.root_term
             # Infer the type from db_refs
             agent = add_agent_type(agent)
             res = agent

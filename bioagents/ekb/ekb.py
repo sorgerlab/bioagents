@@ -55,7 +55,7 @@ class EKB(object):
             agent.db_refs['TRIPS'] = self.root_term
             # Infer the type from db_refs
             if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
-                agent.db_refs['type'] = 'ONT:SIGNALING-PATHWAY'
+                agent.db_refs['TYPE'] = self.type.upper()
                 agent.name += ' Signaling Pathway'
             else:
                 agent = add_agent_type(agent)

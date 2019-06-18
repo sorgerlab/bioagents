@@ -1,16 +1,14 @@
 import sys
 import logging
 import indra
-from indra.sources import trips
-from indra.statements import BioContext, RefContext, Agent
 from indra.databases import uniprot_client, get_identifiers_url
-from .biosense import BioSense
-from .biosense import InvalidAgentError, UnknownCategoryError, \
-    SynonymsUnknownError
-from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
 from bioagents import Bioagent, add_agent_type
-from kqml import KQMLPerformative, KQMLList, KQMLString
-from bioagents.ekb import KQMLGraph, EKB, agent_from_term
+from kqml import  KQMLString
+from .biosense import BioSense
+from .biosense import UnknownCategoryError, SynonymsUnknownError
+from .biosense import CollectionNotFamilyOrComplexError
+from kqml import KQMLPerformative, KQMLList
+from bioagents.ekb import KQMLGraph, EKB
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -37,6 +35,9 @@ class BioSense_Module(Bioagent):
         id = content.get('ids')[0].to_string()
         if id.startswith('ONT::'):
             id_base = id[5:]
+        else:
+            id_base = id
+
         context = content.get('context').to_string()
         # First get the KQML graph object for the given context
         graph = KQMLGraph(context)

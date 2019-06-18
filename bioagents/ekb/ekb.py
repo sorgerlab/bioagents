@@ -128,21 +128,36 @@ class EKB(object):
         site_term.append(features_tag)
         return site_term
 
-    def term_to_ekb(self, term_id):
-        node = self.graph.node[term_id]
-
-        term = etree.Element('TERM', id=term_id)
-        # Set the type of the TERM
-        type = etree.Element('type')
-        type.text = node['type']
-        term.append(type)
-        # Find the name of the TERM and get the value with W:: stripped
+    def get_term_name(self, term_id):
         name_node = self.graph.get_matching_node(term_id, link='name')
         if not name_node:
             name_node = self.graph.get_matching_node(term_id, link='W')
         name_val = self.graph.node[name_node]['label']
         if name_val.startswith('W::'):
             name_val = name_val[3:]
+        return name_val
+
+    def term_to_ekb(self, term_id):
+        node = self.graph.node[term_id]
+
+        term = etree.Element('TERM', id=term_id)
+
+        # Set the type of the TERM
+        type = etree.Element('type')
+        type.text = node['type']
+        term.append(type)
+
+        # Find the name of the TERM and get the value with W:: stripped
+        if node['type'].upper() == 'ONT::SIGNALING-PATHWAY':
+            path_subject_id = self.graph.get_matching_node(term_id,
+                                                           link='assoc-with')
+            path_subject_name = self.get_term_name(path_subject_id)
+            name_val = path_subject_name.upper() + '-SIGNALING-PATHWAY'
+
+            # This is a LITTLE bit hacky.
+            term_id = path_subject_id
+        else:
+            name_val = self.get_term_name(term_id)
         name = etree.Element('name')
         name.text = name_val
         term.append(name)

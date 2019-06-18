@@ -54,7 +54,11 @@ class EKB(object):
             # Set the TRIPS ID in db_refs
             agent.db_refs['TRIPS'] = self.root_term
             # Infer the type from db_refs
-            agent = add_agent_type(agent)
+            if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
+                agent.db_refs['type'] = 'ONT:SIGNALING-PATHWAY'
+                agent.name += ' Signaling Pathway'
+            else:
+                agent = add_agent_type(agent)
             res = agent
         return res
 
@@ -173,6 +177,8 @@ class EKB(object):
         type = etree.Element('type')
         type.text = node['type']
         term.append(type)
+
+        self.type = node['type']
 
         # Find the name of the TERM and get the value with W:: stripped
         if node['type'].upper() == 'ONT::SIGNALING-PATHWAY':

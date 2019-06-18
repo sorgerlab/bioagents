@@ -96,13 +96,13 @@ class KQMLGraph(networkx.DiGraph):
                         node_val = str(val[1])
                         self.add_node(node_idx, label=node_val)
                         self.add_edge(elem_id, node_idx, label=key)
-                    # This is the case when there is a sequence of symbols being
-                    # referred to, typically with an AND operator
+                    # This is the case when there is a sequence of symbols
+                    # being referred to, typically with an AND operator
                     elif key.upper() in ['SEQUENCE', 'M-SEQUENCE']:
                         for counter, seq_elem in enumerate(val):
                             assert str(seq_elem).startswith('ONT::V')
-                            label = 'sequence%s' % ('' if counter == 0 else
-                                                    counter)
+                            label = key.lower() + '%s' % ('' if counter == 0
+                                                          else counter)
                             self.add_edge(elem_id, seq_elem[5:], label=label)
                     else:
                         raise ValueError('Unexpected KQMLList encountered')

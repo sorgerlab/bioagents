@@ -28,11 +28,10 @@ class TestChooseSense(_IntegrationTest):
         assert output.head().lower() == 'success', output
         print(output)
         agent = output.get('agent')
-        ag = agent.get('agent')
-        assert ag
-        urls = agent.get('id-urls')
+        assert agent
+        urls = output.get('id-urls')
         assert len(urls) == 3
-        desc = agent.gets('description')
+        desc = output.gets('description')
         assert 'thereby contributes to the MAP' in desc, desc
 
 
@@ -193,11 +192,11 @@ def test_get_synonyms_no_synonyms_for_type():
 def test_respond_choose_sense():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE')
-    msg_content.set('ekb-term', mek1)
+    msg_content.set('agent', mek1)
     res = bs.respond_choose_sense(msg_content)
-    agents_clj = res.get('agents')
-    assert agents_clj
-    agent = Bioagent.get_agent(agents_clj)
+    agent_clj = res.get('agent')
+    assert agent_clj
+    agent = Bioagent.get_agent(agent_clj)
     assert agent.name == 'MAP2K1'
     assert agent.db_refs['HGNC'] == '6840'
 
@@ -205,11 +204,11 @@ def test_respond_choose_sense():
 def test_respond_choose_nonsense():
     bs = BioSense_Module(testing=True)
     msg_content = KQMLList('CHOOSE-SENSE')
-    msg_content.set('ekb-term', agent_clj_from_text('bagel'))
+    msg_content.set('agent', agent_clj_from_text('bagel'))
     res = bs.respond_choose_sense(msg_content)
     print(res)
     assert res.head() == 'SUCCESS'
-    agents_clj = res.get('agents')
+    agents_clj = res.get('agent')
     agent = Bioagent.get_agent(agents_clj)
     assert agent.name == 'BAGEL'
     assert len(agent.db_refs) == 1

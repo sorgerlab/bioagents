@@ -2,13 +2,14 @@ import sys
 import logging
 import indra
 from indra.sources import trips
-from indra.statements import BioContext, RefContext
+from indra.statements import BioContext, RefContext, Agent
+from indra.databases import uniprot_client, get_identifiers_url
 from .biosense import BioSense
 from .biosense import InvalidAgentError, UnknownCategoryError, \
     SynonymsUnknownError
 from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
 from bioagents import Bioagent, add_agent_type
-from kqml import KQMLPerformative, KQMLList
+from kqml import KQMLPerformative, KQMLList, KQMLString
 from bioagents.ekb import KQMLGraph, EKB, agent_from_term
 
 
@@ -73,11 +74,37 @@ class BioSense_Module(Bioagent):
 
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""
-        term_arg = content.get('ekb-term')
-        term_agent = self.get_agent(term_arg)
+        agent_clj = content.get('agent')
+        agent = self.get_agent(agent_clj)
+        add_agent_type(agent)
+
+        def _get_urls(agent):
+            urls = {k: get_identifiers_url(k, v) for k, v in
+                    agent.db_refs.items()
+                    if k not in {'TEXT', 'TYPE', 'TRIPS'}}
+            return urls
+
         msg = KQMLPerformative('SUCCESS')
-        agent_clj = self.make_cljson(term_agent)
-        msg.set('agents', agent_clj)
+        kagent = KQMLList()
+        kagent.set('agent', self.make_cljson(agent))
+
+        description = None
+        if 'UP' in agent.db_refs:
+            description = uniprot_client.get_function(agent.db_refs['UP'])
+        if description:
+            kagent.sets('description', description)
+
+        urls = _get_urls(agent)
+        if urls:
+            url_parts = [KQMLList([':name', KQMLString(k),
+                                   ':dblink', KQMLString(v)])
+                         for k, v in urls.items()]
+            url_list = KQMLList()
+            for url_part in url_parts:
+                url_list.append(url_part)
+            kagent.set('id-urls', url_list)
+
+        msg.set('agent', kagent)
         return msg
 
     def respond_choose_sense_category(self, content):

@@ -165,8 +165,8 @@ class MSA_Module(Bioagent):
             return msg
 
     def _get_query_info(self, content):
-        subj = self.get_agent(content.get('source'))
-        obj = self.get_agent(content.get('target'))
+        subj = _get_agent_if_present(content, 'source')
+        obj = _get_agent_if_present(content, 'target')
         if not subj and not obj:
             raise MSALookupError('MISSING_MECHANISM')
 
@@ -328,6 +328,14 @@ def _make_diagrams(stmts):
     sbgn = _make_sbgn(stmts)
     diagrams = {'sbgn': sbgn.decode('utf-8')}
     return diagrams
+
+
+def _get_agent_if_present(content, key):
+    obj_clj = content.get(key)
+    if obj_clj is None:
+        return None
+    else:
+        return Bioagent.get_agent(obj_clj)
 
 
 if __name__ == "__main__":

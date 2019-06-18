@@ -1,6 +1,9 @@
 from lxml import etree
+
+from bioagents import add_agent_type
 from kqml import KQMLList
-from indra.sources.trips.processor import TripsProcessor
+from indra.sources.trips.processor import TripsProcessor, RefContext, \
+    BioContext
 
 
 class EKB(object):
@@ -9,6 +12,7 @@ class EKB(object):
         self.graph.draw('test.pdf')
         self.root_term = term_node
         self.ekb = None
+        self.type = None
         self.components = [term_node]
         self.build()
 
@@ -26,11 +30,37 @@ class EKB(object):
         ekb_str = '<?xml version="1.0"?>' + ekb_str
         return ekb_str
 
-    def get_agent(self):
+    def get_cell_line(self):
+        # Look for a term representing a cell line
+        cl_tag = self.ekb.find("TERM/[type='ONT::CELL-LINE']/text")
+        if cl_tag is not None:
+            cell_line = cl_tag.text
+            cell_line.replace('-', '')
+            # TODO: add grounding here if available
+            clc = RefContext(cell_line)
+            return clc
+        return None
+
+    def get_entity(self):
         ekb_str = self.to_string()
+        # Now process the EKB using the TRIPS processor to extract Statements
         tp = TripsProcessor(ekb_str)
-        agent = tp._get_agent_by_id(self.root_term, None)
-        return agent
+
+        # If there are any statements then we can return the CL-JSON of those
+        if tp.statements:
+            cell_line_context = self.get_cell_line()
+            if cell_line_context:
+                set_cell_line_context(tp.statements, cell_line_context)
+            res = tp.statements
+        # Otherwise, we try extracting an Agent and return that
+        else:
+            agent = tp._get_agent_by_id(self.root_term, None)
+            # Set the TRIPS ID in db_refs
+            agent.db_refs['TRIPS'] = id
+            # Infer the type from db_refs
+            agent = add_agent_type(agent)
+            res = agent
+        return res
 
     def event_to_ekb(self, event_node):
         node = self.graph.node[event_node]
@@ -63,6 +93,7 @@ class EKB(object):
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
         type.text = node['type']
+        self.type = node['type']
         event.append(type)
         arg_counter = 1
         possible_event_args = ['affected', 'affected1', 'agent',
@@ -241,6 +272,9 @@ def drum_term_to_ekb(drum_term):
     return dt
 
 
-def agent_from_term(graph, term_node):
-    ekb = EKB(graph, term_node)
-    return ekb.get_agent()
+def set_cell_line_context(stmts, context):
+    # Set cell line context if available
+    for stmt in stmts:
+        ev = stmt.evidence[0]
+        if not ev.context:
+            ev.context = BioContext(cell_line=context)

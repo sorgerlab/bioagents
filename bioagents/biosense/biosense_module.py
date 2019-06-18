@@ -76,6 +76,8 @@ class BioSense_Module(Bioagent):
         """Return response content to choose-sense request."""
         agent_clj = content.get('agent')
         agent = self.get_agent(agent_clj)
+        if not agent:
+            return self.make_failure('MISSING_AGENT')
         add_agent_type(agent)
 
         def _get_urls(agent):
@@ -85,14 +87,13 @@ class BioSense_Module(Bioagent):
             return urls
 
         msg = KQMLPerformative('SUCCESS')
-        kagent = KQMLList()
-        kagent.set('agent', self.make_cljson(agent))
+        msg.set('agent', self.make_cljson(agent))
 
         description = None
         if 'UP' in agent.db_refs:
             description = uniprot_client.get_function(agent.db_refs['UP'])
         if description:
-            kagent.sets('description', description)
+            msg.sets('description', description)
 
         urls = _get_urls(agent)
         if urls:
@@ -102,9 +103,8 @@ class BioSense_Module(Bioagent):
             url_list = KQMLList()
             for url_part in url_parts:
                 url_list.append(url_part)
-            kagent.set('id-urls', url_list)
+            msg.set('id-urls', url_list)
 
-        msg.set('agent', kagent)
         return msg
 
     def respond_choose_sense_category(self, content):

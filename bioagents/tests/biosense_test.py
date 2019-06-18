@@ -2,6 +2,7 @@ import unittest
 from nose.tools import raises
 from kqml import KQMLList
 from indra.statements import Phosphorylation
+from .util import agent_clj_from_text
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from bioagents import Bioagent
@@ -10,6 +11,29 @@ from bioagents.biosense.biosense import BioSense, InvalidAgentError, \
     InvalidCollectionError, UnknownCategoryError, \
     CollectionNotFamilyOrComplexError, SynonymsUnknownError
 from bioagents.tests.util import ekb_from_text, get_request, agent_clj_from_text
+
+
+class TestChooseSense(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(BioSense_Module)
+
+    def create_message(self):
+        content = KQMLList('CHOOSE-SENSE')
+        agent = agent_clj_from_text('BRAF')
+        content.set('agent', agent)
+        print(content)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head().lower() == 'success', output
+        print(output)
+        agent = output.get('agent')
+        ag = agent.get('agent')
+        assert ag
+        urls = agent.get('id-urls')
+        assert len(urls) == 3
+        desc = agent.gets('description')
+        assert 'thereby contributes to the MAP' in desc, desc
 
 
 class TestGetIndraRepresentationOneAgent(_IntegrationTest):

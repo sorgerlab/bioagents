@@ -98,7 +98,7 @@ class KQMLGraph(networkx.DiGraph):
                         self.add_edge(elem_id, node_idx, label=key)
                     # This is the case when there is a sequence of symbols being
                     # referred to, typically with an AND operator
-                    elif key.upper() == 'SEQUENCE':
+                    elif key.upper() in ['SEQUENCE', 'M-SEQUENCE']:
                         for counter, seq_elem in enumerate(val):
                             assert str(seq_elem).startswith('ONT::V')
                             label = 'sequence%s' % ('' if counter == 0 else

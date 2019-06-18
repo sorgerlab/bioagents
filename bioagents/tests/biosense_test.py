@@ -98,30 +98,27 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         assert stmt.position == '222', stmt.position
 
 
-class TestGetIndraRepresentationPathwayMAPK(_IntegrationTest):
+class TestGetIndraRepresentationPathwayMAPKSimple(_IntegrationTest):
     def __init__(self, *args):
         super().__init__(BioSense_Module)
 
     def create_message(self):
         content = KQMLList.from_string(
-            _load_kqml('MAPK_signaling_pathway.kqml')
+            _load_kqml('MAPK_signaling_pathway_simple.kqml')
         )
-        print(content)
         return get_request(content), content
 
     def check_response_to_message(self, output):
         assert output.head() == 'done', output
         res = output.get('result')
         assert res
-        agents = self.bioagent.get_agent(res)
-        assert isinstance(agents, list), agents
-        assert all(isinstance(ag, Agent) for ag in agents), \
-            [type(ag) for ag in agents]
-        assert all(bool(ag.db_refs) for ag in agents), \
-            [ag.db_refs for ag in agents]
-        assert len(agents) == 2, agents
-        assert any(ag.name == 'SIGNALLING-PATHWAY' for ag in agents), agents
-        assert any(ag.name == 'MAPK' for ag in agents), agents
+        agent = self.bioagent.get_agent(res)
+        assert isinstance(agent, Agent), agent
+        assert agent.name == 'MAPK Signaling Pathway', agent.name
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
+        assert agent.db_refs['TRIPS'].startswith('V'), agent.db_refs
+        assert agent.db_refs['FPLX'] == 'MAPK', agent.db_refs
+        assert agent.db_refs['NCIT'], agent.db_refs
 
 
 mek1 = agent_clj_from_text('MEK1')

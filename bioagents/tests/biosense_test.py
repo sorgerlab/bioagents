@@ -1,16 +1,13 @@
-import unittest
 from nose.tools import raises
 from kqml import KQMLList
 from indra.statements import Phosphorylation, Agent
-from .util import agent_clj_from_text
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from bioagents import Bioagent
 from bioagents.biosense.biosense_module import BioSense_Module
-from bioagents.biosense.biosense import BioSense, InvalidAgentError, \
-    InvalidCollectionError, UnknownCategoryError, \
+from bioagents.biosense.biosense import BioSense, UnknownCategoryError, \
     CollectionNotFamilyOrComplexError, SynonymsUnknownError
-from bioagents.tests.util import ekb_from_text, get_request, agent_clj_from_text
+from bioagents.tests.util import get_request, agent_clj_from_text
 
 
 class TestChooseSense(_IntegrationTest):
@@ -46,14 +43,20 @@ class _GetIndraRepTemplate(_IntegrationTest):
         assert content.head().upper() == 'GET-INDRA-REPRESENTATION'
         return get_request(content), content
 
-
-class TestGetIndraRepOneAgent(_GetIndraRepTemplate):
-    kqml_file = 'tofacitinib.kqml'
-
     def check_response_to_message(self, output):
         assert output.head() == 'done'
         res = output.get('result')
         assert res
+        self.check_result(res)
+
+    def check_result(self, res):
+        raise NotImplementedError("This function must be defined by each test")
+
+
+class TestGetIndraRepOneAgent(_GetIndraRepTemplate):
+    kqml_file = 'tofacitinib.kqml'
+
+    def check_result(self, res):
         agent = self.bioagent.get_agent(res)
         assert agent.name == 'TOFACITINIB'
         assert agent.db_refs['TRIPS'] == 'ONT::V34850'
@@ -64,10 +67,7 @@ class TestGetIndraRepOneAgent(_GetIndraRepTemplate):
 class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):
     kqml_file = 'selumetinib.kqml'
 
-    def check_response_to_message(self, output):
-        assert output.head() == 'done'
-        res = output.get('result')
-        assert res
+    def check_result(self, res):
         agent = self.bioagent.get_agent(res)
         assert agent.name == 'SELUMETINIB'
         assert agent.db_refs['TRIPS'] == 'ONT::V34821', agent.db_refs
@@ -77,10 +77,7 @@ class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):
 class TestGetIndraRepStatement(_GetIndraRepTemplate):
     kqml_file = 'braf_phos_mek_site_pos.kqml'
 
-    def check_response_to_message(self, output):
-        assert output.head() == 'done', output
-        res = output.get('result')
-        assert res
+    def check_result(self, res):
         stmts = self.bioagent.get_statement(res)
         assert len(stmts) == 1
         stmt = stmts[0]
@@ -89,6 +86,20 @@ class TestGetIndraRepStatement(_GetIndraRepTemplate):
         assert stmt.sub.name == 'MAP2K1'
         assert stmt.residue == 'S'
         assert stmt.position == '222', stmt.position
+
+
+class TestGetIndraRepMultipleResults(_GetIndraRepTemplate):
+    kqml_file = 'multiple_results.kqml'
+
+    def check_result(self, res):
+        agents = self.bioagent.get_agent(res)
+        assert len(agents) == 3, len(agents)
+        name_set = {ag.name for ag in agents}
+        assert name_set == {'HRAS', 'SRF', 'ELK1'}, name_set
+        assert all(ag.db_refs for ag in agents), [ag.db_refs for ag in agents]
+        assert all('TRIPS' in ag.db_refs.keys()
+                   and ag.db_refs['TRIPS'].startswith('ONT::V')
+                   for ag in agents), [ag.db_refs for ag in agents]
 
 
 class TestGetIndraRepPathwayMAPKSimple(_GetIndraRepTemplate):

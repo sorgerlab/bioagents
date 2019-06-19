@@ -108,6 +108,9 @@ class TestGetIndraRepMIRNA(_GetIndraRepTemplate):
     def check_result(self, res):
         agent = self.bioagent.get_agent(res)
         assert agent.name == 'MIR-20B-5P', agent.name
+        assert agent.db_refs['TYPE'] == 'ONT::RNA'
+        assert agent.db_refs['TEXT'] == 'MIR-PUNC-MINUS-20-B-PUNC-MINUS-5-P'
+        assert agent.db_refs['TRIPS'] == 'ONT::V36357'
 
 
 class TestGetIndraRepPathwayMAPKSimple(_GetIndraRepTemplate):

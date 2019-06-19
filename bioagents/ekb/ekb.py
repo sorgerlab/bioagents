@@ -160,6 +160,7 @@ class EKB(object):
         return site_term
 
     def get_term_name(self, term_id):
+        """Find the name of the TERM and get the value with W:: stripped"""
         name_node = self.graph.get_matching_node(term_id, link='name')
         if not name_node:
             name_node = self.graph.get_matching_node(term_id, link='W')
@@ -180,15 +181,20 @@ class EKB(object):
 
         self.type = node['type']
 
-        # Find the name of the TERM and get the value with W:: stripped
+        # Handle the case of the signaling pathways.
+        # Note: It turns out this will be wiped out by TRIPS further down the
+        # line.
         if node['type'].upper() == 'ONT::SIGNALING-PATHWAY':
             path_subject_id = self.graph.get_matching_node(term_id,
                                                            link='assoc-with')
             path_subject_name = self.get_term_name(path_subject_id)
             name_val = path_subject_name.upper() + '-SIGNALING-PATHWAY'
 
-            # This is a LITTLE bit hacky.
+            # This is a LITTLE bit hacky: all further information should come
+            # from this associated-with term, because the root term has no
+            # information.
             term_id = path_subject_id
+        # Handle the case where this is just another protein.
         else:
             name_val = self.get_term_name(term_id)
         name = etree.Element('name')

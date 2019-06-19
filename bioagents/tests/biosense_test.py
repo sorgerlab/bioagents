@@ -105,10 +105,7 @@ class TestGetIndraRepMultipleResults(_GetIndraRepTemplate):
 class TestGetIndraRepPathwayMAPKSimple(_GetIndraRepTemplate):
     kqml_file = 'MAPK_signaling_pathway_simple.kqml'
 
-    def check_response_to_message(self, output):
-        assert output.head() == 'done', output
-        res = output.get('result')
-        assert res
+    def check_result(self, res):
         agent = self.bioagent.get_agent(res)
         assert isinstance(agent, Agent), agent
         assert agent.name == 'MAPK Signaling Pathway', agent.name

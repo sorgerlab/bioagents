@@ -55,9 +55,14 @@ class EKB(object):
             # Set the TRIPS ID in db_refs
             agent.db_refs['TRIPS'] = 'ONT::' + self.root_term
 
-            # Extend the agent's name.
+            # Fix some namings
             if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
                 agent.name += ' Signaling Pathway'
+            elif self.type.upper() == 'ONT::RNA':
+                agent.name = (agent.name
+                              .upper()
+                              .replace('-', '')
+                              .replace('PUNCMINUS', '-'))
 
             # Set the agent type
             inferred_type = infer_agent_type(agent)
@@ -65,13 +70,6 @@ class EKB(object):
                 agent.db_refs['TYPE'] = inferred_type
             elif self.type:
                 agent.db_refs['TYPE'] = self.type.upper()
-
-            # Handle the special case where miRNA names are mangled.
-            if agent.name.startswith('MIR'):
-                agent.name = (agent.name
-                              .upper()
-                              .replace('-', '')
-                              .replace('PUNCMINUS', '-'))
 
             res = agent
         return res

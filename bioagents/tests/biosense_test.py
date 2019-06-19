@@ -35,16 +35,20 @@ class TestChooseSense(_IntegrationTest):
         assert 'thereby contributes to the MAP' in desc, desc
 
 
-class TestGetIndraRepresentationOneAgent(_IntegrationTest):
+class _GetIndraRepresentationTemplate(_IntegrationTest):
+    kqml_file = NotImplemented
+
     def __init__(self, *args):
         super().__init__(BioSense_Module)
 
     def create_message(self):
-        kql = KQMLList.from_string(_load_kqml('tofacitinib.kqml'))
-        content = KQMLList('get-indra-representation')
-        content.set('context', kql)
-        content.set('ids', KQMLList(['ONT::V34850']))
+        content = KQMLList.from_string(_load_kqml(self.kqml_file))
+        assert content.head().upper() == 'GET-INDRA-REPRESENTATION'
         return get_request(content), content
+
+
+class TestGetIndraRepresentationOneAgent(_GetIndraRepresentationTemplate):
+    kqml_file = 'tofacitinib.kqml'
 
     def check_response_to_message(self, output):
         assert output.head() == 'done'
@@ -57,13 +61,8 @@ class TestGetIndraRepresentationOneAgent(_IntegrationTest):
             agent.db_refs
 
 
-class TestGetIndraRepresentationOneAgent2(_IntegrationTest):
-    def __init__(self, *args):
-        super().__init__(BioSense_Module)
-
-    def create_message(self):
-        content = KQMLList.from_string(_load_kqml('selumetinib.kqml'))
-        return get_request(content), content
+class TestGetIndraRepresentationOneAgent2(_GetIndraRepresentationTemplate):
+    kqml_file = 'selumetinib.kqml'
 
     def check_response_to_message(self, output):
         assert output.head() == 'done'
@@ -75,14 +74,8 @@ class TestGetIndraRepresentationOneAgent2(_IntegrationTest):
         assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE'
 
 
-class TestGetIndraRepresentationStatement(_IntegrationTest):
-    def __init__(self, *args):
-        super().__init__(BioSense_Module)
-
-    def create_message(self):
-        content = KQMLList.from_string(
-            _load_kqml('braf_phos_mek_site_pos.kqml'))
-        return get_request(content), content
+class TestGetIndraRepresentationStatement(_GetIndraRepresentationTemplate):
+    kqml_file = 'braf_phos_mek_site_pos.kqml'
 
     def check_response_to_message(self, output):
         assert output.head() == 'done', output

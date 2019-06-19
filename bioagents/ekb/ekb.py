@@ -51,14 +51,24 @@ class EKB(object):
         # Otherwise, we try extracting an Agent and return that
         else:
             agent = tp._get_agent_by_id(self.root_term, None)
+
             # Set the TRIPS ID in db_refs
             agent.db_refs['TRIPS'] = 'ONT::' + self.root_term
+
             # Infer the type from db_refs
             if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
                 agent.db_refs['TYPE'] = self.type.upper()
                 agent.name += ' Signaling Pathway'
             else:
                 agent = add_agent_type(agent)
+
+            # Handle the special case where miRNA names are mangled.
+            if agent.name.startswith('MIR'):
+                agent.name = (agent.name
+                              .upper()
+                              .replace('-', '')
+                              .replace('PUNCMINUS', '-'))
+
             res = agent
         return res
 

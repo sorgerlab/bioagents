@@ -52,7 +52,7 @@ class EKB(object):
         else:
             agent = tp._get_agent_by_id(self.root_term, None)
             # Set the TRIPS ID in db_refs
-            agent.db_refs['TRIPS'] = self.root_term
+            agent.db_refs['TRIPS'] = 'ONT::' + self.root_term
             # Infer the type from db_refs
             if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
                 agent.db_refs['TYPE'] = self.type.upper()

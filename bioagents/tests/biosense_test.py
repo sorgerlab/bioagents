@@ -116,7 +116,7 @@ class TestGetIndraRepresentationPathwayMAPKSimple(_IntegrationTest):
         assert isinstance(agent, Agent), agent
         assert agent.name == 'MAPK Signaling Pathway', agent.name
         assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
-        assert agent.db_refs['TRIPS'].startswith('V'), agent.db_refs
+        assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
         assert agent.db_refs['FPLX'] == 'MAPK', agent.db_refs
         assert agent.db_refs['NCIT'], agent.db_refs
 

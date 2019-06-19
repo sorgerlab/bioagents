@@ -1,8 +1,8 @@
 from lxml import etree
 
 from bioagents import add_agent_type
+from indra.sources.trips import process_xml
 from kqml import KQMLList
-from indra.sources.trips.processor import TripsProcessor
 from indra.statements import RefContext, BioContext, Agent
 
 
@@ -42,7 +42,7 @@ class EKB(object):
     def get_entity(self):
         ekb_str = self.to_string()
         # Now process the EKB using the TRIPS processor to extract Statements
-        tp = TripsProcessor(ekb_str)
+        tp = process_xml(ekb_str)
 
         # If there are any statements then we can return the CL-JSON of those
         if tp.statements:

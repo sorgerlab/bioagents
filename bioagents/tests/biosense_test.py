@@ -102,6 +102,14 @@ class TestGetIndraRepMultipleResults(_GetIndraRepTemplate):
                    for ag in agents), [ag.db_refs for ag in agents]
 
 
+class TestGetIndraRepMIRNA(_GetIndraRepTemplate):
+    kqml_file = 'mirna.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        assert agent.name == 'MIR-20B-5P', agent.name
+
+
 class TestGetIndraRepPathwayMAPKSimple(_GetIndraRepTemplate):
     kqml_file = 'MAPK_signaling_pathway_simple.kqml'
 

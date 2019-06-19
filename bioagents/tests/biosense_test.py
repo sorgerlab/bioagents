@@ -35,7 +35,7 @@ class TestChooseSense(_IntegrationTest):
         assert 'thereby contributes to the MAP' in desc, desc
 
 
-class _GetIndraRepresentationTemplate(_IntegrationTest):
+class _GetIndraRepTemplate(_IntegrationTest):
     kqml_file = NotImplemented
 
     def __init__(self, *args):
@@ -47,7 +47,7 @@ class _GetIndraRepresentationTemplate(_IntegrationTest):
         return get_request(content), content
 
 
-class TestGetIndraRepresentationOneAgent(_GetIndraRepresentationTemplate):
+class TestGetIndraRepOneAgent(_GetIndraRepTemplate):
     kqml_file = 'tofacitinib.kqml'
 
     def check_response_to_message(self, output):
@@ -61,7 +61,7 @@ class TestGetIndraRepresentationOneAgent(_GetIndraRepresentationTemplate):
             agent.db_refs
 
 
-class TestGetIndraRepresentationOneAgent2(_GetIndraRepresentationTemplate):
+class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):
     kqml_file = 'selumetinib.kqml'
 
     def check_response_to_message(self, output):
@@ -74,7 +74,7 @@ class TestGetIndraRepresentationOneAgent2(_GetIndraRepresentationTemplate):
         assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE'
 
 
-class TestGetIndraRepresentationStatement(_GetIndraRepresentationTemplate):
+class TestGetIndraRepStatement(_GetIndraRepTemplate):
     kqml_file = 'braf_phos_mek_site_pos.kqml'
 
     def check_response_to_message(self, output):
@@ -91,15 +91,8 @@ class TestGetIndraRepresentationStatement(_GetIndraRepresentationTemplate):
         assert stmt.position == '222', stmt.position
 
 
-class TestGetIndraRepresentationPathwayMAPKSimple(_IntegrationTest):
-    def __init__(self, *args):
-        super().__init__(BioSense_Module)
-
-    def create_message(self):
-        content = KQMLList.from_string(
-            _load_kqml('MAPK_signaling_pathway_simple.kqml')
-        )
-        return get_request(content), content
+class TestGetIndraRepPathwayMAPKSimple(_GetIndraRepTemplate):
+    kqml_file = 'MAPK_signaling_pathway_simple.kqml'
 
     def check_response_to_message(self, output):
         assert output.head() == 'done', output

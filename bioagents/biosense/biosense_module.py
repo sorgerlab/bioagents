@@ -32,29 +32,35 @@ class BioSense_Module(Bioagent):
 
     def respond_get_indra_representation(self, content):
         """Return the INDRA CL-JSON corresponding to the given content."""
-        id = content.get('ids')[0].to_string()
-        if id.startswith('ONT::'):
-            id_base = id[5:]
-        else:
-            id_base = id
+        entities = KQMLList()
+        for trips_id_obj in content.get('ids'):
+            trips_id = trips_id_obj.to_string()
+            if trips_id.startswith('ONT::'):
+                trips_id = trips_id[5:]
 
-        context = content.get('context').to_string()
-        # First get the KQML graph object for the given context
-        graph = KQMLGraph(context)
+            context = content.get('context').to_string()
 
-        try:
-            # Then turn the graph into an EKB XML object, expanding around the
-            # given ID
-            ekb = EKB(graph, id_base)
-            entity = ekb.get_entity()
-            js = self.make_cljson(entity)
-        except Exception as e:
-            logger.info("Encountered an error while parsing: %s. "
-                        "Returning empty list." % content.to_string())
-            logger.exception(e)
-            js = KQMLList()
+            # First get the KQML graph object for the given context
+            graph = KQMLGraph(context)
+
+            try:
+                # Then turn the graph into an EKB XML object, expanding around
+                # the given ID.
+                ekb = EKB(graph, trips_id)
+                entity = ekb.get_entity()
+                js = self.make_cljson(entity)
+            except Exception as e:
+                logger.info("Encountered an error while parsing: %s. "
+                            "Returning empty list." % content.to_string())
+                logger.exception(e)
+                js = KQMLList()
+            entities.append(js)
         msg = KQMLPerformative('done')
-        msg.sets('result', js)
+
+        if len(entities) == 1:
+            msg.sets('result', entities[0])
+        else:
+            msg.set('result', entities)
         return msg
 
     def respond_choose_sense(self, content):

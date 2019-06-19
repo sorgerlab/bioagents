@@ -33,7 +33,7 @@ class EKB(object):
         ekb_str = '<?xml version="1.0"?>' + ekb_str
         return ekb_str
 
-    def set_cell_line_context(self, stmts):
+    def set_cell_line_context_for_stmts(self, stmts):
         cell_line_context = get_cell_line(self.ekb)
         if cell_line_context:
             set_cell_line_context(stmts, cell_line_context)
@@ -46,7 +46,7 @@ class EKB(object):
 
         # If there are any statements then we can return the CL-JSON of those
         if tp.statements:
-            self.set_cell_line_context(tp.statements)
+            self.set_cell_line_context_for_stmts(tp.statements)
             res = tp.statements
         # Otherwise, we try extracting an Agent and return that
         else:
@@ -66,7 +66,8 @@ class EKB(object):
 
             # Set the agent type
             inferred_type = infer_agent_type(agent)
-            if inferred_type is not None:
+            if inferred_type is not None \
+                    and self.type != 'ONT::SIGNALING-PATHWAY':
                 agent.db_refs['TYPE'] = inferred_type
             elif self.type:
                 agent.db_refs['TYPE'] = self.type.upper()

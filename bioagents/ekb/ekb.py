@@ -1,6 +1,6 @@
 from lxml import etree
 
-from bioagents import add_agent_type
+from bioagents import add_agent_type, infer_agent_type
 from indra.sources.trips import process_xml
 from kqml import KQMLList
 from indra.statements import RefContext, BioContext, Agent
@@ -55,12 +55,16 @@ class EKB(object):
             # Set the TRIPS ID in db_refs
             agent.db_refs['TRIPS'] = 'ONT::' + self.root_term
 
-            # Infer the type from db_refs
+            # Extend the agent's name.
             if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
-                agent.db_refs['TYPE'] = self.type.upper()
                 agent.name += ' Signaling Pathway'
-            else:
-                agent = add_agent_type(agent)
+
+            # Set the agent type
+            inferred_type = infer_agent_type(agent)
+            if inferred_type is not None:
+                agent.db_refs['TYPE'] = inferred_type
+            elif self.type:
+                agent.db_refs['TYPE'] = self.type.upper()
 
             # Handle the special case where miRNA names are mangled.
             if agent.name.startswith('MIR'):

@@ -139,6 +139,19 @@ class TestGetIndraRepPathwayMAPKCompound(_GetIndraRepTemplate):
         assert agent.db_refs['NCIT'], agent.db_refs
 
 
+class TestGetIndraRepPathwayMTOR(_GetIndraRepTemplate):
+    kqml_file = 'mtor_pathway.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        assert isinstance(agent, Agent), agent
+        assert agent.name == 'MTOR Signaling Pathway', agent.name
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
+        assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
+        assert agent.db_refs['HGNC'] == '3942', agent.db_refs
+        assert agent.db_refs['NCIT'], agent.db_refs
+
+
 mek1 = agent_clj_from_text('MEK1')
 mek1a = Bioagent.get_agent(mek1)
 mek = agent_clj_from_text('MEK')

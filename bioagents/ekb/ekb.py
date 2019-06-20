@@ -57,13 +57,14 @@ class EKB(object):
 
             # Fix some namings
             if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
-                if not agent.name.isupper() \
-                   and not agent.name.endswith('signaling pathway'):
+                simple_name = agent.name.lower().replace('-', ' ')
+                if not simple_name.endswith('signaling pathway'):
                     agent.name += ' signaling pathway'
                 elif agent.name.isupper() \
                    and ' ' not in agent.name \
                    and '-' in agent.name:
-                    agent.name = agent.name.lower().replace('-', ' ')
+                    agent.name = simple_name
+                agent.db_refs['TEXT'] = agent.name
             elif self.type.upper() == 'ONT::RNA':
                 agent.name = (agent.name
                               .upper()

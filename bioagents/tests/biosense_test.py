@@ -167,11 +167,13 @@ class TestGetIndraRepCellLineContext(_GetIndraRepTemplate):
     kqml_file = 'cell_line_context.kqml'
 
     def check_result(self, res):
-        stmt = self.bioagent.get_statement(res)
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1, len(stmts)
+        stmt = stmts[0]
         assert isinstance(stmt, Statement), type(stmt)
         assert len(stmt.evidence) == 1, len(stmt.evidence)
         ev = stmt.evidence[0]
-        assert ev.context is not None
+        assert ev.context, ev.context
 
 
 mek1 = agent_clj_from_text('MEK1')

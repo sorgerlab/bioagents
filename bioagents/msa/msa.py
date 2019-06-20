@@ -18,25 +18,34 @@ from indra.sources import indra_db_rest as idbr
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
-    statement_base_verb, statement_present_verb
+    statement_base_verb, statement_present_verb, statement_passive_verb
 
 logger = logging.getLogger('MSA')
 
 
 def _build_verb_map():
+    # We first get all statement types
     stmts = get_all_descendants(Statement)
     verb_map = {}
+    # These are statement types that aren't binary and therefore don't need
+    # to be included in the verb map
     non_binary = ('hasactivity', 'activeform', 'selfmodification',
                   'autophosphorylation', 'transphosphorylation',
                   'event', 'unresolved', 'association', 'complex')
     for stmt in stmts:
+        # Get the class name
         name = stmt.__name__
         if name.lower() in non_binary:
             continue
+        # Get the base verb form of the statement, e.g., "phosphorylate"
         base_verb = statement_base_verb(name.lower())
-        verb_map[base_verb] = name
+        verb_map[base_verb] = {'stmt': name, 'type': 'base'}
+        # Get the present form of the statement, e.g., "inhibits"
         present_verb = statement_present_verb(name.lower())
-        verb_map[present_verb] = name
+        verb_map[present_verb] = {'stmt': name, 'type': 'present'}
+        # Get the passive / state form of the statement, e.g., "activated"
+        passive_verb = statement_passive_verb(name.lower())
+        verb_map[passive_verb] = {'stmt': name, 'type': 'passive'}
     return verb_map
 
 
@@ -94,7 +103,7 @@ class StatementQuery(object):
 
         self.verb = verb
         if verb in verb_map:
-            self.stmt_type = verb_map[verb]
+            self.stmt_type = verb_map[verb]['stmt']
         else:
             self.stmt_type = verb
 
@@ -304,7 +313,7 @@ class StatementFinder(object):
                 counts[gr] += ev_totals[stmt.get_hash()]
                 oa_dict[gr].append(ag)
 
-        def get_aggregate_agent(agents, dbn, dbi):
+        def get_aggregate_agent(agents, dbi, dbn):
             agent = Agent(agents[0].name, db_refs={dbn: dbi})
             return agent
 

@@ -20,13 +20,16 @@ class KQMLGraph(networkx.DiGraph):
 
     Parameters
     ----------
-    kqml_str : str
+    kqml : str of KQMLList or a KQMLList
         A string representing a KQML message that is to be represented
-        as a graph.
+        as a graph. Should be a list of terms.
     """
-    def __init__(self, kqml_str):
+    def __init__(self, kqml):
         super().__init__()
-        self.from_kqml_str(kqml_str)
+        if isinstance(kqml, KQMLList):
+            self.from_kqml_list(kqml)
+        else:
+            self.from_kqml_str(kqml)
 
     def from_kqml_str(self, kqml_str):
         """Create a networkx graph from a KQML string

@@ -1,6 +1,6 @@
 import os
 from bioagents.ekb import agent_from_term, KQMLGraph
-
+from kqml import KQMLList
 
 path_here = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,8 +25,10 @@ def test_process_kqml():
 
 
 def test_get_drug_agent():
-    kqml = _load_kqml('tofacitinib.kqml')
-    graph = KQMLGraph(kqml)
+    kqml_str = _load_kqml('tofacitinib.kqml')
+    kqml = KQMLList.from_string(kqml_str)
+    context = kqml.get('context')
+    graph = KQMLGraph(context)
     agent = agent_from_term(graph, 'V34850')
     assert agent.name == 'TOFACITINIB', agent
     assert 'PUBCHEM' in agent.db_refs, agent.db_refs

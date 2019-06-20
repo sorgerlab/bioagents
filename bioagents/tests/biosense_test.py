@@ -1,6 +1,6 @@
 from nose.tools import raises
 from kqml import KQMLList
-from indra.statements import Phosphorylation, Agent
+from indra.statements import Phosphorylation, Agent, Statement
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from bioagents import Bioagent
@@ -157,10 +157,21 @@ class TestGetIndraRepPathwayImmuneSystem(_GetIndraRepTemplate):
 
     def check_result(self, res):
         agent = self.bioagent.get_agent(res)
-        assert isinstance(agent, Agent), agent
+        assert isinstance(agent, Agent), type(agent)
         assert agent.name == 'immune system signaling pathway', agent.name
         assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
         assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
+
+
+class TestGetIndraRepCellLineContext(_GetIndraRepTemplate):
+    kqml_file = 'cell_line_context.kqml'
+
+    def check_result(self, res):
+        stmt = self.bioagent.get_statement(res)
+        assert isinstance(stmt, Statement), type(stmt)
+        assert len(stmt.evidence) == 1, len(stmt.evidence)
+        ev = stmt.evidence[0]
+        assert ev.context is not None
 
 
 mek1 = agent_clj_from_text('MEK1')

@@ -1,16 +1,14 @@
 import unittest
 from nose.tools import raises
 from kqml import KQMLList
-from indra.statements import Phosphorylation
-from .util import agent_clj_from_text
+from indra.statements import Phosphorylation, Agent, Statement
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from bioagents import Bioagent
 from bioagents.biosense.biosense_module import BioSense_Module
-from bioagents.biosense.biosense import BioSense, InvalidAgentError, \
-    InvalidCollectionError, UnknownCategoryError, \
+from bioagents.biosense.biosense import BioSense, UnknownCategoryError, \
     CollectionNotFamilyOrComplexError, SynonymsUnknownError
-from bioagents.tests.util import ekb_from_text, get_request, agent_clj_from_text
+from bioagents.tests.util import get_request, agent_clj_from_text
 
 
 class TestChooseSense(_IntegrationTest):
@@ -35,21 +33,31 @@ class TestChooseSense(_IntegrationTest):
         assert 'thereby contributes to the MAP' in desc, desc
 
 
-class TestGetIndraRepresentationOneAgent(_IntegrationTest):
+class _GetIndraRepTemplate(_IntegrationTest):
+    kqml_file = NotImplemented
+
     def __init__(self, *args):
         super().__init__(BioSense_Module)
 
     def create_message(self):
-        kql = KQMLList.from_string(_load_kqml('tofacitinib.kqml'))
-        content = KQMLList('get-indra-representation')
-        content.set('context', kql)
-        content.set('ids', KQMLList(['ONT::V34850']))
+        content = KQMLList.from_string(_load_kqml(self.kqml_file))
+        assert content.head().upper() == 'GET-INDRA-REPRESENTATION'
         return get_request(content), content
 
     def check_response_to_message(self, output):
         assert output.head() == 'done'
         res = output.get('result')
         assert res
+        self.check_result(res)
+
+    def check_result(self, res):
+        raise NotImplementedError("This function must be defined by each test")
+
+
+class TestGetIndraRepOneAgent(_GetIndraRepTemplate):
+    kqml_file = 'tofacitinib.kqml'
+
+    def check_result(self, res):
         agent = self.bioagent.get_agent(res)
         assert agent.name == 'TOFACITINIB'
         assert agent.db_refs['TRIPS'] == 'ONT::V34850'
@@ -57,37 +65,20 @@ class TestGetIndraRepresentationOneAgent(_IntegrationTest):
             agent.db_refs
 
 
-class TestGetIndraRepresentationOneAgent2(_IntegrationTest):
-    def __init__(self, *args):
-        super().__init__(BioSense_Module)
+class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):
+    kqml_file = 'selumetinib.kqml'
 
-    def create_message(self):
-        content = KQMLList.from_string(_load_kqml('selumetinib.kqml'))
-        return get_request(content), content
-
-    def check_response_to_message(self, output):
-        assert output.head() == 'done'
-        res = output.get('result')
-        assert res
+    def check_result(self, res):
         agent = self.bioagent.get_agent(res)
         assert agent.name == 'SELUMETINIB'
         assert agent.db_refs['TRIPS'] == 'ONT::V34821', agent.db_refs
         assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE'
 
 
-class TestGetIndraRepresentationStatement(_IntegrationTest):
-    def __init__(self, *args):
-        super().__init__(BioSense_Module)
+class TestGetIndraRepStatement(_GetIndraRepTemplate):
+    kqml_file = 'braf_phos_mek_site_pos.kqml'
 
-    def create_message(self):
-        content = KQMLList.from_string(
-            _load_kqml('braf_phos_mek_site_pos.kqml'))
-        return get_request(content), content
-
-    def check_response_to_message(self, output):
-        assert output.head() == 'done', output
-        res = output.get('result')
-        assert res
+    def check_result(self, res):
         stmts = self.bioagent.get_statement(res)
         assert len(stmts) == 1
         stmt = stmts[0]
@@ -96,6 +87,95 @@ class TestGetIndraRepresentationStatement(_IntegrationTest):
         assert stmt.sub.name == 'MAP2K1'
         assert stmt.residue == 'S'
         assert stmt.position == '222', stmt.position
+
+
+class TestGetIndraRepMultipleResults(_GetIndraRepTemplate):
+    kqml_file = 'multiple_results.kqml'
+
+    def check_result(self, res):
+        agents = self.bioagent.get_agent(res)
+        assert len(agents) == 3, len(agents)
+        name_set = {ag.name for ag in agents}
+        assert name_set == {'HRAS', 'SRF', 'ELK1'}, name_set
+        assert all(ag.db_refs for ag in agents), [ag.db_refs for ag in agents]
+        assert all('TRIPS' in ag.db_refs.keys()
+                   and ag.db_refs['TRIPS'].startswith('ONT::V')
+                   for ag in agents), [ag.db_refs for ag in agents]
+
+
+class TestGetIndraRepMIRNA(_GetIndraRepTemplate):
+    kqml_file = 'mirna.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        assert agent.name == 'MIR-20B-5P', agent.name
+        assert agent.db_refs['TYPE'] == 'ONT::RNA'
+        assert agent.db_refs['TEXT'] == 'MIR-PUNC-MINUS-20-B-PUNC-MINUS-5-P'
+        assert agent.db_refs['TRIPS'] == 'ONT::V36357'
+
+
+class TestGetIndraRepPathwayMAPKSimple(_GetIndraRepTemplate):
+    kqml_file = 'MAPK_signaling_pathway_simple.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        assert isinstance(agent, Agent), agent
+        assert agent.name == 'MAPK signaling pathway', agent.name
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
+        assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
+        assert agent.db_refs['FPLX'] == 'MAPK', agent.db_refs
+        assert agent.db_refs['NCIT'], agent.db_refs
+
+
+class TestGetIndraRepPathwayMAPKCompound(_GetIndraRepTemplate):
+    kqml_file = 'MAPK_signaling_pathway_compound.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        assert isinstance(agent, Agent), agent
+        assert agent.name == 'MAPK signaling pathway', agent.name
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
+        assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
+        assert agent.db_refs['FPLX'] == 'MAPK', agent.db_refs
+        assert agent.db_refs['NCIT'], agent.db_refs
+
+
+class TestGetIndraRepPathwayMTOR(_GetIndraRepTemplate):
+    kqml_file = 'mtor_pathway.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        assert isinstance(agent, Agent), agent
+        assert agent.name == 'MTOR signaling pathway', agent.name
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
+        assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
+        assert agent.db_refs['HGNC'] == '3942', agent.db_refs
+        assert agent.db_refs['NCIT'], agent.db_refs
+
+
+class TestGetIndraRepPathwayImmuneSystem(_GetIndraRepTemplate):
+    kqml_file = 'immune_system_pathway.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        assert isinstance(agent, Agent), type(agent)
+        assert agent.name == 'immune system signaling pathway', agent.name
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
+        assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
+
+
+@unittest.skip('Cell line extraction not working yet')
+class TestGetIndraRepCellLineContext(_GetIndraRepTemplate):
+    kqml_file = 'cell_line_context.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1, len(stmts)
+        stmt = stmts[0]
+        assert isinstance(stmt, Statement), type(stmt)
+        assert len(stmt.evidence) == 1, len(stmt.evidence)
+        ev = stmt.evidence[0]
+        assert ev.context, ev.context
 
 
 mek1 = agent_clj_from_text('MEK1')

@@ -1,16 +1,14 @@
 import sys
 import logging
 import indra
-from indra.sources import trips
-from indra.statements import BioContext, RefContext, Agent
 from indra.databases import uniprot_client, get_identifiers_url
-from .biosense import BioSense
-from .biosense import InvalidAgentError, UnknownCategoryError, \
-    SynonymsUnknownError
-from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
 from bioagents import Bioagent, add_agent_type
-from kqml import KQMLPerformative, KQMLList, KQMLString
-from bioagents.ekb import KQMLGraph, EKB, agent_from_term
+from kqml import  KQMLString
+from .biosense import BioSense
+from .biosense import UnknownCategoryError, SynonymsUnknownError
+from .biosense import CollectionNotFamilyOrComplexError
+from kqml import KQMLPerformative, KQMLList
+from bioagents.ekb import KQMLGraph, EKB
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -34,42 +32,35 @@ class BioSense_Module(Bioagent):
 
     def respond_get_indra_representation(self, content):
         """Return the INDRA CL-JSON corresponding to the given content."""
-        id = content.get('ids')[0].to_string()
-        if id.startswith('ONT::'):
-            id_base = id[5:]
-        context = content.get('context').to_string()
-        # First get the KQML graph object for the given context
-        graph = KQMLGraph(context)
-        # Then turn the graph into an EKB XML object, expanding around the
-        # given ID
-        ekb = EKB(graph, id_base)
-        ekb_str = ekb.to_string()
-        # Now process the EKB using the TRIPS processor to extract Statements
-        tp = trips.process_xml(ekb_str)
+        entities = KQMLList()
+        for trips_id_obj in content.get('ids'):
+            trips_id = trips_id_obj.to_string()
+            if trips_id.startswith('ONT::'):
+                trips_id = trips_id[5:]
 
-        # If there are any statements then we can return the CL-JSON of those
-        if tp.statements:
-            cell_line_context = get_cell_line(ekb.ekb)
-            if cell_line_context:
-                set_cell_line_context(tp.statements, cell_line_context)
-            # Now make the CL-JSON for the given statements
-            js = self.make_cljson(tp.statements)
-        # Otherwise, we try extracting an Agent and return that
-        else:
+            context = content.get('context').to_string()
+
+            # First get the KQML graph object for the given context
+            graph = KQMLGraph(context)
+
             try:
-                agent = agent_from_term(graph, id_base)
-                # Set the TRIPS ID in db_refs
-                agent.db_refs['TRIPS'] = id
-                # Infer the type from db_refs
-                agent = add_agent_type(agent)
-                js = self.make_cljson(agent)
+                # Then turn the graph into an EKB XML object, expanding around
+                # the given ID.
+                ekb = EKB(graph, trips_id)
+                entity = ekb.get_entity()
+                js = self.make_cljson(entity)
             except Exception as e:
                 logger.info("Encountered an error while parsing: %s. "
                             "Returning empty list." % content.to_string())
                 logger.exception(e)
                 js = KQMLList()
+            entities.append(js)
         msg = KQMLPerformative('done')
-        msg.sets('result', js)
+
+        if len(entities) == 1:
+            msg.sets('result', entities[0])
+        else:
+            msg.set('result', entities)
         return msg
 
     def respond_choose_sense(self, content):
@@ -176,26 +167,6 @@ class BioSense_Module(Bioagent):
             msg = KQMLList('SUCCESS')
             msg.set('synonyms', syns_kqml)
         return msg
-
-
-# Look for a term representing a cell line
-def get_cell_line(et):
-    cl_tag = et.find("TERM/[type='ONT::CELL-LINE']/text")
-    if cl_tag is not None:
-        cell_line = cl_tag.text
-        cell_line.replace('-', '')
-        # TODO: add grounding here if available
-        clc = RefContext(cell_line)
-        return clc
-    return None
-
-
-def set_cell_line_context(stmts, context):
-    # Set cell line context if available
-    for stmt in stmts:
-        ev = stmt.evidence[0]
-        if not ev.context:
-            ev.context = BioContext(cell_line=context)
 
 
 if __name__ == "__main__":

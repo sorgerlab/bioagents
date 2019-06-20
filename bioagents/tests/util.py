@@ -4,10 +4,9 @@ from collections import OrderedDict
 import xml.etree.ElementTree as ET
 from kqml import KQMLString, KQMLPerformative
 from indra.sources import trips
-from indra.statements import stmts_to_json, Agent
+from indra.statements import stmts_to_json
 from bioagents import Bioagent
-from bioagents.biosense.biosense_module import get_cell_line, \
-    set_cell_line_context
+from bioagents.ekb import set_cell_line_context, get_cell_line
 
 
 def ekb_from_text(text):

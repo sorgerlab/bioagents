@@ -45,4 +45,4 @@ script:
       export NOSEATTR="!slow,$NOSEATTR";
     fi
   - nosetests bioagents/tests -a $NOSEATTR -v --with-coverage --cover-inclusive --cover-package=bioagents --with-timer
-        --timer-top-n 10 --timer-ok
+        --timer-top-n 10 --timer-ok 2

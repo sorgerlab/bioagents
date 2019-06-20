@@ -1,14 +1,21 @@
 from lxml import etree
+
+from bioagents import add_agent_type, infer_agent_type
+from indra.sources.trips import process_xml
 from kqml import KQMLList
-from indra.sources.trips.processor import TripsProcessor
+from indra.statements import RefContext, BioContext, Agent
 
 
 class EKB(object):
     def __init__(self, graph, term_node):
         self.graph = graph
+
+        # Do we still want to do this?
         self.graph.draw('test.pdf')
+
         self.root_term = term_node
         self.ekb = None
+        self.type = None
         self.components = [term_node]
         self.build()
 
@@ -26,11 +33,54 @@ class EKB(object):
         ekb_str = '<?xml version="1.0"?>' + ekb_str
         return ekb_str
 
-    def get_agent(self):
+    def set_cell_line_context_for_stmts(self, stmts):
+        cell_line_context = get_cell_line(self.ekb)
+        if cell_line_context:
+            set_cell_line_context(stmts, cell_line_context)
+        return get_cell_line(self.ekb)
+
+    def get_entity(self):
         ekb_str = self.to_string()
-        tp = TripsProcessor(ekb_str)
-        agent = tp._get_agent_by_id(self.root_term, None)
-        return agent
+        # Now process the EKB using the TRIPS processor to extract Statements
+        tp = process_xml(ekb_str)
+
+        # If there are any statements then we can return the CL-JSON of those
+        if tp.statements:
+            self.set_cell_line_context_for_stmts(tp.statements)
+            res = tp.statements
+        # Otherwise, we try extracting an Agent and return that
+        else:
+            agent = tp._get_agent_by_id(self.root_term, None)
+
+            # Set the TRIPS ID in db_refs
+            agent.db_refs['TRIPS'] = 'ONT::' + self.root_term
+
+            # Fix some namings
+            if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
+                simple_name = agent.name.lower().replace('-', ' ')
+                if not simple_name.endswith('signaling pathway'):
+                    agent.name += ' signaling pathway'
+                elif agent.name.isupper() \
+                   and ' ' not in agent.name \
+                   and '-' in agent.name:
+                    agent.name = simple_name
+                agent.db_refs['TEXT'] = agent.name
+            elif self.type.upper() == 'ONT::RNA':
+                agent.name = (agent.name
+                              .upper()
+                              .replace('-', '')
+                              .replace('PUNCMINUS', '-'))
+
+            # Set the agent type
+            inferred_type = infer_agent_type(agent)
+            if inferred_type is not None \
+                    and self.type != 'ONT::SIGNALING-PATHWAY':
+                agent.db_refs['TYPE'] = inferred_type
+            elif self.type:
+                agent.db_refs['TYPE'] = self.type.upper()
+
+            res = agent
+        return res
 
     def event_to_ekb(self, event_node):
         node = self.graph.node[event_node]
@@ -63,6 +113,7 @@ class EKB(object):
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
         type.text = node['type']
+        self.type = node['type']
         event.append(type)
         arg_counter = 1
         possible_event_args = ['affected', 'affected1', 'agent',
@@ -128,21 +179,44 @@ class EKB(object):
         site_term.append(features_tag)
         return site_term
 
-    def term_to_ekb(self, term_id):
-        node = self.graph.node[term_id]
-
-        term = etree.Element('TERM', id=term_id)
-        # Set the type of the TERM
-        type = etree.Element('type')
-        type.text = node['type']
-        term.append(type)
-        # Find the name of the TERM and get the value with W:: stripped
+    def get_term_name(self, term_id):
+        """Find the name of the TERM and get the value with W:: stripped"""
         name_node = self.graph.get_matching_node(term_id, link='name')
         if not name_node:
             name_node = self.graph.get_matching_node(term_id, link='W')
         name_val = self.graph.node[name_node]['label']
         if name_val.startswith('W::'):
             name_val = name_val[3:]
+        return name_val
+
+    def term_to_ekb(self, term_id):
+        node = self.graph.node[term_id]
+
+        term = etree.Element('TERM', id=term_id)
+
+        # Set the type of the TERM
+        type = etree.Element('type')
+        type.text = node['type']
+        term.append(type)
+
+        self.type = node['type']
+
+        # Handle the case of the signaling pathways.
+        # Note: It turns out this will be wiped out by TRIPS further down the
+        # line.
+        if node['type'].upper() == 'ONT::SIGNALING-PATHWAY':
+            path_subject_id = self.graph.get_matching_node(term_id,
+                                                           link='assoc-with')
+            path_subject_name = self.get_term_name(path_subject_id)
+            name_val = path_subject_name.upper() + '-SIGNALING-PATHWAY'
+
+            # This is a LITTLE bit hacky: all further information should come
+            # from this associated-with term, because the root term has no
+            # information.
+            term_id = path_subject_id
+        # Handle the case where this is just another protein.
+        else:
+            name_val = self.get_term_name(term_id)
         name = etree.Element('name')
         name.text = name_val
         term.append(name)
@@ -226,6 +300,29 @@ def drum_term_to_ekb(drum_term):
     return dt
 
 
-def agent_from_term(graph, term_node):
-    ekb = EKB(graph, term_node)
-    return ekb.get_agent()
+def get_cell_line(ekb):
+    # Look for a term representing a cell line
+    cl_tag = ekb.find("TERM/[type='ONT::CELL-LINE']/text")
+    if cl_tag is not None:
+        cell_line = cl_tag.text
+        cell_line.replace('-', '')
+        # TODO: add grounding here if available
+        clc = RefContext(cell_line)
+        return clc
+    return None
+
+
+def set_cell_line_context(stmts, context):
+    # Set cell line context if available
+    for stmt in stmts:
+        ev = stmt.evidence[0]
+        if not ev.context:
+            ev.context = BioContext(cell_line=context)
+
+
+def agent_from_term(graph, term_id):
+    ekb = EKB(graph, term_id)
+    agent = ekb.get_entity()
+    if not isinstance(agent, Agent):
+        return None
+    return agent

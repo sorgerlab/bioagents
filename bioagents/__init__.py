@@ -57,10 +57,10 @@ class Bioagent(KQMLModule):
         """Get an agent from the kqml cl-json representation (KQMLList)."""
         agent_json = cls.converter.cl_to_json(cl_agent)
         if isinstance(agent_json, list):
-            return [add_agent_type(Agent._from_json(agj))
+            return [ensure_agent_type(Agent._from_json(agj))
                     for agj in agent_json]
         else:
-            return add_agent_type(Agent._from_json(agent_json))
+            return ensure_agent_type(Agent._from_json(agent_json))
 
     @classmethod
     def get_statement(cls, cl_statement):
@@ -346,3 +346,13 @@ def add_agent_type(agent):
     if inferred_type:
         agent.db_refs['TYPE'] = inferred_type
     return agent
+
+
+def ensure_agent_type(agent):
+    if agent is None:
+        return None
+
+    if 'TYPE' not in agent.db_refs.keys():
+        return add_agent_type(agent)
+    else:
+        return agent

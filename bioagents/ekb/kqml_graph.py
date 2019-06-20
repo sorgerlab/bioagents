@@ -20,13 +20,16 @@ class KQMLGraph(networkx.DiGraph):
 
     Parameters
     ----------
-    kqml_str : str
+    kqml : str of KQMLList or a KQMLList
         A string representing a KQML message that is to be represented
-        as a graph.
+        as a graph. Should be a list of terms.
     """
-    def __init__(self, kqml_str):
+    def __init__(self, kqml):
         super().__init__()
-        self.from_kqml_str(kqml_str)
+        if isinstance(kqml, KQMLList):
+            self.from_kqml_list(kqml)
+        else:
+            self.from_kqml_str(kqml)
 
     def from_kqml_str(self, kqml_str):
         """Create a networkx graph from a KQML string
@@ -96,13 +99,13 @@ class KQMLGraph(networkx.DiGraph):
                         node_val = str(val[1])
                         self.add_node(node_idx, label=node_val)
                         self.add_edge(elem_id, node_idx, label=key)
-                    # This is the case when there is a sequence of symbols being
-                    # referred to, typically with an AND operator
-                    elif key.upper() == 'SEQUENCE':
+                    # This is the case when there is a sequence of symbols
+                    # being referred to, typically with an AND operator
+                    elif key.upper() in ['SEQUENCE', 'M-SEQUENCE']:
                         for counter, seq_elem in enumerate(val):
                             assert str(seq_elem).startswith('ONT::V')
-                            label = 'sequence%s' % ('' if counter == 0 else
-                                                    counter)
+                            label = key.lower() + '%s' % ('' if counter == 0
+                                                          else counter)
                             self.add_edge(elem_id, seq_elem[5:], label=label)
                     else:
                         raise ValueError('Unexpected KQMLList encountered')

@@ -37,7 +37,6 @@ class EKB(object):
         cell_line_context = get_cell_line(self.ekb)
         if cell_line_context:
             set_cell_line_context(stmts, cell_line_context)
-        return get_cell_line(self.ekb)
 
     def get_entity(self):
         ekb_str = self.to_string()
@@ -311,10 +310,13 @@ def drum_term_to_ekb(drum_term):
 
 def get_cell_line(ekb):
     # Look for a term representing a cell line
-    cl_tag = ekb.find("TERM/[type='ONT::CELL-LINE']/text")
+    cl_tag = ekb.find("TERM/[type='ONT::CELL-LINE']")
     if cl_tag is not None:
-        cell_line = cl_tag.text
-        cell_line.replace('-', '')
+        name = cl_tag.find('name')
+        if name is None or not name.text:
+            return None
+        cell_line = name.text
+        cell_line = cell_line.replace('-', '')
         # TODO: add grounding here if available
         clc = RefContext(cell_line)
         return clc

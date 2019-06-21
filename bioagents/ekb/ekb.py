@@ -317,8 +317,15 @@ def get_cell_line(ekb):
             return None
         cell_line = name.text
         cell_line = cell_line.replace('-', '')
-        # TODO: add grounding here if available
-        clc = RefContext(cell_line)
+        drum_terms = cl_tag.findall('drum-terms/drum-term')
+        db_refs = {}
+        for drum_term in drum_terms:
+            dbid = drum_term.attrib.get('dbid')
+            if dbid is not None:
+                pieces = dbid.split(':')
+                if len(pieces) == 2:
+                    db_refs[pieces[0]] = pieces[1]
+        clc = RefContext(cell_line, db_refs=db_refs)
         return clc
     return None
 

@@ -175,6 +175,11 @@ class TestGetIndraRepCellLineContext(_GetIndraRepTemplate):
         assert len(stmt.evidence) == 1, len(stmt.evidence)
         ev = stmt.evidence[0]
         assert ev.context, ev.context
+        assert ev.context.cell_line.name == 'BT20'
+        assert ev.context.cell_line.db_refs['CVCL'] == '0178', \
+            ev.context.cell_line
+        assert ev.context.cell_line.db_refs['EFO'] == '0001092', \
+            ev.context.cell_line
 
 
 mek1 = agent_clj_from_text('MEK1')

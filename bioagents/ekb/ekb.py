@@ -145,9 +145,12 @@ class EKB(object):
         site_term.append(type_elem)
         type_elem.text = 'ONT::MOLECULAR-SITE'
         # Now we need to look for the site
-        site_dbname = self.graph.get_matching_node_value(site_node, link='dbname')
-        site_name = self.graph.get_matching_node_value(site_node, link='site-name')
-        site_code = self.graph.get_matching_node_value(site_node, link='site-code')
+        site_dbname = self.graph.get_matching_node_value(site_node,
+                                                         link='dbname')
+        site_name = self.graph.get_matching_node_value(site_node,
+                                                       link='site-name')
+        site_code = self.graph.get_matching_node_value(site_node,
+                                                       link='site-code')
         if site_dbname:
             if site_dbname.lower().startswith('serine'):
                 code = 'S'
@@ -160,7 +163,8 @@ class EKB(object):
             code = site_code
         else:
             raise ValueError('No site code found')
-        site_pos = self.graph.get_matching_node_value(site_node, link='site-pos')
+        site_pos = self.graph.get_matching_node_value(site_node,
+                                                      link='site-pos')
         name_elem = etree.Element('name')
         name_elem.text = label
         site_term.append(name_elem)
@@ -247,6 +251,11 @@ class EKB(object):
                 inevent = etree.Element('inevent', id=mod)
                 features.append(inevent)
             term.append(features)
+
+        # Deal with cell line context
+        cl = self.graph.get_matching_node(term_id, link='cell-line')
+        if cl and cl not in self.components:
+            self.term_to_ekb(cl)
 
         self.ekb.append(term)
 

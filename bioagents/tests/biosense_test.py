@@ -164,7 +164,6 @@ class TestGetIndraRepPathwayImmuneSystem(_GetIndraRepTemplate):
         assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
 
 
-@unittest.skip('Cell line extraction not working yet')
 class TestGetIndraRepCellLineContext(_GetIndraRepTemplate):
     kqml_file = 'cell_line_context.kqml'
 

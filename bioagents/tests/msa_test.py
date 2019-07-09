@@ -585,7 +585,7 @@ def test_to_target_agent_filter():
     assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
     desc = finder.describe()
     assert re.match(r'Overall, I found that MEK and KRAS can affect '
-                    r'ZEB1. Here are the statements.*', desc), desc
+                    r'ZEB1..*', desc), desc
 
 
 @attr('nonpublic')

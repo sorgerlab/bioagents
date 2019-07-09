@@ -175,34 +175,34 @@ class TestMSAConfirm2(_TestMsaGeneralLookup):
         return self._check_find_response(output)
 
 
-@attr('nonpublic')
-class TestMsaPaperGraph(_IntegrationTest):
-    def __init__(self, *args, **kwargs):
-        super(TestMsaPaperGraph, self).__init__(msa_module.MSA_Module)
-
-    def _is_sbgn(self, tell):
-        content = tell.get('content')
-        if not content:
-            return False
-        header = content.head()
-        graph_type = content.gets('type')
-        graph = content.gets('graph')
-        if 'xmlns' not in graph or 'glyph' not in graph:
-            return False
-        return header == 'display-sbgn' and graph_type == 'sbgn'
-
-    def create_message(self):
-        content = KQMLList('GET-PAPER-MODEL')
-        content.set('pmid', 'PMID-27906130')
-        return get_request(content), content
-
-    def check_response_to_message(self, output):
-        logs = self.get_output_log()
-        tells = [msg for msg in logs if msg.head() == 'tell']
-        assert tells
-        assert any([self._is_sbgn(tell) for tell in tells]),\
-            "No recognized display commands."
-        return
+# @attr('nonpublic')
+# class TestMsaPaperGraph(_IntegrationTest):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(msa_module.MSA_Module)
+#
+#     def _is_sbgn(self, tell):
+#         content = tell.get('content')
+#         if not content:
+#             return False
+#         header = content.head()
+#         graph_type = content.gets('type')
+#         graph = content.gets('graph')
+#         if 'xmlns' not in graph or 'glyph' not in graph:
+#             return False
+#         return header == 'display-sbgn' and graph_type == 'sbgn'
+#
+#      def create_message(self):
+#          content = KQMLList('GET-PAPER-MODEL')
+#          content.set('pmid', 'PMID-27906130')
+#          return get_request(content), content
+#
+#     def check_response_to_message(self, output):
+#         logs = self.get_output_log()
+#         tells = [msg for msg in logs if msg.head() == 'tell']
+#         assert tells
+#         assert any([self._is_sbgn(tell) for tell in tells]),\
+#             "No recognized display commands."
+#         return
 
 
 @attr('nonpublic')
@@ -554,8 +554,8 @@ def test_neighbors_agent_filter():
     summ = finder.summarize()
     assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
     desc = finder.describe()
-    assert re.match(r'Overall, I found that BRAF interacts with, '
-                    r'for instance, ERK, .* Here are the top.*', desc), desc
+    assert re.match(r'Overall, I found that BRAF interacts with.*?'
+                    r'ERK, .* Here are the top.*', desc), desc
 
 
 @attr('nonpublic')
@@ -583,8 +583,11 @@ def test_to_target_agent_filter():
     summ = finder.summarize()
     assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
     desc = finder.describe()
-    assert re.match(r'Overall, I found that MEK and KRAS can affect '
-                    r'ZEB1. Here are the statements.*', desc), desc
+    m = re.match(r'Overall, I found that (.*?) can affect '
+                 r'ZEB1..*', desc)
+    assert m is not None, desc
+    assert "MEK" in m.group(0), m.group(0)
+    assert "KRAS" in m.group(0), m.group(0)
 
 
 @attr('nonpublic')

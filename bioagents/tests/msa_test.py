@@ -555,8 +555,8 @@ def test_neighbors_agent_filter():
     summ = finder.summarize()
     assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
     desc = finder.describe()
-    assert re.match(r'Overall, I found that BRAF interacts with, '
-                    r'for instance, ERK, .* Here are the top.*', desc), desc
+    assert re.match(r'Overall, I found that BRAF interacts with.*?'
+                    r'ERK, .* Here are the top.*', desc), desc
 
 
 @attr('nonpublic')

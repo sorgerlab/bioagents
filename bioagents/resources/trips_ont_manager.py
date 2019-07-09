@@ -3,7 +3,7 @@ from indra.preassembler.hierarchy_manager import HierarchyManager
 
 # Make a TRIPS ontology
 _fname = os.path.join(os.path.dirname(__file__), 'trips_ontology.rdf')
-trips_ontology = HierarchyManager(_fname, uri_as_name=False)
+trips_ontology = HierarchyManager(_fname, uri_as_name=False, build_closure=True)
 trips_ontology.relations_prefix = 'http://trips.ihmc.us/relations/'
 trips_ontology.initialize()
 

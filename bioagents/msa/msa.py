@@ -310,7 +310,7 @@ class StatementFinder(object):
                                                           other_role)
             for ag in other_agents:
                 gr = self.query.get_agent_grounding(ag)
-                counts[gr] += ev_totals[stmt.get_hash()]
+                counts[gr] += ev_totals.get(stmt.get_hash(), 0)
                 oa_dict[gr].append(ag)
 
         def get_aggregate_agent(agents, dbi, dbn):

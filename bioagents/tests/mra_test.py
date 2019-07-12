@@ -247,6 +247,32 @@ def test_get_matching_statements():
 # MRA integration tests
 # #####################
 
+def test_description_not_list_handling():
+    mm = MRA_Module(testing=True)
+    content = KQMLList.from_string(
+        '(BUILD-MODEL :DESCRIPTION ('
+        ':TYPE "Inhibition" '
+        ':SUBJ (:NAME "SB-525334" '
+        '       :DB--REFS (:+TYPE+ "ONT::GENE-PROTEIN" '
+        '                  :+TEXT+ "SB525334"'
+        '                  :+PUBCHEM+ "9967941")) '
+        ':OBJ (:NAME "TGFBR1"'
+        '      :DB--REFS (:+TYPE+ "ONT::GENE-PROTEIN" '
+        '                 :+TEXT+ "TGFBR1" '
+        '                 :+HGNC+ "11772" '
+        '                 :+UP+ "P36897" '
+        '                 :+NCIT+ "C51730")) '
+        ':OBJ--ACTIVITY "activity" '
+        ':BELIEF 1 '
+        ':EVIDENCE ((:SOURCE--API "trips" '
+        '            :SOURCE--HASH -1613118243458052451)) '
+        ':ID "ce486f46-3670-42e6-8f0e-d5f510525352" '
+        ':MATCHES--HASH "-32031145755534420"))''')
+    reply = mm.respond_build_model(content)
+    assert reply.head() == 'FAILURE', reply.to_string()
+    return
+
+
 def _get_build_model_request(text, format=None):
     content = KQMLList('BUILD-MODEL')
     if format == 'ekb':

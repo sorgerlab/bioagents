@@ -197,9 +197,13 @@ class EKB(object):
         name_node = self.graph.get_matching_node(term_id, link='name')
         if not name_node:
             name_node = self.graph.get_matching_node(term_id, link='W')
-        name_val = self.graph.node[name_node]['label']
-        if name_val.startswith('W::'):
-            name_val = name_val[3:]
+
+        if name_node:
+            name_val = self.graph.node[name_node]['label']
+            if name_val.startswith('W::'):
+                name_val = name_val[3:]
+        else:
+            name_val = ''
         return name_val
 
     def term_to_ekb(self, term_id):

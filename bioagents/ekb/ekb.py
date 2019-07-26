@@ -50,6 +50,10 @@ class EKB(object):
             res = tp.statements
         # Otherwise, we try extracting an Agent and return that
         else:
+            # TODO: This appears to be where we now get a failure. For some
+            #  reason the ID being searched for is not being found, although it
+            #  did exist in the original graph. Not sure if this actually has
+            #  to do with skipping the name (see earlier commit).
             agent = tp._get_agent_by_id(self.root_term, None)
 
             # Set the TRIPS ID in db_refs

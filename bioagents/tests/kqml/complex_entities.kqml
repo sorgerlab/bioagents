@@ -1,0 +1,211 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V61411) :CONTEXT
+                              ((ONT::TERM ONT::V61325 :INSTANCE-OF ONT::GENE-PROTEIN :DRUM
+                                ((:DRUM
+                                  (TERM :ID HGNC::|3236| :NAME "epidermal growth factor receptor" :SCORE 0.85542
+                                   :MATCHES ((MATCH :SCORE 0.85542 :MATCHED "EGFR" :STATUS "Approved Symbol" :EXACT 1))
+                                   :DBXREFS (UP::P00533) :ONT-TYPES (ONT::GENE))
+                                  (TERM :ID NCIT::C51744 :NAME "EGFR" :SCORE 0.85542 :MATCHES
+                                   ((MATCH :SCORE 0.85542 :MATCHED "EGFR" :STATUS "name" :EXACT 1)) :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C16612
+                                          (SENSE (MORPH (POS N) (WORD GENE))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                         :TO ONT::GENE))
+                                   :ONT-TYPES (ONT::GENE))
+                                  (TERM :ID UP::P0CY46 :NAME "Epidermal growth factor receptor" :SCORE 0.85368 :MATCHES
+                                   ((MATCH :SCORE 0.85368 :MATCHED "egfr" :STATUS "RecName: Short" :ALL-CAPS-NO-CAPS
+                                     1))
+                                   :DBXREFS (XFAM::PF00757 XFAM::PF14843 XFAM::PF07714 XFAM::PF01030) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID UP::P04412 :NAME "Epidermal growth factor receptor" :SCORE 0.85368 :MATCHES
+                                   ((MATCH :SCORE 0.85368 :MATCHED "egfr" :STATUS "RecName: Short" :ALL-CAPS-NO-CAPS
+                                     1))
+                                   :DBXREFS (XFAM::PF00757 XFAM::PF14843 XFAM::PF07714 XFAM::PF01030) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID GO::|0005006| :NAME "epidermal growth factor-activated receptor activity"
+                                   :SCORE 0.71084 :MATCHES
+                                   ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "EXACT synonym" :EXACT 1)) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID NCIT::C17068 :NAME "epidermal growth factor receptor" :SCORE 0.71084
+                                   :MATCHES ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "synonym" :EXACT 1))
+                                   :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C17021
+                                          (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                         :TO ONT::PROTEIN))
+                                   :ONT-TYPES (ONT::PROTEIN))
+                                  (TERM :ID NCIT::C18436 :NAME "soluble ERBB-1 protein" :SCORE 0.71084 :MATCHES
+                                   ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "synonym" :EXACT 1)) :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C17021
+                                          (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                         :TO ONT::PROTEIN))
+                                   :ONT-TYPES (ONT::PROTEIN))))
+                                :NAME W::EGFR :DBID "HGNC:3236" :DBNAME "epidermal growth factor receptor" :DB-TERM-ID
+                                "HGNC:3236" :DB-TERM-ID "NCIT:C51744" :DB-TERM-ID "UP:P0CY46" :DB-TERM-ID "UP:P04412"
+                                :DB-TERM-ID "GO:0005006" :DB-TERM-ID "NCIT:C17068" :DB-TERM-ID "NCIT:C18436" :SPEC
+                                ONT::THE :NAME-OF W::EGFR :EQUALS ONT::V60386)
+                               (ONT::TERM ONT::V61333 :INSTANCE-OF ONT::GENE-PROTEIN :DRUM
+                                ((:DRUM
+                                  (TERM :ID HGNC::|3236| :NAME "epidermal growth factor receptor" :SCORE 0.85542
+                                   :MATCHES ((MATCH :SCORE 0.85542 :MATCHED "EGFR" :STATUS "Approved Symbol" :EXACT 1))
+                                   :DBXREFS (UP::P00533) :ONT-TYPES (ONT::GENE))
+                                  (TERM :ID NCIT::C51744 :NAME "EGFR" :SCORE 0.85542 :MATCHES
+                                   ((MATCH :SCORE 0.85542 :MATCHED "EGFR" :STATUS "name" :EXACT 1)) :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C16612
+                                          (SENSE (MORPH (POS N) (WORD GENE))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                         :TO ONT::GENE))
+                                   :ONT-TYPES (ONT::GENE))
+                                  (TERM :ID UP::P0CY46 :NAME "Epidermal growth factor receptor" :SCORE 0.85368 :MATCHES
+                                   ((MATCH :SCORE 0.85368 :MATCHED "egfr" :STATUS "RecName: Short" :ALL-CAPS-NO-CAPS
+                                     1))
+                                   :DBXREFS (XFAM::PF00757 XFAM::PF14843 XFAM::PF07714 XFAM::PF01030) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID UP::P04412 :NAME "Epidermal growth factor receptor" :SCORE 0.85368 :MATCHES
+                                   ((MATCH :SCORE 0.85368 :MATCHED "egfr" :STATUS "RecName: Short" :ALL-CAPS-NO-CAPS
+                                     1))
+                                   :DBXREFS (XFAM::PF00757 XFAM::PF14843 XFAM::PF07714 XFAM::PF01030) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID GO::|0005006| :NAME "epidermal growth factor-activated receptor activity"
+                                   :SCORE 0.71084 :MATCHES
+                                   ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "EXACT synonym" :EXACT 1)) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID NCIT::C17068 :NAME "epidermal growth factor receptor" :SCORE 0.71084
+                                   :MATCHES ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "synonym" :EXACT 1))
+                                   :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C17021
+                                          (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                         :TO ONT::PROTEIN))
+                                   :ONT-TYPES (ONT::PROTEIN))
+                                  (TERM :ID NCIT::C18436 :NAME "soluble ERBB-1 protein" :SCORE 0.71084 :MATCHES
+                                   ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "synonym" :EXACT 1)) :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C17021
+                                          (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                         :TO ONT::PROTEIN))
+                                   :ONT-TYPES (ONT::PROTEIN))))
+                                :NAME W::EGFR :DBID "HGNC:3236" :DBNAME "epidermal growth factor receptor" :DB-TERM-ID
+                                "HGNC:3236" :DB-TERM-ID "NCIT:C51744" :DB-TERM-ID "UP:P0CY46" :DB-TERM-ID "UP:P04412"
+                                :DB-TERM-ID "GO:0005006" :DB-TERM-ID "NCIT:C17068" :DB-TERM-ID "NCIT:C18436" :SPEC
+                                ONT::THE :NAME-OF W::EGFR :EQUALS ONT::V60386)
+                               (ONT::THE ONT::V61438 :INSTANCE-OF ONT::GENE-PROTEIN :SPEC ONT::THE :SEQUENCE
+                                (ONT::V61325 ONT::V61333) :NAME-OF W::EGFR-PUNC-MINUS-EGFR :LEX W::EGFR)
+                               (ONT::TERM ONT::V60386 :INSTANCE-OF ONT::GENE-PROTEIN :DRUM
+                                ((:DRUM
+                                  (TERM :ID HGNC::|3236| :NAME "epidermal growth factor receptor" :SCORE 0.85542
+                                   :MATCHES ((MATCH :SCORE 0.85542 :MATCHED "EGFR" :STATUS "Approved Symbol" :EXACT 1))
+                                   :DBXREFS (UP::P00533) :ONT-TYPES (ONT::GENE))
+                                  (TERM :ID NCIT::C51744 :NAME "EGFR" :SCORE 0.85542 :MATCHES
+                                   ((MATCH :SCORE 0.85542 :MATCHED "EGFR" :STATUS "name" :EXACT 1)) :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C16612
+                                          (SENSE (MORPH (POS N) (WORD GENE))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                         :TO ONT::GENE))
+                                   :ONT-TYPES (ONT::GENE))
+                                  (TERM :ID UP::P0CY46 :NAME "Epidermal growth factor receptor" :SCORE 0.85368 :MATCHES
+                                   ((MATCH :SCORE 0.85368 :MATCHED "egfr" :STATUS "RecName: Short" :ALL-CAPS-NO-CAPS
+                                     1))
+                                   :DBXREFS (XFAM::PF00757 XFAM::PF14843 XFAM::PF07714 XFAM::PF01030) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID UP::P04412 :NAME "Epidermal growth factor receptor" :SCORE 0.85368 :MATCHES
+                                   ((MATCH :SCORE 0.85368 :MATCHED "egfr" :STATUS "RecName: Short" :ALL-CAPS-NO-CAPS
+                                     1))
+                                   :DBXREFS (XFAM::PF00757 XFAM::PF14843 XFAM::PF07714 XFAM::PF01030) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID GO::|0005006| :NAME "epidermal growth factor-activated receptor activity"
+                                   :SCORE 0.71084 :MATCHES
+                                   ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "EXACT synonym" :EXACT 1)) :ONT-TYPES
+                                   (ONT::PROTEIN))
+                                  (TERM :ID NCIT::C17068 :NAME "epidermal growth factor receptor" :SCORE 0.71084
+                                   :MATCHES ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "synonym" :EXACT 1))
+                                   :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C17021
+                                          (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                         :TO ONT::PROTEIN))
+                                   :ONT-TYPES (ONT::PROTEIN))
+                                  (TERM :ID NCIT::C18436 :NAME "soluble ERBB-1 protein" :SCORE 0.71084 :MATCHES
+                                   ((MATCH :SCORE 0.71084 :MATCHED "EGFR" :STATUS "synonym" :EXACT 1)) :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C17021
+                                          (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                         :TO ONT::PROTEIN))
+                                   :ONT-TYPES (ONT::PROTEIN))))
+                                :NAME W::EGFR :DBID "HGNC:3236" :DBNAME "epidermal growth factor receptor" :DB-TERM-ID
+                                "HGNC:3236" :DB-TERM-ID "NCIT:C51744" :DB-TERM-ID "UP:P0CY46" :DB-TERM-ID "UP:P04412"
+                                :DB-TERM-ID "GO:0005006" :DB-TERM-ID "NCIT:C17068" :DB-TERM-ID "NCIT:C18436" :SPEC
+                                ONT::THE :NAME-OF W::EGFR)
+                               (ONT::TERM ONT::V61394 :INSTANCE-OF ONT::MACROMOLECULAR-COMPLEX :M-SEQUENCE
+                                (ONT::V61325 ONT::V61333) :SPEC ONT::THE :ASSOC-WITH ONT::V61438 :EQUALS ONT::V60386)
+                               (ONT::TERM ONT::V61429 :INSTANCE-OF ONT::GENE-PROTEIN :DRUM
+                                ((:DRUM
+                                  (TERM :ID HGNC::|4566| :NAME "growth factor receptor bound protein 2" :SCORE 0.85542
+                                   :MATCHES ((MATCH :SCORE 0.85542 :MATCHED "GRB2" :STATUS "Approved Symbol" :EXACT 1))
+                                   :DBXREFS (UP::P62993) :ONT-TYPES (ONT::GENE))
+                                  (TERM :ID NCIT::C52395 :NAME "GRB2" :SCORE 0.85542 :MATCHES
+                                   ((MATCH :SCORE 0.85542 :MATCHED "GRB2" :STATUS "name" :EXACT 1)) :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C16612
+                                          (SENSE (MORPH (POS N) (WORD GENE))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                         :TO ONT::GENE))
+                                   :ONT-TYPES (ONT::GENE))
+                                  (TERM :ID NCIT::C26222 :NAME "growth factor receptor-bound protein-2" :SCORE 0.71084
+                                   :MATCHES
+                                   ((MATCH :SCORE 0.71084 :MATCHED "GRB2" :STATUS "synonym" :EXACT 1)
+                                    (MATCH :SCORE 0.71082 :MATCHED "GRB-2" :STATUS "synonym" :NO-DASH-DASH 1 :EXACT 1))
+                                   :MAPPINGS
+                                   ((MAP :THROUGH
+                                         (CONCEPT NCIT::C17021
+                                          (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                           (PROVENANCE (NAME NCIT)
+                                            (FILENAME
+
+"/Users/mark/Projects/CLiC/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                         :TO ONT::PROTEIN))
+                                   :ONT-TYPES (ONT::PROTEIN))))
+                                :NAME W::GRB-2 :DBID "HGNC:4566" :DBNAME "growth factor receptor bound protein 2"
+                                :DB-TERM-ID "HGNC:4566" :DB-TERM-ID "NCIT:C52395" :DB-TERM-ID "NCIT:C26222" :SPEC
+                                ONT::THE :NAME-OF W::GRB-2)
+                               (ONT::EVENT ONT::V61411 :INSTANCE-OF ONT::BIND :AGENT ONT::V61394 :AFFECTED ONT::V61429
+                                :FORCE ONT::TRUE :TYPE (:* ONT::ATTACH W::BIND) :SPEC ONT::F :TENSE W::PRES)))

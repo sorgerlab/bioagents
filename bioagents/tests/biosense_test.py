@@ -165,13 +165,20 @@ class TestGetIndraRepPathwayImmuneSystem(_GetIndraRepTemplate):
         assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
 
 
-class TestGGetIndraRepDephosphorylation(_GetIndraRepTemplate):
+class TestGetIndraRepDephosphorylation(_GetIndraRepTemplate):
     kqml_file = 'dephosphorylation.kqml'
 
     def check_result(self, res):
         stmts = self.bioagent.get_statement(res)
         assert len(stmts) == 1
         assert isinstance(stmts[0], Dephosphorylation), stmts
+
+
+class TestGetIndraRepComplextEntities(_GetIndraRepTemplate):
+    kqml_file = 'complex_entities.kqml'
+
+    def check_result(self, res):
+        return
 
 
 @unittest.skip('Cell line extraction not working yet')

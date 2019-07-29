@@ -137,7 +137,7 @@ class Bioagent(KQMLModule):
         except Exception as e:
             logger.error('Could not perform response to %s' % task)
             logger.exception(e)
-            return self.make_failure('INTERNAL_FAILURE')
+            return self.make_failure('INTERNAL_FAILURE', description=str(e))
 
     def reply_with_content(self, msg, reply_content):
         """A wrapper around the reply method from KQMLModule."""

@@ -4,6 +4,8 @@ cache:
       - $HOME/.cache/pip
 python:
   - "3.5"
+services:
+  - xvfb
 before_install:
   - sudo apt-get update
 install:
@@ -24,11 +26,6 @@ install:
   - pip install -U networkx
   # Install utilities for running tests
   - pip install coverage
-before_script:
-  # Enable plotting on fake display
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 3
 script:
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
   # Run standard unit tests

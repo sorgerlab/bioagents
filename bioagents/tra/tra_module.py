@@ -91,6 +91,8 @@ class TRA_Module(Bioagent):
         except tra.MissingMonomerError as e:
             logger.exception(e)
             reply_content = self.make_failure('MODEL_MISSING_MONOMER')
+            if e.monomer:
+                reply_content.set('entity', self.make_cljson(e.monomer))
             return reply_content
         except tra.MissingMonomerSiteError as e:
             logger.exception(e)
@@ -147,6 +149,8 @@ class TRA_Module(Bioagent):
         except tra.MissingMonomerError as e:
             logger.exception(e)
             reply_content = self.make_failure('MODEL_MISSING_MONOMER')
+            if e.monomer:
+                reply_content.set('entity', self.make_cljson(e.monomer))
             return reply_content
         except tra.MissingMonomerSiteError as e:
             logger.exception(e)

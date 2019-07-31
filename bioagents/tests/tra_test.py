@@ -886,6 +886,7 @@ class TraTestMissingMonomer(_IntegrationTest):
         assert output.head() == 'FAILURE'
         reason = output.get('reason')
         assert reason == 'MODEL_MISSING_MONOMER'
+        assert output.get('entity'), output
 
 
 class TraTestMissingMonomerSite(_IntegrationTest):

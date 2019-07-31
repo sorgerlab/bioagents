@@ -136,6 +136,19 @@ class EKB(object):
             site_term = self.get_site_term(site_node)
             self.ekb.append(site_term)
 
+        # Extract manner-undo if available
+        modn = self.graph.get_matching_node(event_node, link='modn')
+        if modn:
+            manner_label = self.graph.nodes[modn].get('label')
+            if manner_label and manner_label.lower() == 'ont::manner-undo':
+                mods_tag = etree.Element('mods')
+                mod_tag = etree.Element('mod')
+                type_tag = etree.Element('type')
+                type_tag.text = 'ONT::MANNER-UNDO'
+                mod_tag.append(type_tag)
+                mods_tag.append(mod_tag)
+                event.append(mods_tag)
+
         self.components.append(event_node)
         self.ekb.append(event)
 

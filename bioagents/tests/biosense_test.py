@@ -1,7 +1,8 @@
 import unittest
 from nose.tools import raises
 from kqml import KQMLList
-from indra.statements import Phosphorylation, Agent, Statement
+from indra.statements import Phosphorylation, Agent, Statement, \
+    Dephosphorylation
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from bioagents import Bioagent
@@ -162,6 +163,15 @@ class TestGetIndraRepPathwayImmuneSystem(_GetIndraRepTemplate):
         assert agent.name == 'immune system signaling pathway', agent.name
         assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY', agent.db_refs
         assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
+
+
+class TestGGetIndraRepDephosphorylation(_GetIndraRepTemplate):
+    kqml_file = 'dephosphorylation.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1
+        assert isinstance(stmts[0], Dephosphorylation), stmts
 
 
 @unittest.skip('Cell line extraction not working yet')

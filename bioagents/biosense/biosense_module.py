@@ -47,6 +47,7 @@ class BioSense_Module(Bioagent):
                 # Then turn the graph into an EKB XML object, expanding around
                 # the given ID.
                 ekb = EKB(graph, trips_id)
+                logger.debug('Extracted EKB: %s' % ekb.to_string())
                 entity = ekb.get_entity()
                 js = self.make_cljson(entity)
             except Exception as e:

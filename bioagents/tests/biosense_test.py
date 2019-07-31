@@ -181,6 +181,15 @@ class TestGetIndraRepComplextEntities(_GetIndraRepTemplate):
         return
 
 
+class TestGGetIndraRepDephosphorylation(_GetIndraRepTemplate):
+    kqml_file = 'dephosphorylation.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1
+        assert isinstance(stmts[0], Dephosphorylation), stmts
+
+
 @unittest.skip('Cell line extraction not working yet')
 class TestGetIndraRepCellLineContext(_GetIndraRepTemplate):
     kqml_file = 'cell_line_context.kqml'

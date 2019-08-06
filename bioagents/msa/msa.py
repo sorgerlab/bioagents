@@ -383,9 +383,9 @@ class StatementFinder(object):
                 for stmt in stmts}
 
     def get_source_counts(self):
-            stmts = self.get_statements(block=False)
-            return {stmt.get_hash(): self._processor.get_source_count(stmt)
-                    for stmt in stmts}
+        stmts = self.get_statements(block=False)
+        return {stmt.get_hash(): self._processor.get_source_count(stmt)
+                for stmt in stmts}
 
     def get_sample(self):
         """Get the sample of statements retrieved by the first query."""

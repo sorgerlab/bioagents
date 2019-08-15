@@ -61,8 +61,8 @@ class ModelDiagnoser(object):
             try:
                 pr = mc.check_statement(self.explain, max_paths=1,
                                         max_path_length=8)
-                path_stmts = stmts_for_path(pr.paths[0], self.model,
-                                            self.statements)
+                path_stmts = stmts_from_pysb_path(pr.paths[0], self.model,
+                                                  self.statements)
                 result['explanation_path'] = path_stmts
             except Exception as e:
                 logger.error("Error getting paths for statement: %s" % str(e))

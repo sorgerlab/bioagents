@@ -102,9 +102,9 @@ class ModelDiagnoser(object):
                     im.remove_edge(u, v)
                 if best_edge[0]:
                     result['connect_rules'] = best_edge[0]
-                    u_stmt = _stmt_from_rule(self.model, best_edge[0][0],
+                    u_stmt = stmt_from_rule(self.model, best_edge[0][0],
                                              self.statements)
-                    v_stmt = _stmt_from_rule(self.model, best_edge[0][1],
+                    v_stmt = stmt_from_rule(self.model, best_edge[0][1],
                                              self.statements)
                     if u_stmt and v_stmt:
                         result['connect_stmts'] = (u_stmt, v_stmt)

@@ -5,9 +5,8 @@ import networkx as nx
 from indra.databases import hgnc_client
 from indra.mechlinker import MechLinker
 from indra.statements import *
-from indra.sources.indra_db_rest import get_statements
-from indra.explanation.model_checker import ModelChecker, stmts_for_path, \
-                                            _stmt_from_rule
+from indra.explanation.model_checker import PysbModelChecker
+from indra.explanation.reporting import stmt_from_rule, stmts_from_pysb_path
 from indra.assemblers.pysb.assembler import grounded_monomer_patterns
 
 
@@ -50,7 +49,7 @@ class ModelDiagnoser(object):
         if self.explain is None:
             raise ValueError('check_explanation requires an explanation goal.')
         result = {}
-        mc = ModelChecker(self.model, [self.explain])
+        mc = PysbModelChecker(self.model, [self.explain])
         try:
             pr = mc.check_statement(self.explain, max_paths=0)
             result['has_explanation'] = pr.path_found

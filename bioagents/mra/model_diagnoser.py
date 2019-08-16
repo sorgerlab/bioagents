@@ -2,9 +2,9 @@ import logging
 import itertools
 from copy import deepcopy
 import networkx as nx
-from indra.databases import hgnc_client
 from indra.mechlinker import MechLinker
 from indra.statements import *
+from indra.sources.indra_db_rest import get_statements
 from indra.explanation.model_checker import PysbModelChecker
 from indra.explanation.reporting import stmt_from_rule, stmts_from_pysb_path
 from indra.assemblers.pysb.assembler import grounded_monomer_patterns
@@ -102,10 +102,10 @@ class ModelDiagnoser(object):
                     im.remove_edge(u, v)
                 if best_edge[0]:
                     result['connect_rules'] = best_edge[0]
-                    u_stmt = stmt_from_rule(self.model, best_edge[0][0],
-                                             self.statements)
-                    v_stmt = stmt_from_rule(self.model, best_edge[0][1],
-                                             self.statements)
+                    u_stmt = stmt_from_rule(best_edge[0][0], self.model,
+                                            self.statements)
+                    v_stmt = stmt_from_rule(best_edge[0][1], self.model,
+                                            self.statements)
                     if u_stmt and v_stmt:
                         result['connect_stmts'] = (u_stmt, v_stmt)
                         logger.info("Model statements: %s" % str(self.statements))

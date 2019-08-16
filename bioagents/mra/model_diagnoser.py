@@ -2,12 +2,11 @@ import logging
 import itertools
 from copy import deepcopy
 import networkx as nx
-from indra.databases import hgnc_client
 from indra.mechlinker import MechLinker
 from indra.statements import *
 from indra.sources.indra_db_rest import get_statements
-from indra.explanation.model_checker import ModelChecker, stmts_for_path, \
-                                            _stmt_from_rule
+from indra.explanation.model_checker import PysbModelChecker
+from indra.explanation.reporting import stmt_from_rule, stmts_from_pysb_path
 from indra.assemblers.pysb.assembler import grounded_monomer_patterns
 
 
@@ -50,7 +49,7 @@ class ModelDiagnoser(object):
         if self.explain is None:
             raise ValueError('check_explanation requires an explanation goal.')
         result = {}
-        mc = ModelChecker(self.model, [self.explain])
+        mc = PysbModelChecker(self.model, [self.explain])
         try:
             pr = mc.check_statement(self.explain, max_paths=0)
             result['has_explanation'] = pr.path_found
@@ -62,8 +61,8 @@ class ModelDiagnoser(object):
             try:
                 pr = mc.check_statement(self.explain, max_paths=1,
                                         max_path_length=8)
-                path_stmts = stmts_for_path(pr.paths[0], self.model,
-                                            self.statements)
+                path_stmts = stmts_from_pysb_path(pr.paths[0], self.model,
+                                                  self.statements)
                 result['explanation_path'] = path_stmts
             except Exception as e:
                 logger.error("Error getting paths for statement: %s" % str(e))
@@ -103,10 +102,10 @@ class ModelDiagnoser(object):
                     im.remove_edge(u, v)
                 if best_edge[0]:
                     result['connect_rules'] = best_edge[0]
-                    u_stmt = _stmt_from_rule(self.model, best_edge[0][0],
-                                             self.statements)
-                    v_stmt = _stmt_from_rule(self.model, best_edge[0][1],
-                                             self.statements)
+                    u_stmt = stmt_from_rule(best_edge[0][0], self.model,
+                                            self.statements)
+                    v_stmt = stmt_from_rule(best_edge[0][1], self.model,
+                                            self.statements)
                     if u_stmt and v_stmt:
                         result['connect_stmts'] = (u_stmt, v_stmt)
                         logger.info("Model statements: %s" % str(self.statements))

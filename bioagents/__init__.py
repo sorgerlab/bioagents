@@ -278,9 +278,10 @@ class Bioagent(KQMLModule):
 
     def say(self, message):
         """Say something to the user."""
-        msg = KQMLList('say')
-        msg.append(KQMLString(message))
-        self.request(msg)
+        if message:
+            msg = KQMLList('say')
+            msg.append(KQMLString(message))
+            self.request(msg)
 
     def _make_report_cols_html(self, stmt_list, limit=5, ev_counts=None,
                                **kwargs):

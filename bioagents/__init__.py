@@ -286,6 +286,8 @@ class Bioagent(KQMLModule):
     def _make_report_cols_html(self, stmt_list, limit=5, ev_counts=None,
                                **kwargs):
         """Make columns listing the support given by the statement list."""
+        if not stmt_list:
+            return "No statements found."
 
         def href(ref, text):
             return '<a href=%s target="_blank">%s</a>' % (ref, text)

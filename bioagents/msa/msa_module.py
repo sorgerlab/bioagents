@@ -215,7 +215,8 @@ class MSA_Module(Bioagent):
             # Calling this success may be a bit ambitious.
             resp = KQMLPerformative('SUCCESS')
             resp.set('status', 'WORKING')
-            resp.set('relations-found', 'nil')
+            resp.set('entities-found', 'nil')
+            resp.set('num-relations-found', '0')
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
 

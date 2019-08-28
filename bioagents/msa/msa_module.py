@@ -145,7 +145,7 @@ class MSA_Module(Bioagent):
                                                 action=action,
                                                 polarity=polarity)
         stmts = finder.get_statements()
-        self.say(finder.describe())
+        self.say(finder.describe(include_negative=False))
 
         logger.info("Found %d matching statements." % len(stmts))
         if not len(stmts):
@@ -215,12 +215,13 @@ class MSA_Module(Bioagent):
             # Calling this success may be a bit ambitious.
             resp = KQMLPerformative('SUCCESS')
             resp.set('status', 'WORKING')
-            resp.set('relations-found', 'nil')
+            resp.set('entities-found', 'nil')
+            resp.set('num-relations-found', '0')
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
 
         agents = finder.get_other_agents()
-        self.say(finder.describe())
+        self.say(finder.describe(include_negative=False))
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
         resp.set('entities-found', self.make_cljson(agents))
@@ -245,7 +246,7 @@ class MSA_Module(Bioagent):
             # TODO: Handle this more gracefully, if possible.
             return self.make_failure('MISSING_MECHANISM')
         num_stmts = len(stmts)
-        self.say(finder.describe())
+        self.say(finder.describe(include_negative=False))
         resp = KQMLPerformative('SUCCESS')
         resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
         resp.set('num-relations-found', str(num_stmts))
@@ -301,8 +302,6 @@ class MSA_Module(Bioagent):
         try:
             logger.debug("Waiting for statements to finish...")
             stmts = finder.get_statements(block=True)
-            if stmts is None or not len(stmts):
-                return
             start_time = datetime.now()
             logger.info('Sending display statements.')
             self.send_provenance_for_stmts(stmts, nl_question,

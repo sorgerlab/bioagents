@@ -278,13 +278,16 @@ class Bioagent(KQMLModule):
 
     def say(self, message):
         """Say something to the user."""
-        msg = KQMLList('say')
-        msg.append(KQMLString(message))
-        self.request(msg)
+        if message:
+            msg = KQMLList('say')
+            msg.append(KQMLString(message))
+            self.request(msg)
 
     def _make_report_cols_html(self, stmt_list, limit=5, ev_counts=None,
                                **kwargs):
         """Make columns listing the support given by the statement list."""
+        if not stmt_list:
+            return "No statements found."
 
         def href(ref, text):
             return '<a href=%s target="_blank">%s</a>' % (ref, text)

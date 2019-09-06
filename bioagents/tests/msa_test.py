@@ -306,7 +306,7 @@ class _MsaCommonsCheck(_IntegrationTest):
         assert gene_list, output
         gene_names = {ag.name for ag in gene_list}
         assert len(gene_names) == len(gene_list)
-        assert self.exp_gene_names < gene_names,\
+        assert self.exp_gene_names <= gene_names,\
             "Expected %s in %s" % (self.exp_gene_names, gene_names)
 
 
@@ -327,14 +327,14 @@ class TestMsaCommonDownstreamsMEKERK(_MsaCommonsCheck):
 @attr('nonpublic')
 class TestMsaCommonUpstreamsTP53AKT1(_MsaCommonsCheck):
     inp_genes = [_TP53(), _AKT1()]
-    exp_gene_names = {'PRKDC', 'ROS1'}
+    exp_gene_names = {'PRKDC', 'SIRT1'}
     updown = 'up'
 
 
 @attr('nonpublic')
 class TestMsaCommonDownstreamsTP53AKT1(_MsaCommonsCheck):
     inp_genes = [_TP53(), _AKT1()]
-    exp_gene_names = {'ROS1', 'CDKN1A'}
+    exp_gene_names = {'MDM2', 'CDKN1A'}
     updown = 'down'
 
 
@@ -604,10 +604,10 @@ def test_from_source_agent_filter():
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
         assert ag_names & exp_ags, ag_names - exp_ags
     summ = finder.summarize()
-    assert 'SAMHD1' in {a.name for a in summ['other_agents']}, summ
+    assert 'EZH2' in {a.name for a in summ['other_agents']}, summ
     desc = finder.describe()
     assert re.match(r'Overall, I found that CDK12 can affect '
-                    r'SAMHD1 and EZH2. Here are the statements.*', desc), desc
+                    r'EZH2. Here are the statements.*', desc), desc
 
 
 @attr('nonpublic')
@@ -620,8 +620,8 @@ def test_binary_summary_description():
     summ = finder.summarize()
     assert 'EZH2' == summ['query_obj'].name, summ
     desc = finder.describe()
-    assert re.match(r'Overall, I found that CDK12 can phosphorylate and '
-                    r'activate EZH2.', desc), desc
+    assert re.match(r'Overall, I found that CDK12 can phosphorylate '
+                    r'EZH2.', desc), desc
 
     # Undirected
     finder = msa.BinaryUndirected(cdk12, ezh2)
@@ -629,5 +629,5 @@ def test_binary_summary_description():
     assert 'EZH2' == summ['query_agents'][1].name, summ
     desc = finder.describe()
     assert re.match(r'Overall, I found that CDK12 and EZH2 interact in the '
-                    r'following ways: phosphorylation and activation.',
+                    r'following ways: phosphorylation.',
                     desc), desc

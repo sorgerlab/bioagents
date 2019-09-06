@@ -817,7 +817,7 @@ class ComplexOneSide(StatementFinder):
 
         other_agents = [a.name for a in summary['other_agents'][:max_names]]
         if other_agents:
-            desc += english_join()
+            desc += english_join(other_agents)
         elif include_negatives:
             desc += 'nothing'
         else:

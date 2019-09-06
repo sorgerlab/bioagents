@@ -637,14 +637,14 @@ class BinaryDirected(StatementFinder):
                    'query_obj': self.query.obj}
         return summary
 
-    def describe(self, limit=None, include_negatives=False):
+    def describe(self, limit=None, include_negative=False):
         summary = self.summarize()
         if summary['stmt_types']:
             desc = "Overall, I found that %s can %s %s." % \
                    (summary['query_subj'].name,
                     english_join(summary['stmt_types']),
                     summary['query_obj'].name)
-        elif include_negatives:
+        elif include_negative:
             desc = 'Overall, I found that %s does not affect %s.' % \
                 (summary['query_subj'].name, summary['query_obj'].name)
         else:
@@ -673,14 +673,14 @@ class BinaryUndirected(StatementFinder):
                    'query_agents': self.query.agents}
         return summary
 
-    def describe(self, limit=None, include_negatives=False):
+    def describe(self, limit=None, include_negative=False):
         summary = self.summarize()
         names = [ag.name for ag in summary['query_agents']]
         if summary['stmt_types']:
             desc = "Overall, I found that %s and %s interact in the " \
                    "following ways: " % tuple(names)
             desc += (english_join(summary['stmt_types']) + '.')
-        elif include_negatives:
+        elif include_negative:
             desc = 'I couldn\'t find evidence that %s and %s interact.' \
                    % tuple(names)
         else:
@@ -703,7 +703,7 @@ class FromSource(StatementFinder):
                                                          other_role='object')}
         return summary
 
-    def describe(self, limit=10, include_negatives=True):
+    def describe(self, limit=10, include_negative=True):
         summary = self.summarize()
         if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
@@ -722,7 +722,7 @@ class FromSource(StatementFinder):
             desc += english_join(other_names[:limit]) + '. '
         elif 0 < len(other_names) <= limit:
             desc += english_join(other_names) + '. '
-        elif include_negatives:
+        elif include_negative:
             desc += 'nothing. '
         else:
             desc = None
@@ -757,13 +757,13 @@ class ToTarget(StatementFinder):
         }
         return summary
 
-    def describe(self, limit=5, include_negatives=True):
+    def describe(self, limit=5, include_negative=True):
         summary = self.summarize()
         if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
             ps = super(ToTarget, self).describe(
                 limit=limit,
-                include_negative=include_negatives
+                include_negative=include_negative
             )
         else:
             verb_wrap = ' can %s ' % summary['stmt_type']
@@ -776,7 +776,7 @@ class ToTarget(StatementFinder):
             desc += english_join(other_names[:limit])
         elif 0 < len(other_names) <= limit:
             desc += ' ' + english_join(other_names)
-        elif include_negatives:
+        elif include_negative:
             desc += ' nothing'
         else:
             return None
@@ -810,7 +810,7 @@ class ComplexOneSide(StatementFinder):
                    'stmt_type': 'complex'}
         return summary
 
-    def describe(self, max_names=20, include_negatives=True):
+    def describe(self, max_names=20, include_negative=True):
         summary = self.summarize()
         desc = "Overall, I found that %s can be in a complex with " % \
                summary['query_agent'].name
@@ -818,7 +818,7 @@ class ComplexOneSide(StatementFinder):
         other_agents = [a.name for a in summary['other_agents'][:max_names]]
         if other_agents:
             desc += english_join(other_agents)
-        elif include_negatives:
+        elif include_negative:
             desc += 'nothing'
         else:
             return None

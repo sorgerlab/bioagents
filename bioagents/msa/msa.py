@@ -546,7 +546,7 @@ class Neighborhood(StatementFinder):
                        self.get_other_agents([self.query.agents[0]])}
         return summary
 
-    def describe(self, max_names=20, include_negative=False):
+    def describe(self, max_names=20, include_negative=True):
         summary = self.summarize()
         desc = ('Overall, I found that %s interacts with%s ' %
                 (summary['query_agent'].name,
@@ -555,11 +555,14 @@ class Neighborhood(StatementFinder):
         if summary['other_agents'][:max_names]:
             desc += english_join([a.name for a in
                                   summary['other_agents'][:max_names]])
-        else:
+        elif include_negative:
             desc += 'nothing'
+        else:
+            return None
+
         desc += '. '
         desc += super(Neighborhood, self).describe(
-            include_negative=include_negative
+            include_negative=False
         )
         return desc
 
@@ -637,7 +640,7 @@ class BinaryDirected(StatementFinder):
                    'query_obj': self.query.obj}
         return summary
 
-    def describe(self, limit=None, include_negative=False):
+    def describe(self, limit=None, include_negative=True):
         summary = self.summarize()
         if summary['stmt_types']:
             desc = "Overall, I found that %s can %s %s." % \
@@ -673,7 +676,7 @@ class BinaryUndirected(StatementFinder):
                    'query_agents': self.query.agents}
         return summary
 
-    def describe(self, limit=None, include_negative=False):
+    def describe(self, limit=None, include_negative=True):
         summary = self.summarize()
         names = [ag.name for ag in summary['query_agents']]
         if summary['stmt_types']:
@@ -727,7 +730,8 @@ class FromSource(StatementFinder):
         else:
             desc = None
 
-        desc += ps
+        if ps:
+            desc += ps
         return desc
 
     def _filter_stmts(self, stmts):
@@ -761,10 +765,8 @@ class ToTarget(StatementFinder):
         summary = self.summarize()
         if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
-            ps = super(ToTarget, self).describe(
-                limit=limit,
-                include_negative=include_negative
-            )
+            ps = super(ToTarget, self).describe(limit=limit,
+                                                include_negative=False)
         else:
             verb_wrap = ' can %s ' % summary['stmt_type']
             ps = ''

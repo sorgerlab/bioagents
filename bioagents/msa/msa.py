@@ -546,7 +546,7 @@ class Neighborhood(StatementFinder):
                        self.get_other_agents([self.query.agents[0]])}
         return summary
 
-    def describe(self, max_names=20):
+    def describe(self, max_names=20, include_negative=True):
         summary = self.summarize()
         desc = ('Overall, I found that %s interacts with%s ' %
                 (summary['query_agent'].name,
@@ -555,10 +555,15 @@ class Neighborhood(StatementFinder):
         if summary['other_agents'][:max_names]:
             desc += english_join([a.name for a in
                                   summary['other_agents'][:max_names]])
-        else:
+        elif include_negative:
             desc += 'nothing'
+        else:
+            return None
+
         desc += '. '
-        desc += super(Neighborhood, self).describe(include_negative=False)
+        desc += super(Neighborhood, self).describe(
+            include_negative=False
+        )
         return desc
 
 
@@ -635,16 +640,18 @@ class BinaryDirected(StatementFinder):
                    'query_obj': self.query.obj}
         return summary
 
-    def describe(self, limit=None):
+    def describe(self, limit=None, include_negative=True):
         summary = self.summarize()
         if summary['stmt_types']:
             desc = "Overall, I found that %s can %s %s." % \
                    (summary['query_subj'].name,
                     english_join(summary['stmt_types']),
                     summary['query_obj'].name)
-        else:
+        elif include_negative:
             desc = 'Overall, I found that %s does not affect %s.' % \
                 (summary['query_subj'].name, summary['query_obj'].name)
+        else:
+            desc = None
         return desc
 
 
@@ -669,16 +676,18 @@ class BinaryUndirected(StatementFinder):
                    'query_agents': self.query.agents}
         return summary
 
-    def describe(self, limit=None):
+    def describe(self, limit=None, include_negative=True):
         summary = self.summarize()
         names = [ag.name for ag in summary['query_agents']]
         if summary['stmt_types']:
             desc = "Overall, I found that %s and %s interact in the " \
                    "following ways: " % tuple(names)
             desc += (english_join(summary['stmt_types']) + '.')
-        else:
+        elif include_negative:
             desc = 'I couldn\'t find evidence that %s and %s interact.' \
                    % tuple(names)
+        else:
+            desc = None
         return desc
 
 
@@ -697,7 +706,7 @@ class FromSource(StatementFinder):
                                                          other_role='object')}
         return summary
 
-    def describe(self, limit=10):
+    def describe(self, limit=10, include_negative=True):
         summary = self.summarize()
         if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
@@ -716,10 +725,13 @@ class FromSource(StatementFinder):
             desc += english_join(other_names[:limit]) + '. '
         elif 0 < len(other_names) <= limit:
             desc += english_join(other_names) + '. '
-        else:
+        elif include_negative:
             desc += 'nothing. '
+        else:
+            desc = None
 
-        desc += ps
+        if ps:
+            desc += ps
         return desc
 
     def _filter_stmts(self, stmts):
@@ -749,7 +761,7 @@ class ToTarget(StatementFinder):
         }
         return summary
 
-    def describe(self, limit=5):
+    def describe(self, limit=5, include_negative=True):
         summary = self.summarize()
         if summary['stmt_type'] is None:
             verb_wrap = ' can affect '
@@ -766,12 +778,16 @@ class ToTarget(StatementFinder):
             desc += english_join(other_names[:limit])
         elif 0 < len(other_names) <= limit:
             desc += ' ' + english_join(other_names)
-        else:
+        elif include_negative:
             desc += ' nothing'
+        else:
+            return None
+
         desc += verb_wrap
         desc += summary['query_obj'].name + '. '
 
-        desc += ps
+        if ps:
+            desc += ps
         return desc
 
     def _filter_stmts(self, stmts):
@@ -796,12 +812,19 @@ class ComplexOneSide(StatementFinder):
                    'stmt_type': 'complex'}
         return summary
 
-    def describe(self, max_names=20):
+    def describe(self, max_names=20, include_negative=True):
         summary = self.summarize()
         desc = "Overall, I found that %s can be in a complex with " % \
                summary['query_agent'].name
-        desc += english_join([a.name for a in
-                              summary['other_agents'][:max_names]])
+
+        other_agents = [a.name for a in summary['other_agents'][:max_names]]
+        if other_agents:
+            desc += english_join(other_agents)
+        elif include_negative:
+            desc += 'nothing'
+        else:
+            return None
+
         desc += '.'
         return desc
 

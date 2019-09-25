@@ -2,7 +2,7 @@ import unittest
 from nose.tools import raises
 from kqml import KQMLList
 from indra.statements import Phosphorylation, Agent, Statement, \
-    Dephosphorylation
+    Dephosphorylation, Complex
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from bioagents import Bioagent
@@ -165,13 +165,30 @@ class TestGetIndraRepPathwayImmuneSystem(_GetIndraRepTemplate):
         assert agent.db_refs['TRIPS'].startswith('ONT::'), agent.db_refs
 
 
-class TestGGetIndraRepDephosphorylation(_GetIndraRepTemplate):
+class TestGetIndraRepDephosphorylation(_GetIndraRepTemplate):
     kqml_file = 'dephosphorylation.kqml'
 
     def check_result(self, res):
         stmts = self.bioagent.get_statement(res)
         assert len(stmts) == 1
         assert isinstance(stmts[0], Dephosphorylation), stmts
+
+
+class TestGetIndraRepComplextEntities(_GetIndraRepTemplate):
+    kqml_file = 'complex_entities.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1
+        assert isinstance(stmts[0], Complex), stmts
+        stmt = stmts[0]
+        assert len(stmt.members) == 2
+        agents = {m.name: m for m in stmt.members}
+        assert 'EGFR' in agents
+        assert 'GRB2' in agents
+        assert agents['EGFR'].bound_conditions
+        assert agents['EGFR'].bound_conditions[0].agent.name == 'EGFR'
+        assert agents['EGFR'].bound_conditions[0].is_bound is True
 
 
 @unittest.skip('Cell line extraction not working yet')

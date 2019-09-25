@@ -197,9 +197,13 @@ class EKB(object):
         name_node = self.graph.get_matching_node(term_id, link='name')
         if not name_node:
             name_node = self.graph.get_matching_node(term_id, link='W')
-        name_val = self.graph.node[name_node]['label']
-        if name_val.startswith('W::'):
-            name_val = name_val[3:]
+
+        if name_node:
+            name_val = self.graph.node[name_node]['label']
+            if name_val.startswith('W::'):
+                name_val = name_val[3:]
+        else:
+            name_val = ''
         return name_val
 
     def term_to_ekb(self, term_id):
@@ -214,10 +218,25 @@ class EKB(object):
 
         self.type = node['type']
 
+        if node['type'].upper() == 'ONT::MACROMOLECULAR-COMPLEX':
+            c1 = self.graph.get_matching_node(term_id, link='m-sequence')
+            c2 = self.graph.get_matching_node(term_id, link='m-sequence1')
+            components = etree.Element('components')
+            if c1:
+                self.term_to_ekb(c1)
+                c1tag = etree.Element('component', id=c1)
+                components.append(c1tag)
+            if c2:
+                self.term_to_ekb(c2)
+                c2tag = etree.Element('component', id=c2)
+                components.append(c2tag)
+            term.append(components)
+            self.ekb.append(term)
+            return
         # Handle the case of the signaling pathways.
         # Note: It turns out this will be wiped out by TRIPS further down the
         # line.
-        if node['type'].upper() == 'ONT::SIGNALING-PATHWAY':
+        elif node['type'].upper() == 'ONT::SIGNALING-PATHWAY':
             path_subject_id = self.graph.get_matching_node(term_id,
                                                            link='assoc-with')
             path_subject_name = self.get_term_name(path_subject_id)

@@ -75,7 +75,12 @@ class MRA_Module(Bioagent):
         no_display = content.get('no-display')
         if not descr_format:
             descr = content.get('description')
-            js = json.dumps(self.converter.cl_to_json(descr))
+            js_data = self.converter.cl_to_json(descr)
+            if isinstance(js_data, dict):
+                logger.error('JSON data should be a list not a dict.')
+                raise InvalidModelDescriptionError("Model description should "
+                                                   "be a list of events.")
+            js = json.dumps(js_data)
             res = self.mra.build_model_from_json(js)
         elif descr_format == 'ekb':
             descr = content.gets('description')

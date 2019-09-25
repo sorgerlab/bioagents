@@ -8,7 +8,7 @@ from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
 from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
-    _get_matching_stmts, CAN_CHECK_STATEMENTS
+    _get_matching_stmts, CAN_CHECK_STATEMENTS, InvalidModelDescriptionError
 from nose.plugins.skip import SkipTest
 from nose.plugins.attrib import attr
 
@@ -246,6 +246,34 @@ def test_get_matching_statements():
 # #####################
 # MRA integration tests
 # #####################
+
+def test_description_not_list_handling():
+    mm = MRA_Module(testing=True)
+    content = KQMLList.from_string(
+        '(BUILD-MODEL :DESCRIPTION ('
+        ':TYPE "Inhibition" '
+        ':SUBJ (:NAME "SB-525334" '
+        '       :DB--REFS (:+TYPE+ "ONT::GENE-PROTEIN" '
+        '                  :+TEXT+ "SB525334"'
+        '                  :+PUBCHEM+ "9967941")) '
+        ':OBJ (:NAME "TGFBR1"'
+        '      :DB--REFS (:+TYPE+ "ONT::GENE-PROTEIN" '
+        '                 :+TEXT+ "TGFBR1" '
+        '                 :+HGNC+ "11772" '
+        '                 :+UP+ "P36897" '
+        '                 :+NCIT+ "C51730")) '
+        ':OBJ--ACTIVITY "activity" '
+        ':BELIEF 1 '
+        ':EVIDENCE ((:SOURCE--API "trips" '
+        '            :SOURCE--HASH -1613118243458052451)) '
+        ':ID "ce486f46-3670-42e6-8f0e-d5f510525352" '
+        ':MATCHES--HASH "-32031145755534420"))''')
+    try:
+        reply = mm.respond_build_model(content)
+    except InvalidModelDescriptionError:
+        return
+    assert False, "Model should have explicitly failed: " + reply.to_string()
+
 
 def _get_build_model_request(text, format=None):
     content = KQMLList('BUILD-MODEL')

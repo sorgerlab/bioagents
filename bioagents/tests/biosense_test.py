@@ -2,7 +2,7 @@ import unittest
 from nose.tools import raises
 from kqml import KQMLList
 from indra.statements import Phosphorylation, Agent, Statement, \
-    Dephosphorylation
+    Dephosphorylation, Complex
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from bioagents import Bioagent
@@ -178,7 +178,9 @@ class TestGetIndraRepComplextEntities(_GetIndraRepTemplate):
     kqml_file = 'complex_entities.kqml'
 
     def check_result(self, res):
-        return
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1
+        assert isinstance(stmts[0], Complex), stmts
 
 
 class TestGGetIndraRepDephosphorylation(_GetIndraRepTemplate):

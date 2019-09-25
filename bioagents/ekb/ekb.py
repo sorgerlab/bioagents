@@ -52,6 +52,8 @@ class EKB(object):
         # Otherwise, we try extracting an Agent and return that
         else:
             agent = tp._get_agent_by_id(self.root_term, None)
+            if agent is None:
+                return None
 
             # Set the TRIPS ID in db_refs
             agent.db_refs['TRIPS'] = 'ONT::' + self.root_term

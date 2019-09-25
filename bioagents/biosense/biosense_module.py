@@ -49,7 +49,12 @@ class BioSense_Module(Bioagent):
                 ekb = EKB(graph, trips_id)
                 logger.debug('Extracted EKB: %s' % ekb.to_string())
                 entity = ekb.get_entity()
-                js = self.make_cljson(entity)
+                if entity is None:
+                    logger.info("Could not resolve entity from: %s. "
+                                "Returning empty list." % content.to_string())
+                    js = KQMLList()
+                else:
+                    js = self.make_cljson(entity)
             except Exception as e:
                 logger.info("Encountered an error while parsing: %s. "
                             "Returning empty list." % content.to_string())

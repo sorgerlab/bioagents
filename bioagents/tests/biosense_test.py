@@ -181,6 +181,14 @@ class TestGetIndraRepComplextEntities(_GetIndraRepTemplate):
         stmts = self.bioagent.get_statement(res)
         assert len(stmts) == 1
         assert isinstance(stmts[0], Complex), stmts
+        stmt = stmts[0]
+        assert len(stmt.members) == 2
+        agents = {m.name: m for m in stmt.members}
+        assert 'EGFR' in agents
+        assert 'GRB2' in agents
+        assert agents['EGFR'].bound_conditions
+        assert agents['EGFR'].bound_conditions[0].agent.name == 'EGFR'
+        assert agents['EGFR'].bound_conditions[0].is_bound is True
 
 
 class TestGGetIndraRepDephosphorylation(_GetIndraRepTemplate):

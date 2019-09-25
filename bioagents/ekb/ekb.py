@@ -85,7 +85,7 @@ class EKB(object):
 
     def event_to_ekb(self, event_node):
         node = self.graph.node[event_node]
-        if node['type'].upper() == 'ONT::ATTACH':
+        if node['type'].upper() in {'ONT::ATTACH', 'ONT::BIND'}:
             self.binding_to_ekb(event_node)
         else:
             self.generic_event_to_ekb(event_node)

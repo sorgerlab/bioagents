@@ -17,6 +17,7 @@ class EKB(object):
         self.ekb = None
         self.type = None
         self.components = [term_node]
+        self.in_progress = set()
         self.build()
 
     def build(self):
@@ -90,6 +91,7 @@ class EKB(object):
             self.generic_event_to_ekb(event_node)
 
     def binding_to_ekb(self, event_node):
+        self.in_progress.add(event_node)
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
         event.append(type)
@@ -101,14 +103,16 @@ class EKB(object):
             arg = self.graph.get_matching_node(event_node, link=kqml_link)
             if arg is None:
                 continue
-            if arg not in self.components:
+            if arg not in self.components and arg not in self.in_progress:
                 self.term_to_ekb(arg)
             arg_tag = etree.Element(tag_name, id=arg, type=tag_type)
             event.append(arg_tag)
+        self.in_progress.remove(event_node)
         self.components.append(event_node)
         self.ekb.append(event)
 
     def generic_event_to_ekb(self, event_node):
+        self.in_progress.add(event_node)
         node = self.graph.node[event_node]
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
@@ -126,7 +130,8 @@ class EKB(object):
                 arg_tag = etree.Element(tag_name, id=arg_node, role=tag_type)
                 event.append(arg_tag)
                 arg_counter += 1
-                if arg_node not in self.components:
+                if arg_node not in self.components \
+                        and arg_node not in self.in_progress:
                     self.term_to_ekb(arg_node)
         # Extract any sites attached to the event
         site_node = self.graph.get_matching_node(event_node, link='site')
@@ -149,6 +154,7 @@ class EKB(object):
                 mods_tag.append(mod_tag)
                 event.append(mods_tag)
 
+        self.in_progress.remove(event_node)
         self.components.append(event_node)
         self.ekb.append(event)
 
@@ -207,6 +213,7 @@ class EKB(object):
         return name_val
 
     def term_to_ekb(self, term_id):
+        self.in_progress.add(term_id)
         node = self.graph.node[term_id]
 
         term = etree.Element('TERM', id=term_id)
@@ -267,7 +274,7 @@ class EKB(object):
         # Deal next with modifier events
         mod = self.graph.get_matching_node(term_id, link='mod')
         if mod:
-            if mod not in self.components:
+            if mod not in self.components and mod not in self.in_progress:
                 self.event_to_ekb(mod)
             features = etree.Element('features')
             event = self.graph.node[mod]
@@ -280,6 +287,8 @@ class EKB(object):
                 features.append(inevent)
             term.append(features)
 
+        self.in_progress.remove(term_id)
+        self.components.append(term_id)
         self.ekb.append(term)
 
 

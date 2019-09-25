@@ -205,6 +205,13 @@ class TestGetIndraRepCellLineContext(_GetIndraRepTemplate):
         assert ev.context, ev.context
 
 
+class TestGetIndraRepAddMechanismRecursion(_GetIndraRepTemplate):
+    kqml_file = 'very_specific_model_addition.kqml'
+
+    def check_result(self, res):
+        return
+
+
 mek1 = agent_clj_from_text('MEK1')
 mek1a = Bioagent.get_agent(mek1)
 mek = agent_clj_from_text('MEK')

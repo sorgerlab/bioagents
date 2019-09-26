@@ -174,7 +174,7 @@ class TestGetIndraRepDephosphorylation(_GetIndraRepTemplate):
         assert isinstance(stmts[0], Dephosphorylation), stmts
 
 
-class TestGetIndraRepComplextEntities(_GetIndraRepTemplate):
+class TestGetIndraRepComplexEntities(_GetIndraRepTemplate):
     kqml_file = 'complex_entities.kqml'
 
     def check_result(self, res):

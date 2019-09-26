@@ -209,7 +209,14 @@ class TestGetIndraRepAddMechanismRecursion(_GetIndraRepTemplate):
     kqml_file = 'very_specific_model_addition.kqml'
 
     def check_result(self, res):
-        return
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1, stmts
+        assert isinstance(stmts[0], Dephosphorylation)
+        assert stmts[0].enz.name == 'PPP2CA', stmts[0].enz
+        assert stmts[0].sub.name == 'MAP2K1'
+        assert len(stmts[0].sub.bound_conditions) == 1
+        assert stmts[0].sub.bound_conditions[0].agent.name == 'MAPK1'
+        assert stmts[0].sub.bound_conditions[0].is_bound is False
 
 
 mek1 = agent_clj_from_text('MEK1')

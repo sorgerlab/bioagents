@@ -20,7 +20,7 @@ class DTDA_Module(Bioagent):
     name = "DTDA"
     tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG', 'FIND-DRUG-TARGETS',
              'FIND-DISEASE-TARGETS', 'FIND-TREATMENT', 'GET-ALL-DRUGS',
-             'GET-ALL-DISEASES']
+             'GET-ALL-GENE-TARGETS']
 
     def __init__(self, **kwargs):
         # Instantiate a singleton DTDA agent
@@ -179,7 +179,13 @@ class DTDA_Module(Bioagent):
 
     def respond_get_all_drugs(self, content):
         """Respond with all the drugs we have to tell you about."""
+        reply = KQMLList('SUCCESS')
+        reply.set('drugs', self.make_cljson(self.dtda.all_drugs))
+        return reply
 
+    def respond_get_all_gene_targets(self, content):
+        reply = KQMLList('SUCCESS')
+        reply.set('genes', self.make_cljson(self.dtda.all_targets))
 
     @staticmethod
     def _get_drug_cljson(drug_list):

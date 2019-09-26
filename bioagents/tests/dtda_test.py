@@ -415,3 +415,52 @@ class TestFindTreatment3(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.gets('reason') == 'DISEASE_NOT_FOUND', output
+
+
+# GET-ALL-... Tests
+
+class TestGetAllDrugs(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-DRUGS')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        drugs = output.get('drugs')
+        assert drugs, output
+        assert all('HMS-LINCS' in self.bioagent.get_agent(e).db_refs
+                   for e in drugs), drugs
+
+
+class TestGetAllDiseases(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-DISEASES')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        diseases = output.get('diseases')
+        assert diseases, output
+        assert all(isinstance(e, str) for e in diseases), diseases
+
+
+class TestGetAllTargets(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-GENE-TARGETS')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        targets = output.get('genes')
+        assert targets, output
+        assert all('HGNC' in self.bioagent.get_agent(e).db_refs
+                   for e in targets), targets

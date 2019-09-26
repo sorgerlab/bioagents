@@ -14,9 +14,27 @@ class EKB(object):
         self.root_term = term_node
         self.ekb = None
         self.type = None
-        self.components = [term_node]
-        self.in_progress = set()
+        self.components = []
+        self.stack = []
+        self._stack_history = []
         self.build()
+
+    def _add_to_stack(self, id):
+        self.stack.append(id)
+        self._stack_history.append(self.stack[:])
+
+    def _pop_stack(self, id):
+        stack_id = self.stack[-1]
+        assert id == stack_id, \
+            ("Bad stack: %s\n removing id=%s but top of stack=%s.\n"
+             "history:\n%s"
+             % (self.stack, id, stack_id, '\n'.join(str(l) for l in self._stack_history)))
+        self.stack.pop()
+        self._stack_history.append(self.stack[:])
+        self.components.append(id)
+
+    def _is_new_id(self, id):
+        return id not in (self.components + self.stack)
 
     def build(self):
         self.ekb = etree.Element('ekb')
@@ -91,7 +109,7 @@ class EKB(object):
             self.generic_event_to_ekb(event_node)
 
     def binding_to_ekb(self, event_node):
-        self.in_progress.add(event_node)
+        self._add_to_stack(event_node)
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
         event.append(type)
@@ -103,7 +121,7 @@ class EKB(object):
             arg = self.graph.get_matching_node(event_node, link=kqml_link)
             if arg is None:
                 continue
-            if arg not in self.components and arg not in self.in_progress:
+            if self._is_new_id(arg):
                 self.term_to_ekb(arg)
             arg_tag = etree.Element(tag_name, id=arg, type=tag_type)
             event.append(arg_tag)
@@ -112,12 +130,13 @@ class EKB(object):
             neg_tag = etree.Element('negation')
             neg_tag.text = '+'
             event.append(neg_tag)
-        self.in_progress.remove(event_node)
+
+        self._pop_stack(event_node)
         self.components.append(event_node)
         self.ekb.append(event)
 
     def generic_event_to_ekb(self, event_node):
-        self.in_progress.add(event_node)
+        self._add_to_stack(event_node)
         node = self.graph.node[event_node]
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
@@ -135,8 +154,7 @@ class EKB(object):
                 arg_tag = etree.Element(tag_name, id=arg_node, role=tag_type)
                 event.append(arg_tag)
                 arg_counter += 1
-                if arg_node not in self.components \
-                        and arg_node not in self.in_progress:
+                if self._is_new_id(arg_node):
                     self.term_to_ekb(arg_node)
         # Extract any sites attached to the event
         site_node = self.graph.get_matching_node(event_node, link='site')
@@ -159,8 +177,7 @@ class EKB(object):
                 mods_tag.append(mod_tag)
                 event.append(mods_tag)
 
-        self.in_progress.remove(event_node)
-        self.components.append(event_node)
+        self._pop_stack(event_node)
         self.ekb.append(event)
 
     def get_site_term(self, site_node):
@@ -218,7 +235,7 @@ class EKB(object):
         return name_val
 
     def term_to_ekb(self, term_id):
-        self.in_progress.add(term_id)
+        self._add_to_stack(term_id)
         node = self.graph.node[term_id]
 
         term = etree.Element('TERM', id=term_id)
@@ -279,7 +296,7 @@ class EKB(object):
         # Deal next with modifier events
         mod = self.graph.get_matching_node(term_id, link='mod')
         if mod:
-            if mod not in self.components and mod not in self.in_progress:
+            if self._is_new_id(mod):
                 self.event_to_ekb(mod)
             features = etree.Element('features')
             event = self.graph.node[mod]
@@ -292,8 +309,7 @@ class EKB(object):
                 features.append(inevent)
             term.append(features)
 
-        self.in_progress.remove(term_id)
-        self.components.append(term_id)
+        self._pop_stack(term_id)
         self.ekb.append(term)
 
 

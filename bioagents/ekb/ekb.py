@@ -19,19 +19,25 @@ class EKB(object):
         self._stack_history = []
         self.build()
 
-    def _add_to_stack(self, id):
-        self.stack.append(id)
-        self._stack_history.append(self.stack[:])
+    def _dump_stack_history(self):
+        ret = ''
+        for stack, pol, term in self._stack_history:
+            ret += ('+' if pol > 0 else '-') + term + ' = ' + str(stack) + '\n'
+        return ret
 
-    def _pop_stack(self, id):
+    def _add_to_stack(self, term_id):
+        self.stack.append(term_id)
+        self._stack_history.append((self.stack[:], 1, term_id))
+
+    def _pop_stack(self, term_id):
         stack_id = self.stack[-1]
-        assert id == stack_id, \
+        assert term_id == stack_id, \
             ("Bad stack: %s\n removing id=%s but top of stack=%s.\n"
              "history:\n%s"
-             % (self.stack, id, stack_id, '\n'.join(str(l) for l in self._stack_history)))
+             % (self.stack, term_id, stack_id, self._dump_stack_history()))
         self.stack.pop()
-        self._stack_history.append(self.stack[:])
-        self.components.append(id)
+        self._stack_history.append((self.stack[:], -1, term_id))
+        self.components.append(term_id)
 
     def _is_new_id(self, id):
         return id not in (self.components + self.stack)

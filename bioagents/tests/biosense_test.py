@@ -2,7 +2,7 @@ import unittest
 from nose.tools import raises
 from kqml import KQMLList
 from indra.statements import Phosphorylation, Agent, Statement, \
-    Dephosphorylation, Complex
+    Dephosphorylation, Complex, ActiveForm, Activation, IncreaseAmount
 from .integration import _IntegrationTest
 from .test_ekb import _load_kqml
 from bioagents import Bioagent
@@ -48,7 +48,7 @@ class _GetIndraRepTemplate(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'done'
         res = output.get('result')
-        assert res
+        assert res, output
         self.check_result(res)
 
     def check_result(self, res):
@@ -217,6 +217,56 @@ class TestGetIndraRepAddMechanismRecursion(_GetIndraRepTemplate):
         assert len(stmts[0].sub.bound_conditions) == 1
         assert stmts[0].sub.bound_conditions[0].agent.name == 'MAPK1'
         assert stmts[0].sub.bound_conditions[0].is_bound is False
+
+
+class TestGetIndraRepPhosphorylatedMAPK1IsActive(_GetIndraRepTemplate):
+    kqml_file = 'phosphorylated_mapk1_is_active.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1, stmts
+        stmt = stmts[0]
+        assert isinstance(stmt, ActiveForm), type(stmt)
+
+
+class TestGetIndraRepDUSPDephosphorylatesMAPK1onT185(_GetIndraRepTemplate):
+    kqml_file = 'DUSP_dephosphorylates_MAPK1_on_T185.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1, stmts
+        stmt = stmts[0]
+        assert isinstance(stmt, Dephosphorylation), type(stmt)
+        assert stmt.enz.name == 'DUSP', stmt
+        assert stmt.sub.name == 'MAPK1', stmt
+        assert stmt.position == '185', stmt.position
+        assert stmt.residue == 'T', stmt.residue
+
+
+class TestGetIndraRepActiveMAPK1ActivatesELK1(_GetIndraRepTemplate):
+    kqml_file = 'Active_MAPK1_activates_ELK1.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1, stmts
+        stmt = stmts[0]
+        assert isinstance(stmt, Activation), type(stmt)
+        assert stmt.subj.name == 'MAPK1', stmt
+        assert stmt.obj.name == 'ELK1', stmt
+        assert stmt.subj.activity.is_active, stmt.subj
+
+
+class TestGetIndraRepActiveELK1TranscribesFOS(_GetIndraRepTemplate):
+    kqml_file = 'Active_ELK1_transcribes_FOS.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1, stmts
+        stmt = stmts[0]
+        assert isinstance(stmt, IncreaseAmount), type(stmt)
+        assert stmt.subj.name == 'ELK1', stmt
+        assert stmt.obj.name == 'FOS', stmt
+        assert stmt.subj.activity.is_active, stmt.subj
 
 
 mek1 = agent_clj_from_text('MEK1')

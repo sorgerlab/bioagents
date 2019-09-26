@@ -36,6 +36,8 @@ class BioSense_Module(Bioagent):
         context = content.get('context').to_string()
         graph = KQMLGraph(context)
 
+        # Next, we look at each of the IDs that we need to build EKBs for
+        # and build the EKBs one by one
         ekbs = []
         for trips_id_obj in content.get('ids'):
             trips_id = trips_id_obj.to_string()
@@ -54,11 +56,18 @@ class BioSense_Module(Bioagent):
                 logger.exception(e)
 
         msg = KQMLPerformative('done')
+        # If we didn't get any EKBs, we just return an empty result
         if not ekbs:
             msg.set('result', KQMLList())
             return msg
+        # If there is one EKB then we work with that
         elif len(ekbs) == 1:
             ekbs_to_extract = ekbs
+        # If there are multiple EKBs, we need to make sure that we are not
+        # extracting IDs passed for embedded events (whose root ID, i.e.,
+        # trips_id is somewhere inside another EKB already). We therefore
+        # iterate over all the EKBs and check this condition. If the EKB
+        # isn't subsumed, it's added to a list of ones to be extracted.
         else:
             ekbs_to_extract = []
             for idx, (trips_id, ekb) in enumerate(ekbs):
@@ -69,6 +78,8 @@ class BioSense_Module(Bioagent):
                     continue
                 ekbs_to_extract.append((trips_id, ekb))
 
+        # Finally, we extract entities (Agents or Statements) from the given
+        # EKB, and add each extraction to a list
         entities = KQMLList()
         for trips_id, ekb in ekbs_to_extract:
             entity = ekb.get_entity()

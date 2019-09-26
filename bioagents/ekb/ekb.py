@@ -266,6 +266,7 @@ class EKB(object):
                 c2tag = etree.Element('component', id=c2)
                 components.append(c2tag)
             term.append(components)
+            self._pop_stack(term_id)
             self.ekb.append(term)
             return
         # Handle the case of the signaling pathways.

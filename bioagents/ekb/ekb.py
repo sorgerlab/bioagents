@@ -9,8 +9,6 @@ from indra.statements import RefContext, BioContext, Agent
 class EKB(object):
     def __init__(self, graph, term_node):
         self.graph = graph
-
-        # Do we still want to do this?
         self.graph.draw('test.pdf')
 
         self.root_term = term_node
@@ -109,6 +107,11 @@ class EKB(object):
                 self.term_to_ekb(arg)
             arg_tag = etree.Element(tag_name, id=arg, type=tag_type)
             event.append(arg_tag)
+        negation = self.graph.get_matching_node(event_node, 'negation')
+        if negation:
+            neg_tag = etree.Element('negation')
+            neg_tag.text = '+'
+            event.append(neg_tag)
         self.in_progress.remove(event_node)
         self.components.append(event_node)
         self.ekb.append(event)

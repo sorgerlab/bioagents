@@ -227,6 +227,13 @@ class TestGetIndraRepPhosphorylatedMAPK1IsActive(_GetIndraRepTemplate):
         assert len(stmts) == 1, stmts
         stmt = stmts[0]
         assert isinstance(stmt, ActiveForm), type(stmt)
+        assert stmt.is_active, stmt
+        assert stmt.agent.name == 'MAPK1', stmt
+        assert len(stmt.agent.mods) == 1, stmt.agent
+        mod = stmt.agent.mods[0]
+        assert mod.is_modified, mod
+        assert mod.mod_type == 'phosphorylation', mod
+        assert mod.position is None, mod
 
 
 class TestGetIndraRepDUSPDephosphorylatesMAPK1onT185(_GetIndraRepTemplate):

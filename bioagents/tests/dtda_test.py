@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from indra.statements import Agent
-from kqml import KQMLList
+from kqml import KQMLList, KQMLString
 from bioagents.dtda.dtda import DTDA, get_disease, cbio_efo_map
 from bioagents.dtda.dtda_module import DTDA_Module
 from bioagents.tests.util import ekb_from_text, get_request, agent_clj_from_text
@@ -447,7 +447,8 @@ class TestGetAllDiseases(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         diseases = output.get('diseases')
         assert diseases, output
-        assert all(isinstance(e, str) for e in diseases), diseases
+        assert all(isinstance(e, KQMLString) for e in diseases), \
+            type(diseases[0])
 
 
 class TestGetAllTargets(_IntegrationTest):

@@ -2,7 +2,7 @@ import sys
 import logging
 from indra.sources.trips.processor import TripsProcessor
 from indra.statements import Agent
-from kqml import KQMLList
+from kqml import KQMLList, KQMLString
 from .dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
 from bioagents import Bioagent
 from indra.databases import hgnc_client
@@ -186,11 +186,15 @@ class DTDA_Module(Bioagent):
     def respond_get_all_diseases(self, content):
         """Respond to the task to list all diseases we handle."""
         reply = KQMLList('SUCCESS')
-        reply.set('diseases', KQMLList(self.dtda.all_diseases))
+        reply.set('diseases',
+                  KQMLList([KQMLString(disease_name)
+                            for disease_name in self.dtda.all_diseases]))
+        return reply
 
     def respond_get_all_gene_targets(self, content):
         reply = KQMLList('SUCCESS')
         reply.set('genes', self.make_cljson(self.dtda.all_targets))
+        return reply
 
     @staticmethod
     def _get_drug_cljson(drug_list):

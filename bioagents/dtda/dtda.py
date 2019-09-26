@@ -62,7 +62,7 @@ class DTDA(object):
         self.target_drugs = {}
         self.drug_targets = {}
 
-        # The following are sets of the trugs and targets that we come across
+        # The following are sets of the drugs and targets that we come across
         self.all_drugs = []
         self.all_targets = []
         self.all_diseases = list(cbio_efo_map.keys())

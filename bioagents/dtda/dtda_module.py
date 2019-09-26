@@ -186,7 +186,7 @@ class DTDA_Module(Bioagent):
     def respond_get_all_diseases(self, content):
         """Respond to the task to list all diseases we handle."""
         reply = KQMLList('SUCCESS')
-        reply.set('diseases', self.make_cljson(self.dtda.all_diseases))
+        reply.set('diseases', KQMLList(self.dtda.all_diseases))
 
     def respond_get_all_gene_targets(self, content):
         reply = KQMLList('SUCCESS')

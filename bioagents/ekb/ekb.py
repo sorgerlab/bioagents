@@ -304,19 +304,32 @@ class EKB(object):
 
         # Deal next with modifier events
         mod = self.graph.get_matching_node(term_id, link='mod')
-        if mod:
-            if self._is_new_id(mod):
-                self.event_to_ekb(mod)
+        activity_id = self.graph.get_matching_node(term_id, link='active')
+        if mod or activity_id:
             features = etree.Element('features')
-            event = self.graph.node[mod]
-            if event['type'].upper() == 'ONT::ACTIVE':
-                active = etree.Element('active')
-                active.text = 'TRUE'
-                features.append(active)
-            else:
-                inevent = etree.Element('inevent', id=mod)
-                features.append(inevent)
+            if mod:
+                if self._is_new_id(mod):
+                    self.event_to_ekb(mod)
+
+                event = self.graph.node[mod]
+                if event['type'].upper() == 'ONT::ACTIVE':
+                    active = etree.Element('active')
+                    active.text = 'TRUE'
+                    features.append(active)
+                else:
+                    inevent = etree.Element('inevent', id=mod)
+                    features.append(inevent)
+
+            if activity_id:
+                activity = self.graph.node[activity_id]
+                if activity.get('label') == 'ONT::TRUE':
+                    active = etree.Element('active')
+                    active.text = 'TRUE'
+                    features.append(active)
+
             term.append(features)
+
+
 
         self._pop_stack(term_id)
         self.ekb.append(term)

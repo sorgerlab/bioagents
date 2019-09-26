@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 from indra.statements import Agent
 from kqml import KQMLList
-from bioagents.dtda.dtda import DTDA, get_disease
+from bioagents.dtda.dtda import DTDA, get_disease, cbio_efo_map
 from bioagents.dtda.dtda_module import DTDA_Module
 from bioagents.tests.util import ekb_from_text, get_request, agent_clj_from_text
 from bioagents.tests.integration import _IntegrationTest
@@ -74,6 +74,27 @@ def test_find_drug_targets2():
     targets = d.find_drug_targets(_alk_drug)
     assert len(targets) == 1
     assert any(target == 'TGFBR1' for target in targets), targets
+
+
+def test_all_drug_list():
+    d = DTDA()
+    assert d.all_drugs
+    assert all('HMS-LINCS' in Agent._from_json(e).db_refs.keys()
+               for e in d.all_drugs)
+
+
+def test_all_target_list():
+    d = DTDA()
+    assert d.all_targets
+    assert all('HGNC' in Agent._from_json(e).db_refs.keys()
+               for e in d.all_targets)
+
+
+def test_all_disease_list():
+    d = DTDA()
+    assert d.all_diseases
+    assert d.all_diseases == list(cbio_efo_map.keys())
+    assert all(isinstance(e, str) for e in d.all_diseases)
 
 
 # FIND-TARGET-DRUG tests

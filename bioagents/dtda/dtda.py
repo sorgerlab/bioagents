@@ -65,6 +65,7 @@ class DTDA(object):
         # The following are sets of the trugs and targets that we come across
         self.all_drugs = []
         self.all_targets = []
+        self.all_diseases = list(cbio_efo_map.keys())
 
         # Load data directly from tas
         self._get_tas_stmts_directly()

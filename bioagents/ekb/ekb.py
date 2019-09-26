@@ -9,15 +9,38 @@ from indra.statements import RefContext, BioContext, Agent
 class EKB(object):
     def __init__(self, graph, term_node):
         self.graph = graph
-
-        # Do we still want to do this?
         self.graph.draw('test.pdf')
 
         self.root_term = term_node
         self.ekb = None
         self.type = None
-        self.components = [term_node]
+        self.components = []
+        self.stack = []
+        self._stack_history = []
         self.build()
+
+    def _dump_stack_history(self):
+        ret = ''
+        for stack, pol, term in self._stack_history:
+            ret += ('+' if pol > 0 else '-') + term + ' = ' + str(stack) + '\n'
+        return ret
+
+    def _add_to_stack(self, term_id):
+        self.stack.append(term_id)
+        self._stack_history.append((self.stack[:], 1, term_id))
+
+    def _pop_stack(self, term_id):
+        stack_id = self.stack[-1]
+        assert term_id == stack_id, \
+            ("Bad stack: %s\n removing id=%s but top of stack=%s.\n"
+             "history:\n%s"
+             % (self.stack, term_id, stack_id, self._dump_stack_history()))
+        self.stack.pop()
+        self._stack_history.append((self.stack[:], -1, term_id))
+        self.components.append(term_id)
+
+    def _is_new_id(self, id):
+        return id not in (self.components + self.stack)
 
     def build(self):
         self.ekb = etree.Element('ekb')
@@ -51,6 +74,8 @@ class EKB(object):
         # Otherwise, we try extracting an Agent and return that
         else:
             agent = tp._get_agent_by_id(self.root_term, None)
+            if agent is None:
+                return None
 
             # Set the TRIPS ID in db_refs
             agent.db_refs['TRIPS'] = 'ONT::' + self.root_term
@@ -84,12 +109,13 @@ class EKB(object):
 
     def event_to_ekb(self, event_node):
         node = self.graph.node[event_node]
-        if node['type'].upper() == 'ONT::ATTACH':
+        if node['type'].upper() in {'ONT::ATTACH', 'ONT::BIND'}:
             self.binding_to_ekb(event_node)
         else:
             self.generic_event_to_ekb(event_node)
 
     def binding_to_ekb(self, event_node):
+        self._add_to_stack(event_node)
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
         event.append(type)
@@ -101,14 +127,22 @@ class EKB(object):
             arg = self.graph.get_matching_node(event_node, link=kqml_link)
             if arg is None:
                 continue
-            if arg not in self.components:
+            if self._is_new_id(arg):
                 self.term_to_ekb(arg)
             arg_tag = etree.Element(tag_name, id=arg, type=tag_type)
             event.append(arg_tag)
+        negation = self.graph.get_matching_node(event_node, 'negation')
+        if negation:
+            neg_tag = etree.Element('negation')
+            neg_tag.text = '+'
+            event.append(neg_tag)
+
+        self._pop_stack(event_node)
         self.components.append(event_node)
         self.ekb.append(event)
 
     def generic_event_to_ekb(self, event_node):
+        self._add_to_stack(event_node)
         node = self.graph.node[event_node]
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
@@ -126,7 +160,7 @@ class EKB(object):
                 arg_tag = etree.Element(tag_name, id=arg_node, role=tag_type)
                 event.append(arg_tag)
                 arg_counter += 1
-                if arg_node not in self.components:
+                if self._is_new_id(arg_node):
                     self.term_to_ekb(arg_node)
         # Extract any sites attached to the event
         site_node = self.graph.get_matching_node(event_node, link='site')
@@ -149,7 +183,7 @@ class EKB(object):
                 mods_tag.append(mod_tag)
                 event.append(mods_tag)
 
-        self.components.append(event_node)
+        self._pop_stack(event_node)
         self.ekb.append(event)
 
     def get_site_term(self, site_node):
@@ -207,6 +241,7 @@ class EKB(object):
         return name_val
 
     def term_to_ekb(self, term_id):
+        self._add_to_stack(term_id)
         node = self.graph.node[term_id]
 
         term = etree.Element('TERM', id=term_id)
@@ -231,6 +266,7 @@ class EKB(object):
                 c2tag = etree.Element('component', id=c2)
                 components.append(c2tag)
             term.append(components)
+            self._pop_stack(term_id)
             self.ekb.append(term)
             return
         # Handle the case of the signaling pathways.
@@ -245,7 +281,9 @@ class EKB(object):
             # This is a LITTLE bit hacky: all further information should come
             # from this associated-with term, because the root term has no
             # information.
+            self._pop_stack(term_id)
             term_id = path_subject_id
+            self._add_to_stack(term_id)
         # Handle the case where this is just another protein.
         else:
             name_val = self.get_term_name(term_id)
@@ -267,7 +305,7 @@ class EKB(object):
         # Deal next with modifier events
         mod = self.graph.get_matching_node(term_id, link='mod')
         if mod:
-            if mod not in self.components:
+            if self._is_new_id(mod):
                 self.event_to_ekb(mod)
             features = etree.Element('features')
             event = self.graph.node[mod]
@@ -280,6 +318,7 @@ class EKB(object):
                 features.append(inevent)
             term.append(features)
 
+        self._pop_stack(term_id)
         self.ekb.append(term)
 
 

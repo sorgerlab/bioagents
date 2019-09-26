@@ -32,31 +32,63 @@ class BioSense_Module(Bioagent):
 
     def respond_get_indra_representation(self, content):
         """Return the INDRA CL-JSON corresponding to the given content."""
-        entities = KQMLList()
+        # First get the KQML graph object for the given context
+        context = content.get('context').to_string()
+        graph = KQMLGraph(context)
+
+        # Next, we look at each of the IDs that we need to build EKBs for
+        # and build the EKBs one by one
+        ekbs = []
         for trips_id_obj in content.get('ids'):
             trips_id = trips_id_obj.to_string()
             if trips_id.startswith('ONT::'):
                 trips_id = trips_id[5:]
 
-            context = content.get('context').to_string()
-
-            # First get the KQML graph object for the given context
-            graph = KQMLGraph(context)
-
             try:
-                # Then turn the graph into an EKB XML object, expanding around
+                # Turn the graph into an EKB XML object, expanding around
                 # the given ID.
                 ekb = EKB(graph, trips_id)
                 logger.debug('Extracted EKB: %s' % ekb.to_string())
-                entity = ekb.get_entity()
-                js = self.make_cljson(entity)
+                ekbs.append((trips_id, ekb))
             except Exception as e:
-                logger.info("Encountered an error while parsing: %s. "
-                            "Returning empty list." % content.to_string())
+                logger.error('Encountered an error while parsing: %s.' %
+                             content.to_string())
                 logger.exception(e)
-                js = KQMLList()
-            entities.append(js)
+
         msg = KQMLPerformative('done')
+        # If we didn't get any EKBs, we just return an empty result
+        if not ekbs:
+            msg.set('result', KQMLList())
+            return msg
+        # If there is one EKB then we work with that
+        elif len(ekbs) == 1:
+            ekbs_to_extract = ekbs
+        # If there are multiple EKBs, we need to make sure that we are not
+        # extracting IDs passed for embedded events (whose root ID, i.e.,
+        # trips_id is somewhere inside another EKB already). We therefore
+        # iterate over all the EKBs and check this condition. If the EKB
+        # isn't subsumed, it's added to a list of ones to be extracted.
+        else:
+            ekbs_to_extract = []
+            for idx, (trips_id, ekb) in enumerate(ekbs):
+                other_ekbs = ekbs[:idx] + ekbs[idx+1:]
+                other_components = set.union(*[set(e.components)
+                                               for _, e in other_ekbs])
+                if trips_id in other_components:
+                    continue
+                ekbs_to_extract.append((trips_id, ekb))
+
+        # Finally, we extract entities (Agents or Statements) from the given
+        # EKB, and add each extraction to a list
+        entities = KQMLList()
+        for trips_id, ekb in ekbs_to_extract:
+            entity = ekb.get_entity()
+            if entity is None:
+                logger.info("Could not resolve entity from: %s. " %
+                            ekb.to_string())
+            else:
+                js = self.make_cljson(entity)
+                entities.append(js)
 
         if len(entities) == 1:
             msg.sets('result', entities[0])

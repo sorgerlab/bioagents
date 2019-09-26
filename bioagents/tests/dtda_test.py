@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 from indra.statements import Agent
-from kqml import KQMLList
-from bioagents.dtda.dtda import DTDA, get_disease
+from kqml import KQMLList, KQMLString
+from bioagents.dtda.dtda import DTDA, get_disease, cbio_efo_map
 from bioagents.dtda.dtda_module import DTDA_Module
 from bioagents.tests.util import ekb_from_text, get_request, agent_clj_from_text
 from bioagents.tests.integration import _IntegrationTest
@@ -74,6 +74,27 @@ def test_find_drug_targets2():
     targets = d.find_drug_targets(_alk_drug)
     assert len(targets) == 1
     assert any(target == 'TGFBR1' for target in targets), targets
+
+
+def test_all_drug_list():
+    d = DTDA()
+    assert d.all_drugs
+    assert all('HMS-LINCS' in Agent._from_json(e).db_refs.keys()
+               for e in d.all_drugs)
+
+
+def test_all_target_list():
+    d = DTDA()
+    assert d.all_targets
+    assert all('HGNC' in Agent._from_json(e).db_refs.keys()
+               for e in d.all_targets)
+
+
+def test_all_disease_list():
+    d = DTDA()
+    assert d.all_diseases
+    assert d.all_diseases == list(cbio_efo_map.keys())
+    assert all(isinstance(e, str) for e in d.all_diseases)
 
 
 # FIND-TARGET-DRUG tests
@@ -394,3 +415,53 @@ class TestFindTreatment3(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.gets('reason') == 'DISEASE_NOT_FOUND', output
+
+
+# GET-ALL-... Tests
+
+class TestGetAllDrugs(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-DRUGS')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        drugs = output.get('drugs')
+        assert drugs, output
+        assert all('HMS-LINCS' in self.bioagent.get_agent(e).db_refs
+                   for e in drugs), drugs
+
+
+class TestGetAllDiseases(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-DISEASES')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        diseases = output.get('diseases')
+        assert diseases, output
+        assert all(isinstance(e, KQMLString) for e in diseases), \
+            type(diseases[0])
+
+
+class TestGetAllTargets(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-GENE-TARGETS')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        targets = output.get('genes')
+        assert targets, output
+        assert all('HGNC' in self.bioagent.get_agent(e).db_refs
+                   for e in targets), targets

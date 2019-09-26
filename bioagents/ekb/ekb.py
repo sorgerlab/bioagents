@@ -274,7 +274,9 @@ class EKB(object):
             # This is a LITTLE bit hacky: all further information should come
             # from this associated-with term, because the root term has no
             # information.
+            self._pop_stack(term_id)
             term_id = path_subject_id
+            self._add_to_stack(term_id)
         # Handle the case where this is just another protein.
         else:
             name_val = self.get_term_name(term_id)

@@ -80,10 +80,15 @@ class Bioagent(KQMLModule):
         `entity` is expected to have a method `to_json` which returns valid
         json.
         """
+        # Regularize the input to plain JSON
         if isinstance(entity, list):
-            entity_json = [e.to_json() for e in entity]
-        else:
+            entity_json = [e.to_json() if hasattr(e, 'to_json')
+                           else e  # assumed to be a list or a dict.
+                           for e in entity]
+        elif hasattr(entity, 'to_json'):
             entity_json = entity.to_json()
+        else:  # Assumed to be a jsonifiable dict.
+            entity_json = entity.copy()
         return cls.converter.cl_from_json(entity_json)
 
     def receive_tell(self, msg, content):

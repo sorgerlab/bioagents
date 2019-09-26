@@ -2,7 +2,7 @@
 # search for targets known to be implicated in a
 # certain disease and to look for drugs that are known
 # to affect that target directly or indirectly
-
+import json
 import re
 import os
 import numpy
@@ -61,6 +61,13 @@ class DTDA(object):
         # will be keys.
         self.target_drugs = {}
         self.drug_targets = {}
+
+        # The following are sets of the drugs and targets that we come across
+        self.all_drugs = []
+        self.all_targets = []
+        self.all_diseases = list(cbio_efo_map.keys())
+
+        # Load data directly from tas
         self._get_tas_stmts_directly()
         return
 
@@ -89,12 +96,19 @@ class DTDA(object):
             drug_classes[stmts[0].subj.name] = 'has_strong' \
                 if 'Kd < 100nM' in aff else 'not_has_strong'
 
+        drug_set = set()
+        target_set = set()
         for stmt in tp.statements:
             # Skip Statements where the affinity is low if it otherwise also
             # has strong affinity targets
             if drug_classes[stmt.subj.name] == 'has_strong' and \
-                stmt.evidence[0].annotations['class_min'] != 'Kd < 100nM':
+               stmt.evidence[0].annotations['class_min'] != 'Kd < 100nM':
                 continue
+
+            # Add the interactors to their respective sets
+            drug_set.add(json.dumps(stmt.subj.to_json()))
+            target_set.add(json.dumps(stmt.obj.to_json()))
+
             # First we make the target to drug mapping
             target_hgnc = stmt.obj.db_refs['HGNC']
             if target_hgnc:
@@ -120,6 +134,10 @@ class DTDA(object):
                 else:
                     self.drug_targets[drug_key].add(stmt.obj.name)
         logger.debug('Loaded TAS Statements directly into cache.')
+
+        self.all_drugs = [json.loads(ag_json) for ag_json in drug_set]
+        self.all_targets = [json.loads(ag_json) for ag_json in target_set]
+        return
 
     def _get_tas_stmts(self, drug_term=None, target_term=None):
         timeout = 10

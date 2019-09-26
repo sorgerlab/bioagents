@@ -19,7 +19,8 @@ class DTDA_Module(Bioagent):
     to other agents in the system."""
     name = "DTDA"
     tasks = ['IS-DRUG-TARGET', 'FIND-TARGET-DRUG', 'FIND-DRUG-TARGETS',
-             'FIND-DISEASE-TARGETS', 'FIND-TREATMENT']
+             'FIND-DISEASE-TARGETS', 'FIND-TREATMENT', 'GET-ALL-DRUGS',
+             'GET-ALL-DISEASES']
 
     def __init__(self, **kwargs):
         # Instantiate a singleton DTDA agent
@@ -175,6 +176,9 @@ class DTDA_Module(Bioagent):
         drugs = self._get_drug_cljson(drug_results)
         reply.set('drugs', drugs)
         return reply
+
+    def respond_get_all_drugs(self, content):
+        """Respond with all the drugs we have to tell you about."""
 
 
     @staticmethod

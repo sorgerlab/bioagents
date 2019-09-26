@@ -32,36 +32,52 @@ class BioSense_Module(Bioagent):
 
     def respond_get_indra_representation(self, content):
         """Return the INDRA CL-JSON corresponding to the given content."""
-        entities = KQMLList()
+        # First get the KQML graph object for the given context
+        context = content.get('context').to_string()
+        graph = KQMLGraph(context)
+
+        ekbs = []
         for trips_id_obj in content.get('ids'):
             trips_id = trips_id_obj.to_string()
             if trips_id.startswith('ONT::'):
                 trips_id = trips_id[5:]
 
-            context = content.get('context').to_string()
-
-            # First get the KQML graph object for the given context
-            graph = KQMLGraph(context)
-
             try:
-                # Then turn the graph into an EKB XML object, expanding around
+                # Turn the graph into an EKB XML object, expanding around
                 # the given ID.
                 ekb = EKB(graph, trips_id)
                 logger.debug('Extracted EKB: %s' % ekb.to_string())
-                entity = ekb.get_entity()
-                if entity is None:
-                    logger.info("Could not resolve entity from: %s. "
-                                "Returning empty list." % content.to_string())
-                    js = KQMLList()
-                else:
-                    js = self.make_cljson(entity)
+                ekbs.append((trips_id, ekb))
             except Exception as e:
-                logger.info("Encountered an error while parsing: %s. "
-                            "Returning empty list." % content.to_string())
+                logger.error('Encountered an error while parsing: %s.' %
+                             content.to_string())
                 logger.exception(e)
-                js = KQMLList()
-            entities.append(js)
+
         msg = KQMLPerformative('done')
+        if not ekbs:
+            msg.set('result', KQMLList())
+            return msg
+        elif len(ekbs) == 1:
+            ekbs_to_extract = ekbs
+        else:
+            ekbs_to_extract = []
+            for idx, (trips_id, ekb) in enumerate(ekbs):
+                other_ekbs = ekbs[:idx] + ekbs[idx+1:]
+                other_components = set.union(*[set(e.components)
+                                               for _, e in other_ekbs])
+                if trips_id in other_components:
+                    continue
+                ekbs_to_extract.append((trips_id, ekb))
+
+        entities = KQMLList()
+        for trips_id, ekb in ekbs_to_extract:
+            entity = ekb.get_entity()
+            if entity is None:
+                logger.info("Could not resolve entity from: %s. " %
+                            ekb.to_string())
+            else:
+                js = self.make_cljson(entity)
+                entities.append(js)
 
         if len(entities) == 1:
             msg.sets('result', entities[0])

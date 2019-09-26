@@ -64,6 +64,9 @@ class DTDA(object):
         self._get_tas_stmts_directly()
         return
 
+    def get_all_drugs(self):
+        """Get a list of all drugs"""
+
     def is_nominal_drug_target(self, drug, target):
         """Return True if the drug targets the target, and False if not."""
         targets = self.find_drug_targets(drug)

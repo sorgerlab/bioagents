@@ -312,9 +312,13 @@ class EKB(object):
                     self.event_to_ekb(mod)
 
                 event = self.graph.node[mod]
-                if event['type'].upper() == 'ONT::ACTIVE':
+                activity = event['type'].upper()[5:]
+                if activity in {'ACTIVE', 'INACTIVE'}:
                     active = etree.Element('active')
-                    active.text = 'TRUE'
+                    if activity == 'ACTIVE':
+                        active.text = 'TRUE'
+                    else:
+                        active.text = 'FALSE'
                     features.append(active)
                 else:
                     inevent = etree.Element('inevent', id=mod)

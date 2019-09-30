@@ -276,6 +276,20 @@ class TestGetIndraRepActiveELK1TranscribesFOS(_GetIndraRepTemplate):
         assert stmt.subj.activity.is_active, stmt.subj
 
 
+class TestGetIndraRepInactiveRAFActivatesMEK(_GetIndraRepTemplate):
+    kqml_file = 'Inactive_RAF_activates_MEK.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1, stmts
+        stmt = stmts[0]
+        assert isinstance(stmt, Activation), type(stmt)
+        assert stmt.subj.name == 'RAF', stmt
+        assert stmt.subj.activity, stmt
+        assert not stmt.subj.activity.is_active, stmt
+        assert stmt.obj.name == 'MEK', stmt
+
+
 mek1 = agent_clj_from_text('MEK1')
 mek1a = Bioagent.get_agent(mek1)
 mek = agent_clj_from_text('MEK')

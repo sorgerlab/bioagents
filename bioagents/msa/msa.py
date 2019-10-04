@@ -382,6 +382,11 @@ class StatementFinder(object):
         return {stmt.get_hash(): self._processor.get_ev_count(stmt)
                 for stmt in stmts}
 
+    def get_source_counts(self):
+            stmts = self.get_statements(block=False)
+            return {stmt.get_hash(): self._processor.get_source_count(stmt)
+                    for stmt in stmts}
+
     def get_sample(self):
         """Get the sample of statements retrieved by the first query."""
         if not self._sample:
@@ -466,8 +471,10 @@ class StatementFinder(object):
         """Get html for these statements."""
         import boto3
         ev_totals = self.get_ev_totals()
+        source_counts = self.get_source_counts()
         html_assembler = HtmlAssembler(self.get_statements(),
                                        ev_totals=ev_totals,
+                                       source_counts=source_counts,
                                        db_rest_url=DB_REST_URL)
         html = html_assembler.make_model()
         s3 = boto3.client('s3')

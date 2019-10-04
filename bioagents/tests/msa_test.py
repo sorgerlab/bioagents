@@ -546,10 +546,13 @@ def test_complex_one_side_entity_filter():
 def test_neighbors_agent_filter():
     finder = msa.Neighborhood(_braf(), filter_agents=[_mek(), _erk()])
     stmts = finder.get_statements(block=True)
-    assert len(stmts)
+    assert stmts
+    print('\n'.join(str(s) for s in stmts))
+
+    # Check to ensure every statement has  MEK and/or ERK in it.
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
-        assert ag_names & {'ERK', 'MEK'}
+        assert ag_names & {'ERK', 'MEK'}, (stmt, ag_names)
 
     summ = finder.summarize()
     assert 'KRAS' in {a.name for a in summ['other_agents']}, summ

@@ -545,7 +545,7 @@ class Neighborhood(StatementFinder):
     def summarize(self):
         summary = {'query_agent': self.query.agents[0],
                    'other_agents':
-                       self.get_other_agents([self.query.agents[0]])}
+                       self.get_other_agents()}
         return summary
 
     def describe(self, max_names=20, include_negative=True):

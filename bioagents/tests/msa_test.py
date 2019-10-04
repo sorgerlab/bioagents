@@ -547,7 +547,6 @@ def test_neighbors_agent_filter():
     finder = msa.Neighborhood(_braf(), filter_agents=[_mek(), _erk()])
     stmts = finder.get_statements(block=True)
     assert stmts
-    print('\n'.join(str(s) for s in stmts))
 
     # Check to ensure every statement has  MEK and/or ERK in it.
     for stmt in stmts:
@@ -555,10 +554,10 @@ def test_neighbors_agent_filter():
         assert ag_names & {'ERK', 'MEK'}, (stmt, ag_names)
 
     summ = finder.summarize()
-    assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
+    assert {'MEK', 'ERK'} & {a.name for a in summ['other_agents']}, summ
     desc = finder.describe()
-    assert re.match(r'Overall, I found that BRAF interacts with.*?'
-                    r'ERK, .* Here are the top.*', desc), desc
+    assert re.match('Overall, I found that BRAF interacts with.*?'
+                    'ERK.* Here are the top.*', desc), desc
 
 
 @attr('nonpublic')

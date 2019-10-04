@@ -554,7 +554,7 @@ def test_neighbors_agent_filter():
         assert ag_names & {'ERK', 'MEK'}, (stmt, ag_names)
 
     summ = finder.summarize()
-    assert {'MEK', 'ERK'} <= {a.name for a in summ['other_agents']}, summ
+    assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
     desc = finder.describe()
     assert re.match('Overall, I found that BRAF interacts with.*?'
                     'ERK.* Here are the top.*', desc), desc

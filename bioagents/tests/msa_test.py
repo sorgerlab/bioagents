@@ -374,13 +374,12 @@ class TestMsaCommonDownstreamsMEKonly(_IntegrationTest):
 
 @attr('nonpublic')
 def test_msa_paper_retrieval_failure():
-    raise SkipTest("This feature is currently not available.")
     content = KQMLList('GET-PAPER-MODEL')
     content.sets('pmid', 'PMID-00000123')
     msa = msa_module.MSA_Module(testing=True)
     resp = msa.respond_get_paper_model(content)
-    assert resp.head() == 'FAILURE', str(resp)
-    assert resp.get('reason') == 'MISSING_MECHANISM'
+    assert resp.head() == 'SUCCESS', str(resp)
+    assert resp.get('relations-found') == 0, resp
 
 
 @attr('nonpublic')

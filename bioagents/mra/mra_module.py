@@ -121,7 +121,14 @@ class MRA_Module(Bioagent):
             msg.set('has_explanation', str(has_expl).upper())
 
         # Send out various model diagnosis messages
-        self.send_model_diagnoses(res)
+        diagnostic_tells = self.send_model_diagnoses(res)
+        if diagnostic_tells:
+            suggs = KQMLList()
+            for text in diagnostic_tells:
+                sugg = KQMLList()
+                sugg.sets('TEXT', text)
+                suggs.append(sugg)
+            msg.set('suggestions', suggs)
 
         # Once we sent out the diagnosis messages, we make sure we keep
         # track of whether we have an explanation
@@ -177,7 +184,14 @@ class MRA_Module(Bioagent):
             msg.set('has_explanation', str(has_expl).upper())
 
         # Send out various model diagnosis messages
-        self.send_model_diagnoses(res)
+        diagnostic_tells = self.send_model_diagnoses(res)
+        if diagnostic_tells:
+            suggs = KQMLList()
+            for text in diagnostic_tells:
+                sugg = KQMLList()
+                sugg.sets('TEXT', text)
+                suggs.append(sugg)
+            msg.set('suggestions', suggs)
 
         # Once we sent out the diagnosis messages, we make sure we keep
         # track of whether we have an explanation
@@ -379,6 +393,8 @@ class MRA_Module(Bioagent):
         return resp
 
     def send_model_diagnoses(self, res):
+        diagnostic_tells = []
+
         # SUGGESTIONS
         # If there is an explanation, english assemble it
         expl_path = res.get('explanation_path')
@@ -393,9 +409,7 @@ class MRA_Module(Bioagent):
                     explanation_str = (
                             'Our model can now explain how %s: <i>%s</i>' %
                             (goal_str[:-1], path_str))
-                    content = KQMLList('SPOKEN')
-                    content.sets('WHAT', explanation_str)
-                    self.tell(content)
+                    diagnostic_tells.append(explanation_str)
 
         # If there is a suggestion, say it
         suggs = res.get('stmt_suggestions')
@@ -406,9 +420,7 @@ class MRA_Module(Bioagent):
                        ''.join([('<li>%s</li>' % EnglishAssembler([stmt]).make_model())
                                 for stmt in suggs])
             say += stmt_str
-            content = KQMLList('SPOKEN')
-            content.sets('WHAT', say)
-            self.tell(content)
+            diagnostic_tells.append(say)
 
         # If there are corrections
         corrs = res.get('stmt_corrections')
@@ -417,9 +429,17 @@ class MRA_Module(Bioagent):
             say = 'It looks like a required activity is missing,'
             say += ' consider revising to <i>%s</i>' % \
                    (EnglishAssembler([stmt]).make_model())
+            diagnostic_tells.append(say)
+
+        # Finally, say all we have to say
+        for text in diagnostic_tells:
             content = KQMLList('SPOKEN')
-            content.sets('WHAT', say)
-            self.tell(content)
+            content.sets('WHAT', text)
+            # TELLING DIRECTLY HERE IS CURRENTLY INACTIVATED,
+            # IT'S THE BA's RESPONSIBILITY TO DO THIS
+            # self.tell(content)
+
+        return diagnostic_tells
 
     def send_display_model(self, diagrams):
         for diagram_type, resource in diagrams.items():

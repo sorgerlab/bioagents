@@ -743,6 +743,10 @@ class TestModelMeetsGoal(_IntegrationTest):
         assert len(model) == 2
         has_explanation = output.gets('has_explanation')
         assert has_explanation == 'TRUE'
+        suggs = output.get('suggestions')
+        assert len(suggs) == 1, suggs
+        assert suggs[0].gets('text').startswith('Our model can now explain'), \
+            suggs
 
 
 class TestModelMeetsGoalBuildOnly(_IntegrationTest):
@@ -764,6 +768,10 @@ class TestModelMeetsGoalBuildOnly(_IntegrationTest):
         assert len(model) == 1
         has_explanation = output.gets('has_explanation')
         assert has_explanation == 'TRUE', has_explanation
+        suggs = output.get('suggestions')
+        assert len(suggs) == 1, suggs
+        assert suggs[0].gets('text').startswith('Our model can now explain'), \
+            suggs
 
 
 @attr('nonpublic')
@@ -794,6 +802,10 @@ class TestModelGapSuggest(_IntegrationTest):
         assert output.get('model-id') == '2'
         model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 2
+        suggs = output.get('suggestions')
+        assert len(suggs) == 1, suggs
+        assert suggs[0].gets('text').startswith('I have some suggestions'), \
+            suggs
 
 
 class TestDegradeSbgn(_IntegrationTest):

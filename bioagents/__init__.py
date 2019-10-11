@@ -195,8 +195,7 @@ class Bioagent(KQMLModule):
         """
         logger.info("Sending provenance for %d statements for \"%s\"."
                     % (len(stmt_list), for_what))
-        title = "Supporting evidence from the %s for %s" \
-                % (self.name, for_what)
+        title = "Supporting evidence for %s" % for_what
         content_fmt = '<h4>%s (max %s):</h4>\n%s<hr>'
         evidence_html = self._make_report_cols_html(stmt_list, limit=limit,
                                                     ev_counts=ev_counts,

@@ -87,13 +87,15 @@ class StatementQuery(object):
         grounding not explicitly mentioned. The key !NAME! is  place holder
         for the Agent name (that doesn't appear in db_refs).
         If not provided, the following default list will be
-        used: ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!'].
+        used: ['HGNC', 'FPLX', 'CHEBI', 'GO', 'MESH', !OTHER!', 'TEXT',
+        '!NAME!'].
     """
     def __init__(self, subj, obj, agents, verb, ent_type, params,
                  valid_name_spaces=None):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
-            else ['HGNC', 'FPLX', 'CHEBI', '!OTHER!', 'TEXT', '!NAME!']
+            else ['HGNC', 'FPLX', 'CHEBI', 'GO', 'MESH', '!OTHER!', 'TEXT',
+                  '!NAME!']
         self.subj = subj
         self.subj_key = self.get_query_key(subj)
         self.obj = obj

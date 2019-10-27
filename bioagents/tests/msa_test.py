@@ -374,13 +374,12 @@ class TestMsaCommonDownstreamsMEKonly(_IntegrationTest):
 
 @attr('nonpublic')
 def test_msa_paper_retrieval_failure():
-    raise SkipTest("This feature is currently not available.")
     content = KQMLList('GET-PAPER-MODEL')
     content.sets('pmid', 'PMID-00000123')
     msa = msa_module.MSA_Module(testing=True)
     resp = msa.respond_get_paper_model(content)
-    assert resp.head() == 'FAILURE', str(resp)
-    assert resp.get('reason') == 'MISSING_MECHANISM'
+    assert resp.head() == 'SUCCESS', str(resp)
+    assert resp.get('relations-found') == 0, resp
 
 
 @attr('nonpublic')
@@ -547,16 +546,18 @@ def test_complex_one_side_entity_filter():
 def test_neighbors_agent_filter():
     finder = msa.Neighborhood(_braf(), filter_agents=[_mek(), _erk()])
     stmts = finder.get_statements(block=True)
-    assert len(stmts)
+    assert stmts
+
+    # Check to ensure every statement has  MEK and/or ERK in it.
     for stmt in stmts:
         ag_names = {ag.name for ag in stmt.agent_list() if ag is not None}
-        assert ag_names & {'ERK', 'MEK'}
+        assert ag_names & {'ERK', 'MEK'}, (stmt, ag_names)
 
     summ = finder.summarize()
     assert 'KRAS' in {a.name for a in summ['other_agents']}, summ
     desc = finder.describe()
-    assert re.match(r'Overall, I found that BRAF interacts with.*?'
-                    r'ERK, .* Here are the top.*', desc), desc
+    assert re.match('Overall, I found that BRAF interacts with.*?'
+                    'ERK.* Here are the top.*', desc), desc
 
 
 @attr('nonpublic')

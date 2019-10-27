@@ -24,7 +24,7 @@ install:
   - sudo apt-get install graphviz
   - pip install pygraphviz ndex2==1.2.0.58
   # This is needed because ndex2 downgrades networkx
-  - pip install -U networkx
+  - pip install -U networkx==2.3
   # Install utilities for running tests
   - pip install coverage
 script:

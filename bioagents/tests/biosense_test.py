@@ -31,7 +31,7 @@ class TestChooseSense(_IntegrationTest):
         urls = output.get('id-urls')
         assert len(urls) == 3
         desc = output.gets('description')
-        assert 'thereby contributes to the MAP' in desc, desc
+        assert 'thereby activates the MAP' in desc, desc
 
 
 class _GetIndraRepTemplate(_IntegrationTest):

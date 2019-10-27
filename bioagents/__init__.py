@@ -304,7 +304,11 @@ class Bioagent(KQMLModule):
 
         # Build the html.
         lines = []
-        for key, verb, stmts in sorted_groups[:limit]:
+        for group in sorted_groups[:limit]:
+            if source_counts is None:
+                key, verb, stmts = group
+            else:
+                key, verb, stmts, arg_counts, group_source_counts = group
             count = key[2]
             line = '<li>%s %s</li>' % (make_string_from_sort_key(key, verb),
                                        '(%d)' % count)

@@ -238,7 +238,8 @@ def test_get_matching_statements():
     braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
     map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
     stmt_ref = sts.Phosphorylation(braf, map2k1)
-    matching = _get_matching_stmts(stmt_ref)
+    idp = _get_matching_stmts(stmt_ref)
+    matching = idp.statements
     assert len(matching) > 1, \
         "Expected > 1 matching, got matching: %s" % matching
 

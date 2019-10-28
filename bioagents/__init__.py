@@ -188,7 +188,7 @@ class Bioagent(KQMLModule):
         return self.tell(content)
 
     def send_provenance_for_stmts(self, stmt_list, for_what, limit=50,
-                                  ev_counts=None):
+                                  ev_counts=None, source_counts=None):
         """Send out a provenance tell for a list of INDRA Statements.
 
         The message is used to provide evidence supporting a conclusion.
@@ -199,17 +199,18 @@ class Bioagent(KQMLModule):
         content_fmt = '<h4>%s (max %s):</h4>\n%s<hr>'
         evidence_html = self._make_report_cols_html(stmt_list, limit=limit,
                                                     ev_counts=ev_counts,
+                                                    source_counts=source_counts,
                                                     title=title)
 
         content = KQMLList('add-provenance')
         content.sets('html', content_fmt % (title, limit, evidence_html))
         return self.tell(content)
 
-    def _make_evidence_html(self, stmts, ev_counts=None,
+    def _make_evidence_html(self, stmts, ev_counts=None, source_counts=None,
                             title='Results from the INDRA database'):
         "Make html from a set of statements."
         ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio', title=title,
-                           ev_totals=ev_counts)
+                           ev_totals=ev_counts, source_counts=source_counts)
         return ha.make_model()
 
     def _stash_evidence_html(self, html):
@@ -288,7 +289,7 @@ class Bioagent(KQMLModule):
             self.request(msg)
 
     def _make_report_cols_html(self, stmt_list, limit=5, ev_counts=None,
-                               **kwargs):
+                               source_counts=None, **kwargs):
         """Make columns listing the support given by the statement list."""
         if not stmt_list:
             return "No statements found."
@@ -298,11 +299,16 @@ class Bioagent(KQMLModule):
 
         # Build the list of relevant statements and count their prevalence.
         sorted_groups = group_and_sort_statements(stmt_list,
-                                                  ev_totals=ev_counts)
+                                                  ev_totals=ev_counts,
+                                                  source_counts=source_counts)
 
         # Build the html.
         lines = []
-        for key, verb, stmts in sorted_groups[:limit]:
+        for group in sorted_groups[:limit]:
+            if source_counts is None:
+                key, verb, stmts = group
+            else:
+                key, verb, stmts, arg_counts, group_source_counts = group
             count = key[2]
             line = '<li>%s %s</li>' % (make_string_from_sort_key(key, verb),
                                        '(%d)' % count)
@@ -310,7 +316,8 @@ class Bioagent(KQMLModule):
 
         # Build the overall html.
         list_html = '<ul>%s</ul>' % ('\n'.join(lines))
-        html = self._make_evidence_html(stmt_list, **kwargs)
+        html = self._make_evidence_html(stmt_list, ev_counts=ev_counts,
+                                        source_counts=source_counts, **kwargs)
         link = self._stash_evidence_html(html)
         if link is None:
             link_html = 'I could not generate the full list.'

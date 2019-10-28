@@ -468,7 +468,8 @@ class MRA_Module(Bioagent):
             for_what = 'the mechanism you added'
             for stmt in stmts:
                 try:
-                    matched = _get_matching_stmts(stmt)
+                    idp = _get_matching_stmts(stmt)
+                    matched = idp.statements
                     logger.info("Found %d statements supporting %s"
                                 % (len(matched), stmt))
                 except BioagentException as e:
@@ -479,7 +480,11 @@ class MRA_Module(Bioagent):
                                               'due to an internal error')
                     continue
                 if matched:
-                    self.send_provenance_for_stmts(matched, for_what)
+                    ev_totals = {int(k): v for k, v in
+                                 idp.get_ev_counts().items()}
+                    self.send_provenance_for_stmts(matched, for_what,
+                        ev_counts=ev_totals,
+                        source_counts=idp.get_source_counts())
                 else:
                     self.send_null_provenance(stmt, for_what)
 
@@ -624,7 +629,7 @@ def _get_matching_stmts(stmt_ref):
                                     'something other than None.')
     kwargs['ev_limit'] = 2
     kwargs['persist'] = False
-    kwargs['simple_response'] = True
+    kwargs['simple_response'] = False
     return get_statements(stmt_type=stmt_type, **kwargs)
 
 

@@ -104,7 +104,8 @@ class MSA_Module(Bioagent):
         name_list += ' and ' + agents[-1].name
         msg = ('%sstreams of ' % prefix).capitalize() + name_list
         self.send_provenance_for_stmts(finder.get_statements(), msg,
-                                       ev_counts=finder.get_ev_totals())
+            ev_counts=finder.get_ev_totals(),
+            source_counts=finder.get_source_counts())
 
         # Create the reply
         resp = KQMLPerformative('SUCCESS')
@@ -159,7 +160,8 @@ class MSA_Module(Bioagent):
             msg = "phosphorylation at %s%s activates %s." \
                   % (residue, position, agent.name)
             self.send_provenance_for_stmts(stmts, msg,
-                                           ev_counts=finder.get_ev_totals())
+                ev_counts=finder.get_ev_totals(),
+                source_counts=finder.get_source_counts())
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
             return msg
@@ -306,7 +308,8 @@ class MSA_Module(Bioagent):
             start_time = datetime.now()
             logger.info('Sending display statements.')
             self.send_provenance_for_stmts(stmts, nl_question,
-                                           ev_counts=finder.get_ev_totals())
+                ev_counts=finder.get_ev_totals(),
+                source_counts=finder.get_source_counts())
             logger.info("Finished sending provenance after %s seconds."
                         % (datetime.now() - start_time).total_seconds())
         except Exception as e:

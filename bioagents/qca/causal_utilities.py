@@ -129,23 +129,23 @@ def network_from_paths(G, forward, reverse, sources, targets):
     for path in reverse:
         add_path(M, G, path, 'Reverse')
     for source in sources:
-        M.node[source]['st_layout'] = 'Source'
+        M.nodes[source]['st_layout'] = 'Source'
     for target in targets:
-        M.node[target]['st_layout'] = 'Target'
+        M.nodes[target]['st_layout'] = 'Target'
     add_edges_from_tuples(M, list(edge_tuples))
     return M
 
 
 def add_path_nodes(network, old_network, path, label, conflict_label):
     for node_id in path:
-        if node_id not in network.node:
-            old_name = old_network.node[node_id]['name']
+        if node_id not in network.nodes:
+            old_name = old_network.nodes[node_id]['name']
             network.add_node(node_id, st_layout=label, name=old_name)
         else:
-            current_label = network.node[node_id]['st_layout']
+            current_label = network.nodes[node_id]['st_layout']
             if current_label is not label\
                and current_label is not conflict_label:
-                network.node[node_id]['st_layout'] = conflict_label
+                network.nodes[node_id]['st_layout'] = conflict_label
 
 
 def add_edges_from_tuples(network, tuples):

@@ -1,10 +1,9 @@
 import xml.etree.ElementTree as ET
 from indra.statements import Agent
-from kqml import KQMLList
-from bioagents.dtda.dtda import DTDA, get_disease
+from kqml import KQMLList, KQMLString
+from bioagents.dtda.dtda import DTDA, get_disease, cbio_efo_map
 from bioagents.dtda.dtda_module import DTDA_Module
-from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
-    get_request
+from bioagents.tests.util import ekb_from_text, get_request, agent_clj_from_text
 from bioagents.tests.integration import _IntegrationTest
 from nose.plugins.attrib import attr
 
@@ -77,21 +76,44 @@ def test_find_drug_targets2():
     assert any(target == 'TGFBR1' for target in targets), targets
 
 
+def test_all_drug_list():
+    d = DTDA()
+    assert d.all_drugs
+    assert all('HMS-LINCS' in Agent._from_json(e).db_refs.keys()
+               for e in d.all_drugs)
+
+
+def test_all_target_list():
+    d = DTDA()
+    assert d.all_targets
+    assert all('HGNC' in Agent._from_json(e).db_refs.keys()
+               for e in d.all_targets)
+
+
+def test_all_disease_list():
+    d = DTDA()
+    assert d.all_diseases
+    assert d.all_diseases == list(cbio_efo_map.keys())
+    assert all(isinstance(e, str) for e in d.all_diseases)
+
+
 # FIND-TARGET-DRUG tests
 
 class _TestFindTargetDrug(_IntegrationTest):
     def __init__(self, *args):
-        super(_TestFindTargetDrug, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        target = ekb_kstring_from_text(self.target)
+        target = agent_clj_from_text(self.target)
         content = KQMLList('FIND-TARGET-DRUG')
         content.set('target', target)
         return get_request(content), content
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 9, output
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        for drug in drugs:
+            assert {'PUBCHEM', 'CHEBI'} & set(drug.db_refs.keys()), drug.db_refs
 
 
 @attr('nonpublic')
@@ -100,7 +122,7 @@ class TestFindTargetDrugBRAF(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 9, output
+        assert len(output.get('drugs')) >= 9, (len(output.get('drugs')), output)
 
 
 @attr('nonpublic')
@@ -109,7 +131,8 @@ class TestFindTargetDrugAKT(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 0, output
+        assert isinstance(output.get('drugs'), KQMLList), output.get('drugs')
+        assert len(output.get('drugs')) == 0, (len(output.get('drugs')), output)
 
 
 @attr('nonpublic')
@@ -119,16 +142,21 @@ class TestFindTargetDrugPAK4(_TestFindTargetDrug):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         drugs = output.get('drugs')
+        assert isinstance(output.get('drugs'), KQMLList), output.get('drugs')
         assert drugs, drugs
-        assert len(drugs) >= 1, drugs
+        assert len(drugs) >= 1, (len(drugs), drugs)
         drug_names = [drug.gets('name') for drug in drugs]
         exp_drug_name = 'PF-3758309'
         assert exp_drug_name in drug_names,\
             "Expected to find %s; not among %s." % (exp_drug_name, drug_names)
-        pubchem_ids = [drug.gets('pubchem_id') for drug in drugs]
+        pubchem_ids = []
+        for drug in drugs:
+            drug = self.bioagent.get_agent(drug)
+            if drug.db_refs:
+                pubchem_ids.append(drug.db_refs.get('PUBCHEM'))
         exp_pubchem_id = '25227462'
         assert exp_pubchem_id in pubchem_ids,\
-            ("Got pubchem ids %s for drugs %s; expected to find id %d."
+            ("Got pubchem ids %s for drugs %s; expected to find id %s."
              % (pubchem_ids, drug_names, exp_pubchem_id))
 
 
@@ -138,7 +166,8 @@ class TestFindTargetDrugKRAS(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) == 0, output
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        assert not drugs
 
 
 @attr('nonpublic')
@@ -147,7 +176,10 @@ class TestFindTargetDrugJAK2(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 9, (len(output), output)
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        assert len(drugs) >= 9
+        for drug in drugs:
+            assert {'PUBCHEM', 'CHEBI'} & set(drug.db_refs.keys()), drug.db_refs
 
 
 @attr('nonpublic')
@@ -156,17 +188,20 @@ class TestFindTargetDrugJAK1(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 6, (len(output), output)
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        assert len(drugs) >= 6
+        for drug in drugs:
+            assert {'PUBCHEM', 'CHEBI'} & set(drug.db_refs.keys()), drug.db_refs
 
 
 # FIND-DRUG-TARGETS tests
 @attr('nonpublic')
 class TestFindDrugTargetsVemurafenib(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        drug = ekb_kstring_from_text('Vemurafenib')
+        drug = agent_clj_from_text('Vemurafenib')
         content = KQMLList('FIND-DRUG-TARGETS')
         content.set('drug', drug)
         return get_request(content), content
@@ -175,17 +210,22 @@ class TestFindDrugTargetsVemurafenib(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         targets = output.get('targets')
         assert targets
-        assert len(targets) >= 1, targets
-        assert any(target.gets('name') == 'BRAF' for target in targets), targets
+        target_agents = self.bioagent.get_agent(targets)
+        assert isinstance(target_agents, list)
+        assert len(target_agents) >= 1, target_agents
+        for agent in target_agents:
+            assert 'HGNC' in agent.db_refs, agent.db_refs
+        assert any(target.name == 'BRAF' for target in target_agents), \
+            target_agents
 
 
 @attr('nonpublic')
 class TestFindDrugTargetsSB525334(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        drug = ekb_kstring_from_text('SB525334')
+        drug = agent_clj_from_text('SB525334')
         content = KQMLList('FIND-DRUG-TARGETS')
         content.set('drug', drug)
         return get_request(content), content
@@ -203,11 +243,11 @@ class _TestIsDrugTarget(_IntegrationTest):
     drug = NotImplemented
 
     def __init__(self, *args):
-        super(_TestIsDrugTarget, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        target = ekb_kstring_from_text(self.target)
-        drug = ekb_kstring_from_text(self.drug)
+        target = self.bioagent.make_cljson(Agent(self.target))
+        drug = self.bioagent.make_cljson(Agent(self.drug))
         content = KQMLList('IS-DRUG-TARGET')
         content.set('target', target)
         content.set('drug', drug)
@@ -268,18 +308,19 @@ class TestIsDrugTarget4(_TestIsDrugTarget):
 @attr('nonpublic')
 class TestFindDiseaseTargets1(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('pancreatic cancer')
+        disease = agent_clj_from_text('pancreatic cancer')
         content = KQMLList('FIND-DISEASE-TARGETS')
         content.set('disease', disease)
         return get_request(content), content
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        protein = output.get('protein')
-        assert protein.get('name') == 'KRAS'
+        protein = self.bioagent.get_agent(output.get('protein'))
+        assert protein.name == 'KRAS'
+        assert protein.db_refs['HGNC'] == '6407'
         assert 0.8 < float(output.gets('prevalence')) < 0.9,\
             output.gets('prevalence')
         assert output.gets('functional-effect') == 'ACTIVE'
@@ -288,16 +329,19 @@ class TestFindDiseaseTargets1(_IntegrationTest):
 @attr('nonpublic')
 class TestFindDiseaseTargets2(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('lung cancer')
+        disease = agent_clj_from_text('lung cancer')
         content = KQMLList('FIND-DISEASE-TARGETS')
         content.set('disease', disease)
         return get_request(content), content
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        protein = self.bioagent.get_agent(output.get('protein'))
+        assert protein.name == 'KRAS'
+        assert protein.db_refs['HGNC'] == '6407'
         assert output.gets('prevalence') == '0.19'
         assert output.gets('functional-effect') == 'ACTIVE'
 
@@ -305,10 +349,10 @@ class TestFindDiseaseTargets2(_IntegrationTest):
 @attr('nonpublic')
 class TestFindDiseaseTargets3(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('common cold')
+        disease = agent_clj_from_text('common cold')
         content = KQMLList('FIND-DISEASE-TARGETS')
         content.set('disease', disease)
         return get_request(content), content
@@ -322,16 +366,19 @@ class TestFindDiseaseTargets3(_IntegrationTest):
 @attr('nonpublic')
 class TestFindTreatment1(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('pancreatic cancer')
+        disease = agent_clj_from_text('pancreatic cancer')
         content = KQMLList('FIND-TREATMENT')
         content.set('disease', disease)
         return get_request(content), content
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        protein = self.bioagent.get_agent(output.get('protein'))
+        assert protein.name == 'KRAS'
+        assert protein.db_refs['HGNC'] == '6407'
         assert 0.8 < float(output.gets('prevalence')) < 0.9, \
             output.get('prevalence')
         assert len(output.get('drugs')) == 0
@@ -340,10 +387,10 @@ class TestFindTreatment1(_IntegrationTest):
 @attr('nonpublic')
 class TestFindTreatment2(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('lung cancer')
+        disease = agent_clj_from_text('lung cancer')
         content = KQMLList('FIND-TREATMENT')
         content.set('disease', disease)
         return get_request(content), content
@@ -357,10 +404,10 @@ class TestFindTreatment2(_IntegrationTest):
 @attr('nonpublic')
 class TestFindTreatment3(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(DTDA_Module)
+        super().__init__(DTDA_Module)
 
     def create_message(self):
-        disease = ekb_kstring_from_text('common cold')
+        disease = agent_clj_from_text('common cold')
         content = KQMLList('FIND-TREATMENT')
         content.set('disease', disease)
         return get_request(content), content
@@ -368,3 +415,53 @@ class TestFindTreatment3(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.gets('reason') == 'DISEASE_NOT_FOUND', output
+
+
+# GET-ALL-... Tests
+
+class TestGetAllDrugs(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-DRUGS')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        drugs = output.get('drugs')
+        assert drugs, output
+        assert all('HMS-LINCS' in self.bioagent.get_agent(e).db_refs
+                   for e in drugs), drugs
+
+
+class TestGetAllDiseases(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-DISEASES')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        diseases = output.get('diseases')
+        assert diseases, output
+        assert all(isinstance(e, KQMLString) for e in diseases), \
+            type(diseases[0])
+
+
+class TestGetAllTargets(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        content = KQMLList('GET-ALL-GENE-TARGETS')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        targets = output.get('genes')
+        assert targets, output
+        assert all('HGNC' in self.bioagent.get_agent(e).db_refs
+                   for e in targets), targets

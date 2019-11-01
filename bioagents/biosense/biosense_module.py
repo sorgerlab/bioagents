@@ -1,16 +1,14 @@
 import sys
-import json
 import logging
 import indra
-from indra.sources import trips
-from indra.databases import uniprot_client
-from .biosense import BioSense, _get_urls
-from .biosense import InvalidAgentError, UnknownCategoryError, \
-    SynonymsUnknownError
-from .biosense import InvalidCollectionError, CollectionNotFamilyOrComplexError
-from bioagents import Bioagent
-from kqml import KQMLPerformative, KQMLList, KQMLString
-from bioagents.ekb import KQMLGraph, EKB, agent_from_term
+from indra.databases import uniprot_client, get_identifiers_url
+from bioagents import Bioagent, add_agent_type
+from kqml import  KQMLString
+from .biosense import BioSense
+from .biosense import UnknownCategoryError, SynonymsUnknownError
+from .biosense import CollectionNotFamilyOrComplexError
+from kqml import KQMLPerformative, KQMLList
+from bioagents.ekb import KQMLGraph, EKB
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -34,85 +32,132 @@ class BioSense_Module(Bioagent):
 
     def respond_get_indra_representation(self, content):
         """Return the INDRA CL-JSON corresponding to the given content."""
-        id = content.get('ids')[0].to_string()
-        if id.startswith('ONT::'):
-            id_base = id[5:]
-        context = content.get('context').to_string()
         # First get the KQML graph object for the given context
+        context = content.get('context').to_string()
         graph = KQMLGraph(context)
-        # Then turn the graph into an EKB XML object, expanding around the
-        # given ID
-        ekb = EKB(graph, id_base)
-        # Now process the EKB using the TRIPS processor to extract Statements
-        tp = trips.process_xml(ekb.to_string())
-        # If there are any statements then we can return the CL-JSON of those
-        if tp.statements:
-            js = self.make_cljson(tp.statements)
-        # Otherwise, we try extracting an Agent and return that
-        else:
+
+        # Next, we look at each of the IDs that we need to build EKBs for
+        # and build the EKBs one by one
+        ekbs = []
+        for trips_id_obj in content.get('ids'):
+            trips_id = trips_id_obj.to_string()
+            if trips_id.startswith('ONT::'):
+                trips_id = trips_id[5:]
+
             try:
-                agent = agent_from_term(graph, id_base)
-                # Set the TRIPS ID in db_refs
-                agent.db_refs['TRIPS'] = id
-                # Infer the type from db_refs
-                agent_type = infer_type(agent)
-                agent.db_refs['TYPE'] = agent_type
-                js = self.make_cljson(agent)
+                # Turn the graph into an EKB XML object, expanding around
+                # the given ID.
+                ekb = EKB(graph, trips_id)
+                logger.debug('Extracted EKB: %s' % ekb.to_string())
+                ekbs.append((trips_id, ekb))
             except Exception as e:
-                logger.info("Encountered an error while parsing: %s."
-                            "Returning empty list." % content.to_string())
+                logger.error('Encountered an error while parsing: %s.' %
+                             content.to_string())
                 logger.exception(e)
-                js = KQMLList()
+
         msg = KQMLPerformative('done')
-        msg.sets('result', js)
+        # If we didn't get any EKBs, we just return an empty result
+        if not ekbs:
+            msg.set('result', KQMLList())
+            return msg
+        # If there is one EKB then we work with that
+        elif len(ekbs) == 1:
+            ekbs_to_extract = ekbs
+        # If there are multiple EKBs, we need to make sure that we are not
+        # extracting IDs passed for embedded events (whose root ID, i.e.,
+        # trips_id is somewhere inside another EKB already). We therefore
+        # iterate over all the EKBs and check this condition. If the EKB
+        # isn't subsumed, it's added to a list of ones to be extracted.
+        else:
+            ekbs_to_extract = []
+            for idx, (trips_id, ekb) in enumerate(ekbs):
+                other_ekbs = ekbs[:idx] + ekbs[idx+1:]
+                other_components = set.union(*[set(e.components)
+                                               for _, e in other_ekbs])
+                if trips_id in other_components:
+                    continue
+                ekbs_to_extract.append((trips_id, ekb))
+
+        # Finally, we extract entities (Agents or Statements) from the given
+        # EKB, and add each extraction to a list
+        entities = KQMLList()
+        for trips_id, ekb in ekbs_to_extract:
+            entity = ekb.get_entity()
+            if entity is None:
+                logger.info("Could not resolve entity from: %s. " %
+                            ekb.to_string())
+            else:
+                js = self.make_cljson(entity)
+                entities.append(js)
+
+        if len(entities) == 1:
+            msg.sets('result', entities[0])
+        else:
+            msg.set('result', entities)
         return msg
 
     def respond_choose_sense(self, content):
         """Return response content to choose-sense request."""
-        ekb = content.gets('ekb-term')
+        agent_clj = content.get('agent')
+        agent = self.get_agent(agent_clj)
+        if not agent:
+            return self.make_failure('MISSING_AGENT')
+        add_agent_type(agent)
+
+        def _get_urls(agent):
+            urls = {k: get_identifiers_url(k, v) for k, v in
+                    agent.db_refs.items()
+                    if k not in {'TEXT', 'TYPE', 'TRIPS'}}
+            return urls
+
         msg = KQMLPerformative('SUCCESS')
-        try:
-            agents, ambiguities = self.bs.choose_sense(ekb)
-        except InvalidAgentError:
-            logger.info("agent not recognized:\n{}\n".format(ekb))
-        else:
-            kagents = []
-            for term_id, agent_tuple in agents.items():
-                kagent = get_kagent(agent_tuple, term_id, add_description=True)
-                kagents.append(kagent)
-            msg.set('agents', KQMLList(kagents))
-        if ambiguities:
-            ambiguities_msg = get_ambiguities_msg(ambiguities)
-            msg.set('ambiguities', ambiguities_msg)
+        msg.set('agent', self.make_cljson(agent))
+
+        description = None
+        if 'UP' in agent.db_refs:
+            description = uniprot_client.get_function(agent.db_refs['UP'])
+        if description:
+            msg.sets('description', description)
+
+        urls = _get_urls(agent)
+        if urls:
+            url_parts = [KQMLList([':name', KQMLString(k),
+                                   ':dblink', KQMLString(v)])
+                         for k, v in urls.items()]
+            url_list = KQMLList()
+            for url_part in url_parts:
+                url_list.append(url_part)
+            msg.set('id-urls', url_list)
+
         return msg
 
     def respond_choose_sense_category(self, content):
         """Return response content to choose-sense-category request."""
-        ekb = content.gets('ekb-term')
+        term_arg = content.get('ekb-term')
+        term_agent = self.get_agent(term_arg)
+        if term_agent is None:
+            return self.make_failure('INVALID_AGENT')
         category = content.gets('category')
         try:
-            in_category = self.bs.choose_sense_category(ekb, category)
-        except InvalidAgentError:
-            msg = make_failure('INVALID_AGENT')
+            in_category = self.bs.choose_sense_category(term_agent, category)
         except UnknownCategoryError:
-            msg = make_failure('UNKNOWN_CATEGORY')
-        else:
-            msg = KQMLList('SUCCESS')
-            msg.set('in-category',
-                    'TRUE' if in_category else 'FALSE')
+            return self.make_failure('UNKNOWN_CATEGORY')
+        msg = KQMLList('SUCCESS')
+        msg.set('in-category', 'TRUE' if in_category else 'FALSE')
         return msg
 
     def respond_choose_sense_is_member(self, content):
         """Return response content to choose-sense-is-member request."""
-        agent_ekb = content.gets('ekb-term')
-        collection_ekb = content.gets('collection')
+        agent_arg = content.get('ekb-term')
+        agent = self.get_agent(agent_arg)
+        if agent is None:
+            return self.make_failure('INVALID_AGENT')
+        collection_arg = content.get('collection')
+        collection = self.get_agent(collection_arg)
+        if collection is None:
+            return self.make_failure('INVALID_COLLECTION')
         try:
-            is_member = self.bs.choose_sense_is_member(agent_ekb,
-                                                       collection_ekb)
-        except InvalidAgentError:
-            msg = make_failure('INVALID_AGENT')
-        except InvalidCollectionError:
-            msg = make_failure('INVALID_COLLECTION')
+            is_member = self.bs.choose_sense_is_member(agent, collection)
         except CollectionNotFamilyOrComplexError:
             msg = KQMLList('SUCCESS')
             msg.set('is-member', 'FALSE')
@@ -124,29 +169,28 @@ class BioSense_Module(Bioagent):
     def respond_choose_sense_what_member(self, content):
         """Return response content to choose-sense-what-member request."""
         # Get the collection agent
-        ekb = content.gets('collection')
+        collection_arg = content.get('collection')
+        collection = self.get_agent(collection_arg)
+        if collection is None:
+            return self.make_failure('INVALID_COLLECTION')
         try:
-            members = self.bs.choose_sense_what_member(ekb)
-        except InvalidCollectionError:
-            msg = make_failure('INVALID_COLLECTION')
+            members = self.bs.choose_sense_what_member(collection)
         except CollectionNotFamilyOrComplexError:
-            msg = make_failure('COLLECTION_NOT_FAMILY_OR_COMPLEX')
-        else:
-            kagents = [get_kagent((m, 'ONT::PROTEIN', _get_urls(m)))
-                       for m in members]
-            msg = KQMLList('SUCCESS')
-            msg.set('members', KQMLList(kagents))
+            return self.make_failure('COLLECTION_NOT_FAMILY_OR_COMPLEX')
+        msg = KQMLList('SUCCESS')
+        msg.set('members', self.make_cljson(members))
         return msg
 
     def respond_get_synonyms(self, content):
         """Respond to a query looking for synonyms of a protein."""
-        ekb = content.gets('entity')
+        entity_arg = content.get('entity')
+        entity = self.get_agent(entity_arg)
+        if entity is None:
+            return self.make_failure('INVALID_AGENT')
         try:
-            synonyms = self.bs.get_synonyms(ekb)
-        except InvalidAgentError:
-            msg = self.make_failure('INVALID_AGENT')
+            synonyms = self.bs.get_synonyms(entity)
         except SynonymsUnknownError:
-            msg = self.make_failure('SYNONYMS_UNKNOWN')
+            return self.make_failure('SYNONYMS_UNKNOWN')
         else:
             syns_kqml = KQMLList()
             for s in synonyms:
@@ -156,76 +200,6 @@ class BioSense_Module(Bioagent):
             msg = KQMLList('SUCCESS')
             msg.set('synonyms', syns_kqml)
         return msg
-
-
-def get_kagent(agent_tuple, term_id=None, add_description=False):
-    agent, ont_type, urls = agent_tuple
-    db_refs = '|'.join('%s:%s' % (k, v) for k, v in
-                       agent.db_refs.items())
-    kagent = KQMLList(term_id) if term_id else KQMLList()
-    kagent.sets('name', agent.name)
-    kagent.sets('ids', db_refs)
-    url_parts = [KQMLList([':name', KQMLString(k),
-                           ':dblink', KQMLString(v)])
-                 for k, v in urls.items()]
-    url_list = KQMLList()
-    for url_part in url_parts:
-        url_list.append(url_part)
-    kagent.set('id-urls', url_list)
-    kagent.set('ont-type', ont_type)
-
-    if add_description and 'UP' in agent.db_refs:
-        description = uniprot_client.get_function(agent.db_refs['UP'])
-        if description:
-            kagent.sets('description', description)
-    return kagent
-
-
-def get_ambiguities_msg(ambiguities):
-    sa = []
-    for term_id, ambiguity in ambiguities.items():
-        msg = KQMLList(term_id)
-
-        pr = ambiguity[0]['preferred']
-        pr_dbids = '|'.join([':'.join((k, v)) for
-                             k, v in pr['refs'].items()])
-        term = KQMLList('term')
-        term.set('ont-type', pr['type'])
-        term.sets('ids', pr_dbids)
-        term.sets('name', pr['name'])
-        msg.set('preferred', term)
-
-        alt = ambiguity[0]['alternative']
-        alt_dbids = '|'.join([':'.join((k, v)) for
-                              k, v in alt['refs'].items()])
-        term = KQMLList('term')
-        term.set('ont-type', alt['type'])
-        term.sets('ids', alt_dbids)
-        term.sets('name', alt['name'])
-        msg.set('alternative', term)
-
-        sa.append(msg)
-
-    ambiguities_msg = KQMLList(sa)
-    return ambiguities_msg
-
-
-def make_failure(reason):
-    msg = KQMLList('FAILURE')
-    msg.set('reason', reason)
-    return msg
-
-
-def infer_type(agent):
-    if 'FPLX' in agent.db_refs:
-        return 'ONT::PROTEIN-FAMILY'
-    elif 'HGNC' in agent.db_refs or 'UP' in agent.db_refs:
-        return 'ONT::GENE-PROTEIN'
-    elif 'CHEBI' in agent.db_refs or 'PUBCHEM' in agent.db_refs:
-        return 'ONT::PHARMACOLOGIC-SUBSTANCE'
-    elif 'GO' in agent.db_refs or 'MESH' in agent.db_refs:
-        return 'ONT::BIOLOGICAL-PROCESS'
-    return None
 
 
 if __name__ == "__main__":

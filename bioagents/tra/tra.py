@@ -211,8 +211,8 @@ class TRA(object):
             # Apply molecular condition to model
             try:
                 model_sim = self.condition_model(model, conditions)
-            except MissingMonomerError:
-                raise MissingMonomerError
+            except MissingMonomerError as e:
+                raise e
             except Exception as e:
                 logger.exception(e)
                 msg = 'Applying molecular condition failed.'
@@ -357,7 +357,8 @@ def apply_condition(model, condition):
     try:
         monomer = model.monomers[pa._n(agent.name)]
     except KeyError:
-        raise MissingMonomerError('%s is not in the model ' % agent.name)
+        raise MissingMonomerError('%s is not in the model ' % agent.name,
+                                  agent)
     site_pattern = pa.get_site_pattern(agent)
     # TODO: handle modified patterns
     if site_pattern:
@@ -389,7 +390,8 @@ def get_create_observable(model, agent):
     try:
         monomer = model.monomers[pa._n(agent.name)]
     except KeyError:
-        raise MissingMonomerError('%s is not in the model ' % agent.name)
+        raise MissingMonomerError('%s is not in the model ' % agent.name,
+                                  agent)
     try:
         monomer_state = monomer(site_pattern)
     except Exception as e:
@@ -668,7 +670,9 @@ class InvalidMolecularConditionError(BioagentException):
 
 
 class MissingMonomerError(BioagentException):
-    pass
+    def __init__(self, message, monomer):
+        super().__init__(message)
+        self.monomer = monomer
 
 
 class MissingMonomerSiteError(BioagentException):

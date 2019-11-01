@@ -57,25 +57,21 @@ class Bioagent(KQMLModule):
         """Get an agent from the kqml cl-json representation (KQMLList)."""
         agent_json = cls.converter.cl_to_json(cl_agent)
         if isinstance(agent_json, list):
-            return [Agent._from_json(agj) for agj in agent_json]
+            return [ensure_agent_type(Agent._from_json(agj))
+                    for agj in agent_json]
         else:
-            return Agent._from_json(agent_json)
+            return ensure_agent_type(Agent._from_json(agent_json))
 
     @classmethod
     def get_statement(cls, cl_statement):
         """Get an INDRA Statement from cl-json"""
         stmt_json = cls.converter.cl_to_json(cl_statement)
-        if isinstance(stmt_json, list):
+        if not stmt_json:
+            return None
+        elif isinstance(stmt_json, list):
             return stmts_from_json(stmt_json)
         else:
             return Statement._from_json(stmt_json)
-
-    @classmethod
-    def get_statements(cls, cl_statements):
-        """Get a list of INDRA Statements from cl-json"""
-        stmts = [Statement._from_json(cls.converter.cl_to_json(cl_statement))
-                 for cl_statement in cl_statements]
-        return stmts
 
     @classmethod
     def make_cljson(cls, entity):
@@ -84,22 +80,24 @@ class Bioagent(KQMLModule):
         `entity` is expected to have a method `to_json` which returns valid
         json.
         """
+        # Regularize the input to plain JSON
         if isinstance(entity, list):
-            entity_json = [e.to_json() for e in entity]
-        else:
+            entity_json = [e.to_json() if hasattr(e, 'to_json')
+                           else e  # assumed to be a list or a dict.
+                           for e in entity]
+        elif hasattr(entity, 'to_json'):
             entity_json = entity.to_json()
+        else:  # Assumed to be a jsonifiable dict.
+            entity_json = entity.copy()
         return cls.converter.cl_from_json(entity_json)
-
-    @classmethod
-    def make_cljson_from_list(cls, entities):
-        """Convert a list of Agents or Statements into cljson."""
-        entities_json = [entity.to_json() for entity in entities]
-        return cls.converter.cl_from_json(entities_json)
 
     def receive_tell(self, msg, content):
         tell_content = content[0].to_string().upper()
         if tell_content == 'START-CONVERSATION':
             logger.info('%s resetting' % self.name)
+
+    def receive_reply(self, msg, content):
+        pass
 
     def receive_request(self, msg, content):
         """Handle request messages and respond.
@@ -147,7 +145,7 @@ class Bioagent(KQMLModule):
         except Exception as e:
             logger.error('Could not perform response to %s' % task)
             logger.exception(e)
-            return self.make_failure('INTERNAL_FAILURE')
+            return self.make_failure('INTERNAL_FAILURE', description=str(e))
 
     def reply_with_content(self, msg, reply_content):
         """A wrapper around the reply method from KQMLModule."""
@@ -193,29 +191,29 @@ class Bioagent(KQMLModule):
         return self.tell(content)
 
     def send_provenance_for_stmts(self, stmt_list, for_what, limit=50,
-                                  ev_counts=None):
+                                  ev_counts=None, source_counts=None):
         """Send out a provenance tell for a list of INDRA Statements.
 
         The message is used to provide evidence supporting a conclusion.
         """
         logger.info("Sending provenance for %d statements for \"%s\"."
                     % (len(stmt_list), for_what))
-        title = "Supporting evidence from the %s for %s" \
-                % (self.name, for_what)
+        title = "Supporting evidence for %s" % for_what
         content_fmt = '<h4>%s (max %s):</h4>\n%s<hr>'
         evidence_html = self._make_report_cols_html(stmt_list, limit=limit,
                                                     ev_counts=ev_counts,
+                                                    source_counts=source_counts,
                                                     title=title)
 
         content = KQMLList('add-provenance')
         content.sets('html', content_fmt % (title, limit, evidence_html))
         return self.tell(content)
 
-    def _make_evidence_html(self, stmts, ev_counts=None,
+    def _make_evidence_html(self, stmts, ev_counts=None, source_counts=None,
                             title='Results from the INDRA database'):
         "Make html from a set of statements."
         ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio', title=title,
-                           ev_totals=ev_counts)
+                           ev_totals=ev_counts, source_counts=source_counts)
         return ha.make_model()
 
     def _stash_evidence_html(self, html):
@@ -288,24 +286,32 @@ class Bioagent(KQMLModule):
 
     def say(self, message):
         """Say something to the user."""
-        msg = KQMLList('say')
-        msg.append(KQMLString(message))
-        self.request(msg)
+        if message:
+            msg = KQMLList('say')
+            msg.append(KQMLString(message))
+            self.request(msg)
 
     def _make_report_cols_html(self, stmt_list, limit=5, ev_counts=None,
-                               **kwargs):
+                               source_counts=None, **kwargs):
         """Make columns listing the support given by the statement list."""
+        if not stmt_list:
+            return "No statements found."
 
         def href(ref, text):
             return '<a href=%s target="_blank">%s</a>' % (ref, text)
 
         # Build the list of relevant statements and count their prevalence.
         sorted_groups = group_and_sort_statements(stmt_list,
-                                                  ev_totals=ev_counts)
+                                                  ev_totals=ev_counts,
+                                                  source_counts=source_counts)
 
         # Build the html.
         lines = []
-        for key, verb, stmts in sorted_groups[:limit]:
+        for group in sorted_groups[:limit]:
+            if source_counts is None:
+                key, verb, stmts = group
+            else:
+                key, verb, stmts, arg_counts, group_source_counts = group
             count = key[2]
             line = '<li>%s %s</li>' % (make_string_from_sort_key(key, verb),
                                        '(%d)' % count)
@@ -313,7 +319,8 @@ class Bioagent(KQMLModule):
 
         # Build the overall html.
         list_html = '<ul>%s</ul>' % ('\n'.join(lines))
-        html = self._make_evidence_html(stmt_list, **kwargs)
+        html = self._make_evidence_html(stmt_list, ev_counts=ev_counts,
+                                        source_counts=source_counts, **kwargs)
         link = self._stash_evidence_html(html)
         if link is None:
             link_html = 'I could not generate the full list.'
@@ -335,3 +342,34 @@ def get_img_path(img_name):
         date_str = datetime.now().strftime('%Y%m%d%H%M%S')
         img_name = '%s_%s' % (date_str, img_name)
     return path.join(IMAGE_DIR, img_name)
+
+
+def infer_agent_type(agent):
+    if 'FPLX' in agent.db_refs:
+        return 'ONT::PROTEIN-FAMILY'
+    elif 'HGNC' in agent.db_refs or 'UP' in agent.db_refs:
+        return 'ONT::GENE-PROTEIN'
+    elif 'CHEBI' in agent.db_refs or 'PUBCHEM' in agent.db_refs:
+        return 'ONT::PHARMACOLOGIC-SUBSTANCE'
+    elif 'GO' in agent.db_refs or 'MESH' in agent.db_refs:
+        return 'ONT::BIOLOGICAL-PROCESS'
+    return None
+
+
+def add_agent_type(agent):
+    if agent is None:
+        return None
+    inferred_type = infer_agent_type(agent)
+    if inferred_type:
+        agent.db_refs['TYPE'] = inferred_type
+    return agent
+
+
+def ensure_agent_type(agent):
+    if agent is None:
+        return None
+
+    if 'TYPE' not in agent.db_refs.keys():
+        return add_agent_type(agent)
+    else:
+        return agent

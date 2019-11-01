@@ -4,11 +4,11 @@ import xml.etree.ElementTree as ET
 from kqml.kqml_list import KQMLList
 import indra.statements as sts
 from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
-        get_request, stmts_json_from_text
+        get_request, stmts_json_from_text, stmts_clj_from_text
 from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
-    _get_matching_stmts, CAN_CHECK_STATEMENTS
+    _get_matching_stmts, CAN_CHECK_STATEMENTS, InvalidModelDescriptionError
 from nose.plugins.skip import SkipTest
 from nose.plugins.attrib import attr
 
@@ -64,10 +64,10 @@ def test_get_upstream():
 
 def test_has_mechanism():
     m = MRA()
-    ekb = ekb_from_text('BRAF binds MEK')
-    m.build_model_from_ekb(ekb)
-    has_mechanism = m.has_mechanism(ekb, 1)
-    assert(has_mechanism)
+    stmtsj = json.dumps(stmts_json_from_text('BRAF binds MEK'))
+    m.build_model_from_json(stmtsj)
+    has_mechanism = m.has_mechanism(stmtsj, 1)
+    assert has_mechanism
 
 
 def test_transformations():
@@ -209,14 +209,16 @@ def test_respond_model_undo():
     reply = mm.respond_build_model(content)
     _, content = _get_expand_model_request('NRAS activates RAF', '1')
     expand_reply = mm.respond_expand_model(content)
-    expand_stmts = expand_reply.gets('model-new')
+    expand_stmts = mm.get_statement(expand_reply.get('model-new'))
+    assert len(expand_stmts) == 1
     content = KQMLList.from_string('(MODEL-UNDO)')
     reply = mm.respond_model_undo(content)
     assert reply.gets('model-id') == '3'
     action = reply.get('action')
     assert action.head() == 'remove_stmts'
-    stmts = action.get('statements')
-    assert json.loads(stmts.string_value()) == json.loads(expand_stmts)
+    stmts = mm.get_statement(action.get('statements'))
+    assert len(stmts) == 1
+    assert stmts[0].equals(expand_stmts[0])
 
 
 def test_respond_model_undo_no_model_yet():
@@ -227,7 +229,7 @@ def test_respond_model_undo_no_model_yet():
     action = reply.get('action')
     assert action.head() == 'remove_stmts', reply
     stmts = action.get('statements')
-    assert json.loads(stmts.string_value()) == []
+    assert not stmts
 
 
 def test_get_matching_statements():
@@ -236,7 +238,8 @@ def test_get_matching_statements():
     braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
     map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
     stmt_ref = sts.Phosphorylation(braf, map2k1)
-    matching = _get_matching_stmts(stmt_ref)
+    idp = _get_matching_stmts(stmt_ref)
+    matching = idp.statements
     assert len(matching) > 1, \
         "Expected > 1 matching, got matching: %s" % matching
 
@@ -245,16 +248,49 @@ def test_get_matching_statements():
 # MRA integration tests
 # #####################
 
-def _get_build_model_request(text):
+def test_description_not_list_handling():
+    mm = MRA_Module(testing=True)
+    content = KQMLList.from_string(
+        '(BUILD-MODEL :DESCRIPTION ('
+        ':TYPE "Inhibition" '
+        ':SUBJ (:NAME "SB-525334" '
+        '       :DB--REFS (:+TYPE+ "ONT::GENE-PROTEIN" '
+        '                  :+TEXT+ "SB525334"'
+        '                  :+PUBCHEM+ "9967941")) '
+        ':OBJ (:NAME "TGFBR1"'
+        '      :DB--REFS (:+TYPE+ "ONT::GENE-PROTEIN" '
+        '                 :+TEXT+ "TGFBR1" '
+        '                 :+HGNC+ "11772" '
+        '                 :+UP+ "P36897" '
+        '                 :+NCIT+ "C51730")) '
+        ':OBJ--ACTIVITY "activity" '
+        ':BELIEF 1 '
+        ':EVIDENCE ((:SOURCE--API "trips" '
+        '            :SOURCE--HASH -1613118243458052451)) '
+        ':ID "ce486f46-3670-42e6-8f0e-d5f510525352" '
+        ':MATCHES--HASH "-32031145755534420"))''')
+    try:
+        reply = mm.respond_build_model(content)
+    except InvalidModelDescriptionError:
+        return
+    assert False, "Model should have explicitly failed: " + reply.to_string()
+
+
+def _get_build_model_request(text, format=None):
     content = KQMLList('BUILD-MODEL')
-    descr = ekb_kstring_from_text(text)
-    content.set('description', descr)
+    if format == 'ekb':
+        descr = ekb_kstring_from_text(text)
+        content.sets('description', descr)
+        content.sets('format', 'ekb')
+    else:
+        descr = stmts_clj_from_text(text)
+        content.set('description', descr)
     return get_request(content), content
 
 
 def _get_expand_model_request(text, model_id):
     content = KQMLList('EXPAND-MODEL')
-    descr = ekb_kstring_from_text(text)
+    descr = stmts_clj_from_text(text)
     content.set('description', descr)
     content.set('model-id', model_id)
     return get_request(content), content
@@ -262,10 +298,10 @@ def _get_expand_model_request(text, model_id):
 
 class TestBuildModelAmbiguity(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModelAmbiguity, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
-        return _get_build_model_request('MEK1 phosphorylates ERK2')
+        return _get_build_model_request('MEK1 phosphorylates ERK2', format='ekb')
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS',\
@@ -294,7 +330,7 @@ class TestBuildModelAmbiguity(_IntegrationTest):
 
 class TestBuildModelBoundCondition(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModelBoundCondition, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         txt = 'KRAS bound to GTP phosphorylates BRAF on T373.'
@@ -303,18 +339,16 @@ class TestBuildModelBoundCondition(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = output.gets('model')
+        model = self.bioagent.get_statement(output.get('model'))
         assert model is not None
-        indra_stmts_json = json.loads(model)
-        assert(len(indra_stmts_json) == 1)
-        stmt = sts.stmts_from_json(indra_stmts_json)[0]
-        assert(isinstance(stmt, sts.Phosphorylation))
-        assert(stmt.enz.bound_conditions[0].agent.name == 'GTP')
+        assert len(model) == 1
+        assert isinstance(model[0], sts.Phosphorylation)
+        assert model[0].enz.bound_conditions[0].agent.name == 'GTP'
 
 
 class TestBuildModelProvenance(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModelProvenance, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         txt = 'MEK binds ERK.'
@@ -326,7 +360,7 @@ class TestBuildModelProvenance(_IntegrationTest):
 
 class TestBuildModelComplex(_IntegrationTest):
     def __init__(self, *args):
-        super(TestBuildModelComplex, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         txt = 'The EGFR-EGF complex activates SOS1.'
@@ -335,18 +369,17 @@ class TestBuildModelComplex(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = output.gets('model')
+        model = self.bioagent.get_statement(output.get('model'))
         assert model is not None
-        indra_stmts_json = json.loads(model)
-        assert(len(indra_stmts_json) == 1)
-        stmt = sts.stmts_from_json(indra_stmts_json)[0]
+        assert len(model) == 1
+        stmt = model[0]
         assert(isinstance(stmt, sts.Activation))
         assert(stmt.subj.bound_conditions[0].agent.name == 'EGF')
 
 
 class TestModelUndo(_IntegrationTest):
     def __init__(self, *args):
-        super(TestModelUndo, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
         # Start off with a model
         msg, content = _get_build_model_request('MEK1 phosphorylates ERK2')
         self.bioagent.receive_request(msg, content)
@@ -359,16 +392,15 @@ class TestModelUndo(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
-        assert output.gets('model') == '[]'
+        assert not output.get('model')
         output_log = self.get_output_log(get_full_log=True)
-        print(output_log)
         assert any([(msg.head() == 'tell') #and 'display' in line)
                     for msg in output_log])
 
 
 class TestSmallModelDescription(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
         # Start off with a model
         msg, content = _get_build_model_request('MEK1 phosphorylates ERK2')
         self.bioagent.receive_request(msg, content)
@@ -395,7 +427,7 @@ class TestLargeModelDescription(_IntegrationTest):
     ]
 
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
         # Start off with a model
         msg, content = _get_build_model_request(self.model_build_list[0])
         self.bioagent.receive_request(msg, content)
@@ -421,19 +453,20 @@ class TestLargeModelDescription(_IntegrationTest):
 
 class TestMissingDescriptionFailure(_FailureTest):
     def __init__(self, *args):
-        super(TestMissingDescriptionFailure, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
         self.expected_reason = 'INVALID_DESCRIPTION'
 
     def create_message(self):
         content = KQMLList('BUILD-MODEL')
         content.sets('description', '')
+        content.sets('format', 'ekb')
         msg = get_request(content)
         return msg, content
 
 
 class TestModelBuildExpandUndo(_IntegrationTest):
     def __init__(self, *args):
-        super(TestModelBuildExpandUndo, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand', 'undo']
 
@@ -443,7 +476,7 @@ class TestModelBuildExpandUndo(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_expand(self):
@@ -452,7 +485,7 @@ class TestModelBuildExpandUndo(_IntegrationTest):
     def check_response_to_expand(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 2
 
     def create_undo(self):
@@ -464,13 +497,13 @@ class TestModelBuildExpandUndo(_IntegrationTest):
     def check_response_to_undo(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '3'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
 
 class TestGetModelJson(_IntegrationTest):
     def __init__(self, *args):
-        super(TestGetModelJson, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'get_json']
 
@@ -480,8 +513,8 @@ class TestGetModelJson(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
-        assert len(model) == 1
+        stmts = self.bioagent.get_statement(output.get('model'))
+        assert len(stmts) == 1
 
     def create_get_json(self):
         content = KQMLList('MODEL-GET-JSON')
@@ -491,16 +524,15 @@ class TestGetModelJson(_IntegrationTest):
 
     def check_response_to_get_json(self, output):
         assert output.head() == 'SUCCESS'
-        model_json = output.gets('model')
-        assert model_json
-        jd = json.loads(model_json)
-        assert len(jd) == 1
-        assert jd[0]['type'] == 'Activation'
+        model_clj = output.get('model')
+        assert model_clj
+        stmts = self.bioagent.get_statement(model_clj)
+        assert isinstance(stmts[0], sts.Activation)
 
 
 class TestGetModelJsonNoID(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'get_json']
 
@@ -510,7 +542,7 @@ class TestGetModelJsonNoID(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_get_json(self):
@@ -520,16 +552,16 @@ class TestGetModelJsonNoID(_IntegrationTest):
 
     def check_response_to_get_json(self, output):
         assert output.head() == 'SUCCESS'
-        model_json = output.gets('model')
-        assert model_json
-        jd = json.loads(model_json)
-        assert len(jd) == 1
-        assert jd[0]['type'] == 'Activation'
+        model_clj = output.get('model')
+        assert model_clj
+        stmts = self.bioagent.get_statement(model_clj)
+        assert len(stmts) == 1
+        assert isinstance(stmts[0], sts.Activation)
 
 
 class TestModelBuildExpandRemove(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand', 'remove', 'remove2']
 
@@ -539,7 +571,7 @@ class TestModelBuildExpandRemove(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_expand(self):
@@ -548,45 +580,41 @@ class TestModelBuildExpandRemove(_IntegrationTest):
     def check_response_to_expand(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 2
 
     def create_remove(self):
         content = KQMLList('MODEL-REMOVE-MECHANISM')
         content.set('model-id', '2')
-        content.sets('description',
-                     ekb_kstring_from_text('KRAS activates BRAF'))
+        content.set('description', stmts_clj_from_text('KRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
     def check_response_to_remove(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.get('model-id') == '3'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
-        action  = output.get('action')
+        action = output.get('action')
         assert action.head() == 'remove_stmts'
-        rem_stmts_str = action.gets('statements')
-        rem_stmts = sts.stmts_from_json(json.loads(rem_stmts_str))
+        rem_stmts = self.bioagent.get_statement(action.get('statements'))
         assert len(rem_stmts) == 1
 
     def create_remove2(self):
         content = KQMLList('MODEL-REMOVE-MECHANISM')
         content.set('model-id', '3')
-        content.sets('description',
-                     ekb_kstring_from_text('NRAS activates BRAF'))
+        content.set('description', stmts_clj_from_text('NRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
     def check_response_to_remove2(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '4'
-        model = json.loads(output.gets('model'))
-        assert len(model) == 0
-        action  = output.get('action')
+        model = self.bioagent.get_statement(output.get('model'))
+        assert not model
+        action = output.get('action')
         assert action.head() == 'remove_stmts'
-        rem_stmts_str = action.gets('statements')
-        rem_stmts = sts.stmts_from_json(json.loads(rem_stmts_str))
+        rem_stmts = self.bioagent.get_statement(action.get('statements'))
         assert len(rem_stmts) == 1
 
     def create_undo(self):
@@ -598,14 +626,13 @@ class TestModelBuildExpandRemove(_IntegrationTest):
     def check_response_to_undo(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '4'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
-
 
 
 class TestModelRemoveWrong(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'remove']
 
@@ -615,13 +642,13 @@ class TestModelRemoveWrong(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_remove(self):
         content = KQMLList('MODEL-REMOVE-MECHANISM')
         content.set('model-id', '1')
-        content.sets('description', ekb_kstring_from_text('Unphosphorylated ERK'))
+        content.set('description', stmts_clj_from_text('Unphosphorylated ERK'))
         msg = get_request(content)
         return msg, content
 
@@ -632,7 +659,7 @@ class TestModelRemoveWrong(_IntegrationTest):
 
 class TestModelHasMechanism(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'hasmech1', 'hasmech2']
 
@@ -642,13 +669,13 @@ class TestModelHasMechanism(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_hasmech1(self):
         content = KQMLList('MODEL-HAS-MECHANISM')
         content.set('model-id', '1')
-        content.sets('description', ekb_kstring_from_text('KRAS activates BRAF'))
+        content.sets('description', stmts_clj_from_text('KRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
@@ -659,7 +686,7 @@ class TestModelHasMechanism(_IntegrationTest):
     def create_hasmech2(self):
         content = KQMLList('MODEL-HAS-MECHANISM')
         content.set('model-id', '1')
-        content.sets('description', ekb_kstring_from_text('NRAS activates BRAF'))
+        content.sets('description', stmts_clj_from_text('NRAS activates BRAF'))
         msg = get_request(content)
         return msg, content
 
@@ -670,11 +697,13 @@ class TestModelHasMechanism(_IntegrationTest):
 
 class TestUserGoal(_IntegrationTest):
     def __init__(self, *args):
-        super(TestUserGoal, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     def create_message(self):
         txt = 'Selumetinib decreases FOS in BT20 cells'
-        explain = ekb_kstring_from_text(txt)
+        explain = stmts_clj_from_text(txt)
+        explain_stmt = self.bioagent.get_statement(explain)[0]
+        assert explain_stmt.evidence[0].context, explain_stmt.evidence[0]
         content = KQMLList('USER-GOAL')
         content.set('explain', explain)
         msg = get_request(content)
@@ -688,7 +717,7 @@ class TestUserGoal(_IntegrationTest):
 
 class TestModelMeetsGoal(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand']
 
@@ -701,7 +730,7 @@ class TestModelMeetsGoal(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_expand(self):
@@ -711,15 +740,19 @@ class TestModelMeetsGoal(_IntegrationTest):
     def check_response_to_expand(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 2
         has_explanation = output.gets('has_explanation')
         assert has_explanation == 'TRUE'
+        suggs = output.get('suggestions')
+        assert len(suggs) == 1, suggs
+        assert suggs[0].gets('text').startswith('Our model can now explain'), \
+            suggs
 
 
 class TestModelMeetsGoalBuildOnly(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build']
 
@@ -732,16 +765,20 @@ class TestModelMeetsGoalBuildOnly(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
         has_explanation = output.gets('has_explanation')
         assert has_explanation == 'TRUE', has_explanation
+        suggs = output.get('suggestions')
+        assert len(suggs) == 1, suggs
+        assert suggs[0].gets('text').startswith('Our model can now explain'), \
+            suggs
 
 
 @attr('nonpublic')
 class TestModelGapSuggest(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand']
 
@@ -754,7 +791,7 @@ class TestModelGapSuggest(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_expand(self):
@@ -764,13 +801,17 @@ class TestModelGapSuggest(_IntegrationTest):
     def check_response_to_expand(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 2
+        suggs = output.get('suggestions')
+        assert len(suggs) == 1, suggs
+        assert suggs[0].gets('text').startswith('I have some suggestions'), \
+            suggs
 
 
 class TestDegradeSbgn(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'expand']
 
@@ -780,7 +821,7 @@ class TestDegradeSbgn(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_expand(self):
@@ -789,13 +830,13 @@ class TestDegradeSbgn(_IntegrationTest):
     def check_response_to_expand(self, output):
         assert output.head() == 'SUCCESS'
         assert output.get('model-id') == '2'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 2
 
 
 class TestModelRefinement(_IntegrationTest):
     def __init__(self, *args):
-        super(self.__class__, self).__init__(MRA_Module)
+        super().__init__(MRA_Module)
 
     message_funcs = ['build', 'refine', 'refine2', 'refine3', 'refine4']
 
@@ -805,7 +846,7 @@ class TestModelRefinement(_IntegrationTest):
     def check_response_to_build(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.get('model-id') == '1'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
 
     def create_refine(self):
@@ -814,9 +855,9 @@ class TestModelRefinement(_IntegrationTest):
     def check_response_to_refine(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.get('model-id') == '2'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
-        model_new = json.loads(output.gets('model-new'))
+        model_new = self.bioagent.get_statement(output.get('model-new'))
         assert len(model_new) == 1
 
     def create_refine2(self):
@@ -825,9 +866,9 @@ class TestModelRefinement(_IntegrationTest):
     def check_response_to_refine2(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.get('model-id') == '3'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
-        assert output.gets('model-new') is None
+        assert not output.get('model-new')
 
     def create_refine3(self):
         return _get_expand_model_request('RAS activates RAF', '3')
@@ -835,9 +876,9 @@ class TestModelRefinement(_IntegrationTest):
     def check_response_to_refine3(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.get('model-id') == '4'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
-        assert output.gets('model-new') is None
+        assert not output.get('model-new')
 
     def create_refine4(self):
         return _get_expand_model_request(
@@ -846,9 +887,9 @@ class TestModelRefinement(_IntegrationTest):
     def check_response_to_refine4(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.get('model-id') == '5'
-        model = json.loads(output.gets('model'))
+        model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 1
-        model_new = json.loads(output.gets('model-new'))
+        model_new = self.bioagent.get_statement(output.get('model-new'))
         assert len(model_new) == 1
 
 '''

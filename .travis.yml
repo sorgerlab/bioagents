@@ -9,9 +9,10 @@ services:
 before_install:
   - sudo apt-get update
 install:
-  - pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas kappy==4.0.0 boto3
+  - pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas kappy==4.0.0 boto3 nose-timer
   # PySB and dependencies
-  - wget "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz" -O bionetgen.tar.gz -nv
+  - wget "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz"
+        -O bionetgen.tar.gz -nv
   - tar xzf bionetgen.tar.gz
   - export BNGPATH=`pwd`/BioNetGen-2.2.6-stable
   - pip install git+https://github.com/pysb/pysb.git
@@ -23,7 +24,7 @@ install:
   - sudo apt-get install graphviz
   - pip install pygraphviz ndex2==1.2.0.58
   # This is needed because ndex2 downgrades networkx
-  - pip install -U networkx
+  - pip install -U networkx==2.3
   # Install utilities for running tests
   - pip install coverage
 script:
@@ -40,4 +41,5 @@ script:
   - if [[ $RUN_SLOW != "true" ]]; then
       export NOSEATTR="!slow,$NOSEATTR";
     fi
-  - nosetests bioagents/tests -a $NOSEATTR -v --with-coverage --cover-inclusive --cover-package=bioagents
+  - nosetests bioagents/tests -a $NOSEATTR -v --with-coverage --cover-inclusive --cover-package=bioagents --with-timer
+        --timer-top-n 10 --timer-ok 2

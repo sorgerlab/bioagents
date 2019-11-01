@@ -4,8 +4,9 @@ from collections import OrderedDict
 import xml.etree.ElementTree as ET
 from kqml import KQMLString, KQMLPerformative
 from indra.sources import trips
-from indra.statements import stmts_to_json, Agent
+from indra.statements import stmts_to_json
 from bioagents import Bioagent
+from bioagents.ekb import set_cell_line_context, get_cell_line
 
 
 def ekb_from_text(text):
@@ -26,6 +27,9 @@ def agent_from_text(text):
     ekb_xml = ekb_from_text(text)
     tp = trips.process_xml(ekb_xml)
     agents = tp.get_agents()
+    for agent in agents:
+        if agent.bound_conditions:
+            return agent
     return agents[0]
 
 
@@ -40,6 +44,9 @@ def stmts_from_text(text):
     """Return a list of INDRA Statements from text."""
     ekb_xml = read_or_load(text)
     tp = trips.process_xml(ekb_xml)
+    context = get_cell_line(ET.fromstring(ekb_xml))
+    if context:
+        set_cell_line_context(tp.statements, context)
     return tp.statements
 
 
@@ -52,7 +59,7 @@ def stmts_json_from_text(text):
 def stmts_clj_from_text(text):
     """Return a CL-JSON representation of INDRA Statements from text."""
     stmts = stmts_from_text(text)
-    stmts_clj = Bioagent.make_cljson_from_list(stmts)
+    stmts_clj = Bioagent.make_cljson(stmts)
     return stmts_clj
 
 

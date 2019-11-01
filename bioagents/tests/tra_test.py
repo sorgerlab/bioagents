@@ -4,18 +4,16 @@ import sympy.physics.units as units
 from bioagents.tra import tra_module
 from bioagents.tra import tra
 from pysb import Model, Rule, Monomer, Parameter, Initial, SelfExporter
-from indra.statements import stmts_to_json, Agent, Phosphorylation, \
-                             Dephosphorylation, Activation, Inhibition, \
-                             ActivityCondition, ModCondition
+from indra.statements import *
 from kqml import KQMLPerformative, KQMLList, KQMLToken
+from bioagents import Bioagent
 from bioagents.tests.integration import _StringCompareTest, _IntegrationTest
-from bioagents.tests.util import stmts_kstring_from_text, ekb_kstring_from_text, \
-                                get_request
+from bioagents.tests.util import *
 
 
-ekb_map2k1 = ekb_kstring_from_text('MAP2K1')
-ekb_braf = ekb_kstring_from_text('BRAF')
-ekb_complex = ekb_kstring_from_text('BRAF-KRAS complex')
+clj_map2k1 = agent_clj_from_text('MAP2K1')
+clj_braf = agent_clj_from_text('BRAF')
+clj_complex = agent_clj_from_text('BRAF-KRAS complex')
 
 
 def test_time_interval():
@@ -125,24 +123,25 @@ def test_molecular_quantity_qual_badval():
 
 
 def test_molecular_quantity_ref():
-    s = '(:type "total" :entity (:description %s))' % ekb_complex
+    s = '(:type "total" :entity (:description %s))' % clj_complex
+    print(s)
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
     assert mqr.quant_type == 'total'
-    assert len(mqr.entity.bound_conditions) == 1
+    assert len(mqr.entity.bound_conditions) == 1, len(mqr.entity.bound_conditions)
 
 
 def test_molecular_quantity_ref2():
-    s = '(:type "initial" :entity (:description %s))' % ekb_complex
+    s = '(:type "initial" :entity (:description %s))' % clj_complex
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
     assert mqr.quant_type == 'initial'
-    assert len(mqr.entity.bound_conditions) == 1
+    assert len(mqr.entity.bound_conditions) == 1, len(mqr.entity.bound_conditions)
 
 
 @raises(tra.InvalidMolecularQuantityRefError)
 def test_molecular_quantity_badtype():
-    s = '(:type "xyz" :entity (:description %s))' % ekb_complex
+    s = '(:type "xyz" :entity (:description %s))' % clj_complex
     lst = KQMLList.from_string(s)
     tra_module.get_molecular_quantity_ref(lst)
 
@@ -156,7 +155,7 @@ def test_molecular_quantity_badentity():
 
 def test_get_molecular_condition_dec():
     lst = KQMLList.from_string('(:type "decrease" :quantity (:type "total" ' +
-                               ':entity (:description %s)))' % ekb_braf)
+                               ':entity (:description %s)))' % clj_braf)
     mc = tra_module.get_molecular_condition(lst)
     assert mc.condition_type == 'decrease'
     assert mc.quantity.quant_type == 'total'
@@ -167,7 +166,7 @@ def test_get_molecular_condition_exact():
     lst = KQMLList.from_string(
         '(:type "exact" :value (:value 0 :type "number") '
         ':quantity (:type "total" '
-        ':entity (:description %s)))' % ekb_braf
+        ':entity (:description %s)))' % clj_braf
         )
     mc = tra_module.get_molecular_condition(lst)
     assert mc.condition_type == 'exact'
@@ -179,7 +178,7 @@ def test_get_molecular_condition_exact():
 def test_get_molecular_condition_multiple():
     lst = KQMLList.from_string('(:type "multiple" :value 2 ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description %s)))' % ekb_braf)
+                               ':entity (:description %s)))' % clj_braf)
     mc = tra_module.get_molecular_condition(lst)
     assert mc.condition_type == 'multiple'
     assert mc.value == 2.0
@@ -191,7 +190,7 @@ def test_get_molecular_condition_multiple():
 def test_get_molecular_condition_badtype():
     lst = KQMLList.from_string('(:type "xyz" :value 2 ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description %s)))' % ekb_braf)
+                               ':entity (:description %s)))' % clj_braf)
     tra_module.get_molecular_condition(lst)
 
 
@@ -199,7 +198,7 @@ def test_get_molecular_condition_badtype():
 def test_get_molecular_condition_badvalue():
     lst = KQMLList.from_string('(:type "multiple" :value "xyz" ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description %s)))' % ekb_braf)
+                               ':entity (:description %s)))' % clj_braf)
     tra_module.get_molecular_condition(lst)
 
 
@@ -207,7 +206,7 @@ def test_get_molecular_condition_badvalue():
 def test_get_molecular_condition_badvalue2():
     lst = KQMLList.from_string('(:type "exact" :value 2 ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description %s)))' % ekb_braf)
+                               ':entity (:description %s)))' % clj_braf)
     tra_module.get_molecular_condition(lst)
 
 
@@ -224,7 +223,7 @@ def test_apply_condition_exact():
     lst = KQMLList.from_string(
         '(:type "exact" :value (:value 0 :type "number") '
         ':quantity (:type "total" '
-        ':entity (:description %s)))' % ekb_map2k1
+        ':entity (:description %s)))' % clj_map2k1
         )
     mc = tra_module.get_molecular_condition(lst)
     tra.apply_condition(model, mc)
@@ -238,7 +237,7 @@ def test_apply_condition_multiple():
     model = _get_gk_model()
     lst = KQMLList.from_string('(:type "multiple" :value 2.5 ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description %s)))' % ekb_map2k1)
+                               ':entity (:description %s)))' % clj_map2k1)
     mc = tra_module.get_molecular_condition(lst)
     tra.apply_condition(model, mc)
     assert model.parameters['MAP2K1_0'].value == 250
@@ -248,7 +247,7 @@ def test_apply_condition_decrease():
     model = _get_gk_model()
     lst = KQMLList.from_string('(:type "decrease" ' +
                                ':quantity (:type "total" ' +
-                               ':entity (:description %s)))' % ekb_map2k1)
+                               ':entity (:description %s)))' % clj_map2k1)
     mc = tra_module.get_molecular_condition(lst)
     pold = model.parameters['MAP2K1_0'].value
     tra.apply_condition(model, mc)
@@ -256,14 +255,14 @@ def test_apply_condition_decrease():
 
 
 def test_get_molecular_entity():
-    me = KQMLList.from_string('(:description %s)' % ekb_complex)
+    me = KQMLList.from_string('(:description %s)' % clj_complex)
     ent = tra_module.get_molecular_entity(me)
-    assert len(ent.bound_conditions) == 1
+    assert len(ent.bound_conditions) == 1, len(ent.bound_conditions)
 
 
 def test_get_temporal_pattern():
     pattern_msg = '(:type "transient" :entities ((:description ' + \
-                    '%s)))' % ekb_complex
+                    '%s)))' % clj_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
     assert pattern.pattern_type == 'transient'
@@ -272,7 +271,7 @@ def test_get_temporal_pattern():
 def test_get_temporal_pattern_always():
     pattern_msg = '(:type "no_change" :entities ((:description ' + \
                     '%s)) :value (:type "qualitative" :value "low"))' % \
-                    ekb_complex
+                    clj_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
     assert pattern.pattern_type == 'no_change'
@@ -284,7 +283,7 @@ def test_get_temporal_pattern_always():
 def test_get_temporal_pattern_sometime():
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
                     '%s)) :value (:type "qualitative" :value "high"))' % \
-                    ekb_complex
+                    clj_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
     assert pattern.pattern_type == 'sometime_value'
@@ -296,7 +295,7 @@ def test_get_temporal_pattern_sometime():
 def test_get_temporal_pattern_eventual():
     pattern_msg = '(:type "eventual_value" :entities ((:description ' + \
                     '%s)) :value (:type "qualitative" :value "high"))' % \
-                    ekb_complex
+                    clj_complex
     lst = KQMLList.from_string(pattern_msg)
     pattern = tra_module.get_temporal_pattern(lst)
     assert pattern.pattern_type == 'eventual_value'
@@ -390,7 +389,7 @@ def test_module():
     content = KQMLList()
     pattern_msg = '(:type "sometime_value" :entities ((:description ' + \
                   '%s)) :value (:type "qualitative" :value "high"))' % \
-                  ekb_complex
+                  clj_complex
     pattern = KQMLList.from_string(pattern_msg)
     content.set('pattern', pattern)
     model_json = _get_gk_model_indra()
@@ -404,15 +403,15 @@ def test_module():
 class _TraTestModel1(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(_TraTestModel1, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.expected = '(SUCCESS :content (:satisfies-rate 0.0 ' + \
             ':num-sim 10 :suggestion (:type "no_change" ' + \
             ':value (:type "qualitative" :value "low"))))'
 
     def create_message(self):
-        model = stmts_kstring_from_text('MAP2K1 binds MAPK1')
-        entity = ekb_kstring_from_text('MAPK1-MAP2K1 complex')
-        condition_entity = ekb_kstring_from_text('MAP2K1')
+        model = stmts_clj_from_text('MAP2K1 binds MAPK1')
+        entity = agent_clj_from_text('MAPK1-MAP2K1 complex')
+        condition_entity = agent_clj_from_text('MAP2K1')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -446,24 +445,23 @@ class _TraTestModel1(_IntegrationTest):
 class TraTestModel1_Kappa(_TraTestModel1):
     """Test that the tra can run a model using Kappa"""
     def __init__(self, *args):
-        super(TraTestModel1_Kappa, self).__init__(tra_module.TRA_Module)
+        super().__init__(tra_module.TRA_Module)
 
 
 class TraTestModel1_NoKappa(_TraTestModel1):
     """Test that the tra can run a model without using Kappa"""
     def __init__(self, *args):
-        super(TraTestModel1_NoKappa, self).__init__(tra_module.TRA_Module,
-                                                    use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
 
 class TraTestModel2(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel2, self).__init__(tra_module.TRA_Module, use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
-        model = stmts_kstring_from_text('MEK binds ERK')
-        entity = ekb_kstring_from_text('MEK that is bound to ERK')
+        model = stmts_clj_from_text('MEK binds ERK')
+        entity = agent_clj_from_text('MEK that is bound to ERK')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -489,11 +487,11 @@ class TraTestModel2(_IntegrationTest):
 class TraTestModel3(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel3, self).__init__(tra_module.TRA_Module, use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
-        model = stmts_kstring_from_text('MEK phosphorylates ERK')
-        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+        model = stmts_clj_from_text('MEK phosphorylates ERK')
+        entity = agent_clj_from_text('ERK that is phosphorylated')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -519,12 +517,11 @@ class TraTestModel3(_IntegrationTest):
 class TraTestModelAlwaysValue(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModelAlwaysValue, self).__init__(tra_module.TRA_Module,
-                                                      use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
-        model = stmts_kstring_from_text('MEK phosphorylates ERK')
-        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+        model = stmts_clj_from_text('MEK phosphorylates ERK')
+        entity = agent_clj_from_text('ERK that is phosphorylated')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -551,11 +548,11 @@ class TraTestModelAlwaysValue(_IntegrationTest):
 class TraTestModel4(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel4, self).__init__(tra_module.TRA_Module, use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
-        model = stmts_kstring_from_text('MEK binds ERK')
-        entity = ekb_kstring_from_text('the MEK-ERK complex')
+        model = stmts_clj_from_text('MEK binds ERK')
+        entity = agent_clj_from_text('the MEK-ERK complex')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -581,12 +578,12 @@ class TraTestModel4(_IntegrationTest):
 class TraTestModel5(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel5, self).__init__(tra_module.TRA_Module, use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
         txt = 'MEK phosphorylates ERK. DUSP dephosphorylates ERK.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('ERK that is phosphorylated')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -615,12 +612,12 @@ class TraTestModel5(_IntegrationTest):
 class TraTestModel6(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel6, self).__init__(tra_module.TRA_Module, use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message(self):
         txt = 'ELK1 transcribes FOS.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('FOS')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('FOS')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -646,13 +643,13 @@ class TraTestModel6(_IntegrationTest):
 class TraTestModel7(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel7, self).__init__(tra_module.TRA_Module, use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message1(self):
         txt = 'ERK activates ELK1. DUSP inactivates ELK1. ' + \
             'Active ELK1 transcribes FOS.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('FOS')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('FOS')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -677,8 +674,8 @@ class TraTestModel7(_IntegrationTest):
     def create_message2(self):
         txt = 'ERK activates ELK1. DUSP inactivates ELK1. ' + \
             'Active ELK1 transcribes FOS.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('FOS')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('FOS')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -693,7 +690,7 @@ class TraTestModel7(_IntegrationTest):
         content.set('pattern', pattern)
         content.set('model', model)
 
-        condition_entity = ekb_kstring_from_text('DUSP')
+        condition_entity = agent_clj_from_text('DUSP')
         conditions = KQMLList()
         condition = KQMLList()
         condition.sets('type', 'multiple')
@@ -718,14 +715,14 @@ class TraTestModel7(_IntegrationTest):
 class TraTestModel8(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel8, self).__init__(tra_module.TRA_Module,
+        super().__init__(tra_module.TRA_Module,
                                             use_kappa=False)
 
     def create_message(self):
         txt = ('MEK not bound to Selumetinib phosphorylates ERK. DUSP '
                'dephosphorylates ERK. Selumetinib binds MEK.')
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('ERK that is phosphorylated')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('ERK that is phosphorylated')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -740,7 +737,7 @@ class TraTestModel8(_IntegrationTest):
         content.set('pattern', pattern)
         content.set('model', model)
 
-        condition_entity = ekb_kstring_from_text('Selumetinib')
+        condition_entity = agent_clj_from_text('Selumetinib')
         conditions = KQMLList()
         condition = KQMLList()
         condition.sets('type', 'multiple')
@@ -765,12 +762,12 @@ class TraTestModel8(_IntegrationTest):
 class TraTestModel9(_IntegrationTest):
     """Test that TRA can correctly run a model."""
     def __init__(self, *args, **kwargs):
-        super(TraTestModel9, self).__init__(tra_module.TRA_Module, use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message1(self):
         txt = 'Active ELK1 transcribes FOS.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('FOS')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('FOS')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -795,8 +792,8 @@ class TraTestModel9(_IntegrationTest):
 
     def create_message2(self):
         txt = 'PLX-4720 inhibits ELK1. Active ELK1 transcribes FOS.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('FOS')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('FOS')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -811,7 +808,7 @@ class TraTestModel9(_IntegrationTest):
         content.set('pattern', pattern)
         content.set('model', model)
 
-        condition_entity = ekb_kstring_from_text('PLX-4720')
+        condition_entity = agent_clj_from_text('PLX-4720')
         conditions = KQMLList()
         condition = KQMLList()
         condition.sets('type', 'multiple')
@@ -835,7 +832,7 @@ class TraTestModel9(_IntegrationTest):
 
 class TestMissingModel(_IntegrationTest):
     def __init__(self, *args):
-        super(TestMissingModel, self).__init__(tra_module.TRA_Module)
+        super().__init__(tra_module.TRA_Module)
 
     def create_message(self):
         content = KQMLList('SATISFIES-PATTERN')
@@ -848,7 +845,7 @@ class TestMissingModel(_IntegrationTest):
 
 class TestInvalidModel(_IntegrationTest):
     def __init__(self, *args):
-        super(TestInvalidModel, self).__init__(tra_module.TRA_Module)
+        super().__init__(tra_module.TRA_Module)
 
     def create_message(self):
         content = KQMLList('SATISFIES-PATTERN')
@@ -862,13 +859,12 @@ class TestInvalidModel(_IntegrationTest):
 class TraTestMissingMonomer(_IntegrationTest):
     """Test that TRA can signal that a monomer is missing."""
     def __init__(self, *args, **kwargs):
-        super(TraTestMissingMonomer, self).__init__(tra_module.TRA_Module,
-                                                    use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message1(self):
         txt = 'KRAS activates BRAF.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('RAS')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('RAS')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -890,18 +886,18 @@ class TraTestMissingMonomer(_IntegrationTest):
         assert output.head() == 'FAILURE'
         reason = output.get('reason')
         assert reason == 'MODEL_MISSING_MONOMER'
+        assert output.get('entity'), output
 
 
 class TraTestMissingMonomerSite(_IntegrationTest):
     """Test that TRA can signal that a monomer is missing."""
     def __init__(self, *args, **kwargs):
-        super(TraTestMissingMonomerSite, self).__init__(tra_module.TRA_Module,
-                                                        use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message1(self):
         txt = 'KRAS activates BRAF.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('BRAF that is phosphorylated')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('BRAF that is phosphorylated')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -928,13 +924,12 @@ class TraTestMissingMonomerSite(_IntegrationTest):
 class TraMissingMonomerCondition(_IntegrationTest):
     """Test that TRA can signal that a condition monomer is missing."""
     def __init__(self, *args, **kwargs):
-        super(TraMissingMonomerCondition, self).__init__(tra_module.TRA_Module,
-                                                         use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message1(self):
         txt = 'ELK1 transcribes FOS.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('FOS')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('FOS')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -949,7 +944,7 @@ class TraMissingMonomerCondition(_IntegrationTest):
         content.set('pattern', pattern)
         content.set('model', model)
 
-        condition_entity = ekb_kstring_from_text('MAPK1')
+        condition_entity = agent_clj_from_text('MAPK1')
         conditions = KQMLList()
         condition = KQMLList()
         condition.sets('type', 'multiple')
@@ -975,13 +970,12 @@ class TraMissingMonomerCondition(_IntegrationTest):
 class TraMissingMonomerSite2(_IntegrationTest):
     """Test that TRA can signal that a bound condition monomer is missing."""
     def __init__(self, *args, **kwargs):
-        super(TraMissingMonomerSite2, self).__init__(tra_module.TRA_Module,
-                                                     use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
 
     def create_message1(self):
         txt = 'MAP2K1 phosphorylates MAPK1.'
-        model = stmts_kstring_from_text(txt)
-        entity = ekb_kstring_from_text('MAPK1-bound MAP2K1')
+        model = stmts_clj_from_text(txt)
+        entity = agent_clj_from_text('MAPK1-bound MAP2K1')
 
         entities = KQMLList([KQMLList([':description', entity])])
         pattern = KQMLList()
@@ -997,7 +991,7 @@ class TraMissingMonomerSite2(_IntegrationTest):
         content.set('model', model)
 
         msg = get_request(content)
-        return (msg, content)
+        return msg, content
 
     def check_response_to_message1(self, output):
         assert output.head() == 'FAILURE', output
@@ -1007,15 +1001,14 @@ class TraMissingMonomerSite2(_IntegrationTest):
 
 class TestCompareConditions(_IntegrationTest):
     def __init__(self, *args, **kwargs):
-        super(TestCompareConditions, self).__init__(tra_module.TRA_Module,
-                                                    use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
         model_txt = 'Vemurafenib inhibits ERK. MEK activates ERK.'
         self.model = \
-            stmts_kstring_from_text(model_txt)
+            stmts_clj_from_text(model_txt)
 
     def create_message1(self):
-        condition_entity = ekb_kstring_from_text('Vemurafenib')
-        target_entity = ekb_kstring_from_text('Active ERK')
+        condition_entity = agent_clj_from_text('Vemurafenib')
+        target_entity = agent_clj_from_text('Active ERK')
         content = KQMLList('MODEL-COMPARE-CONDITIONS')
         content.set('model', self.model)
         content.set('agent', condition_entity)
@@ -1029,8 +1022,8 @@ class TestCompareConditions(_IntegrationTest):
         assert satisfied == 'yes_decrease', satisfied
 
     def create_message2(self):
-        condition_entity = ekb_kstring_from_text('Vemurafenib')
-        target_entity = ekb_kstring_from_text('Inactive ERK')
+        condition_entity = agent_clj_from_text('Vemurafenib')
+        target_entity = agent_clj_from_text('Inactive ERK')
         content = KQMLList('MODEL-COMPARE-CONDITIONS')
         content.set('model', self.model)
         content.set('agent', condition_entity)
@@ -1044,8 +1037,8 @@ class TestCompareConditions(_IntegrationTest):
         assert satisfied == 'no_increase'
 
     def create_message3(self):
-        condition_entity = ekb_kstring_from_text('Vemurafenib')
-        target_entity = ekb_kstring_from_text('ERK')
+        condition_entity = agent_clj_from_text('Vemurafenib')
+        target_entity = agent_clj_from_text('ERK')
         content = KQMLList('MODEL-COMPARE-CONDITIONS')
         content.set('model', self.model)
         content.set('agent', condition_entity)
@@ -1059,8 +1052,8 @@ class TestCompareConditions(_IntegrationTest):
         assert satisfied == 'no_change'
 
     def create_message4(self):
-        condition_entity = ekb_kstring_from_text('Vemurafenib')
-        target_entity = ekb_kstring_from_text('Inactive ERK')
+        condition_entity = agent_clj_from_text('Vemurafenib')
+        target_entity = agent_clj_from_text('Inactive ERK')
         content = KQMLList('MODEL-COMPARE-CONDITIONS')
         content.set('model', self.model)
         content.set('agent', condition_entity)
@@ -1075,8 +1068,8 @@ class TestCompareConditions(_IntegrationTest):
         assert satisfied == 'yes_increase', satisfied
 
     def create_message5(self):
-        condition_entity = ekb_kstring_from_text('Vemurafenib')
-        target_entity = ekb_kstring_from_text('Active ERK')
+        condition_entity = agent_clj_from_text('Vemurafenib')
+        target_entity = agent_clj_from_text('Active ERK')
         content = KQMLList('MODEL-COMPARE-CONDITIONS')
         content.set('model', self.model)
         content.set('agent', condition_entity)
@@ -1093,14 +1086,13 @@ class TestCompareConditions(_IntegrationTest):
 
 class TestCompareConditionsMissing(_IntegrationTest):
     def __init__(self, *args, **kwargs):
-        super(TestCompareConditionsMissing, self).__init__(
-            tra_module.TRA_Module, use_kappa=False)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
         model_txt = 'Vemurafenib inhibits ERK.'
-        self.model = stmts_kstring_from_text(model_txt)
+        self.model = stmts_clj_from_text(model_txt)
 
     def create_message(self):
-        condition_entity = ekb_kstring_from_text('Vemurafenib')
-        target_entity = ekb_kstring_from_text('MEK')
+        condition_entity = agent_clj_from_text('Vemurafenib')
+        target_entity = agent_clj_from_text('MEK')
         content = KQMLList('MODEL-COMPARE-CONDITIONS')
         content.set('model', self.model)
         content.set('agent', condition_entity)
@@ -1118,10 +1110,10 @@ class TestCompareConditionsMissing(_IntegrationTest):
 # the bug ended up being in the BA's message but this test is still useful
 class TestConditionNotInvalid(_IntegrationTest):
     def __init__(self, *args, **kwargs):
-        super(TestConditionNotInvalid, self).__init__(
-            tra_module.TRA_Module, use_kappa=False)
-        model_txt = 'MAP2K1 phosphorylates MAPK1. DUSP6 dephosphorylates MAPK1.'
-        self.model = stmts_kstring_from_text(model_txt)
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
+        model_txt = 'MAP2K1 phosphorylates MAPK1. ' + \
+            'DUSP6 dephosphorylates MAPK1.'
+        self.model = stmts_clj_from_text(model_txt)
 
     def create_message(self):
         content = KQMLPerformative('SATISFIES-PATTERN')
@@ -1130,7 +1122,7 @@ class TestConditionNotInvalid(_IntegrationTest):
         patt.sets('type', 'eventual_value')
         ents = KQMLList()
         ent = KQMLList()
-        ent.sets('description', ekb_kstring_from_text('phosphorylated MAPK1'))
+        ent.sets('description', agent_clj_from_text('phosphorylated MAPK1'))
         ents.append(ent)
         patt.set('entities', ents)
         val = KQMLList()
@@ -1145,7 +1137,7 @@ class TestConditionNotInvalid(_IntegrationTest):
         quant = KQMLList()
         quant.sets('type', 'total')
         ent = KQMLList()
-        ent.sets('description', ekb_kstring_from_text('DUSP6'))
+        ent.sets('description', agent_clj_from_text('DUSP6'))
         quant.set('entity', ent)
         cond.sets('quantity', quant)
         #val = KQMLList()

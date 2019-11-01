@@ -45,12 +45,12 @@ class TRA_Module(Bioagent):
 
     def respond_satisfies_pattern(self, content):
         """Return response content to satisfies-pattern request."""
-        model_indra_str = content.gets('model')
+        model_indra_clj = content.get('model')
         pattern_lst = content.get('pattern')
         conditions_lst = content.get('conditions')
 
         try:
-            stmts = decode_indra_stmts(model_indra_str)
+            stmts = decode_indra_stmts(model_indra_clj)
             model = assemble_model(stmts)
         except Exception as e:
             logger.exception(e)
@@ -91,6 +91,8 @@ class TRA_Module(Bioagent):
         except tra.MissingMonomerError as e:
             logger.exception(e)
             reply_content = self.make_failure('MODEL_MISSING_MONOMER')
+            if e.monomer:
+                reply_content.set('entity', self.make_cljson(e.monomer))
             return reply_content
         except tra.MissingMonomerSiteError as e:
             logger.exception(e)
@@ -118,20 +120,20 @@ class TRA_Module(Bioagent):
         return reply
 
     def respond_model_compare_conditions(self, content):
-        condition_agent_ekb = content.gets('agent')
-        target_agent_ekb = content.gets('affected')
-        model_indra_str = content.gets('model')
+        condition_agent_clj = content.get('agent')
+        target_agent_clj = content.get('affected')
+        model_indra_clj = content.get('model')
         up_dn = content.gets('up-dn')
         try:
-            stmts = decode_indra_stmts(model_indra_str)
+            stmts = decode_indra_stmts(model_indra_clj)
             model = assemble_model(stmts)
         except Exception as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_MODEL')
             return reply_content
         try:
-            condition_agent = get_single_molecular_entity(condition_agent_ekb)
-            target_agent = get_single_molecular_entity(target_agent_ekb)
+            condition_agent = self.get_agent(condition_agent_clj)
+            target_agent = self.get_agent(target_agent_clj)
         except Exception as e:
             logger.exception(e)
             reply_content = self.make_failure('INVALID_PATTERN')
@@ -147,6 +149,8 @@ class TRA_Module(Bioagent):
         except tra.MissingMonomerError as e:
             logger.exception(e)
             reply_content = self.make_failure('MODEL_MISSING_MONOMER')
+            if e.monomer:
+                reply_content.set('entity', self.make_cljson(e.monomer))
             return reply_content
         except tra.MissingMonomerSiteError as e:
             logger.exception(e)
@@ -172,10 +176,8 @@ class TRA_Module(Bioagent):
         self.send(msg)
 
 
-def decode_indra_stmts(stmts_json_str):
-    stmts_json = json.loads(stmts_json_str)
-    stmts = stmts_from_json(stmts_json)
-    return stmts
+def decode_indra_stmts(stmts_clj):
+    return TRA_Module.get_statement(stmts_clj)
 
 
 def assemble_model(stmts):
@@ -252,16 +254,17 @@ def get_chemical_agents(stmts):
     for stmt in stmts:
         for agent in stmt.agent_list():
             if agent is not None and ('CHEBI' in agent.db_refs or
-                                      'PC' in agent.db_refs):
+                                      'PUBCHEM' in agent.db_refs):
                 chemicals.add(pysb_assembler._n(agent.name))
     return list(chemicals)
 
 
 def get_molecular_entity(lst):
-    description_str = lst.gets('description')
-    return get_single_molecular_entity(description_str)
+    description_clj = lst.get('description')
+    return TRA_Module.get_agent(description_clj)
 
 
+"""
 def get_single_molecular_entity(description_str):
     try:
         tp = trips_processor.TripsProcessor(description_str)
@@ -286,6 +289,7 @@ def get_single_molecular_entity(description_str):
         return agent
     except Exception as e:
         raise tra.InvalidMolecularEntityError(e)
+"""
 
 
 def get_molecular_quantity(lst):

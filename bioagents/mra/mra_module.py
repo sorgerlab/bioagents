@@ -69,12 +69,24 @@ class MRA_Module(Bioagent):
 
     def respond_build_model(self, content):
         """Return response content to build-model request."""
-        descr = content.gets('description')
         descr_format = content.gets('format')
+        if descr_format:
+            logger.info('Building model from format: %s' % descr_format)
         no_display = content.get('no-display')
-        if not descr_format or descr_format == 'ekb':
+        if not descr_format:
+            descr = content.get('description')
+            js_data = self.converter.cl_to_json(descr)
+            if isinstance(js_data, dict):
+                logger.error('JSON data should be a list not a dict.')
+                raise InvalidModelDescriptionError("Model description should "
+                                                   "be a list of events.")
+            js = json.dumps(js_data)
+            res = self.mra.build_model_from_json(js)
+        elif descr_format == 'ekb':
+            descr = content.gets('description')
             res = self.mra.build_model_from_ekb(descr)
         elif descr_format == 'indra_json':
+            descr = content.gets('description')
             res = self.mra.build_model_from_json(descr)
         else:
             err_msg = 'Invalid description format: %s' % descr_format
@@ -93,7 +105,7 @@ class MRA_Module(Bioagent):
         if model and (descr_format == 'ekb' or not descr_format):
             self.send_background_support(model)
         model_msg = encode_indra_stmts(model)
-        msg.sets('model', model_msg)
+        msg.set('model', model_msg)
         # Add the diagrams
         diagrams = res.get('diagrams')
         if not no_display:
@@ -109,7 +121,14 @@ class MRA_Module(Bioagent):
             msg.set('has_explanation', str(has_expl).upper())
 
         # Send out various model diagnosis messages
-        self.send_model_diagnoses(res)
+        diagnostic_tells = self.send_model_diagnoses(res)
+        if diagnostic_tells:
+            suggs = KQMLList()
+            for text in diagnostic_tells:
+                sugg = KQMLList()
+                sugg.sets('TEXT', text)
+                suggs.append(sugg)
+            msg.set('suggestions', suggs)
 
         # Once we sent out the diagnosis messages, we make sure we keep
         # track of whether we have an explanation
@@ -126,14 +145,19 @@ class MRA_Module(Bioagent):
 
     def respond_expand_model(self, content):
         """Return response content to expand-model request."""
-        descr = content.gets('description')
         model_id = self._get_model_id(content)
         descr_format = content.gets('format')
         no_display = content.get('no-display')
         try:
-            if not descr_format or descr_format == 'ekb':
+            if not descr_format:
+                descr = content.get('description')
+                js = json.dumps(self.converter.cl_to_json(descr))
+                res = self.mra.expand_model_from_json(js, model_id)
+            elif descr_format == 'ekb':
+                descr = content.gets('description')
                 res = self.mra.expand_model_from_ekb(descr, model_id)
             elif descr_format == 'indra_json':
+                descr = content.gets('description')
                 res = self.mra.expand_model_from_json(descr, model_id)
             else:
                 err_msg = 'Invalid description format: %s' % descr_format
@@ -150,7 +174,7 @@ class MRA_Module(Bioagent):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.sets('model', model_msg)
+        msg.set('model', model_msg)
         # Add the INDRA model new json
         model_new = res.get('model_new')
 
@@ -160,7 +184,14 @@ class MRA_Module(Bioagent):
             msg.set('has_explanation', str(has_expl).upper())
 
         # Send out various model diagnosis messages
-        self.send_model_diagnoses(res)
+        diagnostic_tells = self.send_model_diagnoses(res)
+        if diagnostic_tells:
+            suggs = KQMLList()
+            for text in diagnostic_tells:
+                sugg = KQMLList()
+                sugg.sets('TEXT', text)
+                suggs.append(sugg)
+            msg.set('suggestions', suggs)
 
         # Once we sent out the diagnosis messages, we make sure we keep
         # track of whether we have an explanation
@@ -171,7 +202,7 @@ class MRA_Module(Bioagent):
             self.send_background_support(model_new)
         if model_new:
             model_new_msg = encode_indra_stmts(model_new)
-            msg.sets('model-new', model_new_msg)
+            msg.set('model-new', model_new_msg)
         # Add the diagram
         if not no_display:
             diagrams = res.get('diagrams')
@@ -206,14 +237,14 @@ class MRA_Module(Bioagent):
             self.send_clean_model()
 
         model_msg = encode_indra_stmts(model)
-        msg.sets('model', model_msg)
+        msg.set('model', model_msg)
         # Get the action and add it to the message
         action = res.get('action')
         actionl = KQMLList()
         # Here we handle no action as effectively an empty remove action
         if action['action'] in ('no_op', 'remove_stmts'):
             actionl.append('remove_stmts')
-            actionl.sets(
+            actionl.set(
                 'statements',
                 encode_indra_stmts(action['statements'])
                 )
@@ -231,10 +262,11 @@ class MRA_Module(Bioagent):
 
     def respond_model_has_mechanism(self, content):
         """Return response content to model-has-mechanism request."""
-        ekb = content.gets('description')
         model_id = self._get_model_id(content)
+        descr = content.get('description')
+        js = json.dumps(self.converter.cl_to_json(descr))
         try:
-            res = self.mra.has_mechanism(ekb, model_id)
+            res = self.mra.has_mechanism(js, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
         # Start a SUCCESS message
@@ -247,16 +279,17 @@ class MRA_Module(Bioagent):
         query = res.get('query')
         if query:
             query_msg = encode_indra_stmts([query])
-            msg.sets('query', query_msg)
+            msg.set('query', query_msg)
         return msg
 
     def respond_model_remove_mechanism(self, content):
         """Return response content to model-remove-mechanism request."""
-        ekb = content.gets('description')
         model_id = self._get_model_id(content)
+        descr = content.get('description')
+        js = json.dumps(self.converter.cl_to_json(descr))
         no_display = content.get('no-display')
         try:
-            res = self.mra.remove_mechanism(ekb, model_id)
+            res = self.mra.remove_mechanism(js, model_id)
         except Exception as e:
             raise InvalidModelDescriptionError(e)
         model_id = res.get('model_id')
@@ -269,7 +302,7 @@ class MRA_Module(Bioagent):
         # Add the INDRA model json
         model = res.get('model')
         model_msg = encode_indra_stmts(model)
-        msg.sets('model', model_msg)
+        msg.set('model', model_msg)
 
         # Handle empty model
         if not model:
@@ -282,7 +315,7 @@ class MRA_Module(Bioagent):
             return msg
         else:
             actionl = KQMLList('remove_stmts')
-            actionl.sets('statements', encode_indra_stmts(removed))
+            actionl.set('statements', encode_indra_stmts(removed))
             msg.set('action', actionl)
 
         # Add the diagram
@@ -327,15 +360,18 @@ class MRA_Module(Bioagent):
         if model is not None:
             model_msg = encode_indra_stmts(model)
             reply = KQMLList('SUCCESS')
-            reply.sets('model', model_msg)
+            reply.set('model', model_msg)
         else:
             reply = self.make_failure('MISSING_MODEL')
         return reply
 
     def respond_user_goal(self, content):
         """Record user goal and return success if possible"""
-        explain = content.gets('explain')
-        self.mra.set_user_goal(explain)
+        explain = content.get('explain')
+        explain_stmt = self.get_statement(explain)
+        if explain_stmt and isinstance(explain_stmt, list):
+            explain_stmt = explain_stmt[0]
+        self.mra.set_user_goal(explain_stmt)
         # We reset the explanations here
         self.have_explanation = False
         reply = KQMLList('SUCCESS')
@@ -357,6 +393,8 @@ class MRA_Module(Bioagent):
         return resp
 
     def send_model_diagnoses(self, res):
+        diagnostic_tells = []
+
         # SUGGESTIONS
         # If there is an explanation, english assemble it
         expl_path = res.get('explanation_path')
@@ -371,9 +409,7 @@ class MRA_Module(Bioagent):
                     explanation_str = (
                             'Our model can now explain how %s: <i>%s</i>' %
                             (goal_str[:-1], path_str))
-                    content = KQMLList('SPOKEN')
-                    content.sets('WHAT', explanation_str)
-                    self.tell(content)
+                    diagnostic_tells.append(explanation_str)
 
         # If there is a suggestion, say it
         suggs = res.get('stmt_suggestions')
@@ -384,20 +420,26 @@ class MRA_Module(Bioagent):
                        ''.join([('<li>%s</li>' % EnglishAssembler([stmt]).make_model())
                                 for stmt in suggs])
             say += stmt_str
-            content = KQMLList('SPOKEN')
-            content.sets('WHAT', say)
-            self.tell(content)
+            diagnostic_tells.append(say)
 
         # If there are corrections
         corrs = res.get('stmt_corrections')
         if corrs:
             stmt = corrs[0]
-            say = 'It looks like a required activity is missing,'
-            say += ' consider revising to <i>%s</i>' % \
+            say = 'It looks like a required activity may be missing,'
+            say += ' say "%s" to add it.' % \
                    (EnglishAssembler([stmt]).make_model())
+            diagnostic_tells.append(say)
+
+        # Finally, say all we have to say
+        for text in diagnostic_tells:
             content = KQMLList('SPOKEN')
-            content.sets('WHAT', say)
-            self.tell(content)
+            content.sets('WHAT', text)
+            # TELLING DIRECTLY HERE IS CURRENTLY INACTIVATED,
+            # IT'S THE BA's RESPONSIBILITY TO DO THIS
+            # self.tell(content)
+
+        return diagnostic_tells
 
     def send_display_model(self, diagrams):
         for diagram_type, resource in diagrams.items():
@@ -426,7 +468,8 @@ class MRA_Module(Bioagent):
             for_what = 'the mechanism you added'
             for stmt in stmts:
                 try:
-                    matched = _get_matching_stmts(stmt)
+                    idp = _get_matching_stmts(stmt)
+                    matched = idp.statements
                     logger.info("Found %d statements supporting %s"
                                 % (len(matched), stmt))
                 except BioagentException as e:
@@ -437,7 +480,11 @@ class MRA_Module(Bioagent):
                                               'due to an internal error')
                     continue
                 if matched:
-                    self.send_provenance_for_stmts(matched, for_what)
+                    ev_totals = {int(k): v for k, v in
+                                 idp.get_ev_counts().items()}
+                    self.send_provenance_for_stmts(matched, for_what,
+                        ev_counts=ev_totals,
+                        source_counts=idp.get_source_counts())
                 else:
                     self.send_null_provenance(stmt, for_what)
 
@@ -508,9 +555,8 @@ def encode_pysb_model(pysb_model):
 
 
 def encode_indra_stmts(stmts):
-    stmts_json = stmts_to_json(stmts)
-    json_str = json.dumps(stmts_json)
-    return json_str
+    stmts_clj = Bioagent.make_cljson(stmts)
+    return stmts_clj
 
 
 def get_ambiguities_msg(ambiguities):
@@ -583,7 +629,7 @@ def _get_matching_stmts(stmt_ref):
                                     'something other than None.')
     kwargs['ev_limit'] = 2
     kwargs['persist'] = False
-    kwargs['simple_response'] = True
+    kwargs['simple_response'] = False
     return get_statements(stmt_type=stmt_type, **kwargs)
 
 

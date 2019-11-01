@@ -45,7 +45,7 @@ class EKB(object):
     def build(self):
         self.ekb = etree.Element('ekb')
         # Determine if the root term is a TERM or EVENT
-        root_node = self.graph.node[self.root_term]
+        root_node = self.graph.nodes[self.root_term]
         if root_node['category'] == 'ONT::TERM':
             self.term_to_ekb(self.root_term)
         else:
@@ -108,7 +108,7 @@ class EKB(object):
         return res
 
     def event_to_ekb(self, event_node):
-        node = self.graph.node[event_node]
+        node = self.graph.nodes[event_node]
         if node['type'].upper() in {'ONT::ATTACH', 'ONT::BIND'}:
             self.binding_to_ekb(event_node)
         else:
@@ -143,7 +143,7 @@ class EKB(object):
 
     def generic_event_to_ekb(self, event_node):
         self._add_to_stack(event_node)
-        node = self.graph.node[event_node]
+        node = self.graph.nodes[event_node]
         event = etree.Element('EVENT', id=event_node)
         type = etree.Element('type')
         type.text = node['type']
@@ -233,7 +233,7 @@ class EKB(object):
             name_node = self.graph.get_matching_node(term_id, link='W')
 
         if name_node:
-            name_val = self.graph.node[name_node]['label']
+            name_val = self.graph.nodes[name_node]['label']
             if name_val.startswith('W::'):
                 name_val = name_val[3:]
         else:
@@ -242,7 +242,7 @@ class EKB(object):
 
     def term_to_ekb(self, term_id):
         self._add_to_stack(term_id)
-        node = self.graph.node[term_id]
+        node = self.graph.nodes[term_id]
 
         term = etree.Element('TERM', id=term_id)
 
@@ -294,7 +294,8 @@ class EKB(object):
         # Now deal with DRUM content
         drum_node = self.graph.get_matching_node(term_id, link='drum')
         if drum_node:
-            drum_kqml = KQMLList.from_string(self.graph.node[drum_node]['kqml'])
+            drum_kqml = KQMLList.from_string(
+                self.graph.nodes[drum_node]['kqml'])
             drum_terms = etree.Element('drum-terms')
             for drum_term in drum_kqml[0][1:]:
                 dt = drum_term_to_ekb(drum_term)
@@ -311,7 +312,7 @@ class EKB(object):
                 if self._is_new_id(mod):
                     self.event_to_ekb(mod)
 
-                event = self.graph.node[mod]
+                event = self.graph.nodes[mod]
                 activity = event['type'].upper()[5:]
                 if activity in {'ACTIVE', 'INACTIVE'}:
                     active = etree.Element('active')
@@ -325,7 +326,7 @@ class EKB(object):
                     features.append(inevent)
 
             if activity_id:
-                activity = self.graph.node[activity_id]
+                activity = self.graph.nodes[activity_id]
                 if activity.get('label') == 'ONT::TRUE':
                     active = etree.Element('active')
                     active.text = 'TRUE'

@@ -198,7 +198,7 @@ class KQMLGraph(networkx.DiGraph):
         # Filter for nodes
         matched_nodes = [e[1] for e in matched_edges if
                          (not target_type or
-                          ('type' in self.node[e[1]] and
-                           (self.node[e[1]]['type'].lower() in
+                          ('type' in self.nodes[e[1]] and
+                           (self.nodes[e[1]]['type'].lower() in
                             targets_to_match)))]
         return matched_nodes

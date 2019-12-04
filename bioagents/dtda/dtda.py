@@ -259,7 +259,11 @@ class DTDA(object):
                     % (len(study_ids), len(gene_list)))
         mut_patt = re.compile("([A-Z]+)(\d+)([A-Z]+)")
         for study_id in study_ids:
-            num_case += cbio_client.get_num_sequenced(study_id)
+            try:
+                num_case += cbio_client.get_num_sequenced(study_id)
+            except Exception as e:
+                continue
+
             mutations = cbio_client.get_mutations(study_id, gene_list,
                                                   mutation_type)
 
@@ -287,6 +291,8 @@ class DTDA(object):
                 if g not in agent_dict.keys():
                     agent_dict[g] = []
                 agent_dict[g].append(ag)
+            if not agent_dict:
+                return {}
 
             # Get the most mutated gene.
             top_gene = max(agent_dict.keys(),
@@ -326,7 +332,7 @@ class DTDA(object):
         except DiseaseNotFoundException as e:
             logger.exception(e)
             raise DiseaseNotFoundException
-        if mutation_stats is None:
+        if not mutation_stats:
             logger.error('No mutation stats')
             return None
 

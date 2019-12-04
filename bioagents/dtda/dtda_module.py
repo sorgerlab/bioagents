@@ -116,8 +116,11 @@ class DTDA_Module(Bioagent):
         logger.debug('Disease: %s' % disease_name)
 
         try:
-            mut_protein, mut_percent, agents = \
-                self.dtda.get_top_mutation(disease_name)
+            res = self.dtda.get_top_mutation(disease_name)
+            if res is None:
+                return self.make_failure('NO_MUTATION_STATS')
+            mut_protein, mut_percent, agents = res
+
         except DiseaseNotFoundException:
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply
@@ -155,8 +158,10 @@ class DTDA_Module(Bioagent):
         logger.debug('Disease: %s' % disease_name)
 
         try:
-            mut_protein, mut_percent, agents = \
-                self.dtda.get_top_mutation(disease_name)
+            res = self.dtda.get_top_mutation(disease_name)
+            if res is None:
+                return self.make_failure('NO_MUTATION_STATS')
+            mut_protein, mut_percent, agents = res
         except DiseaseNotFoundException:
             reply = self.make_failure('DISEASE_NOT_FOUND')
             return reply

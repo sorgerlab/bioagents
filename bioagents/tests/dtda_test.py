@@ -362,6 +362,22 @@ class TestFindDiseaseTargets3(_IntegrationTest):
         assert output.gets('reason') == 'DISEASE_NOT_FOUND', output
 
 
+@attr('nonpublic')
+class TestFindDiseaseTargets4(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        disease = agent_clj_from_text('prostate cancer')
+        content = KQMLList('FIND-DISEASE-TARGETS')
+        content.set('disease', disease)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.gets('reason') == 'NO_MUTATION_STATS', output
+
+
 # FIND-TREATMENT tests
 @attr('nonpublic')
 class TestFindTreatment1(_IntegrationTest):

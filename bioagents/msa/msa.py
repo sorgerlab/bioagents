@@ -471,6 +471,7 @@ class StatementFinder(object):
 
     def get_html(self):
         """Get html for these statements."""
+        logger.info('Generating HTML')
         import boto3
         ev_totals = self.get_ev_totals()
         source_counts = self.get_source_counts()
@@ -483,6 +484,7 @@ class StatementFinder(object):
         bucket = 'indrabot-results'
         key = '%s.html' % uuid.uuid4()
         link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)
+        logger.info('Uploading to S3')
         s3.put_object(Bucket=bucket, Key=key, Body=html.encode('utf-8'),
                       ContentType='text/html')
         return link

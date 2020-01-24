@@ -1,6 +1,4 @@
-from ez_setup import use_setuptools
-use_setuptools()
-from setuptools import setup
+from setuptools import setup, find_packages
 
 def main():
     setup(name='bioagents',
@@ -10,12 +8,8 @@ def main():
           author='Benjamin Gyori',
           author_email='benjamin_gyori@hms.harvard.edu',
           url='http://github.com/sorgerlab/bioagents',
-          packages=['bioagents', 'bioagents.dtda',
-                    'bioagents.kappa', 'bioagents.mea', 'bioagents.mra',
-                    'bioagents.resources'],
-          install_requires=['pysb', 'indra', 'pykqml', 'objectpath', 'rdflib',
-                            'functools32', 'requests', 'lxml',
-                            'pandas'],
+          packages=find_packages(),
+          install_requires=['indra', 'pykqml'],
           include_package_data=True,
           keywords=['systems', 'biology', 'model', 'pathway', 'assembler',
                     'nlp', 'mechanism', 'biochemistry'],
@@ -25,11 +19,13 @@ def main():
             'Intended Audience :: Science/Research',
             'License :: OSI Approved :: BSD License',
             'Operating System :: OS Independent',
-            'Programming Language :: Python :: 2',
+            'Programming Language :: Python :: 3',
             'Topic :: Scientific/Engineering :: Bio-Informatics',
             'Topic :: Scientific/Engineering :: Chemistry',
             'Topic :: Scientific/Engineering :: Mathematics',
             ],
           )
+
+
 if __name__ == '__main__':
     main()

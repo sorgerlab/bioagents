@@ -9,7 +9,7 @@ def main():
           author_email='benjamin_gyori@hms.harvard.edu',
           url='http://github.com/sorgerlab/bioagents',
           packages=find_packages(),
-          install_requires=['indra', 'pykqml'],
+          install_requires=['indra', 'pykqml>=1.2'],
           include_package_data=True,
           keywords=['systems', 'biology', 'model', 'pathway', 'assembler',
                     'nlp', 'mechanism', 'biochemistry'],

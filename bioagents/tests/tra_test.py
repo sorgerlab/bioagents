@@ -24,8 +24,8 @@ def test_get_time_interval_full():
     ts = '(:lower-bound 2 :upper-bound 4 :unit "hour")'
     lst = KQMLList.from_string(ts)
     ti = tra_module.get_time_interval(lst)
-    assert ti.lb == 2*units.hour, ti.lb
-    assert ti.ub == 4*units.hour, ti.ub
+    assert ti.lb == 2.0*units.hour, ti.lb
+    assert ti.ub == 4.0*units.hour, ti.ub
     assert ti.get_lb_seconds() == 7200
     assert ti.get_ub_seconds() == 14400
 
@@ -35,7 +35,7 @@ def test_get_time_interval_ub():
     lst = KQMLList.from_string(ts)
     ti = tra_module.get_time_interval(lst)
     assert ti.lb is None
-    assert ti.ub == 4*units.hours, ti.ub
+    assert ti.ub == 4.0*units.hours, ti.ub
     assert ti.get_ub_seconds() == 14400
 
 
@@ -43,7 +43,7 @@ def test_get_time_interval_lb():
     ts = '(:lower-bound 4 :unit "hour")'
     lst = KQMLList.from_string(ts)
     ti = tra_module.get_time_interval(lst)
-    assert ti.lb == 4*units.hours, ti.lb
+    assert ti.lb == 4.0*units.hours, ti.lb
     assert ti.ub is None
     assert ti.get_lb_seconds() == 14400
 
@@ -67,7 +67,7 @@ def test_molecular_quantity_conc1():
     lst = KQMLList.from_string(s)
     mq = tra_module.get_molecular_quantity(lst)
     assert mq.quant_type == 'concentration'
-    assert mq.value == 2 * units.micro * units.mol / units.liter, mq.value
+    assert mq.value == 2.0 * units.micro * units.mol / units.liter, mq.value
 
 
 def test_molecular_quantity_conc2():
@@ -75,7 +75,7 @@ def test_molecular_quantity_conc2():
     lst = KQMLList.from_string(s)
     mq = tra_module.get_molecular_quantity(lst)
     assert mq.quant_type == 'concentration'
-    assert mq.value == 200 * units.nano * units.mol / units.liter, mq.value
+    assert mq.value == 200.0 * units.nano * units.mol / units.liter, mq.value
 
 
 @raises(tra.InvalidMolecularQuantityError)
@@ -128,7 +128,8 @@ def test_molecular_quantity_ref():
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
     assert mqr.quant_type == 'total'
-    assert len(mqr.entity.bound_conditions) == 1, len(mqr.entity.bound_conditions)
+    assert len(mqr.entity.bound_conditions) == 1, \
+        len(mqr.entity.bound_conditions)
 
 
 def test_molecular_quantity_ref2():
@@ -136,7 +137,8 @@ def test_molecular_quantity_ref2():
     lst = KQMLList.from_string(s)
     mqr = tra_module.get_molecular_quantity_ref(lst)
     assert mqr.quant_type == 'initial'
-    assert len(mqr.entity.bound_conditions) == 1, len(mqr.entity.bound_conditions)
+    assert len(mqr.entity.bound_conditions) == 1, \
+        len(mqr.entity.bound_conditions)
 
 
 @raises(tra.InvalidMolecularQuantityRefError)

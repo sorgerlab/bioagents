@@ -472,7 +472,7 @@ class MRA_Module(Bioagent):
                     matched = idp.statements
                     logger.info("Found %d statements supporting %s"
                                 % (len(matched), stmt))
-                except BioagentException as e:
+                except Exception as e:
                     logger.error("Got exception while looking for support for "
                                  "%s" % stmt)
                     logger.exception(e)

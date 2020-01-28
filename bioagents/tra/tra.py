@@ -20,6 +20,7 @@ from indra.assemblers.english import assembler as english_assembler
 from pysb import Observable
 from pysb.integrate import Solver
 from pysb.export.kappa import KappaExporter
+from pysb.core import ComponentDuplicateNameError
 import bioagents.tra.model_checker as mc
 import matplotlib
 from bioagents import BioagentException, get_img_path
@@ -399,7 +400,10 @@ def get_create_observable(model, agent):
             (site_pattern, monomer.name)
         raise MissingMonomerSiteError(msg)
     obs = Observable(obs_name, monomer(site_pattern))
-    model.add_component(obs)
+    try:
+        model.add_component(obs)
+    except ComponentDuplicateNameError as e:
+        pass
     return obs
 
 

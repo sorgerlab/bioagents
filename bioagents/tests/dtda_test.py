@@ -130,9 +130,8 @@ class TestFindTargetDrugAKT(_TestFindTargetDrug):
     target = 'AKT'
 
     def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert isinstance(output.get('drugs'), KQMLList), output.get('drugs')
-        assert len(output.get('drugs')) == 0, (len(output.get('drugs')), output)
+        assert output.head() == 'FAILURE', output
+        assert output.get('clarification')
 
 
 @attr('nonpublic')

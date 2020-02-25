@@ -42,6 +42,8 @@ class DTDA_Module(Bioagent):
             target = self.get_agent(target_arg)
         except Exception:
             return self.make_failure('INVALID_TARGET')
+        if is_family(target):
+            return self.make_resolve_family_failure(target)
 
         try:
             is_target = self.dtda.is_nominal_drug_target(drug, target)
@@ -58,6 +60,8 @@ class DTDA_Module(Bioagent):
             target = self.get_agent(target_arg)
         except Exception:
             return self.make_failure('INVALID_TARGET')
+        if is_family(target):
+            return self.make_resolve_family_failure(target)
         drug_results = self.dtda.find_target_drugs(target)
         drugs = self._get_drug_cljson(drug_results)
         reply = KQMLList('SUCCESS')
@@ -228,6 +232,10 @@ class DTDA_Module(Bioagent):
         term_id = terms[0].attrib['id']
         agent = tp._get_agent_by_id(term_id, None)
         return agent
+
+
+def is_family(agent):
+    return True if agent.db_refs.get('FPLX') else False
 
 
 if __name__ == "__main__":

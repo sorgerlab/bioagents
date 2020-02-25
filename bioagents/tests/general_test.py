@@ -45,6 +45,19 @@ class TestErrorHandling(_IntegrationTest):
              % output.get('reason'))
 
 
+def test_family_resolve_failure():
+    ag = Agent('AKT', db_refs={'FPLX': 'AKT'})
+    msg = Bioagent.make_resolve_family_failure(ag)
+    assert msg.head() == 'FAILURE'
+    assert msg.gets('reason') == 'FAMILY_NAME'
+    cl = msg.get('clarification')
+    assert cl.head() == 'RESOLVE'
+    assert cl.get('term').gets('name') == 'AKT'
+    genes = cl.get('as')
+    assert len(genes) == 3
+    assert genes[0].gets('name') == 'AKT1'
+
+
 def test_cljson():
     ag = Agent('BRAF',
                mods=[ModCondition('phosphorylation', 'T', '396', False)],

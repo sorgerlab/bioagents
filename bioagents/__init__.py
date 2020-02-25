@@ -172,7 +172,8 @@ class Bioagent(KQMLModule):
         else:
             return msg, comment
 
-    def make_failure(self, reason=None, description=None):
+    @staticmethod
+    def make_failure(reason=None, description=None):
         msg = KQMLList('FAILURE')
         if reason:
             msg.set('reason', reason)
@@ -209,14 +210,16 @@ class Bioagent(KQMLModule):
         content.sets('html', content_fmt % (title, limit, evidence_html))
         return self.tell(content)
 
-    def _make_evidence_html(self, stmts, ev_counts=None, source_counts=None,
+    @staticmethod
+    def _make_evidence_html(stmts, ev_counts=None, source_counts=None,
                             title='Results from the INDRA database'):
         "Make html from a set of statements."
         ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio', title=title,
                            ev_totals=ev_counts, source_counts=source_counts)
         return ha.make_model()
 
-    def _stash_evidence_html(self, html):
+    @staticmethod
+    def _stash_evidence_html(html):
         """Make html for a set of statements, return a link to the file.
 
         The if the PROVENANCE_LOCATION environment variable determines where
@@ -331,6 +334,18 @@ class Bioagent(KQMLModule):
 
         return list_html + '\n' + link_html
 
+    @staticmethod
+    def make_resolve_family_failure(family_agent):
+        gene_agents = get_genes_for_family(family_agent)
+        msg = Bioagent.make_failure(reason='FAMILY_NAME')
+        cl_family = Bioagent.make_cljson(family_agent)
+        cl_genes = Bioagent.make_cljson(gene_agents)
+        clarification = KQMLList('RESOLVE')
+        clarification.set('term', cl_family)
+        clarification.set('as', cl_genes)
+        msg.set('clarification', clarification)
+        return msg
+
 
 def get_img_path(img_name):
     """Get a full path for the given image name.
@@ -373,3 +388,20 @@ def ensure_agent_type(agent):
         return add_agent_type(agent)
     else:
         return agent
+
+
+def get_genes_for_family(family_agent):
+    """Return agents corresponding to specific genes in a given family agent"""
+    from indra.tools.expand_families import Expander
+    from indra.preassembler.grounding_mapper.standardize \
+        import standardize_agent_name
+    expander = Expander()
+    children = expander.get_children(family_agent, ns_filter='HGNC')
+    child_agents = []
+    for _, hgnc_id in children:
+        child_agent = Agent(None, db_refs={'HGNC': hgnc_id,
+                                           'TRIPS': 'ONT::GENE-PROTEIN'})
+        standardize_agent_name(child_agent, standardize_refs=True)
+        child_agents.append(child_agent)
+    child_agents = sorted(child_agents, key=lambda x: x.name)
+    return child_agents

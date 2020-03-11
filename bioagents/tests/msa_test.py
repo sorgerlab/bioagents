@@ -116,36 +116,55 @@ class _TestMsaGeneralLookup(_IntegrationTest):
             print("WARNING: Provenance took more than 10 seconds to post.")
 
 
+def _agent_name_found(output, agent_name):
+    entities = output.get('entities-found')
+    if not entities:
+        return False
+    agents = Bioagent.get_agent(entities)
+    agent_names = {a.name for a in agents}
+    return agent_name in agent_names
+
+
+braf = Agent('BRAF', db_refs={'HGNC': '1097'})
+tp53 = Agent('TP53', db_refs={'HGNC': '11998'})
+map2k1 = Agent('MAP2K1', db_refs={'HGNC': '6840'})
+mek = Agent('MEK', db_refs={'FPLX': 'MEK'})
+mapk1 = Agent('MAPK1', db_refs={'HGNC': '6871'})
+erk = Agent('ERK', db_refs={'FPLX': 'ERK'})
+jund = Agent('JUND', db_refs={'HGNC': '6206'})
+akt1 = Agent('AKT1', db_refs={'HGNC': '391'})
+
+
 def _BRAF():
-    return Bioagent.make_cljson(Agent('BRAF', db_refs={'HGNC': '1097'}))
+    return Bioagent.make_cljson(braf)
 
 
 def _TP53():
-    return Bioagent.make_cljson(Agent('TP53', db_refs={'HGNC': '11998'}))
+    return Bioagent.make_cljson(tp53)
 
 
 def _MEK():
-    return Bioagent.make_cljson(Agent('MEK', db_refs={'FPLX': 'MEK'}))
+    return Bioagent.make_cljson(mek)
 
 
 def _ERK():
-    return Bioagent.make_cljson(Agent('ERK', db_refs={'FPLX': 'ERK'}))
+    return Bioagent.make_cljson(erk)
 
 
 def _MAPK1():
-    return Bioagent.make_cljson(Agent('MAPK1', db_refs={'HGNC': '6871'}))
+    return Bioagent.make_cljson(mapk1)
 
 
 def _MAP2K1():
-    return Bioagent.make_cljson(Agent('MAP2K1', db_refs={'HGNC': '6840'}))
+    return Bioagent.make_cljson(map2k1)
 
 
 def _AKT1():
-    return Bioagent.make_cljson(Agent('AKT1', db_refs={'HGNC': '391'}))
+    return Bioagent.make_cljson(akt1)
 
 
 def _JUND():
-    return Bioagent.make_cljson(Agent('JUND', db_refs={'HGNC': '6206'}))
+    return Bioagent.make_cljson(jund)
 
 
 def _Vemurafenib():
@@ -178,6 +197,24 @@ class TestMSATypeAndSourceBRAF(_TestMsaGeneralLookup):
                                  target=_NONE())
 
     def check_response_to_type_and_source(self, output):
+        assert _agent_name_found(output, 'ERK')
+        return self._check_find_response(output)
+
+
+@attr('nonpublic')
+class TestMSAFilterAgents(_TestMsaGeneralLookup):
+    def create_type_and_source(self):
+        filter_agents = Bioagent.make_cljson([map2k1, mapk1])
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
+                                 type='Phosphorylation',
+                                 source=_BRAF(),
+                                 target=_NONE(),
+                                 filter_agents=filter_agents)
+
+    def check_response_to_type_and_source(self, output):
+        print(output)
+        assert _agent_name_found(output, 'MAPK1')
+        assert not _agent_name_found(output, 'ERK')
         return self._check_find_response(output)
 
 

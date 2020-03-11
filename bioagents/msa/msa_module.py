@@ -172,10 +172,14 @@ class MSA_Module(Bioagent):
         if not subj and not obj:
             raise MSALookupError('MISSING_MECHANISM')
 
+        kfilter_agents = content.get('filter_agents')
+        filter_agents = Bioagent.get_agent(kfilter_agents) if kfilter_agents \
+            else []
+
         stmt_type = content.gets('type')
         if stmt_type == 'unknown':
             stmt_type = None
-        return subj, obj, stmt_type
+        return subj, obj, stmt_type, filter_agents
 
     def _send_provenance_async(self, finder, desc):
         q = finder.query
@@ -202,11 +206,12 @@ class MSA_Module(Bioagent):
     def respond_find_relations_from_literature(self, content):
         """Find statements matching some subject, verb, object information."""
         try:
-            subj, obj, stmt_type = self._get_query_info(content)
+            subj, obj, stmt_type, filter_agents = self._get_query_info(content)
             finder = \
                 self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
                                                    ev_limit=3, persist=False,
-                                                   timeout=5)
+                                                   timeout=5,
+                                                   filter_agents=filter_agents)
             self._send_provenance_async(finder,
                                         'finding statements that match')
         except MSALookupError as mle:
@@ -234,11 +239,12 @@ class MSA_Module(Bioagent):
     def respond_confirm_relation_from_literature(self, content):
         """Confirm a protein-protein interaction given subject, object, verb"""
         try:
-            subj, obj, stmt_type = self._get_query_info(content)
+            subj, obj, stmt_type, filter_agents = self._get_query_info(content)
             finder = \
                 self.msa.find_mechanism_from_input(subj, obj, None, stmt_type,
                                                    ev_limit=5, persist=False,
-                                                   timeout=5)
+                                                   timeout=5,
+                                                   filter_agents=filter_agents)
             self._send_provenance_async(finder,
                 'confirming that some statements match')
         except MSALookupError as mle:

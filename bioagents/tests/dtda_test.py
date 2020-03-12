@@ -219,6 +219,42 @@ class TestFindDrugTargetsVemurafenib(_IntegrationTest):
 
 
 @attr('nonpublic')
+class TestFindDrugTargetsFilterAgents(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        drug = agent_clj_from_text('Vemurafenib')
+        content = KQMLList('FIND-DRUG-TARGETS')
+        content.set('drug', drug)
+        kagents = KQMLList([agent_clj_from_text('BRAF')])
+        content.set('filter_agents', kagents)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        targets = output.get('targets')
+        assert targets
+        target_agents = self.bioagent.get_agent(targets)
+        assert isinstance(target_agents, list)
+        assert len(target_agents) == 1, target_agents
+        assert target_agents[0].name == 'BRAF', target_agents[0]
+
+    def create_message2(self):
+        drug = agent_clj_from_text('Vemurafenib')
+        content = KQMLList('FIND-DRUG-TARGETS')
+        content.set('drug', drug)
+        kagents = KQMLList([agent_clj_from_text('ARAF')])
+        content.set('filter_agents', kagents)
+        return get_request(content), content
+
+    def check_response_to_message2(self, output):
+        assert output.head() == 'SUCCESS', output
+        targets = output.get('targets')
+        assert not targets
+
+
+@attr('nonpublic')
 class TestFindDrugTargetsSB525334(_IntegrationTest):
     def __init__(self, *args):
         super().__init__(DTDA_Module)

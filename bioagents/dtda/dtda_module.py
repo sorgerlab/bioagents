@@ -75,8 +75,12 @@ class DTDA_Module(Bioagent):
             drug = self.get_agent(drug_arg)
         except Exception as e:
             return self.make_failure('INVALID_DRUG')
+        kfilter_agents = content.get('filter_agents')
+        filter_agents = Bioagent.get_agent(kfilter_agents) if kfilter_agents \
+            else None
         logger.info('DTDA looking for targets of %s' % drug.name)
-        drug_targets = self.dtda.find_drug_targets(drug)
+        drug_targets = self.dtda.find_drug_targets(drug,
+                                                   filter_targets=filter_agents)
         all_targets = sorted(list(set(drug_targets)))
 
         reply = KQMLList('SUCCESS')

@@ -182,6 +182,29 @@ class TestFindTargetDrugJAK2(_TestFindTargetDrug):
 
 
 @attr('nonpublic')
+class TestFindTargetDrugJAK2FilterAgents(_TestFindTargetDrug):
+    target = 'JAK2'
+
+    def create_message(self):
+        target = agent_clj_from_text(self.target)
+        content = KQMLList('FIND-TARGET-DRUG')
+        content.set('target', target)
+        st = agent_clj_from_text('Staurosporine')
+        st.sets('NAME', 'Staurosporine')
+        print(st)
+        filter_agents = KQMLList([st])
+        content.set('filter_agents', filter_agents)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        print(drugs)
+        assert len(drugs) == 1, drugs
+        assert drugs[0].name == 'Staurosporine'
+
+
+@attr('nonpublic')
 class TestFindTargetDrugJAK1(_TestFindTargetDrug):
     target = 'JAK1'
 

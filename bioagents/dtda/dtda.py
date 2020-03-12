@@ -167,7 +167,7 @@ class DTDA(object):
 
         return term_set
 
-    def find_target_drugs(self, target):
+    def find_target_drugs(self, target, filter_agents=None):
         """Return all the drugs that target a given target."""
         # These are proteins/genes so we just look at HGNC grounding
         if 'HGNC' not in target.db_refs:
@@ -190,9 +190,16 @@ class DTDA(object):
             logger.debug('Getting target term directly from cache: %s'
                          % str(target_term))
             drugs = self.target_drugs[target_term]
+        if filter_agents:
+            filter_drug_names = {a.name for a in filter_agents}
+            logger.info('Found %d drugs before filter: %s.' %
+                        (len(drugs), str(drugs)))
+            drugs = [d for d in drugs if d[0] in filter_drug_names]
+            logger.info('%d drugs left after filter.' % len(drugs))
+
         return drugs
 
-    def find_drug_targets(self, drug, filter_targets=None):
+    def find_drug_targets(self, drug, filter_agents=None):
         """Return all the targets of a given drug."""
         # Build a list of different possible identifiers
         drug_terms = self._extract_terms(drug)
@@ -213,8 +220,8 @@ class DTDA(object):
                             % str(term))
                 targets = self.drug_targets[term]
             all_targets |= targets
-        if filter_targets:
-            filter_target_names = {t.name for t in filter_targets}
+        if filter_agents:
+            filter_target_names = {t.name for t in filter_agents}
             logger.info('Found %d targets before filter: %s.' %
                         (len(all_targets), str(all_targets)))
             all_targets &= filter_target_names

@@ -5,7 +5,6 @@
 import json
 import re
 import os
-import numpy
 import logging
 from itertools import groupby
 
@@ -53,7 +52,7 @@ class DTDA(object):
         self.sub_statements = {}
 
         # These two dicts will cache results from the database, and act as
-        # a record of which targets and drugs have been search, which is why
+        # a record of which targets and drugs have been searched, which is why
         # the dicts are kept separate. That way we know that if Selumetinib
         # shows up in the drug_targets keys, all the targets of Selumetinib
         # will be present, while although Selumetinib may be a value in
@@ -154,7 +153,8 @@ class DTDA(object):
                 if any(ev.source_api == 'tas' for ev in s.evidence))
 
     def _extract_terms(self, agent):
-        term_set = {(ref, ns) for ns, ref in agent.db_refs.items()}
+        term_set = {(ref, ns) for ns, ref in agent.db_refs.items()
+                    if ns not in {'TYPE', 'TRIPS'}}
 
         # Try without a hyphen.
         if '-' in agent.name:
@@ -167,7 +167,7 @@ class DTDA(object):
 
         return term_set
 
-    def find_target_drugs(self, target):
+    def find_target_drugs(self, target, filter_agents=None):
         """Return all the drugs that target a given target."""
         # These are proteins/genes so we just look at HGNC grounding
         if 'HGNC' not in target.db_refs:
@@ -190,9 +190,16 @@ class DTDA(object):
             logger.debug('Getting target term directly from cache: %s'
                          % str(target_term))
             drugs = self.target_drugs[target_term]
+        if filter_agents:
+            filter_drug_names = {a.name for a in filter_agents}
+            logger.info('Found %d drugs before filter: %s.' %
+                        (len(drugs), str(drugs)))
+            drugs = [d for d in drugs if d[0] in filter_drug_names]
+            logger.info('%d drugs left after filter.' % len(drugs))
+
         return drugs
 
-    def find_drug_targets(self, drug):
+    def find_drug_targets(self, drug, filter_agents=None):
         """Return all the targets of a given drug."""
         # Build a list of different possible identifiers
         drug_terms = self._extract_terms(drug)
@@ -201,7 +208,7 @@ class DTDA(object):
         all_targets = set()
         for term in drug_terms:
             if term not in self.drug_targets:
-                logger.debug('Looking up drug term in DB: %s' % str(term))
+                logger.info('Looking up drug term in DB: %s' % str(term))
                 try:
                     tas_stmts = self._get_tas_stmts(term)
                 except DatabaseTimeoutError:
@@ -209,10 +216,16 @@ class DTDA(object):
                 targets = {s.obj.name for s in tas_stmts}
                 self.drug_targets[term] = targets
             else:
-                logger.debug('Getting drug term directly from cache: %s'
-                             % str(term))
+                logger.info('Getting drug term directly from cache: %s'
+                            % str(term))
                 targets = self.drug_targets[term]
             all_targets |= targets
+        if filter_agents:
+            filter_target_names = {t.name for t in filter_agents}
+            logger.info('Found %d targets before filter: %s.' %
+                        (len(all_targets), str(all_targets)))
+            all_targets &= filter_target_names
+            logger.info('%d targets left after filter.' % len(all_targets))
         return all_targets
 
     def find_mutation_effect(self, agent):

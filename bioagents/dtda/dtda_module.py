@@ -62,7 +62,11 @@ class DTDA_Module(Bioagent):
             return self.make_failure('INVALID_TARGET')
         if is_family(target):
             return self.make_resolve_family_failure(target)
-        drug_results = self.dtda.find_target_drugs(target)
+        kfilter_agents = content.get('filter_agents')
+        filter_agents = Bioagent.get_agent(kfilter_agents) if kfilter_agents \
+            else None
+        drug_results = self.dtda.find_target_drugs(target,
+                                                   filter_agents=filter_agents)
         drugs = self._get_drug_cljson(drug_results)
         reply = KQMLList('SUCCESS')
         reply.set('drugs', drugs)
@@ -75,8 +79,12 @@ class DTDA_Module(Bioagent):
             drug = self.get_agent(drug_arg)
         except Exception as e:
             return self.make_failure('INVALID_DRUG')
+        kfilter_agents = content.get('filter_agents')
+        filter_agents = Bioagent.get_agent(kfilter_agents) if kfilter_agents \
+            else None
         logger.info('DTDA looking for targets of %s' % drug.name)
-        drug_targets = self.dtda.find_drug_targets(drug)
+        drug_targets = self.dtda.find_drug_targets(drug,
+                                                   filter_agents=filter_agents)
         all_targets = sorted(list(set(drug_targets)))
 
         reply = KQMLList('SUCCESS')

@@ -182,6 +182,29 @@ class TestFindTargetDrugJAK2(_TestFindTargetDrug):
 
 
 @attr('nonpublic')
+class TestFindTargetDrugJAK2FilterAgents(_TestFindTargetDrug):
+    target = 'JAK2'
+
+    def create_message(self):
+        target = agent_clj_from_text(self.target)
+        content = KQMLList('FIND-TARGET-DRUG')
+        content.set('target', target)
+        st = agent_clj_from_text('Staurosporine')
+        st.sets('NAME', 'Staurosporine')
+        print(st)
+        filter_agents = KQMLList([st])
+        content.set('filter_agents', filter_agents)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        drugs = self.bioagent.get_agent(output.get('drugs'))
+        print(drugs)
+        assert len(drugs) == 1, drugs
+        assert drugs[0].name == 'Staurosporine'
+
+
+@attr('nonpublic')
 class TestFindTargetDrugJAK1(_TestFindTargetDrug):
     target = 'JAK1'
 
@@ -216,6 +239,42 @@ class TestFindDrugTargetsVemurafenib(_IntegrationTest):
             assert 'HGNC' in agent.db_refs, agent.db_refs
         assert any(target.name == 'BRAF' for target in target_agents), \
             target_agents
+
+
+@attr('nonpublic')
+class TestFindDrugTargetsFilterAgents(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(DTDA_Module)
+
+    def create_message(self):
+        drug = agent_clj_from_text('Vemurafenib')
+        content = KQMLList('FIND-DRUG-TARGETS')
+        content.set('drug', drug)
+        kagents = KQMLList([agent_clj_from_text('BRAF')])
+        content.set('filter_agents', kagents)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        targets = output.get('targets')
+        assert targets
+        target_agents = self.bioagent.get_agent(targets)
+        assert isinstance(target_agents, list)
+        assert len(target_agents) == 1, target_agents
+        assert target_agents[0].name == 'BRAF', target_agents[0]
+
+    def create_message2(self):
+        drug = agent_clj_from_text('Vemurafenib')
+        content = KQMLList('FIND-DRUG-TARGETS')
+        content.set('drug', drug)
+        kagents = KQMLList([agent_clj_from_text('ARAF')])
+        content.set('filter_agents', kagents)
+        return get_request(content), content
+
+    def check_response_to_message2(self, output):
+        assert output.head() == 'SUCCESS', output
+        targets = output.get('targets')
+        assert not targets
 
 
 @attr('nonpublic')

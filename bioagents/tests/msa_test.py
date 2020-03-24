@@ -38,7 +38,7 @@ def _check_failure(msg, flaw, reason):
 @attr('nonpublic')
 def test_respond_phosphorylation_activating():
     "Test the msa_module response to a query regarding phosphorylation."
-    msg = _get_message('PHOSPHORYLATION-ACTIVATING', _MAP2K1(), 'S', '222')
+    msg = _get_message('PHOSPHORYLATION-ACTIVATING', map2k1, 'S', '222')
     assert msg.head() == 'SUCCESS', \
         "MSA could not perform this task because \"%s\"." % msg.gets('reason')
     assert msg.data[1].to_string() == ':is-activating', \
@@ -55,19 +55,19 @@ def test_no_target_failure():
 
 @attr('nonpublic')
 def test_invalid_target_failure():
-    msg = _get_message('PHOSPHORYLATION-ACTIVATING', _JUND())
+    msg = _get_message('PHOSPHORYLATION-ACTIVATING', jund)
     _check_failure(msg, 'missing mechanism', 'MISSING_MECHANISM')
 
 
 @attr('nonpublic')
 def test_not_phosphorylation():
-    msg = _get_message('BOGUS-ACTIVATING', _MAP2K1(), 'S', '222')
+    msg = _get_message('BOGUS-ACTIVATING', map2k1, 'S', '222')
     _check_failure(msg, 'getting a bogus action', 'MISSING_MECHANISM')
 
 
 @attr('nonpublic')
 def test_not_activating():
-    msg = _get_message('PHOSPHORYLATION-INHIBITING', _MAP2K1(), 'S', '222')
+    msg = _get_message('PHOSPHORYLATION-INHIBITING', map2k1, 'S', '222')
     _check_failure(msg, 'getting inhibition instead of activation',
                    'MISSING_MECHANISM')
 
@@ -125,64 +125,26 @@ def _agent_name_found(output, agent_name):
     return agent_name in agent_names
 
 
-braf = Agent('BRAF', db_refs={'HGNC': '1097'})
-tp53 = Agent('TP53', db_refs={'HGNC': '11998'})
-map2k1 = Agent('MAP2K1', db_refs={'HGNC': '6840'})
-mek = Agent('MEK', db_refs={'FPLX': 'MEK'})
-mapk1 = Agent('MAPK1', db_refs={'HGNC': '6871'})
-erk = Agent('ERK', db_refs={'FPLX': 'ERK'})
-jund = Agent('JUND', db_refs={'HGNC': '6206'})
-akt1 = Agent('AKT1', db_refs={'HGNC': '391'})
-
-
-def _BRAF():
-    return Bioagent.make_cljson(braf)
-
-
-def _TP53():
-    return Bioagent.make_cljson(tp53)
-
-
-def _MEK():
-    return Bioagent.make_cljson(mek)
-
-
-def _ERK():
-    return Bioagent.make_cljson(erk)
-
-
-def _MAPK1():
-    return Bioagent.make_cljson(mapk1)
-
-
-def _MAP2K1():
-    return Bioagent.make_cljson(map2k1)
-
-
-def _AKT1():
-    return Bioagent.make_cljson(akt1)
-
-
-def _JUND():
-    return Bioagent.make_cljson(jund)
-
-
-def _Vemurafenib():
-    return Bioagent.make_cljson(Agent('Vemurafenib',
-                                      db_refs={'CHEBI': 'CHEBI:63637'}))
-
-
-def _NONE():
-    return KQMLList()
+braf = Bioagent.make_cljson(Agent('BRAF', db_refs={'HGNC': '1097'}))
+tp53 = Bioagent.make_cljson(Agent('TP53', db_refs={'HGNC': '11998'}))
+map2k1 = Bioagent.make_cljson(Agent('MAP2K1', db_refs={'HGNC': '6840'}))
+mek = Bioagent.make_cljson(Agent('MEK', db_refs={'FPLX': 'MEK'}))
+mapk1 = Bioagent.make_cljson(Agent('MAPK1', db_refs={'HGNC': '6871'}))
+erk = Bioagent.make_cljson(Agent('ERK', db_refs={'FPLX': 'ERK'}))
+jund = Bioagent.make_cljson(Agent('JUND', db_refs={'HGNC': '6206'}))
+akt1 = Bioagent.make_cljson(Agent('AKT1', db_refs={'HGNC': '391'}))
+vemurafenib = Bioagent.make_cljson(Agent('Vemurafenib',
+                                         db_refs={'CHEBI': 'CHEBI:63637'}))
+NONE = KQMLList()
 
 
 @attr('nonpublic')
 class TestMSATypeAndTargetBRAF(_TestMsaGeneralLookup):
     def create_type_and_target(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
-                                 source=_NONE(),
+                                 source=NONE,
                                  type='Phosphorylation',
-                                 target=_BRAF())
+                                 target=braf)
 
     def check_response_to_type_and_target(self, output):
         return self._check_find_response(output)
@@ -193,8 +155,8 @@ class TestMSATypeAndSourceBRAF(_TestMsaGeneralLookup):
     def create_type_and_source(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  type='Phosphorylation',
-                                 source=_BRAF(),
-                                 target=_NONE())
+                                 source=braf,
+                                 target=NONE)
 
     def check_response_to_type_and_source(self, output):
         assert _agent_name_found(output, 'ERK')
@@ -207,8 +169,8 @@ class TestMSAFilterAgents(_TestMsaGeneralLookup):
         filter_agents = Bioagent.make_cljson([map2k1, mapk1])
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  type='Phosphorylation',
-                                 source=_BRAF(),
-                                 target=_NONE(),
+                                 source=braf,
+                                 target=NONE,
                                  filter_agents=filter_agents)
 
     def check_response_to_type_and_source(self, output):
@@ -223,8 +185,8 @@ class TestMSATypeAndTargetTP53(_TestMsaGeneralLookup):
     def create_type_and_source(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  type='Phosphorylation',
-                                 source=_NONE(),
-                                 target=_TP53())
+                                 source=NONE,
+                                 target=tp53)
 
     def check_response_to_type_and_source(self, output):
         return self._check_find_response(output)
@@ -235,8 +197,8 @@ class TestMSAConfirm1(_TestMsaGeneralLookup):
     def create_message(self):
         return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
                                  type='phosphorylation',
-                                 source=_MEK(),
-                                 target=_ERK())
+                                 source=mek,
+                                 target=erk)
 
     def check_response_to_message(self, output):
         return self._check_find_response(output)
@@ -247,8 +209,8 @@ class TestMSAConfirm2(_TestMsaGeneralLookup):
     def create_message(self):
         return self._get_content('CONFIRM-RELATION-FROM-LITERATURE',
                                  type='phosphorylation',
-                                 source=_MAP2K1(),
-                                 target=_MAPK1())
+                                 source=map2k1,
+                                 target=mapk1)
 
     def check_response_to_message(self, output):
         return self._check_find_response(output)
@@ -292,7 +254,7 @@ class TestMsaProvenance(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('PHOSPHORYLATION-ACTIVATING')
-        content.sets('target', _MAPK1())
+        content.sets('target', mapk1)
         for name, value in [('residue', 'T'), ('position', '185')]:
             if value is not None:
                 content.sets(name, value)
@@ -349,28 +311,28 @@ class _MsaCommonsCheck(_IntegrationTest):
 
 @attr('nonpublic')
 class TestMsaCommonUpstreamsMEKERK(_MsaCommonsCheck):
-    inp_genes = [_MEK(), _ERK()]
+    inp_genes = [mek, erk]
     exp_gene_names = {'EGF', 'BRAF'}
     updown = 'up'
 
 
 @attr('nonpublic')
 class TestMsaCommonDownstreamsMEKERK(_MsaCommonsCheck):
-    inp_genes = [_MEK(), _ERK()]
+    inp_genes = [mek, erk]
     exp_gene_names = {'EGF', 'TNF'}
     updown = 'down'
 
 
 @attr('nonpublic')
 class TestMsaCommonUpstreamsTP53AKT1(_MsaCommonsCheck):
-    inp_genes = [_TP53(), _AKT1()]
+    inp_genes = [tp53, akt1]
     exp_gene_names = {'PRKDC', 'SIRT1'}
     updown = 'up'
 
 
 @attr('nonpublic')
 class TestMsaCommonDownstreamsTP53AKT1(_MsaCommonsCheck):
-    inp_genes = [_TP53(), _AKT1()]
+    inp_genes = [tp53, akt1]
     exp_gene_names = {'MDM2', 'CDKN1A'}
     updown = 'down'
 
@@ -382,7 +344,7 @@ class TestMsaCommonDownstreamsMEKVemurafenib(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
-        content.set('genes', KQMLList([_MEK(), _Vemurafenib()]))
+        content.set('genes', KQMLList([mek, vemurafenib]))
         content.sets('up-down', 'ONT::SUCCESSOR')
         msg = get_request(content)
         return msg, content
@@ -399,7 +361,7 @@ class TestMsaCommonDownstreamsMEKonly(_IntegrationTest):
 
     def create_message(self):
         content = KQMLList('GET-COMMON')
-        content.set('genes', KQMLList([_MEK()]))
+        content.set('genes', KQMLList([mek]))
         content.sets('up-down', 'ONT::SUCCESSOR')
         msg = get_request(content)
         return msg, content

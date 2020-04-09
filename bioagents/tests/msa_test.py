@@ -166,7 +166,7 @@ class TestMSATypeAndSourceBRAF(_TestMsaGeneralLookup):
 @attr('nonpublic')
 class TestMSAFilterAgents(_TestMsaGeneralLookup):
     def create_type_and_source(self):
-        filter_agents = Bioagent.make_cljson([map2k1, mapk1])
+        filter_agents = KQMLList([map2k1, mapk1])
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  type='Phosphorylation',
                                  source=braf,

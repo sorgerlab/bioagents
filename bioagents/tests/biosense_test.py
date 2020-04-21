@@ -101,6 +101,14 @@ class TestGetIndraRepStatement(_GetIndraRepTemplate):
         assert stmt.position == '222', stmt.position
 
 
+class TestSB525334(_GetIndraRepTemplate):
+    kqml_file = 'SB525334.kqml'
+
+    def check_result(self, res):
+        stmt = self.bioagent.get_statement(res)[0]
+        assert stmt.subj.name == 'SB-525334'
+
+
 class TestGetIndraRepMultipleResults(_GetIndraRepTemplate):
     kqml_file = 'multiple_results.kqml'
 

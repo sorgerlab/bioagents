@@ -1032,20 +1032,18 @@ class MSA(object):
                              "agents (currently).")
 
         # Look for complexes.
-        if verb == 'Complex' and (subject or len(agents) == 1):
-            if object:
-                raise ValueError('Cannot search for the object of a Complex.')
-
+        if verb == 'Complex':
             # Handle the case where an agent is added without keyword.
-            if subject and not agents:
+            if subject:
                 entity = subject
+            elif object:
+                entity = object
             # Handle the case where someone defines a list of agents.
-            elif agents and not subject:
+            elif agents:
                 entity = agents[0]
             # Someone defined both a subject and agents.
             else:
-                raise ValueError('Cannot set both subject and agents to '
-                                 'search for complexes.')
+                raise ValueError('No subject, object, or agents provided.')
 
             logger.info("Choosing find_complex_one_side.")
             return self.find_complex_one_side(entity, **params)

@@ -66,17 +66,6 @@ class TestGetIndraRepOneAgent(_GetIndraRepTemplate):
             agent.db_refs
 
 
-class TestGetIndraRepTypo(_GetIndraRepTemplate):
-    kqml_file = 'MPAK.kqml'
-
-    def check_result(self, res):
-        agent = self.bioagent.get_agent(res)
-        assert agent.name == 'TOFACITINIB'
-        assert agent.db_refs['TRIPS'] == 'ONT::V34850'
-        assert agent.db_refs['TYPE'] == 'ONT::PHARMACOLOGIC-SUBSTANCE', \
-            agent.db_refs
-
-
 class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):
     kqml_file = 'selumetinib.kqml'
 
@@ -99,6 +88,14 @@ class TestGetIndraRepStatement(_GetIndraRepTemplate):
         assert stmt.sub.name == 'MAP2K1'
         assert stmt.residue == 'S'
         assert stmt.position == '222', stmt.position
+
+
+class TestSB525334(_GetIndraRepTemplate):
+    kqml_file = 'SB525334.kqml'
+
+    def check_result(self, res):
+        stmt = self.bioagent.get_statement(res)[0]
+        assert stmt.subj.name == 'SB-525334'
 
 
 class TestGetIndraRepMultipleResults(_GetIndraRepTemplate):

@@ -91,7 +91,7 @@ class EKB(object):
                     agent.name = simple_name
                 agent.db_refs['TEXT'] = agent.name
             elif self.type.upper() == 'ONT::RNA':
-                agent.name = (agent.name
+                agent.name = (agent.db_refs['TEXT']
                               .upper()
                               .replace('-', '')
                               .replace('PUNCMINUS', '-'))

@@ -312,12 +312,11 @@ class StatementFinder(object):
                                                           other_role)
             for ag in other_agents:
                 gr = self.query.get_agent_grounding(ag)
-                counts[gr] += ev_totals.get(stmt.get_hash(), 0)
+                hash = stmt.get_hash()
+                count = 0 if (hash not in ev_totals or not ev_totals[hash]) \
+                    else ev_totals[hash]
+                counts[gr] += count
                 oa_dict[gr].append(ag)
-
-        def get_aggregate_agent(agents, dbi, dbn):
-            agent = Agent(agents[0].name, db_refs={dbn: dbi})
-            return agent
 
         # Create a list of groundings sorted with the most frequent first.
         # We add t itself as a second element to the tuple to make sure the
@@ -1094,3 +1093,9 @@ class EntityTypeFilter(object):
 
 
 entity_type_filter = EntityTypeFilter()
+
+
+def get_aggregate_agent(agents, dbi, dbn):
+    agent = Agent(agents[0].name, db_refs={dbn: dbi})
+    return agent
+

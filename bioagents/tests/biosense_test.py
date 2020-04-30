@@ -389,6 +389,14 @@ def test_get_synonyms_chemical():
     assert synonyms
 
 
+@raises(SynonymsUnknownError)
+def test_get_synonyms_ungrounded():
+    """raises InvalidAgentError when the agent is not recognized or if the
+    input submitted is not valid XML or is not in the correct format
+    """
+    bs.get_synonyms(Agent('x', db_refs={'xxx': '123'}))
+
+
 # BioSense module unit tests
 def test_respond_choose_sense():
     bs = BioSense_Module(testing=True)
@@ -482,3 +490,4 @@ def test_respond_get_synonyms():
     assert 'MAP2K1' in syn_strs, syn_strs
     assert 'MEK1' in syn_strs, syn_strs
     assert 'MKK1' in syn_strs, syn_strs
+    assert res.get('num_synonyms') == '23', res

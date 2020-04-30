@@ -380,12 +380,13 @@ def test_get_synonyms_fplx():
     assert example_synonyms.issubset(synonyms), synonyms
 
 
-@raises(SynonymsUnknownError)
-def test_get_synonyms_no_synonyms_for_type():
+def test_get_synonyms_chemical():
     """raises InvalidAgentError when the agent is not recognized or if the
     input submitted is not valid XML or is not in the correct format
     """
-    bs.get_synonyms(Bioagent.get_agent(agent_clj_from_text('vemurafenib')))
+    synonyms = bs.get_synonyms(Bioagent.get_agent(
+        agent_clj_from_text('vemurafenib')))
+    assert synonyms
 
 
 # BioSense module unit tests
@@ -478,6 +479,6 @@ def test_respond_get_synonyms():
     assert res.head() == 'SUCCESS'
     syns = res.get('synonyms')
     syn_strs = [s.gets(':name') for s in syns]
-    assert 'MAP2K1' in syn_strs
-    assert 'MEK1' in syn_strs
-    assert 'MKK1' in syn_strs
+    assert 'MAP2K1' in syn_strs, syn_strs
+    assert 'MEK1' in syn_strs, syn_strs
+    assert 'MKK1' in syn_strs, syn_strs

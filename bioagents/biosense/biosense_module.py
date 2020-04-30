@@ -193,12 +193,13 @@ class BioSense_Module(Bioagent):
             return self.make_failure('SYNONYMS_UNKNOWN')
         else:
             syns_kqml = KQMLList()
-            for s in synonyms:
+            for s in synonyms[:10]:
                 entry = KQMLList()
                 entry.sets(':name', s)
                 syns_kqml.append(entry)
             msg = KQMLList('SUCCESS')
             msg.set('synonyms', syns_kqml)
+            msg.set('num_synonyms', str(len(synonyms)))
         return msg
 
 

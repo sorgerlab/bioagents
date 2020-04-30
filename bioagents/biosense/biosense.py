@@ -1,26 +1,29 @@
 import logging
+import requests
 from indra import __path__ as _indra_path
-from indra.databases import uniprot_client
 from indra.util import read_unicode_csv
 from indra.tools import expand_families
 from indra.preassembler.hierarchy_manager import hierarchies
-from indra.preassembler.grounding_mapper import default_grounding_map as gm
 
 
 logger = logging.getLogger('BioSense')
 _indra_path = _indra_path[0]
 
+try:
+    import gilda
+    gilda_web = False
+except ImportError:
+    gilda_web = True
+
 
 class BioSense(object):
     """Python API for biosense agent"""
-    __slots__ = ['_kinase_list', '_tf_list', '_phosphatase_list',
-                 '_fplx_synonyms']
+    __slots__ = ['_kinase_list', '_tf_list', '_phosphatase_list']
 
     def __init__(self):
         self._kinase_list = _read_kinases()
         self._tf_list = _read_tfs()
         self._phosphatase_list = _read_phosphatases()
-        self._fplx_synonyms = _make_fplx_synonyms()
 
     def choose_sense_category(self, agent, category):
         """Determine if an agent belongs to a particular category
@@ -134,16 +137,22 @@ class BioSense(object):
         SynonymsUnknownError
             We don't provide synonyms for this type of agent.
         """
-        up_id = agent.db_refs.get('UP')
-        fplx_id = agent.db_refs.get('FPLX')
-        if up_id:
-            synonyms = uniprot_client.get_synonyms(up_id)
-        elif fplx_id:
-            synonyms = self._fplx_synonyms.get(fplx_id, [])
-        else:
-            raise SynonymsUnknownError('We don\'t provide synonyms for '
-                                       'this type of agent.')
-        return synonyms
+        db, id = agent.get_grounding()
+        if db is None or id is None:
+            raise SynonymsUnknownError('Couldn\'t get grounding for agent'
+                                       ' in a namespace for which we have '
+                                       'synonyms.')
+        return sorted(get_names_gilda(db, id), key=lambda x: len(x))
+
+
+def get_names_gilda(db, id):
+    if gilda_web:
+        res = requests.post('http://grounding.indra.bio/get_names',
+                            json={'db': db, 'id': id})
+        res.raise_for_status()
+        return res.json()
+    else:
+        return gilda.get_names(db, id)
 
 
 def _get_members(agent):
@@ -179,20 +188,6 @@ def _read_tfs():
                                 '/resources/transcription_factors.csv')
     gene_names = [lin[1] for lin in list(tf_table)[1:]]
     return gene_names
-
-
-def _make_fplx_synonyms():
-    fplx_synonyms = {}
-    for txt, db_refs in gm.items():
-        if not db_refs:
-            continue
-        fplx_id = db_refs.get('FPLX')
-        if fplx_id:
-            try:
-                fplx_synonyms[fplx_id].append(txt)
-            except KeyError:
-                fplx_synonyms[fplx_id] = [txt]
-    return fplx_synonyms
 
 
 class InvalidAgentError(ValueError):

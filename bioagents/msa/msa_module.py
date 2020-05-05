@@ -146,7 +146,8 @@ class MSA_Module(Bioagent):
                                                 action=action,
                                                 polarity=polarity)
         stmts = finder.get_statements()
-        self.say(finder.describe(include_negative=False))
+        description = finder.describe(include_negative=False)
+        #self.say(description)
 
         logger.info("Found %d matching statements." % len(stmts))
         if not len(stmts):
@@ -164,6 +165,7 @@ class MSA_Module(Bioagent):
                 source_counts=finder.get_source_counts())
             msg = KQMLPerformative('SUCCESS')
             msg.set('is-activating', 'TRUE')
+            msg.sets('suggestion', description)
             return msg
 
     def _get_query_info(self, content):
@@ -228,12 +230,14 @@ class MSA_Module(Bioagent):
             return resp
 
         agents = finder.get_other_agents()
-        self.say(finder.describe(include_negative=False))
+        description = finder.describe(include_negative=False)
+        #self.say(description)
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
         resp.set('entities-found', self.make_cljson(agents))
         resp.set('num-relations-found', str(len(stmts)))
         resp.set('dump-limit', str(DUMP_LIMIT))
+        resp.sets('suggestion', description)
         return resp
 
     def respond_confirm_relation_from_literature(self, content):
@@ -254,11 +258,13 @@ class MSA_Module(Bioagent):
             # TODO: Handle this more gracefully, if possible.
             return self.make_failure('MISSING_MECHANISM')
         num_stmts = len(stmts)
-        self.say(finder.describe(include_negative=False))
+        description = finder.describe(include_negative=False)
+        #self.say(description)
         resp = KQMLPerformative('SUCCESS')
         resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
         resp.set('num-relations-found', str(num_stmts))
         resp.set('dump-limit', str(DUMP_LIMIT))
+        resp.sets('suggestion', description)
         return resp
 
     def respond_get_paper_model(self, content):

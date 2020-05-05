@@ -238,6 +238,7 @@ class MSA_Module(Bioagent):
         resp.set('num-relations-found', str(len(stmts)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         resp.sets('suggestion', description)
+        resp.set('top-stmts', self.make_cljson(stmts[:10]))
         return resp
 
     def respond_confirm_relation_from_literature(self, content):

@@ -4,7 +4,7 @@ from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
 
 from bioagents import Bioagent
-from bioagents.msa.msa import MSA
+from bioagents.msa.msa import MSA, ComplexOneSide
 from indra.statements import Agent
 
 from kqml.kqml_list import KQMLList
@@ -631,3 +631,20 @@ def test_binary_summary_description():
     assert re.match(r'Overall, I found that CDK12 and EZH2 interact in the '
                     r'following ways: phosphorylation.',
                     desc), desc
+
+
+@attr('nonpublic', 'notravis')
+def test_curations():
+    class Cur:
+        pa_hash = 18316509602085006
+        source_hash = 7464387630796688426
+        tag = 'grounding'
+    arr3 = Agent('ARR3', db_refs={'HGNC': '710'})
+
+    from bioagents.msa.msa import curs
+    finder = ComplexOneSide(arr3)
+    curs.append(Cur)
+    stmts = finder.get_statements()
+    stmt = stmts[0]
+    names = {a.name for a in stmt.agent_list() if a is not None}
+    assert 'RXR' not in names

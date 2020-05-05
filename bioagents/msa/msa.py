@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import uuid
@@ -19,8 +20,24 @@ from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
     statement_base_verb, statement_present_verb, statement_passive_verb
+from indra.tools.assemble_corpus import filter_by_curation
 
 logger = logging.getLogger('MSA')
+
+
+# We fetch curations if we have access to the DB, just to make this
+# more flexible, this can be turned off with an env variable
+if os.environ.get('INDRADB_ACCESS'):
+    try:
+        from indra_db import get_db
+        from indra_db.client.principal import curation
+        db = get_db('primary')
+        curs = curation.get_curations(db)
+        logger.info('Loaded %d curations in MSA' % len(curs))
+    except Exception as e:
+        curs = []
+else:
+    curs = []
 
 
 def _build_verb_map():
@@ -200,6 +217,7 @@ class StatementFinder(object):
         statements list (retrieved by `get_statements`) and the sample (gotten
         through `get_sample`).
         """
+        stmts = filter_by_curation(stmts, curations=curs)
         return stmts
 
     def _filter_stmts_for_agents(self, stmts):
@@ -610,6 +628,7 @@ class PhosActiveforms(Activeforms):
         return matching_residues
 
     def _filter_stmts(self, stmts):
+        stmts = super()._filter_stmts(stmts)
         ret_stmts = []
         for stmt in stmts:
             ags = stmt.agent_list()
@@ -738,6 +757,7 @@ class FromSource(StatementFinder):
         return desc
 
     def _filter_stmts(self, stmts):
+        stmts = super()._filter_stmts(stmts)
         if self.query.ent_type:
             stmts_out = self.filter_other_agent_type(stmts,
                                                      self.query.ent_type,
@@ -794,6 +814,7 @@ class ToTarget(StatementFinder):
         return desc
 
     def _filter_stmts(self, stmts):
+        stmts = super()._filter_stmts(stmts)
         # First we filter for None objects
         stmts_out = [s for s in stmts if s.agent_list()[0] is not None]
         if self.query.ent_type:
@@ -832,6 +853,7 @@ class ComplexOneSide(StatementFinder):
         return desc
 
     def _filter_stmts(self, stmts):
+        stmts = super()._filter_stmts(stmts)
         # First we filter for None objects
         if self.query.ent_type:
             stmts_out = self.filter_other_agent_type(stmts,

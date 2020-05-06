@@ -400,7 +400,7 @@ def get_genes_for_family(family_agent):
     child_agents = []
     for _, hgnc_id in children:
         child_agent = Agent(None, db_refs={'HGNC': hgnc_id,
-                                           'TRIPS': 'ONT::GENE-PROTEIN'})
+                                           'TYPE': 'ONT::GENE-PROTEIN'})
         standardize_agent_name(child_agent, standardize_refs=True)
         child_agents.append(child_agent)
     child_agents = sorted(child_agents, key=lambda x: x.name)

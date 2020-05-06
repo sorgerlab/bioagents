@@ -503,7 +503,7 @@ class StatementFinder(object):
         link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)
         logger.info('Uploading to S3')
         s3.put_object(Bucket=bucket, Key=key, Body=html.encode('utf-8'),
-                      ContentType='text/html')
+                      ContentType='text/html', ACL='public-read')
         return link
 
     def get_tsv(self):

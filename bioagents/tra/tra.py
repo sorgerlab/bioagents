@@ -168,7 +168,7 @@ class TRA(object):
         plt.plot(ts, results[-1][:len(ts)], label='With condition')
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
-        agent_str = english_assembler._assemble_agent_str(agent)
+        agent_str = english_assembler._assemble_agent_str(agent).agent_str
         plt.title('Simulation results for %s' % agent_str)
         plt.legend()
         fig_path = get_img_path(obs_name + '.png')
@@ -198,7 +198,7 @@ class TRA(object):
         plt.xlim(-100, 10100)
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
-        agent_str = english_assembler._assemble_agent_str(agent)
+        agent_str = english_assembler._assemble_agent_str(agent).agent_str
         plt.title('Simulation results for %s' % agent_str)
         fig_path = get_img_path(obs_name + '.png')
         plt.savefig(fig_path)

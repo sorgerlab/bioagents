@@ -17,7 +17,7 @@ from bioagents import get_img_path
 from indra.sources import trips
 from indra.statements import Complex, Activation, IncreaseAmount, \
     stmts_from_json
-from indra.preassembler.hierarchy_manager import hierarchies
+from indra.ontology.bio import bio_ontology
 from indra.assemblers.pysb import assembler as pysb_assembler
 from indra.assemblers.pysb import PysbAssembler
 from pysb.bng import BngInterfaceError
@@ -169,14 +169,14 @@ class MRA(object):
                         stmts_new_matched.append(nst)
                 # The old statement is a refinement of the new one
                 # We propagate the old one
-                elif ost.refinement_of(nst, hierarchies):
+                elif ost.refinement_of(nst, bio_ontology):
                     if ost not in stmts_old_refinement:
                         stmts_old_refinement.append(ost)
                     if nst not in stmts_new_refined:
                         stmts_new_refined.append(nst)
                 # The new statement is a refinement of the old one
                 # We add the new statement and don't propagate the old one
-                elif nst.refinement_of(ost, hierarchies):
+                elif nst.refinement_of(ost, bio_ontology):
                     if ost not in stmts_old_refined:
                         stmts_old_refined.append(ost)
                     if nst not in stmts_new_to_add:
@@ -219,7 +219,7 @@ class MRA(object):
         stmts_rem_matched = []
         for ost in model_stmts:
             for rst in rem_stmts:
-                if ost.refinement_of(rst, hierarchies):
+                if ost.refinement_of(rst, bio_ontology):
                     if ost not in stmts_old_to_remove:
                         stmts_old_to_remove.append(ost)
                     if rst not in stmts_rem_matched:
@@ -337,7 +337,7 @@ class MRA(object):
         res['query'] = query_st
         model_stmts = self.models[model_id]
         for model_st in model_stmts:
-            if model_st.refinement_of(query_st, hierarchies):
+            if model_st.refinement_of(query_st, bio_ontology):
                 res['has_mechanism'] = True
                 return res
         res['has_mechanism'] = False

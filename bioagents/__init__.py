@@ -392,11 +392,14 @@ def ensure_agent_type(agent):
 
 def get_genes_for_family(family_agent):
     """Return agents corresponding to specific genes in a given family agent"""
-    from indra.tools.expand_families import Expander
+    from indra.ontology.bio import bio_ontology
     from indra.ontology.standardize \
         import standardize_agent_name
-    expander = Expander()
-    children = expander.get_children(family_agent, ns_filter='HGNC')
+    family_grounding = family_agent.db_refs.get('FPLX')
+    if not family_grounding:
+        return []
+    children = bio_ontology.get_children('FPLX', family_grounding)
+    children = [c for c in children if c[0] == 'HGNC']
     child_agents = []
     for _, hgnc_id in children:
         child_agent = Agent(None, db_refs={'HGNC': hgnc_id,

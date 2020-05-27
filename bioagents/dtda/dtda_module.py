@@ -116,13 +116,6 @@ class DTDA_Module(Bioagent):
             reply = self.make_failure('INVALID_DISEASE')
             return reply
 
-        # NOTE This code is currently not used as disease type is not in Agent
-        # NOTE representation of a disease. We currently only check the disease
-        # NOTE using their standard name
-        # if not trips_isa(disease.disease_type, 'ont::cancer'):
-        #     reply = self.make_failure('DISEASE_NOT_FOUND')
-        #     return reply
-
         disease_name = disease.name.lower().replace('-', ' ')
         disease_name = disease_name.replace('cancer', 'carcinoma')
         logger.debug('Disease: %s' % disease_name)
@@ -156,14 +149,6 @@ class DTDA_Module(Bioagent):
             logger.error(e)
             reply = self.make_failure('INVALID_DISEASE')
             return reply
-
-        # NOTE This code is currently not used as disease type is not in Agent
-        # NOTE representation of a disease. We currently only check the disease
-        # NOTE using their standard name
-        # if not trips_isa(disease.disease_type, 'ont::cancer'):
-        #     logger.info('Disease is not a type of cancer.')
-        #     reply = self.make_failure('DISEASE_NOT_FOUND')
-        #     return reply
 
         disease_name = disease.name.lower().replace('-', ' ')
         disease_name = disease_name.replace('cancer', 'carcinoma')

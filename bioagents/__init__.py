@@ -393,7 +393,7 @@ def ensure_agent_type(agent):
 def get_genes_for_family(family_agent):
     """Return agents corresponding to specific genes in a given family agent"""
     from indra.tools.expand_families import Expander
-    from indra.preassembler.grounding_mapper.standardize \
+    from indra.ontology.standardize \
         import standardize_agent_name
     expander = Expander()
     children = expander.get_children(family_agent, ns_filter='HGNC')

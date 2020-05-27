@@ -2,10 +2,8 @@ import logging
 import requests
 from indra import __path__ as _indra_path
 from indra.util import read_unicode_csv
-from indra.tools import expand_families
 from indra.ontology.bio import bio_ontology
-from indra.preassembler.grounding_mapper import standardize
-
+from indra.ontology import standardize
 
 logger = logging.getLogger('BioSense')
 _indra_path = _indra_path[0]

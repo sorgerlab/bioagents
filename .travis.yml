@@ -11,7 +11,7 @@ before_install:
 install:
   - pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas kappy==4.0.0 boto3 nose-timer
   # PySB and dependencies
-  - wget "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz"
+  - wget --no-check-certificate "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz"
         -O bionetgen.tar.gz -nv
   - tar xzf bionetgen.tar.gz
   - export BNGPATH=`pwd`/BioNetGen-2.2.6-stable

@@ -126,6 +126,7 @@ def _agent_name_found(output, agent_name):
 
 
 braf = Bioagent.make_cljson(Agent('BRAF', db_refs={'HGNC': '1097'}))
+araf = Bioagent.make_cljson(Agent('ARAF', db_refs={'HGNC': '646'}))
 tp53 = Bioagent.make_cljson(Agent('TP53', db_refs={'HGNC': '11998'}))
 map2k1 = Bioagent.make_cljson(Agent('MAP2K1', db_refs={'HGNC': '6840'}))
 mek = Bioagent.make_cljson(Agent('MEK', db_refs={'FPLX': 'MEK'}))
@@ -143,6 +144,18 @@ class TestMSATypeAndTargetBRAF(_TestMsaGeneralLookup):
     def create_type_and_target(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  source=NONE,
+                                 type='Phosphorylation',
+                                 target=braf)
+
+    def check_response_to_type_and_target(self, output):
+        return self._check_find_response(output)
+
+
+@attr('nonpublic')
+class TestMSATypeBothSoureAndTarget(_TestMsaGeneralLookup):
+    def create_type_and_target(self):
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
+                                 source=araf,
                                  type='Phosphorylation',
                                  target=braf)
 

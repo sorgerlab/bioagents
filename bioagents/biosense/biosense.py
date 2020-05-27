@@ -1,9 +1,10 @@
 import logging
 import requests
 from indra import __path__ as _indra_path
+from indra.statements import Agent
 from indra.util import read_unicode_csv
 from indra.ontology.bio import bio_ontology
-from indra.ontology import standardize
+from indra.ontology.standardize import standardize_agent_name
 
 logger = logging.getLogger('BioSense')
 _indra_path = _indra_path[0]
@@ -157,11 +158,15 @@ def get_names_gilda(db, id):
 def _get_members(agent):
     if 'FPLX' not in agent.db_refs:
         return None
-    dbname, dbid = 'FPLX', agent.db_refs['FPLX']
+    db_name, db_id = 'FPLX', agent.db_refs['FPLX']
     children = bio_ontology.get_children(db_name, db_id)
-    children_agents = [standardize(Agent(db_id, db_refs={db_name, db_id}))
-                       foir db_name, db_id in children]
-    return sorted(children_agents, key=lambda x: x.name))
+    children_agents = [
+        Agent(db_id, db_refs={db_name: db_id})
+        for db_name, db_id in children
+    ]
+    for ca in children_agents:
+        standardize_agent_name(ca, standardize_refs=True)
+    return sorted(children_agents, key=lambda x: x.name)
 
 
 def _read_phosphatases():

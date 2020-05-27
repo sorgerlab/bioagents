@@ -39,6 +39,8 @@ trips_ontology.initialize()
 def trips_isa(concept1, concept2):
     concept1 = normalize_entry(concept1)
     concept2 = normalize_entry(concept2)
+    if concept1 == concept2:
+        return True
     return trips_ontology.isa('TRIPS', concept1,
                               'TRIPS', concept2)
 

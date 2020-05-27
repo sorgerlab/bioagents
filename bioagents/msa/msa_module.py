@@ -234,11 +234,14 @@ class MSA_Module(Bioagent):
         #self.say(description)
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
-        resp.set('entities-found', self.make_cljson(agents))
+        resp.set('entities-found',
+                 self.make_cljson(agents)
+                 if agents is not None else KQMLList([]))
         resp.set('num-relations-found', str(len(stmts)))
         resp.set('dump-limit', str(DUMP_LIMIT))
-        resp.sets('suggestion', description)
-        resp.set('top-stmts', self.make_cljson(stmts[:10]))
+        resp.sets('suggestion', description if description else 'nil')
+        top_stmts = self.make_cljson(stmts[:10]) if stmts else KQMLList([])
+        resp.set('top-stmts', top_stmts)
         return resp
 
     def respond_confirm_relation_from_literature(self, content):

@@ -8,10 +8,8 @@ import collections
 from matplotlib import cm
 from matplotlib import colors
 
-from indra.statements import *
 from indra.sources.indra_db_rest import get_statements
-from indra.tools.expand_families import Expander
-from indra.preassembler.ontology import bio_ontology
+from indra.ontology.bio import bio_ontology
 from indra.databases import context_client
 
 

@@ -356,6 +356,7 @@ def drum_term_to_ekb(drum_term):
     match = drum_term.get('matches')[0]
     match_score = match.gets('score')
     match_matched = match.gets('matched')
+    match_input = match.gets('input')
     # NOTE: these two below don't seem to be added to the EKB
     # match_status = match.gets('status')
     # match_exact = int(match.gets('exact'))
@@ -376,6 +377,8 @@ def drum_term_to_ekb(drum_term):
     dt = etree.Element('drum-term', dbid=dbid, name=match_matched)
     dt.attrib['match-score'] = match_score
     dt.attrib['matched-name'] = match_matched
+    if match_input:
+        dt.attrib['input'] = match_input
     types = etree.Element('types')
     type = etree.Element('type')
     type.text = ont_type

@@ -1,10 +1,10 @@
 import logging
 import requests
 from indra import __path__ as _indra_path
+from indra.statements import Agent
 from indra.util import read_unicode_csv
-from indra.tools import expand_families
-from indra.preassembler.hierarchy_manager import hierarchies
-
+from indra.ontology.bio import bio_ontology
+from indra.ontology.standardize import standardize_agent_name
 
 logger = logging.getLogger('BioSense')
 _indra_path = _indra_path[0]
@@ -93,7 +93,7 @@ class BioSense(object):
         if 'FPLX' not in collection.db_refs:
             raise CollectionNotFamilyOrComplexError(
                 '%s is not a family or complex' % collection)
-        return agent.isa(collection, hierarchies)
+        return agent.isa(collection, bio_ontology)
 
     def choose_sense_what_member(self, collection):
         """Get members of a collection.
@@ -158,13 +158,15 @@ def get_names_gilda(db, id):
 def _get_members(agent):
     if 'FPLX' not in agent.db_refs:
         return None
-    dbname, dbid = 'FPLX', agent.db_refs['FPLX']
-    eh = hierarchies['entity']
-    uri = eh.get_uri(dbname, dbid)
-    children_uris = sorted(eh.get_children(uri))
-    children_agents = [expand_families._agent_from_uri(uri)
-                       for uri in children_uris]
-    return children_agents
+    db_name, db_id = 'FPLX', agent.db_refs['FPLX']
+    children = bio_ontology.get_children(db_name, db_id)
+    children_agents = [
+        Agent(db_id, db_refs={db_name: db_id})
+        for db_name, db_id in children
+    ]
+    for ca in children_agents:
+        standardize_agent_name(ca, standardize_refs=True)
+    return sorted(children_agents, key=lambda x: x.name)
 
 
 def _read_phosphatases():

@@ -8,10 +8,8 @@ import collections
 from matplotlib import cm
 from matplotlib import colors
 
-from indra.statements import *
 from indra.sources.indra_db_rest import get_statements
-from indra.tools.expand_families import Expander
-from indra.preassembler.hierarchy_manager import hierarchies
+from indra.ontology.bio import bio_ontology
 from indra.databases import context_client
 
 
@@ -231,10 +229,10 @@ class SbgnColorizer(object):
             if 'FPLX' not in agent.db_refs:
                 gene_names = [agent.name]
             else:
-                expander = Expander(hierarchies)
-                expanded_families = expander.get_children(agent,
-                                                          ns_filter='HGNC')
-                gene_names = [t[1] for t in expanded_families]
+                children = bio_ontology.get_children('FPLX',
+                                                     agent.db_refs['FPLX'])
+                gene_names = [bio_ontology.get_name(*child) for child
+                              in children]
 
             # Compute mean expression level
             expression_levels = []

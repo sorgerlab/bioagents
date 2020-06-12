@@ -1,18 +1,52 @@
 import os
-from indra.preassembler.hierarchy_manager import HierarchyManager
+from xml.etree import ElementTree as ET
+from indra.ontology import IndraOntology
 
-# Make a TRIPS ontology
-_fname = os.path.join(os.path.dirname(__file__), 'trips_ontology.rdf')
-trips_ontology = HierarchyManager(_fname, uri_as_name=False, build_closure=True)
-trips_ontology.relations_prefix = 'http://trips.ihmc.us/relations/'
+
+here = os.path.dirname(os.path.abspath(__file__))
+ont_xml_path = os.path.join(here, 'trips-ont-dsl.xml')
+
+
+class TripsOntology(IndraOntology):
+    def __init__(self, xml_path=ont_xml_path):
+        super().__init__()
+        self.tree = ET.parse(xml_path)
+
+    def initialize(self):
+        concepts = self.tree.findall('concept')
+        edges = []
+        for concept in concepts:
+            name = concept.attrib['name'].upper()
+            if name == 'root':
+                continue
+            relations = concept.find("relation[@label='inherit']")
+            # E.g., for the ONT:ROOT there is no relation
+            if relations is None:
+                continue
+            related_names = [rr.strip().upper() for rr
+                             in relations.text.strip().split('\n')]
+            for related_name in related_names:
+                edges.append((self.label('TRIPS', name),
+                              self.label('TRIPS', related_name),
+                              {'type': 'isa'}))
+        self.add_edges_from(edges)
+
+
+trips_ontology = TripsOntology()
 trips_ontology.initialize()
 
+
 def trips_isa(concept1, concept2):
-    # Preprocess to make this more general
-    concept1 = concept1.lower().replace('ont::', '')
-    concept2 = concept2.lower().replace('ont::', '')
+    concept1 = normalize_entry(concept1)
+    concept2 = normalize_entry(concept2)
     if concept1 == concept2:
         return True
-    isa = trips_ontology.isa('http://trips.ihmc.us/concepts/', concept1,
-                             'http://trips.ihmc.us/concepts/', concept2)
-    return isa
+    return trips_ontology.isa('TRIPS', concept1,
+                              'TRIPS', concept2)
+
+
+def normalize_entry(txt):
+    txt = txt.upper()
+    if not txt.startswith('ONT::'):
+        txt = 'ONT::%s' % txt
+    return txt

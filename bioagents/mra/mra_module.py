@@ -10,7 +10,6 @@ import pysb.export
 from indra.databases import hgnc_client
 from indra.assemblers.english import EnglishAssembler
 from indra.sources.trips.processor import TripsProcessor
-from indra.preassembler.hierarchy_manager import hierarchies
 from indra.statements import stmts_to_json, Complex, SelfModification,\
     ActiveForm
 from indra import has_config
@@ -583,16 +582,6 @@ def get_ambiguities_msg(ambiguities):
         sa.append(s)
     ambiguities_msg = KQMLList.from_string('(' + ' '.join(sa) + ')')
     return ambiguities_msg
-
-
-def _get_agent_comp(agent):
-    eh = hierarchies['entity']
-    a_ns, a_id = agent.get_grounding()
-    if (a_ns is None) or (a_id is None):
-        return None
-    uri = eh.get_uri(a_ns, a_id)
-    comp_id = eh.components.get(uri)
-    return comp_id
 
 
 def _get_agent_ref(agent):

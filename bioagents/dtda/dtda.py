@@ -2,9 +2,10 @@
 # search for targets known to be implicated in a
 # certain disease and to look for drugs that are known
 # to affect that target directly or indirectly
-import json
 import re
 import os
+import json
+import pickle
 import logging
 from itertools import groupby
 
@@ -60,10 +61,10 @@ class DTDA(object):
         # will be keys.
         self.target_drugs = {}
         self.drug_targets = {}
+        self.drug_by_key = {}
+        self.target_by_key = {}
 
         # The following are sets of the drugs and targets that we come across
-        self.all_drugs = []
-        self.all_targets = []
         self.all_diseases = list(cbio_efo_map.keys())
 
         # Load data directly from tas
@@ -81,11 +82,12 @@ class DTDA(object):
 
     def _get_tas_stmts_directly(self):
         logger.debug('Loading TAS Statements directly into cache.')
-        from indra.sources import tas
-        tp = tas.process_csv()
-
+        fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             os.pardir, 'resources', 'tas_stmts_filtered.pkl')
+        with open(fname, 'rb') as fh:
+            stmts = pickle.load(fh)
         # Here we figure out which drugs only have weak affinities
-        stmts_by_drug = groupby(sorted(tp.statements,
+        stmts_by_drug = groupby(sorted(stmts,
                                        key=lambda x: x.subj.name),
                                 key=lambda x: x.subj.name)
         drug_classes = {}
@@ -94,27 +96,23 @@ class DTDA(object):
             aff = {stmt.evidence[0].annotations['class_min'] for stmt in stmts}
             drug_classes[stmts[0].subj.name] = 'has_strong' \
                 if 'Kd < 100nM' in aff else 'not_has_strong'
-
-        drug_set = set()
-        target_set = set()
-        for stmt in tp.statements:
+        for stmt in stmts:
             # Skip Statements where the affinity is low if it otherwise also
             # has strong affinity targets
             if drug_classes[stmt.subj.name] == 'has_strong' and \
                stmt.evidence[0].annotations['class_min'] != 'Kd < 100nM':
                 continue
 
-            # Add the interactors to their respective sets
-            drug_set.add(json.dumps(stmt.subj.to_json()))
-            target_set.add(json.dumps(stmt.obj.to_json()))
-
             # First we make the target to drug mapping
-            target_hgnc = stmt.obj.db_refs['HGNC']
-            if target_hgnc:
-                target_key = (target_hgnc, 'HGNC')
-            else:
-                target_key = stmt.obj.name
-            drug_key = (stmt.subj.name, stmt.subj.db_refs.get('PUBCHEM'))
+            target_key = stmt.obj.get_grounding()
+            drug_key = stmt.subj.get_grounding()
+            # This should not happen but just in case, we check that we
+            # have a proper grounding
+            if not target_key[0] or not drug_key[0]:
+                continue
+
+            self.drug_by_key[drug_key] = stmt.subj
+            self.target_by_key[target_key] = stmt.obj
             if target_key not in self.target_drugs:
                 self.target_drugs[target_key] = [drug_key]
             else:
@@ -122,21 +120,19 @@ class DTDA(object):
 
             # Then we make the drug to target mapping where targets
             # only need a name
-            drug_keys = [(di, dn) for dn, di in stmt.subj.db_refs.items()]
-            drug_keys += [(stmt.subj.name.lower(), 'TEXT'),
-                          (stmt.subj.name.upper(), 'TEXT'),
-                          (stmt.subj.name.capitalize(), 'TEXT'),
-                          (stmt.subj.name, 'TEXT'),]
+            drug_keys = [(dn, di) for dn, di in stmt.subj.db_refs.items()]
+            drug_keys += [
+                ('TEXT', stmt.subj.name.lower()),
+                ('TEXT', stmt.subj.name.upper()),
+                ('TEXT', stmt.subj.name.capitalize()),
+                ('TEXT', stmt.subj.name),
+                ]
             for drug_key in drug_keys:
                 if drug_key not in self.drug_targets:
-                    self.drug_targets[drug_key] = set([stmt.obj.name])
+                    self.drug_targets[drug_key] = {target_key}
                 else:
-                    self.drug_targets[drug_key].add(stmt.obj.name)
+                    self.drug_targets[drug_key].add(target_key)
         logger.debug('Loaded TAS Statements directly into cache.')
-
-        self.all_drugs = [json.loads(ag_json) for ag_json in drug_set]
-        self.all_targets = [json.loads(ag_json) for ag_json in target_set]
-        return
 
     def _get_tas_stmts(self, drug_term=None, target_term=None):
         timeout = 15
@@ -153,17 +149,17 @@ class DTDA(object):
                 if any(ev.source_api == 'tas' for ev in s.evidence))
 
     def _extract_terms(self, agent):
-        term_set = {(ref, ns) for ns, ref in agent.db_refs.items()
+        term_set = {(ns, ref) for ns, ref in agent.db_refs.items()
                     if ns not in {'TYPE', 'TRIPS'}}
 
         # Try without a hyphen.
         if '-' in agent.name:
-            term_set.add((agent.name.replace('-', ''), 'TEXT'))
+            term_set.add(('TEXT', agent.name.replace('-', '')))
 
         # Try different capitalizations.
         transforms = ['capitalize', 'upper', 'lower']
         for opp in map(lambda nm: getattr(agent.name, nm), transforms):
-            term_set.add((opp(), 'TEXT'))
+            term_set.add(('TEXT', opp()))
 
         return term_set
 
@@ -172,34 +168,29 @@ class DTDA(object):
         # These are proteins/genes so we just look at HGNC grounding
         if 'HGNC' not in target.db_refs:
             return {}
-        target_term = (target.db_refs['HGNC'], 'HGNC')
+        target_key = target.get_grounding()
         # Check if we already have the stashed result
-        if target_term not in self.target_drugs:
-            if db_lookup:
-                logger.debug('Looking up target term in DB: %s' %
-                             str(target_term))
-                try:
-                    drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
-                             for s
-                             in self._get_tas_stmts(target_term=target_term)}
-                    self.target_drugs[target_term] = drugs
-                except DatabaseTimeoutError:
-                    # TODO: We should return a special message if the database
-                    # can't be reached for some reason. It might also be good to
-                    # stash the cache dicts as back-ups.
-                    # If there is an error we don't stash the results
-                    return {}
-            else:
+        if target_key not in self.target_drugs:
+            logger.debug('Looking up target term in DB: %s' % str(target_key))
+            try:
+                drug_keys = {s.subj.get_grounding()
+                             for s in self._get_tas_stmts(target_term=target_key)}
+                self.target_drugs[target_key] = drug_keys
+            except DatabaseTimeoutError:
+                # TODO: We should return a special message if the database
+                # can't be reached for some reason. It might also be good to
+                # stash the cache dicts as back-ups.
+                # If there is an error we don't stash the results
                 return {}
         else:
             logger.debug('Getting target term directly from cache: %s'
-                         % str(target_term))
-            drugs = self.target_drugs[target_term]
+                         % str(target_key))
+            drugs = self.target_drugs[target_key]
         if filter_agents:
-            filter_drug_names = {a.name for a in filter_agents}
+            filter_drug_keys = {a.get_grounding() for a in filter_agents}
             logger.info('Found %d drugs before filter: %s.' %
-                        (len(drugs), str(drugs)))
-            drugs = [d for d in drugs if d[0] in filter_drug_names]
+                        (len(drug_keys), str(drug_keys)))
+            drugs = [d for d in drug_keys if d in filter_drug_keys]
             logger.info('%d drugs left after filter.' % len(drugs))
 
         return drugs

@@ -139,6 +139,7 @@ class StatementQuery(object):
 
         self.ent_type = ent_type
         self.filter_agents = params.pop('filter_agents', [])
+        self.context_agents = params.pop('context_agents', [])
 
         self.settings = params
         if not self.subj_key and not self.obj_key and not self.agent_keys:
@@ -187,6 +188,21 @@ class StatementQuery(object):
         return dbi, dbn
 
 
+def _get_mesh_terms(context_agents):
+    from indra.ontology.bio import bio_ontology
+    mesh_terms = set()
+    for ag in context_agents:
+        # Just in case...
+        if ag is None:
+            continue
+        mesh_id = ag.db_refs.get('MESH')
+        if not mesh_id:
+            continue
+        children = bio_ontology.get_children('MESh', mesh_id)
+        mesh_terms |= {c[1] for c in children}
+    return mesh_terms
+
+
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
         self._block_default = kwargs.pop('block_default', True)
@@ -205,11 +221,15 @@ class StatementFinder(object):
 
         This method makes use of the `query` attribute.
         """
+        mesh_terms = _get_mesh_terms(self.query.context_agents)
+        mesh_terms_param = ','.join(mesh_terms) \
+            if mesh_terms else None
         if not self.query.verb:
             processor = \
                 idbr.get_statements(subject=self.query.subj_key,
                                     object=self.query.obj_key,
                                     agents=self.query.agent_keys,
+                                    mesh_ids=mesh_terms_param,
                                     **self.query.settings)
         else:
             processor = \
@@ -217,6 +237,7 @@ class StatementFinder(object):
                                     object=self.query.obj_key,
                                     agents=self.query.agent_keys,
                                     stmt_type=self.query.stmt_type,
+                                    mesh_ids=mesh_terms_param,
                                     **self.query.settings)
         return processor
 

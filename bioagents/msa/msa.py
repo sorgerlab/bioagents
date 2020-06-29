@@ -188,7 +188,7 @@ class StatementQuery(object):
         return dbi, dbn
 
 
-def _get_mesh_terms(context_agents):
+def _get_mesh_terms(context_agents, include_children=True):
     from indra.ontology.bio import bio_ontology
     mesh_terms = set()
     for ag in context_agents:
@@ -198,8 +198,10 @@ def _get_mesh_terms(context_agents):
         mesh_id = ag.db_refs.get('MESH')
         if not mesh_id:
             continue
-        children = bio_ontology.get_children('MESh', mesh_id)
-        mesh_terms |= {c[1] for c in children}
+        mesh_terms.add(mesh_id)
+        if include_children:
+            children = bio_ontology.get_children('MESH', mesh_id)
+            mesh_terms |= {c[1] for c in children}
     return mesh_terms
 
 
@@ -221,7 +223,12 @@ class StatementFinder(object):
 
         This method makes use of the `query` attribute.
         """
-        mesh_terms = _get_mesh_terms(self.query.context_agents)
+        mesh_terms = _get_mesh_terms(self.query.context_agents,
+                                     # FIXME: CHANGE THIS ONCE API ALLOWS
+                                     # OR CONSTRAINTS
+                                     include_children=False)
+        logger.info('Using %d MeSH terms to constrain query' %
+                    (len(mesh_terms)))
         mesh_terms_param = ','.join(mesh_terms) \
             if mesh_terms else None
         if not self.query.verb:

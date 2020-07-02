@@ -60,6 +60,13 @@ def get_mutations(molecular_profile_id, sample_id):
     return res.json()
 
 
+def get_cnas(molecular_profile_id, sample_id):
+    url = base_url + '/molecular-profiles/%s/discrete-copy-number/fetch' % \
+          molecular_profile_id
+    res = requests.post(url, json={'sampleIds': [sample_id]})
+    return res.json()
+
+
 def get_samples(patient_id, study_id):
     url = base_url + '/studies/%s/patients/%s/samples' % \
         (study_id, patient_id)
@@ -117,6 +124,7 @@ class Patient:
         for entry in mol_profiles:
             self.molecular_profiles[entry['molecularAlterationType']] = entry
 
+        self.mutations = []
         if 'MUTATION_EXTENDED' in self.molecular_profiles:
             mutation_profile_id = \
                 self.molecular_profiles['MUTATION_EXTENDED'][
@@ -125,13 +133,13 @@ class Patient:
                 get_mutations(mutation_profile_id,
                               self.sample.sample_id)
 
-        '''
+        self.cnas = []
         if 'COPY_NUMBER_ALTERATION' in self.molecular_profiles:
             cna_profile_id = \
                 self.molecular_profiles['COPY_NUMBER_ALTERATION'][
                     'molecularProfileId']
-            self.cna = \
-        '''
+            self.cnas = get_cnas(cna_profile_id,
+                                 self.sample.sample_id)
 
 
 patients_by_id, patients_by_study = get_patient_list()

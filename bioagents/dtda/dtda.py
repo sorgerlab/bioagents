@@ -139,7 +139,7 @@ class DTDA(object):
         return
 
     def _get_tas_stmts(self, drug_term=None, target_term=None):
-        timeout = 10
+        timeout = 15
         drug = _convert_term(drug_term)
         target = _convert_term(target_term)
         processor = get_statements(subject=drug, object=target,
@@ -167,7 +167,7 @@ class DTDA(object):
 
         return term_set
 
-    def find_target_drugs(self, target, filter_agents=None):
+    def find_target_drugs(self, target, filter_agents=None, db_lookup=True):
         """Return all the drugs that target a given target."""
         # These are proteins/genes so we just look at HGNC grounding
         if 'HGNC' not in target.db_refs:
@@ -175,16 +175,21 @@ class DTDA(object):
         target_term = (target.db_refs['HGNC'], 'HGNC')
         # Check if we already have the stashed result
         if target_term not in self.target_drugs:
-            logger.debug('Looking up target term in DB: %s' % str(target_term))
-            try:
-                drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
-                         for s in self._get_tas_stmts(target_term=target_term)}
-                self.target_drugs[target_term] = drugs
-            except DatabaseTimeoutError:
-                # TODO: We should return a special message if the database
-                # can't be reached for some reason. It might also be good to
-                # stash the cache dicts as back-ups.
-                # If there is an error we don't stash the results
+            if db_lookup:
+                logger.debug('Looking up target term in DB: %s' %
+                             str(target_term))
+                try:
+                    drugs = {(s.subj.name, s.subj.db_refs.get('PUBCHEM'))
+                             for s
+                             in self._get_tas_stmts(target_term=target_term)}
+                    self.target_drugs[target_term] = drugs
+                except DatabaseTimeoutError:
+                    # TODO: We should return a special message if the database
+                    # can't be reached for some reason. It might also be good to
+                    # stash the cache dicts as back-ups.
+                    # If there is an error we don't stash the results
+                    return {}
+            else:
                 return {}
         else:
             logger.debug('Getting target term directly from cache: %s'
@@ -198,6 +203,16 @@ class DTDA(object):
             logger.info('%d drugs left after filter.' % len(drugs))
 
         return drugs
+
+    def find_multi_target_drugs(self, targets, filter_agents=None):
+        all_drugs = {}
+        for target in targets:
+            drugs = self.find_target_drugs(target,
+                                           filter_agents=filter_agents,
+                                           db_lookup=False)
+            if drugs:
+                all_drugs[target] = drugs
+        return all_drugs
 
     def find_drug_targets(self, drug, filter_agents=None):
         """Return all the targets of a given drug."""

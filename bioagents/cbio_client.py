@@ -86,9 +86,10 @@ def get_study_clinical_attributes(study_id):
 
 
 class Sample:
-    def __init__(self, sample_id, study_id):
+    def __init__(self, sample_id, study_id, sample_type):
         self.sample_id = sample_id
         self.study_id = study_id
+        self.sample_type = sample_type
         self.clinical_info = get_sample_clinical_info(self.study_id,
                                                       self.sample_id)
 
@@ -106,7 +107,8 @@ class Patient:
         samples = get_samples(self.patient_id, self.study_id)
         for sample in samples:
             if sample['sampleType'] == 'Primary Solid Tumor':
-                self.sample = Sample(sample['sampleId'], self.study_id)
+                self.sample = Sample(sample['sampleId'], self.study_id,
+                                     sample['sampleType'])
 
         assert self.sample
 

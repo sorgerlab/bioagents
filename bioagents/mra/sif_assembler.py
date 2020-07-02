@@ -15,11 +15,11 @@ class SifAssembler:
             agents = stmt.agent_list()
             if len(agents) != 2:
                 continue
-            agents = [a for a in a if a is not None]
+            agents = [a for a in agents if a is not None]
             if len(agents) != 2:
                 continue
             ev_links = ' '.join(get_ev_links(stmt, limit=3))
-            row = [agents[0].name, stmt_type, agents[2].name, ev_links]
+            row = [agents[0].name, stmt_type, agents[1].name, ev_links]
             rows.append(row)
         return make_tsv(rows)
 

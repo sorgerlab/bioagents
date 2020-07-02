@@ -9,8 +9,8 @@ services:
 before_install:
   - sudo apt-get update
   - pip install awscli
-  - mkdir -p $HOME/.indra/bio_ontology/1.0
-  - aws s3 cp s3://bigmech/travis/mock_ontology.pkl $HOME/.indra/bio_ontology/1.0/bio_ontology.pkl --no-sign-request  --source-region us-east-1
+  - mkdir -p $HOME/.indra/bio_ontology/1.1
+  - aws s3 cp s3://bigmech/travis/mock_ontology.pkl $HOME/.indra/bio_ontology/1.1/bio_ontology.pkl --no-sign-request  --source-region us-east-1
 install:
   - pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas kappy==4.0.0 boto3 nose-timer
   # PySB and dependencies

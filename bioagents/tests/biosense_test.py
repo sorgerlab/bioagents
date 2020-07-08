@@ -102,6 +102,16 @@ class TestGetIndraRepCCStatement(_GetIndraRepTemplate):
 """
 
 
+class TestGetIndraRepIncreaseBP(_GetIndraRepTemplate):
+    kqml_file = 'increase_progression.kqml'
+
+    def check_result(self, res):
+        # No statements at this point because this is
+        # a CC between two terms but at least we shouldn't
+        # error
+        pass
+
+
 class TestSB525334(_GetIndraRepTemplate):
     kqml_file = 'SB525334.kqml'
 

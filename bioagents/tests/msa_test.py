@@ -136,6 +136,11 @@ jund = Bioagent.make_cljson(Agent('JUND', db_refs={'HGNC': '6206'}))
 akt1 = Bioagent.make_cljson(Agent('AKT1', db_refs={'HGNC': '391'}))
 vemurafenib = Bioagent.make_cljson(Agent('Vemurafenib',
                                          db_refs={'CHEBI': 'CHEBI:63637'}))
+covid19 = Bioagent.make_cljson(
+    Agent('COVID-19',
+          db_refs={"TEXT": "COVID-19",
+                   "NCIT": "C171133",
+                   "TYPE": "ONT::MEDICAL-DISORDERS-AND-CONDITIONS"}))
 NONE = KQMLList()
 
 
@@ -146,6 +151,17 @@ class TestMSATypeAndTargetBRAF(_TestMsaGeneralLookup):
                                  source=NONE,
                                  type='Phosphorylation',
                                  target=braf)
+
+    def check_response_to_type_and_target(self, output):
+        return self._check_find_response(output)
+
+
+@attr('nonpublic')
+class TestMSATypeAndTargetCOVID(_TestMsaGeneralLookup):
+    def create_type_and_target(self):
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
+                                 type='unknown',
+                                 target=covid19)
 
     def check_response_to_type_and_target(self, output):
         return self._check_find_response(output)

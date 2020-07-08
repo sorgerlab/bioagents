@@ -146,8 +146,6 @@ class MSA_Module(Bioagent):
                                                 action=action,
                                                 polarity=polarity)
         stmts = finder.get_statements()
-        description = finder.describe(include_negative=False)
-        #self.say(description)
 
         logger.info("Found %d matching statements." % len(stmts))
         if not len(stmts):
@@ -158,6 +156,8 @@ class MSA_Module(Bioagent):
                                      'phosphorylation')
                 )
         else:
+            description = finder.describe(include_negative=False)
+            # self.say(description)
             msg = "phosphorylation at %s%s activates %s." \
                   % (residue, position, agent.name)
             self.send_provenance_for_stmts(stmts, msg,
@@ -229,14 +229,15 @@ class MSA_Module(Bioagent):
             resp.set('dump-limit', str(DUMP_LIMIT))
             return resp
 
-        agents = finder.get_other_agents()
-        description = finder.describe(include_negative=False)
+        agents = finder.get_other_agents() \
+            if stmts else []
+        description = finder.describe(include_negative=False) \
+            if stmts else None
         #self.say(description)
         resp = KQMLPerformative('SUCCESS')
         resp.set('status', 'FINISHED')
         resp.set('entities-found',
-                 self.make_cljson(agents)
-                 if agents is not None else KQMLList([]))
+                 self.make_cljson(agents) if agents else KQMLList([]))
         resp.set('num-relations-found', str(len(stmts)))
         resp.set('dump-limit', str(DUMP_LIMIT))
         resp.sets('suggestion', description if description else 'nil')
@@ -262,13 +263,14 @@ class MSA_Module(Bioagent):
             # TODO: Handle this more gracefully, if possible.
             return self.make_failure('MISSING_MECHANISM')
         num_stmts = len(stmts)
-        description = finder.describe(include_negative=False)
+        description = finder.describe(include_negative=False) \
+            if stmts else None
         #self.say(description)
         resp = KQMLPerformative('SUCCESS')
         resp.set('some-relations-found', 'TRUE' if num_stmts else 'FALSE')
         resp.set('num-relations-found', str(num_stmts))
         resp.set('dump-limit', str(DUMP_LIMIT))
-        resp.sets('suggestion', description)
+        resp.sets('suggestion', description if description else 'nil')
         return resp
 
     def respond_get_paper_model(self, content):

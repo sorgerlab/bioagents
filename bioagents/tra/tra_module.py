@@ -5,7 +5,7 @@ from kqml import KQMLList, KQMLPerformative
 from indra.assemblers.pysb import assembler as pysb_assembler
 from indra.assemblers.pysb import PysbAssembler
 from indra.statements import stmts_from_json, Activation, Inhibition, \
-    ActiveForm
+    ActiveForm, ModCondition
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra import tra
 from bioagents import Bioagent, BioagentException

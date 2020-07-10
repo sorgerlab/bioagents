@@ -328,6 +328,39 @@ class TestBuildModelAmbiguity(_IntegrationTest):
             'Wrong format for diagram.'
 
 
+class TestBuildModelGRB2(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(MRA_Module)
+
+    def create_message(self):
+        return _get_build_model_request('Active Shp2 dephosphorylates GRB2', format='clj')
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', \
+            'Expected head SUCCESS, got %s.' % output.to_string()
+        assert output.get('model-id') == '1', \
+            'Expected model id of \'1\', got \'%s\'' % output.get('model-id')
+        assert output.get('model') is not None, 'Got None model.'
+        print(output.get('model'))
+
+
+class TestBuildModelSBGNUnderscore(_IntegrationTest):
+    def __init__(self, *args):
+        super().__init__(MRA_Module)
+
+    def create_message(self):
+        return _get_build_model_request('ERK increases cell proliferation',
+                                        format='clj')
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', \
+            'Expected head SUCCESS, got %s.' % output.to_string()
+        assert output.get('model-id') == '1', \
+            'Expected model id of \'1\', got \'%s\'' % output.get('model-id')
+        assert output.get('model') is not None, 'Got None model.'
+        print(output.get('model'))
+
+
 class TestBuildModelBoundCondition(_IntegrationTest):
     def __init__(self, *args):
         super().__init__(MRA_Module)

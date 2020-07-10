@@ -832,6 +832,36 @@ class TraTestModel9(_IntegrationTest):
         assert content.gets('satisfies-rate') == '0.0'
 
 
+class TraTestModel10(_IntegrationTest):
+    """Test that TRA can correctly run a model."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(tra_module.TRA_Module, use_kappa=False)
+
+    def create_message(self):
+        model = stmts_clj_from_text('ERK increases cell proliferation')
+        entity = agent_clj_from_text('cell proliferation')
+
+        entities = KQMLList([KQMLList([':description', entity])])
+        pattern = KQMLList()
+        pattern.set('entities', entities)
+        pattern.sets('type', 'sometime_value')
+        value = KQMLList()
+        value.sets('type', 'qualitative')
+        value.sets('value', 'high')
+        pattern.set('value', value)
+
+        content = KQMLList('SATISFIES-PATTERN')
+        content.set('pattern', pattern)
+        content.set('model', model)
+        msg = get_request(content)
+        return msg, content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS'
+        content = output.get('content')
+        assert content.gets('satisfies-rate') == '1.0', content
+
+
 class TestMissingModel(_IntegrationTest):
     def __init__(self, *args):
         super().__init__(tra_module.TRA_Module)

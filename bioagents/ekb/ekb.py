@@ -295,15 +295,17 @@ class EKB(object):
             self.ekb.append(term)
             return
         elif node['type'].upper() == 'ONT::SEQUENCE':
-            member1 = self.graph.get_matching_node(term_id, link='sequence')
-            member2 = self.graph.get_matching_node(term_id, link='sequence1')
             aggregate = etree.Element('aggregate', operator='AND')
-            member1t = etree.Element('member', id=member1)
-            self.term_to_ekb(member1)
-            member2t = etree.Element('member', id=member2)
-            self.term_to_ekb(member2)
-            aggregate.append(member1t)
-            aggregate.append(member2t)
+            for seq_counter in [''] + list(range(1, 10)):
+                member = \
+                    self.graph.get_matching_node(
+                        term_id,
+                        link='sequence%s' % seq_counter)
+                if member is None:
+                    break
+                membert = etree.Element('member', id=member)
+                self.term_to_ekb(member)
+                aggregate.append(membert)
             term.append(aggregate)
             self._pop_stack(term_id)
             self.ekb.append(term)

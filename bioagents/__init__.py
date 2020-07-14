@@ -214,7 +214,7 @@ class Bioagent(KQMLModule):
     def _make_evidence_html(stmts, ev_counts=None, source_counts=None,
                             title='Results from the INDRA database'):
         "Make html from a set of statements."
-        ha = HtmlAssembler(stmts, db_rest_url='db.indra.bio', title=title,
+        ha = HtmlAssembler(stmts, db_rest_url='https://db.indra.bio', title=title,
                            ev_totals=ev_counts, source_counts=source_counts)
         return ha.make_model()
 

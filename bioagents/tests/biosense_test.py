@@ -66,6 +66,20 @@ class TestGetIndraRepOneAgent(_GetIndraRepTemplate):
             agent.db_refs
 
 
+class TestGetIndraRepTwoSubtrates(_GetIndraRepTemplate):
+    kqml_file = 'mek_phos_erk1_erk2.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 2
+        assert isinstance(stmts[0], Phosphorylation)
+        assert isinstance(stmts[1], Phosphorylation)
+        assert stmts[0].enz.name == 'MEK'
+        assert stmts[1].enz.name == 'MEK'
+        assert {stmts[0].sub.name, stmts[1].sub.name} == \
+            {'MAPK1', 'MAPK3'}, stmts
+
+
 class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):
     kqml_file = 'selumetinib.kqml'
 

@@ -294,6 +294,21 @@ class EKB(object):
             self._pop_stack(term_id)
             self.ekb.append(term)
             return
+        elif node['type'].upper() == 'ONT::SEQUENCE':
+            member1 = self.graph.get_matching_node(term_id, link='sequence')
+            member2 = self.graph.get_matching_node(term_id, link='sequence1')
+            aggregate = etree.Element('aggregate', operator='AND')
+            member1t = etree.Element('member', id=member1)
+            self.term_to_ekb(member1)
+            member2t = etree.Element('member', id=member2)
+            self.term_to_ekb(member2)
+            aggregate.append(member1t)
+            aggregate.append(member2t)
+            term.append(aggregate)
+            self._pop_stack(term_id)
+            self.ekb.append(term)
+            return
+
         # Handle the case of the signaling pathways.
         # Note: It turns out this will be wiped out by TRIPS further down the
         # line.
@@ -358,8 +373,6 @@ class EKB(object):
                     features.append(active)
 
             term.append(features)
-
-
 
         self._pop_stack(term_id)
         self.ekb.append(term)

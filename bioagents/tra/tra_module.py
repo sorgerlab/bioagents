@@ -262,10 +262,6 @@ def get_chemical_agents(stmts):
 def get_molecular_entity(lst):
     description_clj = lst.get('description')
     agent = TRA_Module.get_agent(description_clj)
-    if agent and agent.name in {'ERK', 'AKT'}:
-        agent.mods = [ModCondition('phosphorylation', None, None, True)]
-    elif agent.name in {'SOS', 'HRAS'}:
-        agent.activity = ActivityCondition('activity', True)
     return agent
 
 

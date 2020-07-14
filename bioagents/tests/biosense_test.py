@@ -86,9 +86,8 @@ class TestGetIndraRepMixedPathways(_GetIndraRepTemplate):
     def check_result(self, res):
         agent = self.bioagent.get_agent(res)
         # It should be about MAPK not Wnt
-        assert 'Wnt' not in agent.name
-        print(agent.name)
-        print(agent.db_refs)
+        assert agent.name == 'mapk signaling pathway'
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY'
 
 
 class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):

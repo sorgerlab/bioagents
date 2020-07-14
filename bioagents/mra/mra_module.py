@@ -426,7 +426,7 @@ class MRA_Module(Bioagent):
         if corrs:
             stmt = corrs[0]
             say = 'It looks like a required activity may be missing,'
-            say += ' say "%s" to add it.' % \
+            say += ' say \'%s\' to add it.' % \
                    (EnglishAssembler([stmt]).make_model())
             diagnostic_tells.append(say)
 

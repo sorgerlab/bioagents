@@ -180,6 +180,8 @@ class KQMLGraph(networkx.DiGraph):
         nodes : list[str]
             A list of matching node identifiers.
         """
+        if node is None:
+            return []
         # Handle OR clause of links
         if isinstance(link, (tuple, list)):
             links_to_match = [l.lower() for l in link]

@@ -80,6 +80,17 @@ class TestGetIndraRepTwoSubtrates(_GetIndraRepTemplate):
             {'MAPK1', 'MAPK3'}, stmts
 
 
+class TestGetIndraRepMixedPathways(_GetIndraRepTemplate):
+    kqml_file = 'wnt_mapk_signaling.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        # It should be about MAPK not Wnt
+        assert 'Wnt' not in agent.name
+        print(agent.name)
+        print(agent.db_refs)
+
+
 class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):
     kqml_file = 'selumetinib.kqml'
 

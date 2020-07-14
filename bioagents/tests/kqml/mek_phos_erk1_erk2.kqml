@@ -1,0 +1,254 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V38383) :CONTEXT
+                             ((ONT::TERM ONT::V38371 :INSTANCE-OF
+                               ONT::PROTEIN-FAMILY :DRUM
+                               ((:DRUM
+                                 (TERM :ID FPLX::MEK :NAME "MEK" :SCORE 1.0
+                                  :MATCHES
+                                  ((MATCH :SCORE 1.0 :INPUT "MEK" :MATCHED
+                                    "MEK" :STATUS "name" :EXACT 1))
+                                  :ONT-TYPES (ONT::PROTEIN-FAMILY))
+                                 (TERM :ID NCIT::C105947 :NAME
+                                  "mitogen-activated protein kinase kinase"
+                                  :SCORE 0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "MEK" :MATCHED
+                                    "MEK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C20130
+                                         (SENSE
+                                          (MORPH (POS N)
+                                           (WORD (PROTEIN FAMILY)))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/02013.lisp"))))
+                                        :TO ONT::PROTEIN-FAMILY))
+                                  :ONT-TYPES (ONT::PROTEIN-FAMILY))))
+                               :NAME W::MEK :DBID "FPLX:MEK" :DBNAME "MEK"
+                               :DB-TERM-ID "FPLX:MEK" :DB-TERM-ID
+                               "NCIT:C105947" :SPEC ONT::THE :ONT
+                               (:* ONT::PROTEIN-FAMILY W::MEK) :NAME-OF W::MEK)
+                              (ONT::TERM ONT::V38395 :INSTANCE-OF
+                               ONT::GENE-PROTEIN :DRUM
+                               ((:DRUM
+                                 (TERM :ID UP::Q5A1D3 :NAME
+                                  "Extracellular signal-regulated kinase 1"
+                                  :SCORE 0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "ERK1" :MATCHED
+                                    "ERK1" :STATUS "RecName: Short" :EXACT 1))
+                                  :DBXREFS (XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::C4YGK0 :NAME
+                                  "Extracellular signal-regulated kinase 1"
+                                  :SCORE 0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "ERK1" :MATCHED
+                                    "ERK1" :STATUS "RecName: Short" :EXACT 1))
+                                  :DBXREFS (XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::P42525 :NAME
+                                  "Extracellular signal-regulated kinase 1"
+                                  :SCORE 0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "ERK1" :MATCHED
+                                    "ERK1" :STATUS "RecName: Short" :EXACT 1))
+                                  :DBXREFS (XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID GO::|0004707| :NAME
+                                  "MAP kinase activity" :SCORE 0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK1" :MATCHED
+                                    "ERK1" :STATUS "EXACT synonym" :EXACT 1))
+                                  :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID NCIT::C52875 :NAME "MAPK3" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK1" :MATCHED
+                                    "ERK1" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C17408 :NAME
+                                  "mitogen-activated protein kinase 3" :SCORE
+                                  0.71082 :MATCHES
+                                  ((MATCH :SCORE 0.71082 :INPUT "ERK1" :MATCHED
+                                    "ERK-1" :STATUS "synonym" :NO-DASH-DASH 1
+                                    :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17021
+                                         (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID HGNC::|6877| :NAME
+                                  "mitogen-activated protein kinase 3" :SCORE
+                                  0.56627 :MATCHES
+                                  ((MATCH :SCORE 0.56627 :INPUT "ERK1" :MATCHED
+                                    "ERK1" :STATUS "Alias Symbol" :EXACT 1))
+                                  :DBXREFS (UP::P27361) :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID UP::P27361 :NAME
+                                  "Mitogen-activated protein kinase 3" :SCORE
+                                  0.56624 :MATCHES
+                                  ((MATCH :SCORE 0.56624 :INPUT "ERK1" :MATCHED
+                                    "ERK-1" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1))
+                                  :SPECIES "Homo sapiens (Human)" :DBXREFS
+                                  (HGNC::|6877| XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::Q63844 :NAME
+                                  "Mitogen-activated protein kinase 3" :SCORE
+                                  0.56624 :MATCHES
+                                  ((MATCH :SCORE 0.56624 :INPUT "ERK1" :MATCHED
+                                    "ERK-1" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1))
+                                  :SPECIES "Mus musculus (Mouse)" :DBXREFS
+                                  (XFAM::PF00069) :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID UP::P21708 :NAME
+                                  "Mitogen-activated protein kinase 3" :SCORE
+                                  0.56624 :MATCHES
+                                  ((MATCH :SCORE 0.56624 :INPUT "ERK1" :MATCHED
+                                    "ERK-1" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1))
+                                  :DBXREFS (XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))))
+                               :NAME W::ERK-1 :DBID "UP:Q5A1D3" :DBNAME
+                               "Extracellular signal-regulated kinase 1"
+                               :DB-TERM-ID "UP:Q5A1D3" :DB-TERM-ID "UP:C4YGK0"
+                               :DB-TERM-ID "UP:P42525" :DB-TERM-ID "GO:0004707"
+                               :DB-TERM-ID "NCIT:C52875" :DB-TERM-ID
+                               "NCIT:C17408" :DB-TERM-ID "HGNC:6877"
+                               :DB-TERM-ID "UP:P27361" :DB-TERM-ID "UP:Q63844"
+                               :DB-TERM-ID "UP:P21708" :SPEC ONT::THE :ONT
+                               (:* ONT::GENE-PROTEIN W::ERK-1) :NAME-OF
+                               W::ERK-1)
+                              (ONT::TERM ONT::V38424 :INSTANCE-OF
+                               ONT::GENE-PROTEIN :DRUM
+                               ((:DRUM
+                                 (TERM :ID UP::Q54QB1 :NAME
+                                  "Extracellular signal-regulated kinase 2"
+                                  :SCORE 0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "ERK2" :MATCHED
+                                    "ERK2" :STATUS "RecName: Short" :EXACT 1))
+                                  :DBXREFS (XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID NCIT::C52872 :NAME "MAPK1" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK2" :MATCHED
+                                    "ERK2" :STATUS "synonym" :EXACT 1)
+                                   (MATCH :SCORE 0.71082 :INPUT "ERK2" :MATCHED
+                                    "ERK-2" :STATUS "synonym" :NO-DASH-DASH 1
+                                    :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C17589 :NAME
+                                  "mitogen-activated protein kinase 1" :SCORE
+                                  0.71082 :MATCHES
+                                  ((MATCH :SCORE 0.71082 :INPUT "ERK2" :MATCHED
+                                    "ERK-2" :STATUS "synonym" :NO-DASH-DASH 1
+                                    :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17021
+                                         (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID HGNC::|6871| :NAME
+                                  "mitogen-activated protein kinase 1" :SCORE
+                                  0.56627 :MATCHES
+                                  ((MATCH :SCORE 0.56627 :INPUT "ERK2" :MATCHED
+                                    "ERK2" :STATUS "Alias Symbol" :EXACT 1))
+                                  :DBXREFS (UP::P28482) :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID UP::P46196 :NAME
+                                  "Mitogen-activated protein kinase 1" :SCORE
+                                  0.56624 :MATCHES
+                                  ((MATCH :SCORE 0.56624 :INPUT "ERK2" :MATCHED
+                                    "ERK-2" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1))
+                                  :DBXREFS (XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::P28482 :NAME
+                                  "Mitogen-activated protein kinase 1" :SCORE
+                                  0.56624 :MATCHES
+                                  ((MATCH :SCORE 0.56624 :INPUT "ERK2" :MATCHED
+                                    "ERK-2" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1))
+                                  :SPECIES "Homo sapiens (Human)" :DBXREFS
+                                  (HGNC::|6871| XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::P63085 :NAME
+                                  "Mitogen-activated protein kinase 1" :SCORE
+                                  0.56624 :MATCHES
+                                  ((MATCH :SCORE 0.56624 :INPUT "ERK2" :MATCHED
+                                    "ERK-2" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1))
+                                  :SPECIES "Mus musculus (Mouse)" :DBXREFS
+                                  (XFAM::PF00069) :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID UP::P63086 :NAME
+                                  "Mitogen-activated protein kinase 1" :SCORE
+                                  0.56624 :MATCHES
+                                  ((MATCH :SCORE 0.56624 :INPUT "ERK2" :MATCHED
+                                    "ERK-2" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1))
+                                  :DBXREFS (XFAM::PF00069) :ONT-TYPES
+                                  (ONT::PROTEIN))))
+                               :NAME W::ERK-2 :DBID "UP:Q54QB1" :DBNAME
+                               "Extracellular signal-regulated kinase 2"
+                               :DB-TERM-ID "UP:Q54QB1" :DB-TERM-ID
+                               "NCIT:C52872" :DB-TERM-ID "NCIT:C17589"
+                               :DB-TERM-ID "HGNC:6871" :DB-TERM-ID "UP:P46196"
+                               :DB-TERM-ID "UP:P28482" :DB-TERM-ID "UP:P63085"
+                               :DB-TERM-ID "UP:P63086" :SPEC ONT::THE :ONT
+                               (:* ONT::GENE-PROTEIN W::ERK-2) :NAME-OF
+                               W::ERK-2)
+                              (ONT::TERM ONT::V38400 :INSTANCE-OF ONT::SEQUENCE
+                               :ELEMENT-TYPE ONT::GENE-PROTEIN
+                               :LOGICALOP-SEQUENCE (ONT::V38395 ONT::V38424)
+                               :OPERATOR ONT::AND :SPEC ONT::THE-SET :ONT
+                               ONT::GENE-PROTEIN :SEQUENCE
+                               (ONT::V38395 ONT::V38424))
+                              (ONT::EVENT ONT::V38383 :INSTANCE-OF
+                               ONT::PHOSPHORYLATION :DRUM
+                               ((:DRUM
+                                 (TERM :ID GO::|0006468| :NAME
+                                  "protein phosphorylation" :SCORE 0.85542
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT
+                                    "protein phosphorylation" :MATCHED
+                                    "protein phosphorylation" :STATUS "name"
+                                    :EXACT 2))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT GO::|0006464|
+                                         (SENSE
+                                          (MORPH (POS N)
+                                           (WORD
+                                            (CELLULAR PROTEIN MODIFICATION
+                                             PROCESS)))
+                                          (PROVENANCE (NAME GO)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/GO/000646.lisp"))))
+                                        :TO
+                                        ONT::POST-TRANSLATIONAL-MODIFICATION))
+                                  :ONT-TYPES
+                                  (ONT::POST-TRANSLATIONAL-MODIFICATION))))
+                               :AGENT ONT::V38371 :AFFECTED ONT::V38400 :FORCE
+                               ONT::TRUE :TYPE
+                               (:* ONT::PHOSPHORYLATION W::PHOSPHORYLATE) :DBID
+                               "GO:0006468" :DBNAME "protein phosphorylation"
+                               :DB-TERM-ID "GO:0006468" :SPEC ONT::F :ONT
+                               (:* ONT::PHOSPHORYLATION W::PHOSPHORYLATE)
+                               :TENSE W::PRES)))

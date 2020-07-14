@@ -5,7 +5,7 @@ from kqml import KQMLList, KQMLPerformative
 from indra.assemblers.pysb import assembler as pysb_assembler
 from indra.assemblers.pysb import PysbAssembler
 from indra.statements import stmts_from_json, Activation, Inhibition, \
-    ActiveForm
+    ActiveForm, ModCondition
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra import tra
 from bioagents import Bioagent, BioagentException
@@ -261,7 +261,8 @@ def get_chemical_agents(stmts):
 
 def get_molecular_entity(lst):
     description_clj = lst.get('description')
-    return TRA_Module.get_agent(description_clj)
+    agent = TRA_Module.get_agent(description_clj)
+    return agent
 
 
 """

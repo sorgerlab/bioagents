@@ -30,6 +30,9 @@ from bioagents.mra.model_diagnoser import ModelDiagnoser
 logger = logging.getLogger('MRA')
 
 
+DEFAULT_CELL_LINE = 'KP3_PANCREAS'
+
+
 class MRA(object):
     def __init__(self):
         self.models = {}
@@ -417,9 +420,9 @@ def make_diagrams(pysb_model, model_id, current_model, context=None):
             except KeyError:
                 logger.info('Could not find profile info for %s cell line' %
                             context)
-                cell_line = 'A375_SKIN'
+                cell_line = DEFAULT_CELL_LINE
         else:
-            cell_line = 'A375_SKIN'
+            cell_line = DEFAULT_CELL_LINE
         try:
             logger.info('Coloring SBGN to %s cell line.' % cell_line)
             colorizer = SbgnColorizer(sbgn)

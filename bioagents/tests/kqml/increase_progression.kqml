@@ -1,0 +1,137 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V39074 ONT::V39062) :CONTEXT
+                             ((ONT::EVENT ONT::V39062 :INSTANCE-OF
+                               ONT::PHOSPHORYLATION :DRUM
+                               ((:DRUM
+                                 (TERM :ID GO::|0006468| :NAME
+                                  "protein phosphorylation" :SCORE 0.85542
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT
+                                    "protein phosphorylation" :MATCHED
+                                    "protein phosphorylation" :STATUS "name"
+                                    :EXACT 2))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT GO::|0006464|
+                                         (SENSE
+                                          (MORPH (POS N)
+                                           (WORD
+                                            (CELLULAR PROTEIN MODIFICATION
+                                             PROCESS)))
+                                          (PROVENANCE (NAME GO)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/GO/000646.lisp"))))
+                                        :TO
+                                        ONT::POST-TRANSLATIONAL-MODIFICATION))
+                                  :ONT-TYPES
+                                  (ONT::POST-TRANSLATIONAL-MODIFICATION))))
+                               :AFFECTED ONT::V39070 :FORCE ONT::TRUE :TYPE
+                               (:* ONT::PHOSPHORYLATION W::PHOSPHORYLATE) :DBID
+                               "GO:0006468" :DBNAME "protein phosphorylation"
+                               :DB-TERM-ID "GO:0006468" :SPEC ONT::F :ONT
+                               (:* ONT::PHOSPHORYLATION W::PHOSPHORYLATE))
+                              (ONT::TERM ONT::V39070 :INSTANCE-OF
+                               ONT::GENE-PROTEIN :DRUM
+                               ((:DRUM
+                                 (TERM :ID FPLX::ERK :NAME "ERK" :SCORE 1.0
+                                  :MATCHES
+                                  ((MATCH :SCORE 1.0 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "name" :EXACT 1))
+                                  :ONT-TYPES (ONT::PROTEIN-FAMILY))
+                                 (TERM :ID NCIT::C16376 :NAME
+                                  "mitogen-activated protein kinase" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17021
+                                         (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID NCIT::C26166 :NAME
+                                  "ephrin type-B receptor 2" :SCORE 0.71084
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17021
+                                         (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID NCIT::C26360 :NAME "MAP kinase gene"
+                                  :SCORE 0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C52164 :NAME "EPHB2" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C52872 :NAME "MAPK1" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID HGNC::|6871| :NAME
+                                  "mitogen-activated protein kinase 1" :SCORE
+                                  0.56627 :MATCHES
+                                  ((MATCH :SCORE 0.56627 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "Alias Symbol" :EXACT 1))
+                                  :DBXREFS (UP::P28482) :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID HGNC::|3393| :NAME "EPH receptor B2"
+                                  :SCORE 0.27711 :MATCHES
+                                  ((MATCH :SCORE 0.27711 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "Previous Symbol" :EXACT 1))
+                                  :DBXREFS (UP::P29323) :ONT-TYPES
+                                  (ONT::GENE))))
+                               :INEVENT ONT::V39062 :NAME W::ERK :DBID
+                               "FPLX:ERK" :DBNAME "ERK" :DB-TERM-ID "FPLX:ERK"
+                               :DB-TERM-ID "NCIT:C16376" :DB-TERM-ID
+                               "NCIT:C26166" :DB-TERM-ID "NCIT:C26360"
+                               :DB-TERM-ID "NCIT:C52164" :DB-TERM-ID
+                               "NCIT:C52872" :DB-TERM-ID "HGNC:6871"
+                               :DB-TERM-ID "HGNC:3393" :SPEC ONT::BARE :ONT
+                               (:* ONT::GENE-PROTEIN W::ERK) :NAME-OF W::ERK
+                               :MOD ONT::V39062)
+                              (ONT::TERM ONT::V39088 :INSTANCE-OF ONT::CANCER
+                               :NAME W::CANCER :SPEC ONT::BARE :ONT
+                               (:* ONT::CANCER W::CANCER) :WNSENSE
+                               "cancer%1:26:00::")
+                              (ONT::EVENT ONT::V39074 :INSTANCE-OF
+                               ONT::INCREASE :AGENT ONT::V39070 :AFFECTED
+                               ONT::V39088 :FORCE ONT::TRUE :TYPE
+                               (:* ONT::INCREASE W::INCREASE) :SPEC ONT::F :ONT
+                               (:* ONT::INCREASE W::INCREASE) :TENSE W::PRES
+                               :WNSENSE "increase%1:11:00::")))

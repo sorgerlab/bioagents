@@ -66,6 +66,30 @@ class TestGetIndraRepOneAgent(_GetIndraRepTemplate):
             agent.db_refs
 
 
+class TestGetIndraRepTwoSubtrates(_GetIndraRepTemplate):
+    kqml_file = 'mek_phos_erk1_erk2.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 2
+        assert isinstance(stmts[0], Phosphorylation)
+        assert isinstance(stmts[1], Phosphorylation)
+        assert stmts[0].enz.name == 'MEK'
+        assert stmts[1].enz.name == 'MEK'
+        assert {stmts[0].sub.name, stmts[1].sub.name} == \
+            {'MAPK1', 'MAPK3'}, stmts
+
+
+class TestGetIndraRepMixedPathways(_GetIndraRepTemplate):
+    kqml_file = 'wnt_mapk_signaling.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        # It should be about MAPK not Wnt
+        assert agent.name == 'mapk signaling pathway'
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING-PATHWAY'
+
+
 class TestGetIndraRepOneAgent2(_GetIndraRepTemplate):
     kqml_file = 'selumetinib.kqml'
 
@@ -88,6 +112,28 @@ class TestGetIndraRepStatement(_GetIndraRepTemplate):
         assert stmt.sub.name == 'MAP2K1'
         assert stmt.residue == 'S'
         assert stmt.position == '222', stmt.position
+
+
+"""res is still empty so this errors
+class TestGetIndraRepCCStatement(_GetIndraRepTemplate):
+    kqml_file = 'perk_proliferation.kqml'
+
+    def check_result(self, res):
+        # No statements at this point because this is
+        # a CC between two terms but at least we shouldn't
+        # error
+        pass
+"""
+
+
+class TestGetIndraRepIncreaseBP(_GetIndraRepTemplate):
+    kqml_file = 'increase_progression.kqml'
+
+    def check_result(self, res):
+        # No statements at this point because this is
+        # a CC between two terms but at least we shouldn't
+        # error
+        pass
 
 
 class TestSB525334(_GetIndraRepTemplate):

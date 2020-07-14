@@ -48,6 +48,8 @@ class EKB(object):
         root_node = self.graph.nodes[self.root_term]
         if root_node['category'] == 'ONT::TERM':
             self.term_to_ekb(self.root_term)
+        elif root_node['category'] == 'ONT::CC':
+            self.cc_to_ekb(self.root_term)
         else:
             self.generic_event_to_ekb(self.root_term)
 
@@ -140,6 +142,29 @@ class EKB(object):
         self._pop_stack(event_node)
         self.components.append(event_node)
         self.ekb.append(event)
+
+    def cc_to_ekb(self, cc_node):
+        self._add_to_stack(cc_node)
+        node = self.graph.nodes[cc_node]
+        cc = etree.Element('CC', id=cc_node)
+        type = etree.Element('type')
+        type.text = node['type']
+        self.type = node['type']
+        cc.append(type)
+        arg_counter = 1
+        possible_event_args = ['factor', 'outcome']
+        for event_arg in possible_event_args:
+            arg_node = self.graph.get_matching_node(cc_node, link=event_arg)
+            if arg_node:
+                tag_name = 'arg'
+                tag_type = ':%s' % event_arg.upper()
+                arg_tag = etree.Element(tag_name, id=arg_node, role=tag_type)
+                cc.append(arg_tag)
+                arg_counter += 1
+                if self._is_new_id(arg_node):
+                    self.term_to_ekb(arg_node)
+        self._pop_stack(cc_node)
+        self.ekb.append(cc)
 
     def generic_event_to_ekb(self, event_node):
         self._add_to_stack(event_node)
@@ -269,14 +294,34 @@ class EKB(object):
             self._pop_stack(term_id)
             self.ekb.append(term)
             return
+        elif node['type'].upper() == 'ONT::SEQUENCE':
+            aggregate = etree.Element('aggregate', operator='AND')
+            for seq_counter in [''] + list(range(1, 10)):
+                member = \
+                    self.graph.get_matching_node(
+                        term_id,
+                        link='sequence%s' % seq_counter)
+                if member is None:
+                    break
+                membert = etree.Element('member', id=member)
+                self.term_to_ekb(member)
+                aggregate.append(membert)
+            term.append(aggregate)
+            self._pop_stack(term_id)
+            self.ekb.append(term)
+            return
+
         # Handle the case of the signaling pathways.
         # Note: It turns out this will be wiped out by TRIPS further down the
         # line.
         elif node['type'].upper() == 'ONT::SIGNALING-PATHWAY':
             path_subject_id = self.graph.get_matching_node(term_id,
                                                            link='assoc-with')
-            path_subject_name = self.get_term_name(path_subject_id)
-            name_val = path_subject_name.upper() + '-SIGNALING-PATHWAY'
+            if not path_subject_id:
+                name_val = self.get_term_name(term_id)
+            else:
+                path_subject_name = self.get_term_name(path_subject_id)
+                name_val = path_subject_name.upper() + '-SIGNALING-PATHWAY'
 
             # This is a LITTLE bit hacky: all further information should come
             # from this associated-with term, because the root term has no
@@ -333,8 +378,6 @@ class EKB(object):
                     features.append(active)
 
             term.append(features)
-
-
 
         self._pop_stack(term_id)
         self.ekb.append(term)

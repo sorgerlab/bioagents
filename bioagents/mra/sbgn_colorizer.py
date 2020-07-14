@@ -11,6 +11,7 @@ from matplotlib import colors
 from indra.sources.indra_db_rest import get_statements
 from indra.ontology.bio import bio_ontology
 from indra.databases import context_client
+from indra.assemblers.pysb.assembler import _n
 
 
 logger = logging.getLogger('sbgn_colorizer')
@@ -145,6 +146,7 @@ class SbgnColorizer(object):
         fill_color : str
             The fill color, starting with # and followed by six hex digits
         """
+        label = _n(label)
         assert(border_color.startswith('#'))
         assert(fill_color.startswith('#'))
         labels = self.label_to_glyph_ids.keys()
@@ -216,7 +218,7 @@ class SbgnColorizer(object):
         for label in labels:
             for statement in model:
                 for agent in statement.agent_list():
-                    if agent is not None and agent.name == label:
+                    if agent is not None and _n(agent.name) == label:
                         label_to_agent[label] = agent
 
         agent_to_expression_level = {}

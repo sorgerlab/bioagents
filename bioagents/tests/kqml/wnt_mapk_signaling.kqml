@@ -1,0 +1,69 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V41694) :CONTEXT
+                             ((ONT::TERM ONT::V39619 :INSTANCE-OF
+                               ONT::PROTEIN-FAMILY :DRUM
+                               ((:DRUM
+                                 (TERM :ID FPLX::|Wnt| :NAME "Wnt" :SCORE
+                                  0.99222 :MATCHES
+                                  ((MATCH :SCORE 0.99222 :INPUT "wnt" :MATCHED
+                                    "WNT" :STATUS "name" :NO-CAPS-ALL-CAPS 1))
+                                  :ONT-TYPES (ONT::PROTEIN-FAMILY))
+                                 (TERM :ID FA::|04686| :NAME "wnt family"
+                                  :SCORE 0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "wnt" :MATCHED
+                                    "wnt" :STATUS "ID" :EXACT 1))
+                                  :ONT-TYPES (ONT::PROTEIN-FAMILY))
+                                 (TERM :ID XFAM::PF00110 :NAME "wnt" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "wnt" :MATCHED
+                                    "wnt" :STATUS "ID" :EXACT 1))
+                                  :DBXREFS (UP::Q9GZT5 UP::P70701 UP::|etc|)
+                                  :ONT-TYPES (ONT::PROTEIN-FAMILY))
+                                 (SPECIALIST :EUI E0721516 :CITATION-FORM "WNT"
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.35436 :INPUT "wnt" :MATCHED
+                                    "WNT" :NO-CAPS-ALL-CAPS 1))
+                                  :ABBREVIATION-OF
+                                  ((SPECIALIST :EUI E0721515 :CITATION-FORM
+                                    "Wingless Int")
+                                   (SPECIALIST :EUI E0721512 :CITATION-FORM
+                                    "Wingless-type MMTV integration site family member")
+                                   (SPECIALIST :EUI E0721513 :CITATION-FORM
+                                    "Wingless-type MMTV integration site family")
+                                   (SPECIALIST :EUI E0721514 :CITATION-FORM
+                                    "Wingless-type MMTV integration site")))))
+                               :NAME W::WNT :DBID "FPLX:Wnt" :DBNAME "Wnt"
+                               :DB-TERM-ID "FPLX:Wnt" :DB-TERM-ID "FA:04686"
+                               :DB-TERM-ID "XFAM:PF00110" :SPEC ONT::KIND :ONT
+                               (:* ONT::PROTEIN-FAMILY W::WNT))
+                              (ONT::TERM ONT::V39622 :INSTANCE-OF
+                               ONT::SIGNALING-PATHWAY :M-SEQUENCE (ONT::V39619)
+                               :SPEC ONT::THE :ONT
+                               (:* ONT::SIGNALING-PATHWAY W::PATHWAY)
+                               :ASSOC-WITH ONT::V39619)
+                              (ONT::TERM ONT::V41694 :INSTANCE-OF
+                               ONT::SIGNALING-PATHWAY :DRUM
+                               ((:DRUM
+                                 (TERM :ID NCIT::C38834 :NAME
+                                  "MAPK signaling pathway" :SCORE 0.85468
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.85468 :INPUT
+                                    "mapk signaling pathway" :MATCHED
+                                    "MAPK signaling pathway" :STATUS "name"
+                                    :EXACT 2 :NO-CAPS-ALL-CAPS 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17132
+                                         (SENSE
+                                          (MORPH (POS N)
+                                           (WORD (SIGNALING PATHWAY)))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01713.lisp"))))
+                                        :TO ONT::SIGNALING-PATHWAY))
+                                  :ONT-TYPES (ONT::SIGNALING-PATHWAY))))
+                               :NAME W::MAPK-SIGNALING-PATHWAY :DBID
+                               "NCIT:C38834" :DBNAME "MAPK signaling pathway"
+                               :DB-TERM-ID "NCIT:C38834" :SPEC ONT::THE :ONT
+                               (:* ONT::SIGNALING-PATHWAY
+                                W::MAPK-SIGNALING-PATHWAY)
+                               :EQUALS ONT::V39622)))

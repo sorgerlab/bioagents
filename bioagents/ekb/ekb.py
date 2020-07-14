@@ -317,8 +317,11 @@ class EKB(object):
         elif node['type'].upper() == 'ONT::SIGNALING-PATHWAY':
             path_subject_id = self.graph.get_matching_node(term_id,
                                                            link='assoc-with')
-            path_subject_name = self.get_term_name(path_subject_id)
-            name_val = path_subject_name.upper() + '-SIGNALING-PATHWAY'
+            if not path_subject_id:
+                name_val = self.get_term_name(term_id)
+            else:
+                path_subject_name = self.get_term_name(path_subject_id)
+                name_val = path_subject_name.upper() + '-SIGNALING-PATHWAY'
 
             # This is a LITTLE bit hacky: all further information should come
             # from this associated-with term, because the root term has no

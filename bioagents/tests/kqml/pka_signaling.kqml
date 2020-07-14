@@ -1,0 +1,33 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V46520) :CONTEXT
+ ((ONT::TERM ONT::V37743 :INSTANCE-OF
+                               ONT::GENE-PROTEIN :DRUM
+                               ((:DRUM
+                                 (TERM :ID FPLX::PKA :NAME "PKA" :SCORE 0.99998
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.99998 :INPUT "PKA" :MATCHED
+                                    "PK-A" :STATUS "name" :NO-DASH-DASH 1
+                                    :EXACT 2))
+                                  :ONT-TYPES (ONT::PROTEIN-FAMILY))
+                                 (TERM :ID NCIT::C16479 :NAME
+                                  "protein kinase A" :SCORE 0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "PKA" :MATCHED
+                                    "PKA" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C21176
+                                         (SENSE
+                                          (MORPH (POS N)
+                                           (WORD
+                                            (PROTEIN OR RIBOPROTEIN COMPLEX)))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/02117.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))))
+                               :NAME W::PKA :DBID "FPLX:PKA" :DBNAME "PKA"
+                               :DB-TERM-ID "FPLX:PKA" :DB-TERM-ID "NCIT:C16479"
+                               :SPEC ONT::THE :ONT
+                               (:* ONT::GENE-PROTEIN W::PKA) :NAME-OF W::PKA)
+                           (ONT::EVENT ONT::V46520 :INSTANCE-OF ONT::SIGNALING :TYPE (:* ONT::NONVERBAL-SAY W::SIGNAL)
+                            :ONT (:* ONT::NONVERBAL-SAY W::SIGNAL) :ASSOC-WITH ONT::V37743 :WNSENSE
+                            "signal%1:10:00::")))

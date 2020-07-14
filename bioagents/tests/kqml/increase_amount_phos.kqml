@@ -1,0 +1,180 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V38764 ONT::V38808) :CONTEXT
+                             ((ONT::EVENT ONT::V38808 :INSTANCE-OF
+                               ONT::PHOSPHORYLATION :DRUM
+                               ((:DRUM
+                                 (TERM :ID GO::|0006468| :NAME
+                                  "protein phosphorylation" :SCORE 0.85542
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT
+                                    "protein phosphorylation" :MATCHED
+                                    "protein phosphorylation" :STATUS "name"
+                                    :EXACT 2))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT GO::|0006464|
+                                         (SENSE
+                                          (MORPH (POS N)
+                                           (WORD
+                                            (CELLULAR PROTEIN MODIFICATION
+                                             PROCESS)))
+                                          (PROVENANCE (NAME GO)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/GO/000646.lisp"))))
+                                        :TO
+                                        ONT::POST-TRANSLATIONAL-MODIFICATION))
+                                  :ONT-TYPES
+                                  (ONT::POST-TRANSLATIONAL-MODIFICATION))))
+                               :AFFECTED ONT::V38816 :FORCE ONT::TRUE :TYPE
+                               (:* ONT::PHOSPHORYLATION W::PHOSPHORYLATE) :DBID
+                               "GO:0006468" :DBNAME "protein phosphorylation"
+                               :DB-TERM-ID "GO:0006468" :SPEC ONT::F :ONT
+                               (:* ONT::PHOSPHORYLATION W::PHOSPHORYLATE))
+                              (ONT::TERM ONT::V38760 :INSTANCE-OF
+                               ONT::GENE-PROTEIN :DRUM
+                               ((:DRUM
+                                 (TERM :ID HGNC::|1097| :NAME
+                                  "B-Raf proto-oncogene, serine/threonine kinase"
+                                  :SCORE 0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "BRAF" :MATCHED
+                                    "BRAF" :STATUS "Approved Symbol" :EXACT 1))
+                                  :DBXREFS (UP::P15056) :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C51194 :NAME "BRAF" :SCORE
+                                  0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "BRAF" :MATCHED
+                                    "BRAF" :STATUS "name" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C17476 :NAME
+                                  "serine/Threonine-protein kinase B-raf"
+                                  :SCORE 0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "BRAF" :MATCHED
+                                    "BRAF" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17021
+                                         (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))))
+                               :NAME W::BRAF :DBID "HGNC:1097" :DBNAME
+                               "B-Raf proto-oncogene, serine/threonine kinase"
+                               :DB-TERM-ID "HGNC:1097" :DB-TERM-ID
+                               "NCIT:C51194" :DB-TERM-ID "NCIT:C17476" :SPEC
+                               ONT::THE :ONT (:* ONT::GENE-PROTEIN W::BRAF)
+                               :NAME-OF W::BRAF)
+                              (ONT::TERM ONT::V38816 :INSTANCE-OF
+                               ONT::GENE-PROTEIN :DRUM
+                               ((:DRUM
+                                 (TERM :ID FPLX::ERK :NAME "ERK" :SCORE 1.0
+                                  :MATCHES
+                                  ((MATCH :SCORE 1.0 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "name" :EXACT 1))
+                                  :ONT-TYPES (ONT::PROTEIN-FAMILY))
+                                 (TERM :ID NCIT::C16376 :NAME
+                                  "mitogen-activated protein kinase" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17021
+                                         (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID NCIT::C26166 :NAME
+                                  "ephrin type-B receptor 2" :SCORE 0.71084
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17021
+                                         (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID NCIT::C26360 :NAME "MAP kinase gene"
+                                  :SCORE 0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C52164 :NAME "EPHB2" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C52872 :NAME "MAPK1" :SCORE
+                                  0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID HGNC::|6871| :NAME
+                                  "mitogen-activated protein kinase 1" :SCORE
+                                  0.56627 :MATCHES
+                                  ((MATCH :SCORE 0.56627 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "Alias Symbol" :EXACT 1))
+                                  :DBXREFS (UP::P28482) :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID HGNC::|3393| :NAME "EPH receptor B2"
+                                  :SCORE 0.27711 :MATCHES
+                                  ((MATCH :SCORE 0.27711 :INPUT "ERK" :MATCHED
+                                    "ERK" :STATUS "Previous Symbol" :EXACT 1))
+                                  :DBXREFS (UP::P29323) :ONT-TYPES
+                                  (ONT::GENE))))
+                               :INEVENT ONT::V38808 :NAME W::ERK :DBID
+                               "FPLX:ERK" :DBNAME "ERK" :DB-TERM-ID "FPLX:ERK"
+                               :DB-TERM-ID "NCIT:C16376" :DB-TERM-ID
+                               "NCIT:C26166" :DB-TERM-ID "NCIT:C26360"
+                               :DB-TERM-ID "NCIT:C52164" :DB-TERM-ID
+                               "NCIT:C52872" :DB-TERM-ID "HGNC:6871"
+                               :DB-TERM-ID "HGNC:3393" :SPEC ONT::BARE :ONT
+                               (:* ONT::GENE-PROTEIN W::ERK) :NAME-OF W::ERK
+                               :MOD ONT::V38808)
+                              (ONT::TERM ONT::V38788 :INSTANCE-OF ONT::QTY
+                               :ENTITY ONT::V38816 :SPEC ONT::THE :ONT
+                               (:* ONT::QUANTITY-ABSTR W::AMOUNT) :SCALE
+                               ONT::LINEAR-EXTENT-SCALE :WNSENSE
+                               "amount%1:21:00::")
+                              (ONT::EVENT ONT::V38764 :INSTANCE-OF
+                               ONT::INCREASE :AGENT ONT::V38760 :AFFECTED
+                               ONT::V38788 :FORCE ONT::TRUE :TYPE
+                               (:* ONT::INCREASE W::INCREASE) :SPEC ONT::F :ONT
+                               (:* ONT::INCREASE W::INCREASE) :TENSE W::PRES
+                               :WNSENSE "increase%1:11:00::")))

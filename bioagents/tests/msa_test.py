@@ -210,6 +210,34 @@ class TestMSAFilterAgents(_TestMsaGeneralLookup):
 
 
 @attr('nonpublic')
+class TestMSAFilterAgentsBap1(_TestMsaGeneralLookup):
+    def create_type_and_source(self):
+
+        bap1 = Bioagent.make_cljson(Agent('BAP1',
+                                          db_refs={'HGNC': '950'}))
+        other_genes = ['CHD8', 'SCN2A', 'ARID1B']
+        filter_agents = \
+            Bioagent.make_cljson([Agent(n, db_refs=None)
+                                  for n in other_genes])
+
+        from kqml import KQMLToken
+        for fa in filter_agents:
+            fa.set('DB--REFS', KQMLToken('NIL'))
+
+        print(filter_agents)
+
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
+                                 type='unknown',
+                                 source=bap1,
+                                 target=NONE,
+                                 filter_agents=filter_agents)
+
+    def check_response_to_type_and_source(self, output):
+        assert output.head() == 'SUCCESS'
+        assert not output.get('entities-found')
+
+
+@attr('nonpublic')
 class TestMSATypeAndTargetTP53(_TestMsaGeneralLookup):
     def create_type_and_source(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',

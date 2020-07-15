@@ -80,6 +80,27 @@ class TestGetIndraRepTwoSubtrates(_GetIndraRepTemplate):
             {'MAPK1', 'MAPK3'}, stmts
 
 
+"""currently doesn't work
+class TestGetIndraRepIncreaseAmountPhos(_GetIndraRepTemplate):
+    kqml_file = 'increase_amount_phos.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1
+        assert isinstance(stmts[0], Phosphorylation)
+"""
+
+
+class TestGetIndraRepPKASignaling(_GetIndraRepTemplate):
+    kqml_file = 'pka_signaling.kqml'
+
+    def check_result(self, res):
+        agent = self.bioagent.get_agent(res)
+        assert agent.name == 'PKA signaling pathway', agent
+        assert agent.db_refs['TYPE'] == 'ONT::SIGNALING'
+        assert agent.db_refs['FPLX'] == 'PKA'
+
+
 class TestGetIndraRepMixedPathways(_GetIndraRepTemplate):
     kqml_file = 'wnt_mapk_signaling.kqml'
 

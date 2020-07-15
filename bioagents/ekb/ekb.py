@@ -46,7 +46,8 @@ class EKB(object):
         self.ekb = etree.Element('ekb')
         # Determine if the root term is a TERM or EVENT
         root_node = self.graph.nodes[self.root_term]
-        if root_node['category'] == 'ONT::TERM':
+        if root_node['category'] == 'ONT::TERM' \
+                or root_node['type'] == 'ONT::SIGNALING':
             self.term_to_ekb(self.root_term)
         elif root_node['category'] == 'ONT::CC':
             self.cc_to_ekb(self.root_term)
@@ -83,7 +84,8 @@ class EKB(object):
             agent.db_refs['TRIPS'] = 'ONT::' + self.root_term
 
             # Fix some namings
-            if self.type.upper() == 'ONT::SIGNALING-PATHWAY':
+            if self.type.upper() in {'ONT::SIGNALING-PATHWAY',
+                                     'ONT::SIGNALING'}:
                 simple_name = agent.name.lower().replace('-', ' ')
                 if not simple_name.endswith('signaling pathway'):
                     agent.name += ' signaling pathway'
@@ -101,7 +103,8 @@ class EKB(object):
             # Set the agent type
             inferred_type = infer_agent_type(agent)
             if inferred_type is not None \
-                    and self.type != 'ONT::SIGNALING-PATHWAY':
+                    and self.type not in {'ONT::SIGNALING-PATHWAY',
+                                          'ONT::SIGNALING'}:
                 agent.db_refs['TYPE'] = inferred_type
             elif self.type:
                 agent.db_refs['TYPE'] = self.type.upper()
@@ -314,7 +317,8 @@ class EKB(object):
         # Handle the case of the signaling pathways.
         # Note: It turns out this will be wiped out by TRIPS further down the
         # line.
-        elif node['type'].upper() == 'ONT::SIGNALING-PATHWAY':
+        elif node['type'].upper() in {'ONT::SIGNALING-PATHWAY',
+                                      'ONT::SIGNALING'}:
             path_subject_id = self.graph.get_matching_node(term_id,
                                                            link='assoc-with')
             if not path_subject_id:

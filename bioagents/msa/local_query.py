@@ -1,7 +1,8 @@
 import pickle
 from collections import defaultdict
 from indra.statements import *
-from indra.assemblers.html.assembler import get_available_source_counts
+from indra.assemblers.html.assembler import get_available_source_counts, \
+    _get_available_ev_source_counts
 
 
 class LocalQueryProcessor:
@@ -104,7 +105,7 @@ class LocalQueryProcessor:
         return get_available_source_counts(self.statements)
 
     def get_source_count(self, stmt):
-        return get_available_source_counts([stmt])
+        return _get_available_ev_source_counts(stmt.evidence)
 
     def get_ev_count(self, stmt):
         return len(stmt.evidence)

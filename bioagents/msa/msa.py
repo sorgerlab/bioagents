@@ -398,11 +398,15 @@ class StatementFinder(object):
         # Getting statements applies any filters, so the counts are consistent
         # with those filters.
         stmts = self.get_statements(block=False)
+        if stmts is None:
+            return {}
         return {stmt.get_hash(): self._processor.get_ev_count(stmt)
                 for stmt in stmts}
 
     def get_source_counts(self):
         stmts = self.get_statements(block=False)
+        if stmts is None:
+            return {}
         return {stmt.get_hash(): self._processor.get_source_count(stmt)
                 for stmt in stmts}
 

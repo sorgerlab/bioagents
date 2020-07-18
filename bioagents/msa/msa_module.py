@@ -122,7 +122,7 @@ class MSA_Module(Bioagent):
                 'Cannot access the database through the web api.'
                 )
         heading = content.head()
-        m = re.match('(\w+)-(\w+)', heading)
+        m = re.match(r'(\w+)-(\w+)', heading)
         if m is None:
             return self.make_failure('UNKNOWN_ACTION')
         action, polarity = [s.lower() for s in m.groups()]

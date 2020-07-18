@@ -312,9 +312,7 @@ class TestMsaProvenance(_IntegrationTest):
     def create_message(self):
         content = KQMLList('PHOSPHORYLATION-ACTIVATING')
         content.sets('target', mapk1)
-        for name, value in [('residue', 'T'), ('position', '185')]:
-            if value is not None:
-                content.sets(name, value)
+        content.sets('site', 'T-185')
         msg = get_request(content)
         return msg, content
 

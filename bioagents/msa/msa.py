@@ -326,8 +326,10 @@ class StatementFinder(object):
         oa_dict = defaultdict(list)
         ev_totals = self.get_ev_totals()
         stmts = self.get_statements(block)
-        if not stmts:
+        if stmts is None:
             return None
+        elif not stmts:
+            return []
         for stmt in stmts:
             other_agents = self.get_other_agents_for_stmt(stmt, query_entities,
                                                           other_role)
@@ -881,8 +883,7 @@ class _Commons(StatementFinder):
         return
 
     def _regularize_input(self, *entities, **params):
-        return StatementQuery(None, None, list(entities), None, None, params,
-                              ['HGNC', 'FPLX'])
+        return StatementQuery(None, None, list(entities), None, None, params)
 
     def _iter_stmts(self, stmts):
         for stmt in stmts:

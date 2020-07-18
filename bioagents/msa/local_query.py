@@ -44,10 +44,13 @@ class LocalQueryProcessor:
         return self
 
     def _filter_for_type(self, stmts, verb):
-        if verb == 'unknown':
+        from .msa import verb_map
+        if verb is None or verb.lower() == 'unknown':
             return stmts
-        vl = verb.lower()
-        return [s for s in stmts if s.__class__.__name__.lower() == vl]
+        mapped_verb = verb_map.get(verb)
+        if not mapped_verb:
+            return stmts
+        return [s for s in stmts if s.__class__.__name__ == mapped_verb]
 
     def _get_stmts_by_key_role(self, key, role):
         stmts = self._stmts_lookup.get(key)
@@ -118,6 +121,9 @@ class LocalQueryProcessor:
 
     def is_working(self):
         return False
+
+    def merge_results(self, np):
+        self.statements += np.statements
 
 
 with open('/Users/ben/Dropbox/postdoc/darpa/src/indra/msa_braf.pkl',

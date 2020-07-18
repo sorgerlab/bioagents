@@ -14,13 +14,16 @@ from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
 from indra import get_config
 from indra.statements import Statement, stmts_to_json, Agent, \
     get_all_descendants
-from indra.sources import indra_db_rest as idbr
+
+#from indra.sources import indra_db_rest as idbr
+from bioagents.msa.local_query import idbr
 
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
     statement_base_verb, statement_present_verb, statement_passive_verb
 from indra.tools.assemble_corpus import filter_by_curation
+from indra.statements import *
 
 logger = logging.getLogger('MSA')
 

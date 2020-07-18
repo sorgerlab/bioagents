@@ -326,6 +326,8 @@ class MSA_Module(Bioagent):
         try:
             logger.debug("Waiting for statements to finish...")
             stmts = finder.get_statements(block=True)
+            if stmts is None:
+                return
             start_time = datetime.now()
             logger.info('Sending display statements.')
             self.send_provenance_for_stmts(stmts, nl_question,

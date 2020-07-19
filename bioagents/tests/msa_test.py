@@ -168,7 +168,7 @@ class TestMSATypeAndTargetCOVID(_TestMsaGeneralLookup):
 
 
 @attr('nonpublic')
-class TestMSATypeBothSoureAndTarget(_TestMsaGeneralLookup):
+class TestMSATypeBothSourceAndTarget(_TestMsaGeneralLookup):
     def create_type_and_target(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
                                  source=araf,
@@ -312,9 +312,7 @@ class TestMsaProvenance(_IntegrationTest):
     def create_message(self):
         content = KQMLList('PHOSPHORYLATION-ACTIVATING')
         content.sets('target', mapk1)
-        for name, value in [('residue', 'T'), ('position', '185')]:
-            if value is not None:
-                content.sets(name, value)
+        content.sets('site', 'T-185')
         msg = get_request(content)
         return msg, content
 
@@ -407,8 +405,10 @@ class TestMsaCommonDownstreamsMEKVemurafenib(_IntegrationTest):
         return msg, content
 
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.gets('reason') == 'MISSING_TARGET', output.gets('reason')
+        assert output.head() == 'SUCCESS', output
+        entities = output.get('entities-found')
+        agents = self.bioagent.get_agent(entities)
+        assert 'BRAF' in {agent.name for agent in agents}
 
 
 @attr('nonpublic')

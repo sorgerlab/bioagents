@@ -122,7 +122,7 @@ class MSA_Module(Bioagent):
                 'Cannot access the database through the web api.'
                 )
         heading = content.head()
-        m = re.match('(\w+)-(\w+)', heading)
+        m = re.match(r'(\w+)-(\w+)', heading)
         if m is None:
             return self.make_failure('UNKNOWN_ACTION')
         action, polarity = [s.lower() for s in m.groups()]
@@ -326,6 +326,8 @@ class MSA_Module(Bioagent):
         try:
             logger.debug("Waiting for statements to finish...")
             stmts = finder.get_statements(block=True)
+            if stmts is None:
+                return
             start_time = datetime.now()
             logger.info('Sending display statements.')
             self.send_provenance_for_stmts(stmts, nl_question,

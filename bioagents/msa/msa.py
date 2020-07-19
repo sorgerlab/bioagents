@@ -14,7 +14,6 @@ from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
 from indra import get_config
 from indra.statements import Statement, stmts_to_json, Agent, \
     get_all_descendants
-from indra.sources import indra_db_rest as idbr
 
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
@@ -23,6 +22,18 @@ from indra.assemblers.english.assembler import english_join, \
 from indra.tools.assemble_corpus import filter_by_curation
 
 logger = logging.getLogger('MSA')
+
+
+corpus_config = os.environ.get('CWC_MSA_CORPUS')
+if corpus_config:
+    logging.info('Loading MSA with configuration: %s' % corpus_config)
+    from bioagents.msa.local_query import load_from_config
+    idbr = load_from_config(corpus_config)
+else:
+    logging.info('Using MSA with INDRA DB REST')
+    from indra.sources import indra_db_rest as idbr
+
+
 
 
 # We fetch curations if we have access to the DB, just to make this
@@ -323,8 +334,10 @@ class StatementFinder(object):
         oa_dict = defaultdict(list)
         ev_totals = self.get_ev_totals()
         stmts = self.get_statements(block)
-        if not stmts:
+        if stmts is None:
             return None
+        elif not stmts:
+            return []
         for stmt in stmts:
             other_agents = self.get_other_agents_for_stmt(stmt, query_entities,
                                                           other_role)
@@ -398,11 +411,15 @@ class StatementFinder(object):
         # Getting statements applies any filters, so the counts are consistent
         # with those filters.
         stmts = self.get_statements(block=False)
+        if stmts is None:
+            return {}
         return {stmt.get_hash(): self._processor.get_ev_count(stmt)
                 for stmt in stmts}
 
     def get_source_counts(self):
         stmts = self.get_statements(block=False)
+        if stmts is None:
+            return {}
         return {stmt.get_hash(): self._processor.get_source_count(stmt)
                 for stmt in stmts}
 
@@ -874,8 +891,7 @@ class _Commons(StatementFinder):
         return
 
     def _regularize_input(self, *entities, **params):
-        return StatementQuery(None, None, list(entities), None, None, params,
-                              ['HGNC', 'FPLX'])
+        return StatementQuery(None, None, list(entities), None, None, params)
 
     def _iter_stmts(self, stmts):
         for stmt in stmts:

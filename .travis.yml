@@ -34,12 +34,13 @@ script:
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
   # Run standard unit tests
   - cd $TRAVIS_BUILD_DIR
+  - export NOSEATTR="!notravis";
   - if [[ "$TRAVIS_EVENT_TYPE" == "cron" ]]; then
         export RUN_SLOW=true;
     fi
   - export NOSEATTR="";
   - if [[ $TRAVIS_PULL_REQUEST != "false" ]]; then
-      export NOSEATTR="!nonpublic";
+      export NOSEATTR="!nonpublic,$NOSEATTR";
     fi
   - if [[ $RUN_SLOW != "true" ]]; then
       export NOSEATTR="!slow,$NOSEATTR";

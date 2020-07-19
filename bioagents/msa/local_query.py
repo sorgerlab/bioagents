@@ -1,8 +1,26 @@
 import pickle
+import requests
 from collections import defaultdict
 from indra.statements import *
 from indra.assemblers.html.assembler import get_available_source_counts, \
     _get_available_ev_source_counts
+
+
+def load_from_config(config_str):
+    config_type, config_val = config_str.split(':', maxsplit=1)
+    if config_type == 'emmaa':
+        model_name = config_val
+        url = ('https://emmaa.s3.amazonaws.com/assembled/%s/'
+            'latest_statements_%s.json' % (model_name, model_name))
+        res = requests.get(url)
+        stmts = stmts_from_json(res.json())
+        return LocalQueryProcessor(stmts)
+    elif config_type == 'pickle':
+        with open(config_val, 'rb') as fh:
+            stmts = pickle.load(fh)
+            return LocalQueryProcessor(stmts)
+    else:
+        raise ValueError('Invalid config_str: %s' % config_str)
 
 
 class LocalQueryProcessor:
@@ -83,7 +101,7 @@ class LocalQueryProcessor:
 
     def _get_agent_role(self, stmt, idx):
         if isinstance(stmt, (RegulateAmount, RegulateActivity,
-                             Modification, Conversion)):
+                             Modification, Conversion, Gap, Gef)):
             return 'SUBJ' if idx == 0 else 'OBJ'
         elif isinstance(stmt, (Complex, ActiveForm, Translocation,
                                SelfModification)):
@@ -125,8 +143,3 @@ class LocalQueryProcessor:
     def merge_results(self, np):
         self.statements += np.statements
 
-
-with open('/Users/ben/Dropbox/postdoc/darpa/src/indra/msa_braf.pkl',
-          'rb') as fh:
-    db_stmts = pickle.load(fh)
-    idbr = LocalQueryProcessor(db_stmts)

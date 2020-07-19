@@ -15,17 +15,25 @@ from indra import get_config
 from indra.statements import Statement, stmts_to_json, Agent, \
     get_all_descendants
 
-#from indra.sources import indra_db_rest as idbr
-from bioagents.msa.local_query import idbr
-
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
     statement_base_verb, statement_present_verb, statement_passive_verb
 from indra.tools.assemble_corpus import filter_by_curation
-from indra.statements import *
 
 logger = logging.getLogger('MSA')
+
+
+corpus_config = os.environ.get('CWC_MSA_CORPUS')
+if corpus_config:
+    logging.info('Loading MSA with configuration: %s' % corpus_config)
+    from bioagents.msa.local_query import load_from_config
+    idbr = load_from_config(corpus_config)
+else:
+    logging.info('Using MSA with INDRA DB REST')
+    from indra.sources import indra_db_rest as idbr
+
+
 
 
 # We fetch curations if we have access to the DB, just to make this

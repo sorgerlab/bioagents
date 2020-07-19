@@ -405,8 +405,10 @@ class TestMsaCommonDownstreamsMEKVemurafenib(_IntegrationTest):
         return msg, content
 
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.gets('reason') == 'MISSING_TARGET', output.gets('reason')
+        assert output.head() == 'SUCCESS', output
+        entities = output.get('entities-found')
+        agents = self.bioagent.get_agent(entities)
+        assert 'BRAF' in {agent.name for agent in agents}
 
 
 @attr('nonpublic')

@@ -1,0 +1,177 @@
+(GET-INDRA-REPRESENTATION :IDS (ONT::V38806) :CONTEXT
+                             ((ONT::TERM ONT::V38802 :INSTANCE-OF
+                               ONT::GENE-PROTEIN :DRUM
+                               ((:DRUM
+                                 (TERM :ID HGNC::|6407| :NAME
+                                  "KRAS proto-oncogene, GTPase" :SCORE 0.85542
+                                  :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "KRAS" :MATCHED
+                                    "KRAS" :STATUS "Approved Symbol" :EXACT 1))
+                                  :DBXREFS (UP::P01116) :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C52546 :NAME "KRAS" :SCORE
+                                  0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "KRAS" :MATCHED
+                                    "KRAS" :STATUS "name" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C16766 :NAME "oncogene K-ras"
+                                  :SCORE 0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "KRAS" :MATCHED
+                                    "KRAS" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C16612
+                                         (SENSE (MORPH (POS N) (WORD GENE))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01661.lisp"))))
+                                        :TO ONT::GENE))
+                                  :ONT-TYPES (ONT::GENE))
+                                 (TERM :ID NCIT::C17383 :NAME "GTPase KRas"
+                                  :SCORE 0.71084 :MATCHES
+                                  ((MATCH :SCORE 0.71084 :INPUT "KRAS" :MATCHED
+                                    "KRAS" :STATUS "synonym" :EXACT 1))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17021
+                                         (SENSE (MORPH (POS N) (WORD PROTEIN))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01702.lisp"))))
+                                        :TO ONT::PROTEIN))
+                                  :ONT-TYPES (ONT::PROTEIN))
+                                 (TERM :ID UP::Q9YH38 :NAME "GTPase KRas"
+                                  :SCORE 0.56551 :MATCHES
+                                  ((MATCH :SCORE 0.56551 :INPUT "KRAS" :MATCHED
+                                    "K-ras" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1 :ALL-CAPS-NO-CAPS
+                                    1))
+                                  :DBXREFS (XFAM::PF00071) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::Q5EFX7 :NAME "GTPase KRas"
+                                  :SCORE 0.56551 :MATCHES
+                                  ((MATCH :SCORE 0.56551 :INPUT "KRAS" :MATCHED
+                                    "K-ras" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1 :ALL-CAPS-NO-CAPS
+                                    1))
+                                  :DBXREFS (XFAM::PF00071) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::P79800 :NAME "GTPase KRas"
+                                  :SCORE 0.56551 :MATCHES
+                                  ((MATCH :SCORE 0.56551 :INPUT "KRAS" :MATCHED
+                                    "K-ras" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1 :ALL-CAPS-NO-CAPS
+                                    1))
+                                  :DBXREFS (XFAM::PF00071) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::O42277 :NAME "GTPase KRas"
+                                  :SCORE 0.56551 :MATCHES
+                                  ((MATCH :SCORE 0.56551 :INPUT "KRAS" :MATCHED
+                                    "K-ras" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1 :ALL-CAPS-NO-CAPS
+                                    1))
+                                  :DBXREFS (XFAM::PF00071) :ONT-TYPES
+                                  (ONT::PROTEIN))
+                                 (TERM :ID UP::Q05147 :NAME "GTPase KRas"
+                                  :SCORE 0.56551 :MATCHES
+                                  ((MATCH :SCORE 0.56551 :INPUT "KRAS" :MATCHED
+                                    "K-ras" :STATUS "AltName: Short"
+                                    :NO-DASH-DASH 1 :EXACT 1 :ALL-CAPS-NO-CAPS
+                                    1))
+                                  :DBXREFS (XFAM::PF00071) :ONT-TYPES
+                                  (ONT::PROTEIN))))
+                               :NAME W::KRAS :DBID "HGNC:6407" :DBNAME
+                               "KRAS proto-oncogene, GTPase" :DB-TERM-ID
+                               "HGNC:6407" :DB-TERM-ID "NCIT:C52546"
+                               :DB-TERM-ID "NCIT:C16766" :DB-TERM-ID
+                               "NCIT:C17383" :DB-TERM-ID "UP:Q9YH38"
+                               :DB-TERM-ID "UP:Q5EFX7" :DB-TERM-ID "UP:P79800"
+                               :DB-TERM-ID "UP:O42277" :DB-TERM-ID "UP:Q05147"
+                               :SPEC ONT::THE :ONT
+                               (:* ONT::GENE-PROTEIN W::KRAS) :NAME-OF W::KRAS)
+                              (ONT::TERM ONT::V39016 :INSTANCE-OF
+                               ONT::CELL-LINE :DRUM
+                               ((:DRUM
+                                 (TERM :ID BTO::|0001466| :NAME "BT-20 cell"
+                                  :SCORE 0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT "BT20 cell"
+                                    :MATCHED "BT20 cell" :STATUS "name"
+                                    :MAYBE-DEPLURALIZED 1 :SURELY-DEPLURALIZED
+                                    1 :DEPLURALIZATION-SCORE 1 :EXACT 2)
+                                   (MATCH :SCORE 0.85542 :INPUT "BT20 cell"
+                                    :MATCHED "BT20 cell" :STATUS "name"
+                                    :MAYBE-DEPLURALIZED 2 :SURELY-DEPLURALIZED
+                                    1 :DEPLURALIZATION-SCORE 1 :EXACT 2))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT BTO::|0000816|
+                                         (SENSE
+                                          (MORPH (POS N)
+                                           (WORD (BREAST CELL LINE)))
+                                          (PROVENANCE (NAME BTO)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/BTO/000081.lisp"))))
+                                        :TO ONT::CELL-LINE))
+                                  :ONT-TYPES (ONT::CELL-LINE))))
+                               :NAME W::BT-20-CELLS :DBID "BTO:0001466" :DBNAME
+                               "BT-20 cell" :DB-TERM-ID "BTO:0001466" :SPEC
+                               ONT::THE-SET :ONT
+                               (:* ONT::CELL-LINE W::BT-20-CELLS) :NAME-OF
+                               W::BT-20-CELLS)
+                              (ONT::RELN ONT::V38886 :INSTANCE-OF ONT::IN-LOC
+                               :SPEC ONT::F :ONT (:* ONT::IN-LOC W::IN) :GROUND
+                               ONT::V39016 :FIGURE ONT::V38870 :FORCE ONT::TRUE
+                               :LEX W::IN)
+                              (ONT::TERM ONT::V38870 :INSTANCE-OF
+                               ONT::BIOLOGICAL-PROCESS :DRUM
+                               ((:DRUM
+                                 (TERM :ID NCIT::C18081 :NAME
+                                  "cell proliferation" :SCORE 0.85542 :MATCHES
+                                  ((MATCH :SCORE 0.85542 :INPUT
+                                    "cell proliferation" :MATCHED
+                                    "cell proliferation" :STATUS "name" :EXACT
+                                    2))
+                                  :MAPPINGS
+                                  ((MAP :THROUGH
+                                        (CONCEPT NCIT::C17828
+                                         (SENSE
+                                          (MORPH (POS N)
+                                           (WORD (BIOLOGICAL PROCESS)))
+                                          (PROVENANCE (NAME NCIT)
+                                           (FILENAME
+                                            "/sw/cwc-integ/trips/bob/src/config/lisp/../../../src/TextTagger/drum-dsl/NCIT/01782.lisp"))))
+                                        :TO ONT::BIOLOGICAL-PROCESS))
+                                  :ONT-TYPES (ONT::BIOLOGICAL-PROCESS))
+                                 (SPECIALIST :EUI E0015791 :CITATION-FORM
+                                  "cell proliferation" :MATCHES
+                                  ((MATCH :SCORE 1.0 :INPUT
+                                    "cell proliferation" :MATCHED
+                                    "cell proliferation" :EXACT 2)))))
+                               :CELL-LINE ONT::V39016 :NAME
+                               W::CELL-PROLIFERATION :DBID "NCIT:C18081"
+                               :DBNAME "cell proliferation" :DB-TERM-ID
+                               "NCIT:C18081" :SPEC ONT::BARE :ONT
+                               (:* ONT::BIOLOGICAL-PROCESS
+                                W::CELL-PROLIFERATION)
+                               :LOCATION ONT::V38886)
+                              (ONT::THE ONT::V39031 :INSTANCE-OF ONT::METHOD
+                               :SPEC ONT::THE :ONT ONT::METHOD :SUCHTHAT
+                               ONT::V38806)
+                              (ONT::RELN ONT::V38791 :INSTANCE-OF
+                               ONT::BY-MEANS-OF :SPEC ONT::F :ONT
+                               (:* ONT::BY-MEANS-OF W::HOW) :GROUND ONT::V39031
+                               :FIGURE ONT::V38806 :FORCE ONT::TRUE :LEX
+                               W::HOW)
+                              (ONT::EVENT ONT::V38806 :INSTANCE-OF
+                               ONT::INCREASE :AGENT ONT::V38802 :AFFECTED
+                               ONT::V38870 :FORCE ONT::TRUE :TYPE
+                               (:* ONT::INCREASE W::INCREASE) :SPEC ONT::F :ONT
+                               (:* ONT::INCREASE W::INCREASE) :METHOD
+                               ONT::V38791 :WNSENSE "increase%1:11:00::")))

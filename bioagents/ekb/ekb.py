@@ -355,7 +355,8 @@ class EKB(object):
         # Deal next with modifier events
         mod = self.graph.get_matching_node(term_id, link='mod')
         activity_id = self.graph.get_matching_node(term_id, link='active')
-        if mod or activity_id:
+        cell_line = self.graph.get_matching_node(term_id, link='cell-line')
+        if mod or activity_id or cell_line:
             features = etree.Element('features')
             if mod:
                 if self._is_new_id(mod):
@@ -380,6 +381,13 @@ class EKB(object):
                     active = etree.Element('active')
                     active.text = 'TRUE'
                     features.append(active)
+
+            if cell_line:
+                cle = etree.Element('cell-line', id=cell_line)
+                cle_type = etree.Element('type')
+                cle.append(cle_type)
+                features.append(cle)
+                self.term_to_ekb(cell_line)
 
             term.append(features)
 
@@ -441,13 +449,17 @@ def drum_term_to_ekb(drum_term):
 
 def get_cell_line(ekb):
     # Look for a term representing a cell line
-    cl_tag = ekb.find("TERM/[type='ONT::CELL-LINE']/text")
+    cl_tag = ekb.find("TERM/[type='ONT::CELL-LINE']")
     if cl_tag is not None:
-        cell_line = cl_tag.text
-        cell_line.replace('-', '')
-        # TODO: add grounding here if available
-        clc = RefContext(cell_line)
-        return clc
+        name_tag = cl_tag.find('name')
+        if name_tag is not None:
+            name = name_tag.text
+            name = name.replace('CELLS', '')
+            name = name.replace('CELL', '')
+            name = name.replace('-', '')
+            # TODO: add grounding here if available
+            clc = RefContext(name)
+            return clc
     return None
 
 

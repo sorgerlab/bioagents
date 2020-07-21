@@ -80,6 +80,19 @@ class TestGetIndraRepTwoSubtrates(_GetIndraRepTemplate):
             {'MAPK1', 'MAPK3'}, stmts
 
 
+class TestGetIndraRepUserGoalCellLine(_GetIndraRepTemplate):
+    kqml_file = 'goal_with_cell_line_context.kqml'
+
+    def check_result(self, res):
+        stmts = self.bioagent.get_statement(res)
+        assert len(stmts) == 1
+        assert isinstance(stmts[0], IncreaseAmount)
+        assert stmts[0].subj.name == 'KRAS'
+        assert stmts[0].evidence[0].context
+        assert stmts[0].evidence[0].context.cell_line.name == 'BT20', \
+            stmts[0].evidence[0].context.cell_line.name
+
+
 """currently doesn't work
 class TestGetIndraRepIncreaseAmountPhos(_GetIndraRepTemplate):
     kqml_file = 'increase_amount_phos.kqml'

@@ -65,7 +65,7 @@ def test_find_drug_targets1():
     for vem in _vems:
         targets = d.find_drug_targets(vem)
         assert len(targets) >= 1, targets
-        assert any(target == 'BRAF' for target in targets), targets
+        assert any(target.name == 'BRAF' for target in targets), targets
 
 
 @attr('nonpublic')
@@ -73,7 +73,7 @@ def test_find_drug_targets2():
     d = DTDA()
     targets = d.find_drug_targets(_alk_drug)
     assert len(targets) == 1
-    assert any(target == 'TGFBR1' for target in targets), targets
+    assert any(target.name == 'TGFBR1' for target in targets), targets
 
 
 def test_all_drug_list():
@@ -143,19 +143,12 @@ class TestFindTargetDrugPAK4(_TestFindTargetDrug):
         assert isinstance(output.get('drugs'), KQMLList), output.get('drugs')
         assert drugs, drugs
         assert len(drugs) >= 1, (len(drugs), drugs)
-        drug_names = [drug.gets('name') for drug in drugs]
-        exp_drug_name = 'PF-3758309'
-        assert exp_drug_name in drug_names,\
-            "Expected to find %s; not among %s." % (exp_drug_name, drug_names)
-        pubchem_ids = []
-        for drug in drugs:
-            drug = self.bioagent.get_agent(drug)
-            if drug.db_refs:
-                pubchem_ids.append(drug.db_refs.get('PUBCHEM'))
-        exp_pubchem_id = '25227462'
-        assert exp_pubchem_id in pubchem_ids,\
-            ("Got pubchem ids %s for drugs %s; expected to find id %s."
-             % (pubchem_ids, drug_names, exp_pubchem_id))
+        drug_agents = self.bioagent.get_agent(drugs)
+        drug_groundings = {drug.get_grounding() for drug in drug_agents}
+        exp_drug_grounding = ('CHEBI', 'CHEBI:93751')
+        assert exp_drug_grounding in drug_groundings,\
+            "Expected to find %s; not among %s." % (exp_drug_grounding,
+                                                    drug_groundings)
 
 
 @attr('nonpublic')
@@ -200,7 +193,7 @@ class TestFindTargetDrugJAK2FilterAgents(_TestFindTargetDrug):
         drugs = self.bioagent.get_agent(output.get('drugs'))
         print(drugs)
         assert len(drugs) == 1, drugs
-        assert drugs[0].name == 'Staurosporine'
+        assert drugs[0].name == 'staurosporine', drugs
 
 
 @attr('nonpublic')
@@ -266,7 +259,7 @@ class TestFindDrugTargetsFilterAgents(_IntegrationTest):
         drug = agent_clj_from_text('Vemurafenib')
         content = KQMLList('FIND-DRUG-TARGETS')
         content.set('drug', drug)
-        kagents = KQMLList([agent_clj_from_text('ARAF')])
+        kagents = KQMLList([agent_clj_from_text('RAF1')])
         content.set('filter_agents', kagents)
         return get_request(content), content
 
@@ -504,7 +497,7 @@ class TestGetAllDrugs(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         drugs = output.get('drugs')
         assert drugs, output
-        assert all('HMS-LINCS' in self.bioagent.get_agent(e).db_refs
+        assert all('LSPCI' in self.bioagent.get_agent(e).db_refs
                    for e in drugs), drugs
 
 

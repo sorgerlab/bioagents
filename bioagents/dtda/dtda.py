@@ -82,7 +82,8 @@ class DTDA(object):
         targets = self.find_drug_targets(drug)
         if not targets:
             raise DrugNotFoundException
-        if target.name in targets:
+        target_names = {t.name for t in targets}
+        if target.name in target_names:
             return True
         return False
 
@@ -148,7 +149,7 @@ class DTDA(object):
                     tas_stmts = self._get_tas_stmts_from_db(term)
                 except DatabaseTimeoutError:
                     continue
-                targets = {s.obj.name for s in tas_stmts}
+                targets = {s.obj.get_grounding() for s in tas_stmts}
                 self.drug_targets[term] = targets
             else:
                 logger.info('Getting drug term directly from cache: %s'
@@ -156,10 +157,11 @@ class DTDA(object):
                 targets = self.drug_targets[term]
             all_targets |= targets
         if filter_agents:
-            filter_target_names = {t.name for t in filter_agents}
+            filter_target_groundings = \
+                {t.get_grounding() for t in filter_agents}
             logger.info('Found %d targets before filter: %s.' %
                         (len(all_targets), str(all_targets)))
-            all_targets &= filter_target_names
+            all_targets &= filter_target_groundings
             logger.info('%d targets left after filter.' % len(all_targets))
         targets = [self.target_by_key.get(k) for k in all_targets
                    if k in self.target_by_key]
@@ -230,8 +232,8 @@ class DTDA(object):
                    "up %s inhibits %s." % (timeout, drug, target))
             logger.error(msg)
             raise DatabaseTimeoutError(msg)
-        return (s for s in processor.statements
-                if any(ev.source_api == 'tas' for ev in s.evidence))
+        return [s for s in processor.statements
+                if any(ev.source_api == 'tas' for ev in s.evidence)]
 
     def find_mutation_effect(self, agent):
         if not agent.mutations or len(agent.mutations) < 1:

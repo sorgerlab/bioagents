@@ -1,6 +1,5 @@
 import sys
 import logging
-from indra.sources.trips.processor import TripsProcessor
 from indra.statements import Agent
 from kqml import KQMLList, KQMLString
 from .dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
@@ -192,25 +191,6 @@ class DTDA_Module(Bioagent):
         reply = KQMLList('SUCCESS')
         reply.set('genes', self.make_cljson(self.dtda.get_all_targets()))
         return reply
-
-    @staticmethod
-    def _get_drug_kqml(drug_list):
-        drugs = KQMLList()
-        for dn, pci in drug_list:
-            drug = KQMLList()
-            drug.sets('name', dn.replace(' ', '-'))
-            if pci:
-                drug.sets('pubchem_id', pci)
-            drugs.append(drug)
-        return drugs
-
-    @staticmethod
-    def _get_agent(agent_ekb):
-        tp = TripsProcessor(agent_ekb)
-        terms = tp.tree.findall('TERM')
-        term_id = terms[0].attrib['id']
-        agent = tp._get_agent_by_id(term_id, None)
-        return agent
 
 
 def is_family(agent):

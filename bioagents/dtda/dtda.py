@@ -236,7 +236,7 @@ class DTDA(object):
                 if any(ev.source_api == 'tas' for ev in s.evidence)]
 
     def find_mutation_effect(self, agent):
-        if not agent.mutations or len(agent.mutations) < 1:
+        if not agent.mutations:
             return None
         mut = agent.mutations[0]
 

@@ -79,7 +79,7 @@ def test_find_drug_targets2():
 def test_all_drug_list():
     d = DTDA()
     all_drugs = d.get_all_drugs()
-    assert len(all_drugs) > 3000
+    assert len(all_drugs) > 2500, len(all_drugs)
 
 
 def test_all_target_list():

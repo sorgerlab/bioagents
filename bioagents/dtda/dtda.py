@@ -32,7 +32,8 @@ class DatabaseTimeoutError(BioagentException):
 
 
 def _make_cbio_efo_map():
-    lines = open(_resource_dir + 'cbio_efo_map.tsv', 'rt').readlines()
+    lines = open(os.path.join(_resource_dir,
+                              'cbio_efo_map.tsv'), 'rt').readlines()
     cbio_efo_map = {}
     for lin in lines:
         cbio_id, efo_id = lin.strip().split('\t')
@@ -70,6 +71,12 @@ class DTDA(object):
         # Load statements directly from a TAS dump
         self._load_tas_stmts_to_cache()
 
+    def get_all_drugs(self):
+        return list(self.drug_by_key.values())
+
+    def get_all_targets(self):
+        return list(self.target_by_key.values())
+
     def is_nominal_drug_target(self, drug, target):
         """Return True if the drug targets the target, and False if not."""
         targets = self.find_drug_targets(drug)
@@ -89,7 +96,7 @@ class DTDA(object):
         if target_key in self.target_drugs:
             logger.debug('Getting target term directly from cache: %s'
                          % str(target_key))
-            drugs = self.target_drugs[target_key]
+            drug_keys = self.target_drugs[target_key]
         elif db_lookup:
             logger.debug('Looking up target term in DB: %s' % str(target_key))
             try:
@@ -109,8 +116,11 @@ class DTDA(object):
             filter_drug_keys = {a.get_grounding() for a in filter_agents}
             logger.info('Found %d drugs before filter: %s.' %
                         (len(drug_keys), str(drug_keys)))
-            drugs = [d for d in drug_keys if d in filter_drug_keys]
-            logger.info('%d drugs left after filter.' % len(drugs))
+            drug_keys = [d for d in drug_keys if d in filter_drug_keys]
+            logger.info('%d drugs left after filter.' % len(drug_keys))
+
+        drugs = [self.drug_by_key.get(k) for k in drug_keys
+                 if k in self.drug_by_key]
 
         return drugs
 
@@ -151,7 +161,9 @@ class DTDA(object):
                         (len(all_targets), str(all_targets)))
             all_targets &= filter_target_names
             logger.info('%d targets left after filter.' % len(all_targets))
-        return all_targets
+        targets = [self.target_by_key.get(k) for k in all_targets
+                   if k in self.target_by_key]
+        return targets
 
     def _load_tas_stmts_to_cache(self):
         logger.debug('Loading TAS Statements directly into cache.')
@@ -163,10 +175,11 @@ class DTDA(object):
                                        key=lambda x: x.subj.name),
                                 key=lambda x: x.subj.name)
         drug_classes = {}
-        for _, stmts in stmts_by_drug:
-            stmts = list(stmts)
-            aff = {stmt.evidence[0].annotations['class_min'] for stmt in stmts}
-            drug_classes[stmts[0].subj.name] = 'has_strong' \
+        for _, drug_stmts in stmts_by_drug:
+            drug_stmts = list(drug_stmts)
+            aff = {stmt.evidence[0].annotations['class_min']
+                   for stmt in drug_stmts}
+            drug_classes[drug_stmts[0].subj.name] = 'has_strong' \
                 if 'Kd < 100nM' in aff else 'not_has_strong'
         for stmt in stmts:
             # Skip Statements where the affinity is low if it otherwise also
@@ -219,7 +232,6 @@ class DTDA(object):
             raise DatabaseTimeoutError(msg)
         return (s for s in processor.statements
                 if any(ev.source_api == 'tas' for ev in s.evidence))
-
 
     def find_mutation_effect(self, agent):
         if not agent.mutations or len(agent.mutations) < 1:
@@ -414,7 +426,7 @@ def _term_to_db_key(term):
     return
 
 
-def _generate_drug_lookup_terms(self, agent):
+def _generate_drug_lookup_terms(agent):
     term_set = {(ns, ref) for ns, ref in agent.db_refs.items()
                 if ns not in {'TYPE', 'TRIPS'}}
 

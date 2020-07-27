@@ -85,12 +85,9 @@ class DTDA_Module(Bioagent):
         logger.info('DTDA looking for targets of %s' % drug.name)
         drug_targets = self.dtda.find_drug_targets(drug,
                                                    filter_agents=filter_agents)
-        all_targets = sorted(list(set(drug_targets)))
 
         reply = KQMLList('SUCCESS')
-        target_list = [self._get_agent_from_gene_name(target_name)
-                       for target_name in all_targets]
-        targets = self.make_cljson(target_list)
+        targets = self.make_cljson(drug_targets)
         reply.set('targets', targets)
         return reply
 
@@ -182,7 +179,7 @@ class DTDA_Module(Bioagent):
     def respond_get_all_drugs(self, content):
         """Respond with all the drugs we have to tell you about."""
         reply = KQMLList('SUCCESS')
-        reply.set('drugs', self.make_cljson(self.dtda.all_drugs))
+        reply.set('drugs', self.make_cljson(self.dtda.get_all_drugs()))
         return reply
 
     def respond_get_all_diseases(self, content):
@@ -195,7 +192,7 @@ class DTDA_Module(Bioagent):
 
     def respond_get_all_gene_targets(self, content):
         reply = KQMLList('SUCCESS')
-        reply.set('genes', self.make_cljson(self.dtda.all_targets))
+        reply.set('genes', self.make_cljson(self.dtda.get_all_targets()))
         return reply
 
     @staticmethod

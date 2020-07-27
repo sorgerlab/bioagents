@@ -78,16 +78,15 @@ def test_find_drug_targets2():
 
 def test_all_drug_list():
     d = DTDA()
-    assert d.all_drugs
-    assert all('HMS-LINCS' in Agent._from_json(e).db_refs.keys()
-               for e in d.all_drugs)
+    all_drugs = d.get_all_drugs()
+    assert len(all_drugs) > 3000
 
 
 def test_all_target_list():
     d = DTDA()
-    assert d.all_targets
-    assert all('HGNC' in Agent._from_json(e).db_refs.keys()
-               for e in d.all_targets)
+    all_targets = d.get_all_targets()
+    assert len(all_targets) > 1000
+    assert all('HGNC' in a.db_refs for a in all_targets)
 
 
 def test_all_disease_list():
@@ -223,7 +222,7 @@ class TestFindDrugTargetsVemurafenib(_IntegrationTest):
         super().__init__(DTDA_Module)
 
     def create_message(self):
-        drug = agent_clj_from_text('Vemurafenib')
+        drug = agent_clj_from_text('vemurafenib')
         content = KQMLList('FIND-DRUG-TARGETS')
         content.set('drug', drug)
         return get_request(content), content
@@ -237,8 +236,8 @@ class TestFindDrugTargetsVemurafenib(_IntegrationTest):
         assert len(target_agents) >= 1, target_agents
         for agent in target_agents:
             assert 'HGNC' in agent.db_refs, agent.db_refs
-        assert any(target.name == 'BRAF' for target in target_agents), \
-            target_agents
+        names = {a.name for a in target_agents}
+        assert names == {'ARAF', 'BRAF'}, names
 
 
 @attr('nonpublic')

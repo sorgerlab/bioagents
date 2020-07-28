@@ -53,6 +53,8 @@ if __name__ == '__main__':
 
     opt_stmts = []
     for (lspci, obj_name), stmts in grouped.items():
+        if obj_name == 'PTPN11':
+            breakpoint()
         opt_stmt = choose_best_stmt(stmts)
         opt_stmts.append(opt_stmt)
 

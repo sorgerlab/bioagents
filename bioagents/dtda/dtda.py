@@ -53,9 +53,9 @@ class DTDA(object):
         # on-the-fly from the database.
         self.sub_statements = {}
 
-        # These two dicts will cache results from the database, and act as
+        # These two dicts will cache results from TAS, and act as
         # a record of which targets and drugs have been searched, which is why
-        # the dicts are kept separate. That way we know that if Selumetinib
+        # the dicts are kept separate. That way, we know that if Selumetinib
         # shows up in the drug_targets keys, all the targets of Selumetinib
         # will be present, while although Selumetinib may be a value in
         # target_drugs drugs, not all targets that have Selumetinib as a drug
@@ -87,34 +87,21 @@ class DTDA(object):
             return True
         return False
 
-    def find_target_drugs(self, target, filter_agents=None, db_lookup=True):
+    def find_target_drugs(self, target, filter_agents=None):
         """Return all the drugs that target a given target."""
         # These are proteins/genes so we just look at HGNC grounding
         if 'HGNC' not in target.db_refs:
             return {}
-        target_key = target.get_grounding()
+        target_key = ('HGNC', target.db_refs['HGNC'])
         # Check if we already have the stashed result
         if target_key in self.target_drugs:
             logger.debug('Getting target term directly from cache: %s'
                          % str(target_key))
             drug_keys = self.target_drugs[target_key]
-        elif db_lookup:
-            logger.debug('Looking up target term in DB: %s' % str(target_key))
-            try:
-                drug_keys = {s.subj.get_grounding()
-                             for s in self._get_tas_stmts_from_db(
-                                target_term=target_key)}
-                self.target_drugs[target_key] = drug_keys
-            except DatabaseTimeoutError:
-                # TODO: We should return a special message if the database
-                # can't be reached for some reason. It might also be good to
-                # stash the cache dicts as back-ups.
-                # If there is an error we don't stash the results
-                return {}
         else:
             return {}
         if filter_agents:
-            filter_drug_keys = {a.get_grounding() for a in filter_agents}
+            filter_drug_keys = {get_main_drug_key(a) for a in filter_agents}
             logger.info('Found %d drugs before filter: %s.' %
                         (len(drug_keys), str(drug_keys)))
             drug_keys = [d for d in drug_keys if d in filter_drug_keys]
@@ -132,8 +119,7 @@ class DTDA(object):
         all_drugs = {}
         for target in targets:
             drugs = self.find_target_drugs(target,
-                                           filter_agents=filter_agents,
-                                           db_lookup=False)
+                                           filter_agents=filter_agents)
             if drugs:
                 all_drugs[target] = drugs
         return all_drugs
@@ -141,23 +127,23 @@ class DTDA(object):
     def find_drug_targets(self, drug, filter_agents=None):
         """Return all the targets of a given drug."""
         # Build a list of different possible identifiers
-        drug_terms = _generate_drug_lookup_terms(drug)
+        drug_keys = get_drug_lookup_keys(drug)
 
         # Search for relations involving those identifiers.
         all_targets = set()
-        for term in drug_terms:
-            if term not in self.drug_targets:
-                logger.info('Looking up drug term in DB: %s' % str(term))
+        for drug_key in drug_keys:
+            if drug_key not in self.drug_targets:
+                logger.info('Looking up drug key in DB: %s' % str(drug_key))
                 try:
-                    tas_stmts = self._get_tas_stmts_from_db(term)
+                    tas_stmts = self._get_tas_stmts_from_db(drug_key)
                 except DatabaseTimeoutError:
                     continue
                 targets = {s.obj.get_grounding() for s in tas_stmts}
-                self.drug_targets[term] = targets
+                self.drug_targets[drug_key] = targets
             else:
                 logger.info('Getting drug term directly from cache: %s'
-                            % str(term))
-                targets = self.drug_targets[term]
+                            % str(drug_key))
+                targets = self.drug_targets[drug_key]
             all_targets |= targets
         if filter_agents:
             filter_target_groundings = \
@@ -195,18 +181,18 @@ class DTDA(object):
 
             # First we make the target to drug mapping
             target_key = stmt.obj.get_grounding()
-            drug_key = stmt.subj.get_grounding()
             # This should not happen but just in case, we check that we
             # have a proper grounding
-            if not target_key[0] or not drug_key[0]:
+            if not target_key[0]:
                 continue
 
-            self.drug_by_key[drug_key] = stmt.subj
+            main_drug_key = get_main_drug_key(stmt.subj)
+
             self.target_by_key[target_key] = stmt.obj
             if target_key not in self.target_drugs:
-                self.target_drugs[target_key] = [drug_key]
+                self.target_drugs[target_key] = [main_drug_key]
             else:
-                self.target_drugs[target_key].append(drug_key)
+                self.target_drugs[target_key].append(main_drug_key)
 
             # Then we make the drug to target mapping where targets
             # only need a name
@@ -222,6 +208,7 @@ class DTDA(object):
                     self.drug_targets[drug_key] = {target_key}
                 else:
                     self.drug_targets[drug_key].add(target_key)
+                self.drug_by_key[drug_key] = stmt.subj
         logger.debug('Loaded TAS Statements directly into cache.')
 
     def _get_tas_stmts_from_db(self, drug_term=None, target_term=None):
@@ -431,22 +418,31 @@ def _term_to_db_key(term):
     return
 
 
-def _generate_drug_lookup_terms(agent):
-    term_set = {(ns, ref) for ns, ref in agent.db_refs.items()
-                if ns not in {'TYPE', 'TRIPS'}}
+def get_drug_lookup_keys(agent):
+    keys = {(ns, ref) for ns, ref in agent.db_refs.items()
+            if ns not in {'TYPE', 'TRIPS'}}
 
     # Try without a hyphen.
     if '-' in agent.name:
-        term_set.add(('TEXT', agent.name.replace('-', '')))
+        keys.add(('TEXT', agent.name.replace('-', '')))
 
     # Try different capitalizations.
     transforms = ['capitalize', 'upper', 'lower']
     for opp in map(lambda nm: getattr(agent.name, nm), transforms):
-        term_set.add(('TEXT', opp()))
+        keys.add(('TEXT', opp()))
 
-    return term_set
+    return keys
+
+
+def get_main_drug_key(drug_agent):
+    gr = drug_agent.get_grounding()
+    if gr[0] is None:
+        gr = ('TEXT', drug_agent.name)
+    return gr
 
 
 def filter_out_ugly_names(drugs):
     drugs = [d for d in drugs if len(d.name) < 35]
     return drugs
+
+

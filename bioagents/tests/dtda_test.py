@@ -79,7 +79,7 @@ def test_find_drug_targets2():
 def test_all_drug_list():
     d = DTDA()
     all_drugs = d.get_all_drugs()
-    assert len(all_drugs) > 2500, len(all_drugs)
+    assert len(all_drugs) > 2300, len(all_drugs)
 
 
 def test_all_target_list():
@@ -121,7 +121,7 @@ class TestFindTargetDrugBRAF(_TestFindTargetDrug):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('drugs')) >= 9, (len(output.get('drugs')), output)
+        assert len(output.get('drugs')) >= 8, (len(output.get('drugs')), output)
 
 
 @attr('nonpublic')
@@ -145,7 +145,7 @@ class TestFindTargetDrugPAK4(_TestFindTargetDrug):
         assert len(drugs) >= 1, (len(drugs), drugs)
         drug_agents = self.bioagent.get_agent(drugs)
         drug_groundings = {drug.get_grounding() for drug in drug_agents}
-        exp_drug_grounding = ('CHEBI', 'CHEBI:93751')
+        exp_drug_grounding = ('CHEBI', 'CHEBI:90677')
         assert exp_drug_grounding in drug_groundings,\
             "Expected to find %s; not among %s." % (exp_drug_grounding,
                                                     drug_groundings)

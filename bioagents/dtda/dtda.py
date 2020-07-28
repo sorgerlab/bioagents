@@ -123,6 +123,9 @@ class DTDA(object):
         drugs = [self.drug_by_key.get(k) for k in drug_keys
                  if k in self.drug_by_key]
 
+        drugs = sorted(filter_out_ugly_names(drugs),
+                       key=lambda x: x.name.lower())
+
         return drugs
 
     def find_multi_target_drugs(self, targets, filter_agents=None):
@@ -443,3 +446,7 @@ def _generate_drug_lookup_terms(agent):
 
     return term_set
 
+
+def filter_out_ugly_names(drugs):
+    drugs = [d for d in drugs if len(d.name) < 35]
+    return drugs

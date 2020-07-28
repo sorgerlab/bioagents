@@ -170,7 +170,9 @@ class TestFindTargetDrugJAK2(_TestFindTargetDrug):
         drugs = self.bioagent.get_agent(output.get('drugs'))
         assert len(drugs) >= 9
         for drug in drugs:
-            assert {'PUBCHEM', 'CHEBI'} & set(drug.db_refs.keys()), drug.db_refs
+            assert {'PUBCHEM', 'CHEBI', 'CHEMBL',
+                    'DRUGBANK', 'HMS-LINCS'} & set(drug.db_refs.keys()), \
+                drug.db_refs
 
 
 @attr('nonpublic')
@@ -205,7 +207,9 @@ class TestFindTargetDrugJAK1(_TestFindTargetDrug):
         drugs = self.bioagent.get_agent(output.get('drugs'))
         assert len(drugs) >= 6
         for drug in drugs:
-            assert {'PUBCHEM', 'CHEBI'} & set(drug.db_refs.keys()), drug.db_refs
+            assert {'PUBCHEM', 'CHEBI', 'CHEMBL',
+                    'DRUGBANK', 'HMS-LINCS'} & set(drug.db_refs.keys()), \
+                drug.db_refs
 
 
 # FIND-DRUG-TARGETS tests

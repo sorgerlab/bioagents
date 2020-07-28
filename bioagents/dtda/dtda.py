@@ -72,10 +72,10 @@ class DTDA(object):
         self._load_tas_stmts_to_cache()
 
     def get_all_drugs(self):
-        return list(self.drug_by_key.values())
+        return list(set(self.drug_by_key.values()))
 
     def get_all_targets(self):
-        return list(self.target_by_key.values())
+        return list(set(self.target_by_key.values()))
 
     def is_nominal_drug_target(self, drug, target):
         """Return True if the drug targets the target, and False if not."""

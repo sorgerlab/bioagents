@@ -1,6 +1,5 @@
 import sys
 import logging
-from indra.sources.trips.processor import TripsProcessor
 from indra.statements import Agent
 from kqml import KQMLList, KQMLString
 from .dtda import DTDA, DrugNotFoundException, DiseaseNotFoundException
@@ -65,11 +64,10 @@ class DTDA_Module(Bioagent):
         kfilter_agents = content.get('filter_agents')
         filter_agents = Bioagent.get_agent(kfilter_agents) if kfilter_agents \
             else None
-        drug_results = self.dtda.find_target_drugs(target,
-                                                   filter_agents=filter_agents)
-        drugs = self._get_drug_cljson(drug_results)
+        drugs = self.dtda.find_target_drugs(target,
+                                            filter_agents=filter_agents)
         reply = KQMLList('SUCCESS')
-        reply.set('drugs', drugs)
+        reply.set('drugs', Bioagent.make_cljson(drugs))
         return reply
 
     def respond_find_drug_targets(self, content):
@@ -85,12 +83,9 @@ class DTDA_Module(Bioagent):
         logger.info('DTDA looking for targets of %s' % drug.name)
         drug_targets = self.dtda.find_drug_targets(drug,
                                                    filter_agents=filter_agents)
-        all_targets = sorted(list(set(drug_targets)))
 
         reply = KQMLList('SUCCESS')
-        target_list = [self._get_agent_from_gene_name(target_name)
-                       for target_name in all_targets]
-        targets = self.make_cljson(target_list)
+        targets = self.make_cljson(drug_targets)
         reply.set('targets', targets)
         return reply
 
@@ -174,15 +169,14 @@ class DTDA_Module(Bioagent):
         reply.set('functional-effect', 'ACTIVE')
         # These differ only in mutation, which isn't relevant.
         an_agent = agents[0]
-        drug_results = self.dtda.find_target_drugs(an_agent)
-        drugs = self._get_drug_cljson(drug_results)
-        reply.set('drugs', drugs)
+        drugs = self.dtda.find_target_drugs(an_agent)
+        reply.set('drugs', Bioagent.make_cljson(drugs))
         return reply
 
     def respond_get_all_drugs(self, content):
         """Respond with all the drugs we have to tell you about."""
         reply = KQMLList('SUCCESS')
-        reply.set('drugs', self.make_cljson(self.dtda.all_drugs))
+        reply.set('drugs', self.make_cljson(self.dtda.get_all_drugs()))
         return reply
 
     def respond_get_all_diseases(self, content):
@@ -195,36 +189,8 @@ class DTDA_Module(Bioagent):
 
     def respond_get_all_gene_targets(self, content):
         reply = KQMLList('SUCCESS')
-        reply.set('genes', self.make_cljson(self.dtda.all_targets))
+        reply.set('genes', self.make_cljson(self.dtda.get_all_targets()))
         return reply
-
-    @staticmethod
-    def _get_drug_cljson(drug_list):
-        drugs = []
-        for name, pubchem_id in drug_list:
-            if pubchem_id:
-                db_refs = {'PUBCHEM': pubchem_id}
-            drugs.append(Agent(name, db_refs=db_refs))
-        return Bioagent.make_cljson(drugs)
-
-    @staticmethod
-    def _get_drug_kqml(drug_list):
-        drugs = KQMLList()
-        for dn, pci in drug_list:
-            drug = KQMLList()
-            drug.sets('name', dn.replace(' ', '-'))
-            if pci:
-                drug.sets('pubchem_id', pci)
-            drugs.append(drug)
-        return drugs
-
-    @staticmethod
-    def _get_agent(agent_ekb):
-        tp = TripsProcessor(agent_ekb)
-        terms = tp.tree.findall('TERM')
-        term_id = terms[0].attrib['id']
-        agent = tp._get_agent_by_id(term_id, None)
-        return agent
 
 
 def is_family(agent):

@@ -979,9 +979,11 @@ class _Commons(StatementFinder):
             directed_stmts = [s for s in new_processor.statements if
                               not isinstance(s, Complex)]
             new_processor.statements = directed_stmts
+
             # Look for new agents.
             for other_ag, stmt in self._iter_stmts(directed_stmts):
-                if other_ag is None or 'HGNC' not in other_ag.db_refs:
+                if other_ag is None or 'HGNC' not in other_ag.db_refs \
+                        or other_ag.name == ag.name:
                     continue
                 other_id = other_ag.name
 

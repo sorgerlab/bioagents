@@ -13,7 +13,7 @@ from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
 from indra.statements import Statement, stmts_to_json, Agent, \
-    get_all_descendants
+    get_all_descendants, Complex
 
 from indra.statements import Complex
 from indra.assemblers.html import HtmlAssembler
@@ -936,7 +936,7 @@ class _Commons(StatementFinder):
     def _iter_stmts(self, stmts):
         for stmt in stmts:
             ags = stmt.agent_list()
-            if self._role == 'OTHER':
+            if self._role == 'OTHER' or isinstance(stmt, Complex):
                 for other_ag in ags:
                     yield other_ag, stmt
             elif self._role == 'SUBJECT' and len(ags) >= 2:

@@ -38,7 +38,6 @@ script:
   - if [[ "$TRAVIS_EVENT_TYPE" == "cron" ]]; then
         export RUN_SLOW=true;
     fi
-  - export NOSEATTR="";
   - if [[ $TRAVIS_PULL_REQUEST != "false" ]]; then
       export NOSEATTR="!nonpublic,$NOSEATTR";
     fi

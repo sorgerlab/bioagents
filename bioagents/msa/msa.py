@@ -139,6 +139,7 @@ class StatementQuery(object):
 
         self.ent_type = ent_type
         self.filter_agents = params.pop('filter_agents', [])
+        self.context_agents = params.pop('context_agents', [])
 
         self.settings = params
         if not self.subj_key and not self.obj_key and not self.agent_keys:
@@ -187,9 +188,27 @@ class StatementQuery(object):
         return dbi, dbn
 
 
+def _get_mesh_terms(context_agents, include_children=True):
+    from indra.ontology.bio import bio_ontology
+    mesh_terms = set()
+    for ag in context_agents:
+        # Just in case...
+        if ag is None:
+            continue
+        mesh_id = ag.db_refs.get('MESH')
+        if not mesh_id:
+            continue
+        mesh_terms.add(mesh_id)
+        if include_children:
+            children = bio_ontology.get_children('MESH', mesh_id)
+            mesh_terms |= {c[1] for c in children}
+    return mesh_terms
+
+
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
         self._block_default = kwargs.pop('block_default', True)
+        self.mesh_terms = None
         self.query = self._regularize_input(*args, **kwargs)
         self._processor = self._make_processor()
         self._statements = None
@@ -205,19 +224,26 @@ class StatementFinder(object):
 
         This method makes use of the `query` attribute.
         """
-        if not self.query.verb:
-            processor = \
-                idbr.get_statements(subject=self.query.subj_key,
-                                    object=self.query.obj_key,
-                                    agents=self.query.agent_keys,
-                                    **self.query.settings)
-        else:
-            processor = \
-                idbr.get_statements(subject=self.query.subj_key,
-                                    object=self.query.obj_key,
-                                    agents=self.query.agent_keys,
-                                    stmt_type=self.query.stmt_type,
-                                    **self.query.settings)
+        mesh_terms = _get_mesh_terms(self.query.context_agents,
+                                     include_children=True)
+        logger.info('Using %d MeSH terms to constrain query' %
+                    (len(mesh_terms)))
+        mesh_terms_param = ','.join(mesh_terms) \
+            if mesh_terms else None
+
+        self.mesh_terms = mesh_terms
+
+        kwargs = dict(subject=self.query.subj_key,
+                      object=self.query.obj_key,
+                      agents=self.query.agent_keys,
+                      mesh_ids=mesh_terms_param,
+                      **self.query.settings)
+        if self.query.verb:
+            kwargs['stmt_type'] = self.query.stmt_type
+        if mesh_terms_param:
+            kwargs['filter_ev'] = True
+
+        processor = idbr.get_statements(**kwargs)
         return processor
 
     def _filter_stmts(self, stmts):

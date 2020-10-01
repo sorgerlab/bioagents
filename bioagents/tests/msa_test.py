@@ -141,6 +141,8 @@ covid19 = Bioagent.make_cljson(
           db_refs={"TEXT": "COVID-19",
                    "NCIT": "C171133",
                    "TYPE": "ONT::MEDICAL-DISORDERS-AND-CONDITIONS"}))
+melanoma = Bioagent.make_cljson(Agent('Melanoma',
+                                      db_refs={'MESH': 'D008545'}))
 NONE = KQMLList()
 
 
@@ -189,6 +191,24 @@ class TestMSATypeAndSourceBRAF(_TestMsaGeneralLookup):
 
     def check_response_to_type_and_source(self, output):
         assert _agent_name_found(output, 'ERK')
+        nrel = int(output.gets('num-relations-found'))
+        assert nrel > 100, nrel  # 195 when this was written
+        return self._check_find_response(output)
+
+
+@attr('nonpublic', 'notravis')
+class TestMSAContextBRAF(_TestMsaGeneralLookup):
+    def create_type_and_target(self):
+        return self._get_content('FIND-RELATIONS-FROM-LITERATURE',
+                                 type='Phosphorylation',
+                                 source=braf,
+                                 target=NONE,
+                                 context=KQMLList([melanoma]))
+
+    def check_response_to_type_and_target(self, output):
+        assert _agent_name_found(output, 'ERK')
+        nrel = int(output.gets('num-relations-found'))
+        assert 10 < nrel < 100, nrel
         return self._check_find_response(output)
 
 

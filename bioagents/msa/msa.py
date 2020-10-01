@@ -208,6 +208,7 @@ def _get_mesh_terms(context_agents, include_children=True):
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
         self._block_default = kwargs.pop('block_default', True)
+        self.mesh_terms = None
         self.query = self._regularize_input(*args, **kwargs)
         self._processor = self._make_processor()
         self._statements = None
@@ -224,28 +225,25 @@ class StatementFinder(object):
         This method makes use of the `query` attribute.
         """
         mesh_terms = _get_mesh_terms(self.query.context_agents,
-                                     # FIXME: CHANGE THIS ONCE API ALLOWS
-                                     # OR CONSTRAINTS
-                                     include_children=False)
+                                     include_children=True)
         logger.info('Using %d MeSH terms to constrain query' %
                     (len(mesh_terms)))
         mesh_terms_param = ','.join(mesh_terms) \
             if mesh_terms else None
-        if not self.query.verb:
-            processor = \
-                idbr.get_statements(subject=self.query.subj_key,
-                                    object=self.query.obj_key,
-                                    agents=self.query.agent_keys,
-                                    mesh_ids=mesh_terms_param,
-                                    **self.query.settings)
-        else:
-            processor = \
-                idbr.get_statements(subject=self.query.subj_key,
-                                    object=self.query.obj_key,
-                                    agents=self.query.agent_keys,
-                                    stmt_type=self.query.stmt_type,
-                                    mesh_ids=mesh_terms_param,
-                                    **self.query.settings)
+
+        self.mesh_terms = mesh_terms
+
+        kwargs = dict(subject=self.query.subj_key,
+                      object=self.query.obj_key,
+                      agents=self.query.agent_keys,
+                      mesh_ids=mesh_terms_param,
+                      **self.query.settings)
+        if self.query.verb:
+            kwargs['stmt_type'] = self.query.stmt_type
+        if mesh_terms_param:
+            kwargs['filter_ev'] = True
+
+        processor = idbr.get_statements(**kwargs)
         return processor
 
     def _filter_stmts(self, stmts):

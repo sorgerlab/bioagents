@@ -196,7 +196,7 @@ class TestMSATypeAndSourceBRAF(_TestMsaGeneralLookup):
         return self._check_find_response(output)
 
 
-@attr('nonpublic')
+@attr('nonpublic', 'notravis')
 class TestMSAContextBRAF(_TestMsaGeneralLookup):
     def create_type_and_target(self):
         return self._get_content('FIND-RELATIONS-FROM-LITERATURE',

@@ -396,8 +396,8 @@ class TestFindDiseaseTargets2(_IntegrationTest):
         protein = self.bioagent.get_agent(output.get('protein'))
         assert protein.name == 'KRAS'
         assert protein.db_refs['HGNC'] == '6407'
-        assert output.gets('prevalence') == '0.19'
-        assert output.gets('functional-effect') == 'ACTIVE'
+        assert output.gets('prevalence') == '0.18', output
+        assert output.gets('functional-effect') == 'ACTIVE', output
 
 
 @attr('nonpublic')
@@ -467,7 +467,7 @@ class TestFindTreatment2(_IntegrationTest):
 
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert output.gets('prevalence') == '0.19', output.get('prevalence')
+        assert output.gets('prevalence') == '0.18', output.get('prevalence')
         assert len(output.get('drugs')) == 0
 
 

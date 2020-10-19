@@ -130,7 +130,7 @@ class MSA_Module(Bioagent):
         if target_cljson is None or not len(target_cljson):
             return self.make_failure('MISSING_TARGET')
         agent = self.get_agent(target_cljson)
-        # This is a potential but in the BA that we can handle here
+        # This is a bug in the BA that we can handle here
         if isinstance(agent, list):
             agent = agent[0]
         logger.debug('Found agent (target): %s.' % agent.name)
@@ -369,7 +369,11 @@ def _get_agent_if_present(content, key):
     if obj_clj is None:
         return None
     else:
-        return Bioagent.get_agent(obj_clj)
+        agent = Bioagent.get_agent(obj_clj)
+        # This is a bug in the BA that we can handle here
+        if isinstance(agent, list):
+            agent = agent[0]
+        return agent
 
 
 if __name__ == "__main__":

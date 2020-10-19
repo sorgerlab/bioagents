@@ -125,6 +125,15 @@ class TestFindTargetDrugBRAF(_TestFindTargetDrug):
 
 
 @attr('nonpublic')
+class TestFindTargetDrugGRB2(_TestFindTargetDrug):
+    target = 'GRB2'
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('drugs')) >= 1, (len(output.get('drugs')), output)
+
+
+@attr('nonpublic')
 class TestFindTargetDrugAKT(_TestFindTargetDrug):
     target = 'AKT'
 

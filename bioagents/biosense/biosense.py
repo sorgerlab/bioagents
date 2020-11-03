@@ -163,6 +163,7 @@ def _get_members(agent):
     children_agents = [
         Agent(db_id, db_refs={db_name: db_id})
         for db_name, db_id in children
+        if db_name != 'FPLX'
     ]
     for ca in children_agents:
         standardize_agent_name(ca, standardize_refs=True)

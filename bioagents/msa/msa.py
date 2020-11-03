@@ -15,6 +15,7 @@ from indra import get_config
 from indra.statements import Statement, stmts_to_json, Agent, \
     get_all_descendants
 
+from indra.statements import Complex
 from indra.assemblers.html import HtmlAssembler
 from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
@@ -602,7 +603,10 @@ class StatementFinder(object):
 
 class Neighborhood(StatementFinder):
     def _regularize_input(self, entity, **params):
-        return StatementQuery(None, None, [entity], None, None, params)
+        ent_type = params.pop('ent_type', None)
+        return StatementQuery(subj=None, obj=None, agents=[entity],
+                              verb=None, ent_type=ent_type,
+                              params=params, valid_name_spaces=None)
 
     def summarize(self):
         summary = {'query_agent': self.query.agents[0],
@@ -629,6 +633,16 @@ class Neighborhood(StatementFinder):
             include_negative=False
         )
         return desc
+
+    def _filter_stmts(self, stmts):
+        stmts = super()._filter_stmts(stmts)
+        if self.query.ent_type:
+            stmts_out = self.filter_other_agent_type(stmts,
+                                                     self.query.ent_type,
+                                                     other_role=None)
+            return stmts_out
+        else:
+            return stmts
 
 
 class Activeforms(StatementFinder):
@@ -927,7 +941,7 @@ class _Commons(StatementFinder):
                     yield other_ag, stmt
             elif self._role == 'SUBJECT' and len(ags) >= 2:
                 yield ags[1], stmt
-            elif len(ags):
+            elif ags:
                 yield ags[0], stmt
 
     def _make_processor(self):
@@ -941,11 +955,11 @@ class _Commons(StatementFinder):
         """
         # Prep the settings with some defaults.
         kwargs = self.query.settings.copy()
-        if 'max_stmts' not in kwargs.keys():
-            kwargs['max_stmts'] = 100
-        if 'ev_limit' not in kwargs.keys():
-            kwargs['ev_limit'] = 2
-        if 'persist' not in kwargs.keys():
+        if 'max_stmts' not in kwargs:
+            kwargs['max_stmts'] = 200
+        if 'ev_limit' not in kwargs:
+            kwargs['ev_limit'] = 1
+        if 'persist' not in kwargs:
             kwargs['persist'] = False
 
         # Run multiple queries, building up a single processor and a dict of
@@ -960,18 +974,23 @@ class _Commons(StatementFinder):
             new_processor = idbr.get_statements(**kwargs)
             new_processor.wait_until_done()
 
+            # Filter out Complexes because they are very common and usually
+            # not appropriate for upstream analysis
+            directed_stmts = [s for s in new_processor.statements if
+                              not isinstance(s, Complex)]
+            new_processor.statements = directed_stmts
             # Look for new agents.
-            for other_ag, stmt in self._iter_stmts(new_processor.statements):
-                if other_ag is None or 'HGNC' not in other_ag.db_refs.keys():
+            for other_ag, stmt in self._iter_stmts(directed_stmts):
+                if other_ag is None or 'HGNC' not in other_ag.db_refs:
                     continue
                 other_id = other_ag.name
 
                 # If this is the first pass, init the dict.
-                if processor is None and other_id not in self.commons.keys():
+                if processor is None and other_id not in self.commons:
                     self.commons[other_id] = {ag.name: [stmt]}
                 # Otherwise we can only add to the sub-dicts and their lists.
-                elif other_id in self.commons.keys():
-                    if ag.name not in self.commons[other_id].keys():
+                elif other_id in self.commons:
+                    if ag.name not in self.commons[other_id]:
                         self.commons[other_id][ag.name] = []
                     self.commons[other_id][ag.name].append(stmt)
 
@@ -982,7 +1001,7 @@ class _Commons(StatementFinder):
             else:
                 self.commons = {other_id: data
                                 for other_id, data in self.commons.items()
-                                if ag.name in data.keys()}
+                                if ag.name in data}
                 processor.merge_results(new_processor)
 
             # If there's nothing left in common, it won't get better.

@@ -602,7 +602,10 @@ class StatementFinder(object):
 
 class Neighborhood(StatementFinder):
     def _regularize_input(self, entity, **params):
-        return StatementQuery(None, None, [entity], None, None, params)
+        ent_type = params.pop('ent_type', None)
+        return StatementQuery(subj=None, obj=None, agents=[entity],
+                              verb=None, ent_type=ent_type,
+                              params=params, valid_name_spaces=None)
 
     def summarize(self):
         summary = {'query_agent': self.query.agents[0],

@@ -3,7 +3,7 @@ cache:
   directories:
       - $HOME/.cache/pip
 python:
-  - "3.5"
+  - "3.6"
 services:
   - xvfb
 before_install:

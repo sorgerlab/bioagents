@@ -633,6 +633,16 @@ class Neighborhood(StatementFinder):
         )
         return desc
 
+    def _filter_stmts(self, stmts):
+        stmts = super()._filter_stmts(stmts)
+        if self.query.ent_type:
+            stmts_out = self.filter_other_agent_type(stmts,
+                                                     self.query.ent_type,
+                                                     other_role=None)
+            return stmts_out
+        else:
+            return stmts
+
 
 class Activeforms(StatementFinder):
     def _regularize_input(self, entity, **params):

@@ -307,12 +307,13 @@ class Bioagent(KQMLModule):
         stmt_data = StmtStatGather.from_dicts(ev_counts=ev_counts,
                                               source_counts=source_counts)
         sorted_groups = group_and_sort_statements(stmt_list,
-                                                  stmt_metrics=stmt_data)
+                                                  stmt_metrics=stmt_data,
+                                                  grouping_level='relation')
 
         # Build the html.
         lines = []
-        for sort_key, _, rel_key, _, _, _, _ in sorted_groups[:limit]:
-            count = sort_key[-1]
+        for _, rel_key, _, metrics in sorted_groups[:limit]:
+            count = metrics['ev_count']
             line = '<li>%s %s</li>' % (make_string_from_sort_key(rel_key),
                                        '(%d)' % count)
             lines.append(line)

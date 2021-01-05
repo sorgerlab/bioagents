@@ -538,7 +538,7 @@ class StatementFinder(object):
         ev_totals = self.get_ev_totals()
         source_counts = self.get_source_counts()
         html_assembler = HtmlAssembler(self.get_statements(),
-                                       ev_totals=ev_totals,
+                                       ev_counts=ev_totals,
                                        source_counts=source_counts,
                                        db_rest_url=DB_REST_URL)
         html = html_assembler.make_model()

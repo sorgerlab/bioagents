@@ -6,7 +6,7 @@ from datetime import datetime
 from indra.statements import Agent, Statement, stmts_from_json
 from indra.assemblers.html import HtmlAssembler
 from indra.util.statement_presentation import group_and_sort_statements, \
-    make_string_from_sort_key
+    make_string_from_sort_key, StmtStatGather, EvCount, source_count_list
 
 from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
 from kqml.cl_json import CLJsonConverter
@@ -304,19 +304,16 @@ class Bioagent(KQMLModule):
             return '<a href=%s target="_blank">%s</a>' % (ref, text)
 
         # Build the list of relevant statements and count their prevalence.
+        stmt_data = StmtStatGather.from_dicts(ev_counts=ev_counts,
+                                              source_counts=source_counts)
         sorted_groups = group_and_sort_statements(stmt_list,
-                                                  ev_totals=ev_counts,
-                                                  source_counts=source_counts)
+                                                  stmt_metrics=stmt_data)
 
         # Build the html.
         lines = []
-        for group in sorted_groups[:limit]:
-            if source_counts is None:
-                key, verb, stmts = group
-            else:
-                key, verb, stmts, arg_counts, group_source_counts = group
-            count = key[2]
-            line = '<li>%s %s</li>' % (make_string_from_sort_key(key, verb),
+        for sort_key, _, rel_key, _, _, _, _ in sorted_groups[:limit]:
+            count = sort_key[-1]
+            line = '<li>%s %s</li>' % (make_string_from_sort_key(rel_key),
                                        '(%d)' % count)
             lines.append(line)
 

@@ -8,7 +8,7 @@ import logging
 from collections import defaultdict
 
 from indra.util.statement_presentation import group_and_sort_statements, \
-    make_stmt_from_sort_key, stmt_to_english, StmtStatGather
+    stmt_to_english, StmtStatGather, make_stmt_from_relation_key
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
@@ -512,11 +512,12 @@ class StatementFinder(object):
         stmts = self.get_statements()
         # Group statements by participants and type, aggregating evidence
         stmt_data = StmtStatGather.from_dicts(ev_counts=self.get_ev_totals())
-        sorted_groups = group_and_sort_statements(stmts, stmt_metrics=stmt_data)
+        sorted_groups = group_and_sort_statements(stmts, stmt_metrics=stmt_data,
+                                                  grouping_level='relation')
         # Create synthetic summary statements in a list
         summary_stmts = []
-        for key, verb, stmts in sorted_groups[:num]:
-            summary_stmts.append(make_stmt_from_sort_key(key, verb))
+        for _, rel_key, stmts, _ in sorted_groups[:num]:
+            summary_stmts.append(make_stmt_from_relation_key(rel_key))
         return summary_stmts
 
     def get_summary_stmts_html(self, num=5):

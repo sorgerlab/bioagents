@@ -28,6 +28,10 @@ jobs:
         pip install pygraphviz ndex2==1.2.0.58
         pip install -U networkx==2.3
     - name: Run unit tests
+      env: |
+        INDRA_DB_REST_URL: ${{ secrets.INDRA_DB_REST_URL }}
+        INDRA_DB_REST_API_KEY: ${{ secrets.INDRA_DB_REST_API_KEY }}
+        INDRA_ONTOLOGY_URL: ${{ secrets.INDRA_ONTOLOGY_URL }}
       run: |
         export BNGPATH=`pwd`/BioNetGen-2.2.6-stable
         export NOSEATTR="!notravis,!slow,!cron";

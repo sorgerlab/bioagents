@@ -1,0 +1,46 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+    - name: Install dependencies
+      run: |
+        # Install Graphviz
+        sudo apt-get update
+        sudo apt-get install libstdc++6 python3-dev graphviz libgraphviz-dev pkg-config
+        sudo apt-get install graphviz
+        # Tests use the web ontology but this is here as backup
+        mkdir -p $HOME/.indra/bio_ontology/1.7
+        aws s3 cp s3://bigmech/travis/bio_ontology/1.7/mock_ontology.pkl $HOME/.indra/bio_ontology/1.7/bio_ontology.pkl --no-sign-request  --source-region us-east-1
+        # Now do some regular pip installs
+        python -m pip install --upgrade pip
+        pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas kappy==4.0.0 boto3 nose-timer coverage
+        # Install Bionetgen
+        wget --no-check-certificate "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz" -O bionetgen.tar.gz -nv
+        tar xzf bionetgen.tar.gz
+        # We install these packages from source to match the integration repository config
+        # where these repos are cloned from the latest source
+        pip install git+https://github.com/pysb/pysb.git
+        pip install git+https://github.com/bgyori/pykqml.git
+        pip install git+https://github.com/sorgerlab/indra.git
+        # Here we install ndex2 and then re-upgrate networkx since ndex2 downgrades it
+        pip install pygraphviz ndex2==1.2.0.58
+        pip install -U networkx==2.3
+    - name: Run unit tests
+      env:
+        INDRA_DB_REST_URL: ${{ secrets.INDRA_DB_REST_URL }}
+        INDRA_DB_REST_API_KEY: ${{ secrets.INDRA_DB_REST_API_KEY }}
+        INDRA_ONTOLOGY_URL: ${{ secrets.INDRA_ONTOLOGY_URL }}
+      run: |
+        export BNGPATH=`pwd`/BioNetGen-2.2.6-stable
+        export NOSEATTR="!notravis,!slow,!cron";
+        export NOSEATTR=$(if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then echo $NOSEATTR,!nonpublic; else echo $NOSEATTR; fi)
+        nosetests bioagents/tests -v --with-coverage --cover-inclusive --cover-package=bioagents --with-timer --timer-top-n 10 --timer-ok 2

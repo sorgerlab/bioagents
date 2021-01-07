@@ -9,7 +9,6 @@ from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from bioagents.mra.mra import MRA, make_influence_map, make_contact_map
 from bioagents.mra.mra_module import MRA_Module, ekb_from_agent, get_target, \
     _get_matching_stmts, CAN_CHECK_STATEMENTS, InvalidModelDescriptionError
-from nose.plugins.skip import SkipTest
 from nose.plugins.attrib import attr
 
 
@@ -231,10 +230,8 @@ def test_respond_model_undo_no_model_yet():
     stmts = action.get('statements')
     assert not stmts
 
-
+@attr('nonpublic')
 def test_get_matching_statements():
-    if not CAN_CHECK_STATEMENTS:
-        raise SkipTest("Database api not accessible.")
     braf = sts.Agent('BRAF', db_refs={'HGNC': '1097'})
     map2k1 = sts.Agent('MAP2K1', db_refs={'HGNC': '6840'})
     stmt_ref = sts.Phosphorylation(braf, map2k1)

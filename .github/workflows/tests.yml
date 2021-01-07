@@ -36,4 +36,4 @@ jobs:
         export BNGPATH=`pwd`/BioNetGen-2.2.6-stable
         export NOSEATTR="!notravis,!slow,!cron";
         export NOSEATTR=$(if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then echo $NOSEATTR,!nonpublic; else echo $NOSEATTR; fi)
-        nosetests bioagents -v --with-coverage --cover-inclusive --cover-package=bioagents --with-timer --timer-top-n 10 --timer-ok 2
+        nosetests bioagents/tests -v --with-coverage --cover-inclusive --cover-package=bioagents --with-timer --timer-top-n 10 --timer-ok 2

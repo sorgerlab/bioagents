@@ -712,15 +712,16 @@ def test_binary_summary_description():
 
 @attr('nonpublic', 'notravis')
 def test_curations():
-    class Cur:
-        pa_hash = 18316509602085006
-        source_hash = 7464387630796688426
-        tag = 'grounding'
+    cur = {
+        'pa_hash': 18316509602085006,
+        'source_hash': 7464387630796688426,
+        'tag': 'grounding',
+    }
     arr3 = Agent('ARR3', db_refs={'HGNC': '710'})
 
     from bioagents.msa.msa import curs
     finder = ComplexOneSide(arr3)
-    curs.append(Cur)
+    curs.append(cur)
     stmts = finder.get_statements()
     stmt = stmts[0]
     names = {a.name for a in stmt.agent_list() if a is not None}

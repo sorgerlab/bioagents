@@ -13,6 +13,9 @@ jobs:
         python-version: 3.6
     - name: Install dependencies
       run: |
+        sudo apt-get update
+        sudo apt-get install libstdc++6 python3-dev graphviz libgraphviz-dev pkg-config
+        sudo apt-get install graphviz
         mkdir -p $HOME/.indra/bio_ontology/1.7
         aws s3 cp s3://bigmech/travis/bio_ontology/1.7/mock_ontology.pkl $HOME/.indra/bio_ontology/1.7/bio_ontology.pkl --no-sign-request  --source-region us-east-1
         python -m pip install --upgrade pip
@@ -22,7 +25,6 @@ jobs:
         pip install git+https://github.com/pysb/pysb.git
         pip install git+https://github.com/bgyori/pykqml.git
         pip install git+https://github.com/sorgerlab/indra.git
-        sudo apt-get install graphviz
         pip install pygraphviz ndex2==1.2.0.58
         pip install -U networkx==2.3
     - name: Run unit tests

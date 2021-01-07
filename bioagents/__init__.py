@@ -6,7 +6,7 @@ from datetime import datetime
 from indra.statements import Agent, Statement, stmts_from_json
 from indra.assemblers.html import HtmlAssembler
 from indra.util.statement_presentation import group_and_sort_statements, \
-    make_string_from_sort_key, StmtStatGather, EvCount, source_count_list
+    make_string_from_relation_key, StmtStatGather
 
 from bioagents.settings import IMAGE_DIR, TIMESTAMP_PICS
 from kqml.cl_json import CLJsonConverter
@@ -314,7 +314,7 @@ class Bioagent(KQMLModule):
         lines = []
         for _, rel_key, _, metrics in sorted_groups[:limit]:
             count = metrics['ev_count']
-            line = '<li>%s %s</li>' % (make_string_from_sort_key(rel_key),
+            line = '<li>%s %s</li>' % (make_string_from_relation_key(rel_key),
                                        '(%d)' % count)
             lines.append(line)
 

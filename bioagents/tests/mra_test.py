@@ -837,6 +837,7 @@ class TestModelGapSuggest(_IntegrationTest):
         model = self.bioagent.get_statement(output.get('model'))
         assert len(model) == 2
         suggs = output.get('suggestions')
+        assert suggs is not None
         assert len(suggs) == 1, suggs
         assert suggs[0].gets('text').startswith('I have some suggestions'), \
             suggs

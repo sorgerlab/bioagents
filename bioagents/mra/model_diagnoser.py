@@ -74,14 +74,15 @@ class ModelDiagnoser(object):
                                                  self.explain.agent_list()[0])
             for subj_mp in subj_mps:
                 source_rules += mc._get_input_rules(subj_mp)
-            obs_names = mc.stmt_to_obs[self.explain]
+            obs_container = mc.stmt_to_obs[self.explain]
             # If we've got both source rules and observable names, add dummy
             # nodes for the source (connected to all input rules) and the 
             # target (connected to all observables) so we only have to deal
             # with a single source and a single target
-            if source_rules and obs_names:
+            if source_rules and obs_container:
                 new_edges = [('SOURCE', sr) for sr in source_rules]
-                new_edges += [(on, 'TARGET') for on in obs_names]
+                new_edges += [(on, 'TARGET') for on, _
+                              in obs_container.main_nodes]
                 im = mc.get_im()
                 im.add_edges_from(new_edges)
                 # Now, we know that there is no path between SOURCE and TARGET.

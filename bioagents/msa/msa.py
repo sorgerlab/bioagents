@@ -8,7 +8,7 @@ import logging
 from collections import defaultdict
 
 from indra.util.statement_presentation import group_and_sort_statements, \
-    stmt_to_english, StmtStatGather, make_stmt_from_relation_key
+    stmt_to_english, StmtGroup, make_stmt_from_relation_key
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
@@ -511,8 +511,8 @@ class StatementFinder(object):
         """Return the top summarized statements for the query."""
         stmts = self.get_statements()
         # Group statements by participants and type, aggregating evidence
-        stmt_data = StmtStatGather.from_dicts(ev_counts=self.get_ev_totals())
-        sorted_groups = group_and_sort_statements(stmts, stmt_metrics=stmt_data,
+        stmt_data = StmtGroup.from_dicts(ev_counts=self.get_ev_totals())
+        sorted_groups = group_and_sort_statements(stmts, base_group=stmt_data,
                                                   grouping_level='relation')
         # Create synthetic summary statements in a list
         summary_stmts = []

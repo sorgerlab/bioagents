@@ -8,12 +8,12 @@ import logging
 from collections import defaultdict
 
 from indra.util.statement_presentation import group_and_sort_statements, \
-    make_stmt_from_sort_key, stmt_to_english
+    stmt_to_english, make_stmt_from_relation_key, make_standard_stats
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
 from indra.statements import Statement, stmts_to_json, Agent, \
-    get_all_descendants
+    get_all_descendants, Complex
 
 from indra.statements import Complex
 from indra.assemblers.html import HtmlAssembler
@@ -511,11 +511,14 @@ class StatementFinder(object):
         """Return the top summarized statements for the query."""
         stmts = self.get_statements()
         # Group statements by participants and type, aggregating evidence
-        sorted_groups = group_and_sort_statements(stmts, self.get_ev_totals())
+        basic_stats = make_standard_stats(ev_counts=self.get_ev_totals())
+        sorted_groups = group_and_sort_statements(stmts,
+                                                  custom_stats=basic_stats,
+                                                  grouping_level='relation')
         # Create synthetic summary statements in a list
         summary_stmts = []
-        for key, verb, stmts in sorted_groups[:num]:
-            summary_stmts.append(make_stmt_from_sort_key(key, verb))
+        for _, rel_key, stmts, _ in sorted_groups[:num]:
+            summary_stmts.append(make_stmt_from_relation_key(rel_key))
         return summary_stmts
 
     def get_summary_stmts_html(self, num=5):
@@ -537,7 +540,7 @@ class StatementFinder(object):
         ev_totals = self.get_ev_totals()
         source_counts = self.get_source_counts()
         html_assembler = HtmlAssembler(self.get_statements(),
-                                       ev_totals=ev_totals,
+                                       ev_counts=ev_totals,
                                        source_counts=source_counts,
                                        db_rest_url=DB_REST_URL)
         html = html_assembler.make_model()
@@ -936,7 +939,7 @@ class _Commons(StatementFinder):
     def _iter_stmts(self, stmts):
         for stmt in stmts:
             ags = stmt.agent_list()
-            if self._role == 'OTHER':
+            if self._role == 'OTHER' or isinstance(stmt, Complex):
                 for other_ag in ags:
                     yield other_ag, stmt
             elif self._role == 'SUBJECT' and len(ags) >= 2:
@@ -979,9 +982,11 @@ class _Commons(StatementFinder):
             directed_stmts = [s for s in new_processor.statements if
                               not isinstance(s, Complex)]
             new_processor.statements = directed_stmts
+
             # Look for new agents.
             for other_ag, stmt in self._iter_stmts(directed_stmts):
-                if other_ag is None or 'HGNC' not in other_ag.db_refs:
+                if other_ag is None or 'HGNC' not in other_ag.db_refs \
+                        or other_ag.name == ag.name:
                     continue
                 other_id = other_ag.name
 

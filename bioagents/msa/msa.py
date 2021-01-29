@@ -7,13 +7,14 @@ import logging
 
 from collections import defaultdict
 
+from indra.sources.indra_db_rest.query import *
 from indra.util.statement_presentation import group_and_sort_statements, \
     stmt_to_english, make_stmt_from_relation_key, make_standard_stats
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
 from indra.statements import Statement, stmts_to_json, Agent, \
-    get_all_descendants, Complex
+    get_all_descendants
 
 from indra.statements import Complex
 from indra.assemblers.html import HtmlAssembler
@@ -21,7 +22,8 @@ from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
     statement_base_verb, statement_present_verb, statement_passive_verb
 from indra.tools.assemble_corpus import filter_by_curation
-from indra.sources import indra_db_rest
+
+from bioagents.msa.exceptions import EntityError
 
 logger = logging.getLogger('MSA')
 
@@ -73,10 +75,6 @@ verb_map = _build_verb_map()
 DB_REST_URL = get_config('INDRA_DB_REST_URL')
 
 
-class EntityError(ValueError):
-    pass
-
-
 class StatementQuery(object):
     """This is an object that encapsulates the information used to make a query.
 
@@ -114,35 +112,38 @@ class StatementQuery(object):
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', 'GO', 'MESH', '!OTHER!', 'TEXT',
                   '!NAME!']
+        self.db_query = EmptyQuery()
         self.subj = subj
-        self.subj_key = self.get_query_key(subj)
+        self.db_query &= self.new_agent(subj, 'SUBJECT')
         self.obj = obj
-        self.obj_key = self.get_query_key(obj)
+        self.db_query &= self.new_agent(obj, 'OBJECT')
         self.agents = agents
-        self.agent_keys = [self.get_query_key(e) for e in agents]
+        for e in agents:
+            self.db_query &= self.new_agent(e, None)
+
+        if isinstance(self.db_query, EmptyQuery):
+            raise EntityError("Did not get any usable entity constraints!")
 
         self.verb = verb
         if verb in verb_map:
             self.stmt_type = verb_map[verb]['stmt']
         else:
             self.stmt_type = verb
+        self.db_query &= HasType([self.stmt_type])
 
         self.ent_type = ent_type
         self.filter_agents = params.pop('filter_agents', [])
         self.context_agents = params.pop('context_agents', [])
 
         self.settings = params
-        if not self.subj_key and not self.obj_key and not self.agent_keys:
-            raise EntityError("Did not get any usable entity constraints!")
         return
 
-    def get_query_key(self, agent):
+    def new_agent(self, agent, role):
         if agent is None:
-            return None
+            return EmptyQuery()
         dbi, dbn = self.get_agent_grounding(agent)
         self.entities[agent.name] = (dbi, dbn)
-        key = '%s@%s' % (dbi, dbn)
-        return key
+        return HasAgent(dbi, dbn, role=role)
 
     def get_agent_grounding(self, agent):
         """If the entity is not already an agent, form an agent."""
@@ -173,7 +174,7 @@ class StatementQuery(object):
         if dbn is None:
             raise EntityError(("Could not get valid grounding (%s) for %s "
                                "with db_refs=%s.")
-                               % (', '.join(self._ns_keys), agent,
+                              % (', '.join(self._ns_keys), agent,
                                   agent.db_refs))
         return dbi, dbn
 
@@ -224,17 +225,16 @@ class StatementFinder(object):
 
         self.mesh_terms = mesh_terms
 
-        kwargs = dict(subject=self.query.subj_key,
-                      object=self.query.obj_key,
-                      agents=self.query.agent_keys,
-                      mesh_ids=mesh_terms_param,
-                      **self.query.settings)
-        if self.query.verb:
-            kwargs['stmt_type'] = self.query.stmt_type
+        if mesh_terms:
+            db_query = FromMeshIds(list(mesh_terms)) & self.query.db_query
+        else:
+            db_query = self.query.db_query
+
+        kwargs = self.query.settings.copy()
         if mesh_terms_param:
             kwargs['filter_ev'] = True
 
-        processor = self.idbr.get_statements(**kwargs)
+        processor = self.idbr.get_statements_from_query(db_query, **kwargs)
         return processor
 
     def _filter_stmts(self, stmts):

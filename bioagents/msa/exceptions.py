@@ -1,0 +1,2 @@
+class EntityError(ValueError):
+    pass

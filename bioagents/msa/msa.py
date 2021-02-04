@@ -113,16 +113,16 @@ class StatementQuery(object):
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', 'GO', 'MESH', '!OTHER!', 'TEXT',
                   '!NAME!']
-        self.db_query = EmptyQuery()
+        self.agent_queries = []
         self.subj = subj
-        self.db_query &= self.new_agent(subj, 'SUBJECT')
+        self.agent_queries.append(self.new_agent(subj, 'SUBJECT'))
         self.obj = obj
-        self.db_query &= self.new_agent(obj, 'OBJECT')
+        self.agent_queries.append(self.new_agent(obj, 'OBJECT'))
         self.agents = agents
         for e in agents:
-            self.db_query &= self.new_agent(e, None)
+            self.agent_queries.append(self.new_agent(e, 'OTHER'))
 
-        if isinstance(self.db_query, EmptyQuery):
+        if isinstance(self.agent_queries, EmptyQuery):
             raise EntityError("Did not get any usable entity constraints!")
 
         self.verb = verb
@@ -130,7 +130,11 @@ class StatementQuery(object):
             self.stmt_type = verb_map[verb]['stmt']
         else:
             self.stmt_type = verb
-        self.db_query &= HasType([self.stmt_type])
+
+        if self.verb is not None:
+            self.type_query = HasType([self.stmt_type])
+        else:
+            self.type_query = None
 
         self.ent_type = ent_type
         self.filter_agents = params.pop('filter_agents', [])
@@ -141,10 +145,18 @@ class StatementQuery(object):
 
     def new_agent(self, agent, role):
         if agent is None:
-            return EmptyQuery()
+            return None
         dbi, dbn = self.get_agent_grounding(agent)
         self.entities[agent.name] = (dbi, dbn)
         return HasAgent(dbi, dbn, role=role)
+
+    def get_role_agent_queries(self, role):
+        return [ag_q for ag_q in self.agent_queries
+                if ag_q is not None and ag_q.role == role]
+
+    def get_db_query(self):
+        sub_queries = self.agent_queries + [self.type_query]
+        return And([q for q in sub_queries if q is not None])
 
     def get_agent_grounding(self, agent):
         """If the entity is not already an agent, form an agent."""
@@ -227,9 +239,9 @@ class StatementFinder(object):
         self.mesh_terms = mesh_terms
 
         if mesh_terms:
-            db_query = FromMeshIds(list(mesh_terms)) & self.query.db_query
+            db_query = FromMeshIds(list(mesh_terms)) & self.query.get_db_query()
         else:
-            db_query = self.query.db_query
+            db_query = self.query.get_db_query()
 
         kwargs = self.query.settings.copy()
         if mesh_terms_param:
@@ -951,8 +963,8 @@ class _Commons(StatementFinder):
         """
         # Prep the settings with some defaults.
         kwargs = self.query.settings.copy()
-        if 'max_stmts' not in kwargs:
-            kwargs['max_stmts'] = 200
+        if 'limit' not in kwargs:
+            kwargs['limit'] = 200
         if 'ev_limit' not in kwargs:
             kwargs['ev_limit'] = 1
         if 'persist' not in kwargs:
@@ -961,13 +973,15 @@ class _Commons(StatementFinder):
         # Run multiple queries, building up a single processor and a dict of
         # agents held in common.
         processor = None
-        for ag, ag_key in zip(self.query.agents, self.query.agent_keys):
-            if ag_key is None:
+        for ag, ag_query in zip(self.query.agents,
+                                self.query.get_role_agent_queries(None)):
+            if ag_query is None:
                 continue
 
             # Make another query.
-            kwargs[self._role.lower()] = ag_key
-            new_processor = self.idbr.get_statements(**kwargs)
+            new_query = ag_query.copy()
+            new_query.role = self._role
+            new_processor = self.idbr.get_statements_from_query(new_query, **kwargs)
             new_processor.wait_until_done()
 
             # Filter out Complexes because they are very common and usually

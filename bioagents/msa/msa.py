@@ -31,8 +31,7 @@ from bioagents.msa.exceptions import EntityError
 logger = logging.getLogger('MSA')
 
 
-# We fetch curations if we have access to the DB, just to make this
-# more flexible, this can be turned off with an env variable
+# We fetch curations if we an API key with sufficient permissions
 try:
     curs = get_curations()
     logger.info(f'Loaded {len(curs)} curations in MSA')

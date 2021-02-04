@@ -5,11 +5,12 @@ import requests
 from collections import defaultdict
 
 from indra.statements import *
-from indra.sources.indra_db_rest.query import Or, And, HasType, HasAgent
+from indra.sources.indra_db_rest.query import And, HasType, HasAgent
 from indra.assemblers.html.assembler import get_available_source_counts
 from indra.util.statement_presentation import _get_available_ev_source_counts
 
 from bioagents.msa.exceptions import EntityError
+
 
 logger = logging.getLogger(__name__)
 

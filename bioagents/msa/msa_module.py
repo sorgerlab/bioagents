@@ -16,9 +16,10 @@ from indra import has_config
 from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
+from bioagents import Bioagent
+
 from bioagents.msa.msa import MSA
 from bioagents.msa.exceptions import EntityError
-from bioagents import Bioagent
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
     from indra.sources.indra_db_rest import IndraDBRestAPIError, \

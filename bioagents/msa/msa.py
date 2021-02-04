@@ -8,8 +8,9 @@ import logging
 from collections import defaultdict
 
 from indra.sources import indra_db_rest
-from indra.sources.indra_db_rest.api import get_all_curations
 from indra.sources.indra_db_rest.query import *
+from indra.sources.indra_db_rest.api import get_curations
+from indra.sources.indra_db_rest import IndraDBRestAPIError
 from indra.util.statement_presentation import group_and_sort_statements, \
     stmt_to_english, make_stmt_from_relation_key, make_standard_stats
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
@@ -33,9 +34,13 @@ logger = logging.getLogger('MSA')
 # We fetch curations if we have access to the DB, just to make this
 # more flexible, this can be turned off with an env variable
 try:
-    curs = get_all_curations()
-    logger.info('Loaded %d curations in MSA' % len(curs))
+    curs = get_curations()
+    logger.info(f'Loaded {len(curs)} curations in MSA')
+except IndraDBRestAPIError as e:
+    logger.info(f"Loaded 0 curations in MSA (status: {e.status_code}).")
+    curs = []
 except Exception as e:
+    logger.info(f"Unexpected error loading curations: {e}")
     curs = []
 
 

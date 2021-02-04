@@ -121,7 +121,7 @@ class StatementQuery(object):
         for e in agents:
             self.agent_queries.append(self.new_agent(e, 'OTHER'))
 
-        if isinstance(self.agent_queries, EmptyQuery):
+        if not self.agent_queries:
             raise EntityError("Did not get any usable entity constraints!")
 
         self.verb = verb

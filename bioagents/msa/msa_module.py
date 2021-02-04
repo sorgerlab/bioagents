@@ -295,8 +295,8 @@ class MSA_Module(Bioagent):
         else:
             return self.make_failure('BAD_INPUT')
         try:
-            stmts = get_statements_for_paper([('pmid', pmid)],
-                                             simple_response=True)
+            p = get_statements_for_paper([('pmid', pmid)])
+            stmts = p.statements
         except IndraDBRestAPIError as e:
             if e.status_code == 404 and 'Invalid or unavailable' in e.reason:
                 logger.error("Could not find pmid: %s" % e.reason)

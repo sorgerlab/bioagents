@@ -62,13 +62,7 @@ class LocalQueryProcessor:
         return self
 
     def _filter_for_type(self, stmts, verb):
-        from .msa import verb_map
-        if verb is None or verb.lower() == 'unknown':
-            return stmts
-        mapped_verb = verb_map.get(verb)
-        if not mapped_verb:
-            return stmts
-        return [s for s in stmts if s.__class__.__name__ == mapped_verb]
+        return list(filter(lambda x: x.__class__.__name__ == verb, stmts))
 
     def _get_stmts_by_key_role(self, key, role):
         stmts = self._stmts_lookup.get(key)

@@ -6,7 +6,7 @@ from nose.plugins.skip import SkipTest
 
 from bioagents import Bioagent
 from bioagents.msa.msa import MSA, ComplexOneSide
-from indra.statements import Agent, Phosphorylation
+from indra.statements import Agent, Phosphorylation, Inhibition, Activation
 
 from kqml.kqml_list import KQMLList
 
@@ -751,3 +751,31 @@ def test_msa_custom_corpus():
     # Make sure we don't get anything
     res_stmts = finder.get_statements()
     assert not res_stmts
+
+
+def test_msa_custom_corpus_stmt_type():
+    # Create a pickle with a test statement
+    test_corpus = 'test_corpus.pkl'
+    kras = Agent('KRAS', db_refs={'HGNC': '6407'})
+    st1 = Phosphorylation(Agent('x'), kras)
+    st2 = Inhibition(Agent('y'), kras)
+    st3 = Activation(Agent('z'), kras)
+    with open(test_corpus, 'wb') as fh:
+        pickle.dump([st1, st2, st3], fh)
+    # Instantiate MSA with that pickle as the corpus
+    msa = MSA(corpus_config='pickle:%s' % test_corpus)
+
+    # Query the MSA
+    finder = msa.find_mechanisms('to_target',
+                                 target=kras,
+                                 verb='activate')
+    # Make sure we got the original statement back
+    res_stmts = finder.get_statements()
+    assert res_stmts[0].subj.name == 'z'
+
+    finder = msa.find_mechanisms('to_target',
+                                 target=kras,
+                                 verb='phosphorylate')
+    # Make sure we got the original statement back
+    res_stmts = finder.get_statements()
+    assert res_stmts[0].enz.name == 'x'

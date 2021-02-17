@@ -58,7 +58,8 @@ class MSA_Module(Bioagent):
     signor_afs = _read_signor_afs()
 
     def __init__(self, *args, **kwargs):
-        self.msa = MSA()
+        corpus_config = os.environ.get('CWC_MSA_CORPUS')
+        self.msa = MSA(corpus_config=corpus_config)
         super(MSA_Module, self).__init__(*args, **kwargs)
         return
 

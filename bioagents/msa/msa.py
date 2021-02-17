@@ -21,6 +21,7 @@ from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
     statement_base_verb, statement_present_verb, statement_passive_verb
 from indra.tools.assemble_corpus import filter_by_curation
+from indra.sources import indra_db_rest
 
 logger = logging.getLogger('MSA')
 
@@ -196,6 +197,7 @@ def _get_mesh_terms(context_agents, include_children=True):
 
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
+        self.idbr = kwargs.get('idbr_instance', indra_db_rest)
         self._block_default = kwargs.pop('block_default', True)
         self.mesh_terms = None
         self.query = self._regularize_input(*args, **kwargs)
@@ -1089,6 +1091,7 @@ class MSA(object):
     def find_mechanisms(self, method, *args, **kwargs):
         if method in self.__option_dict.keys():
             FinderClass = self.__option_dict[method]
+            kwargs['idbr_instance'] = self.idbr
             finder = FinderClass(*args, **kwargs)
             return finder
         else:

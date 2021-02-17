@@ -1,11 +1,12 @@
 import re
+import pickle
 from time import sleep
 from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
 
 from bioagents import Bioagent
 from bioagents.msa.msa import MSA, ComplexOneSide
-from indra.statements import Agent
+from indra.statements import Agent, Phosphorylation
 
 from kqml.kqml_list import KQMLList
 
@@ -726,3 +727,27 @@ def test_curations():
     stmt = stmts[0]
     names = {a.name for a in stmt.agent_list() if a is not None}
     assert 'RXR' not in names
+
+
+def test_msa_custom_corpus():
+    # Create a pickle with a test statement
+    test_corpus = 'test_corpus.pkl'
+    stmt = Phosphorylation(Agent('XXXX'),
+                           Agent('YYYY', db_refs={'HGNC': '1'}))
+    with open(test_corpus, 'wb') as fh:
+        pickle.dump([stmt], fh)
+    # Instantiate MSA with that pickle as the corpus
+    msa = MSA(corpus_config='pickle:%s' % test_corpus)
+    # Query the MSA
+    finder = msa.find_mechanisms('to_target',
+                                 target=Agent('YYYY', db_refs={'HGNC': '1'}))
+    # Make sure we got the original statement back
+    res_stmts = finder.get_statements()
+    assert res_stmts[0].matches(stmt)
+
+    # Now try a modified query
+    finder = msa.find_mechanisms('to_target',
+                                 target=Agent('ERK', db_refs={'FPLX': 'ERK'}))
+    # Make sure we don't get anything
+    res_stmts = finder.get_statements()
+    assert not res_stmts

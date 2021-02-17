@@ -2,8 +2,8 @@ import pickle
 import requests
 from collections import defaultdict
 from indra.statements import *
-from indra.assemblers.html.assembler import get_available_source_counts, \
-    _get_available_ev_source_counts
+from indra.assemblers.html.assembler import get_available_source_counts
+from indra.util.statement_presentation import _get_available_ev_source_counts
 
 
 def load_from_config(config_str):

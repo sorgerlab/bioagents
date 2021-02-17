@@ -21,20 +21,9 @@ from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
     statement_base_verb, statement_present_verb, statement_passive_verb
 from indra.tools.assemble_corpus import filter_by_curation
+from indra.sources import indra_db_rest
 
 logger = logging.getLogger('MSA')
-
-
-corpus_config = os.environ.get('CWC_MSA_CORPUS')
-if corpus_config:
-    logging.info('Loading MSA with configuration: %s' % corpus_config)
-    from bioagents.msa.local_query import load_from_config
-    idbr = load_from_config(corpus_config)
-else:
-    logging.info('Using MSA with INDRA DB REST')
-    from indra.sources import indra_db_rest as idbr
-
-
 
 
 # We fetch curations if we have access to the DB, just to make this
@@ -208,6 +197,7 @@ def _get_mesh_terms(context_agents, include_children=True):
 
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
+        self.idbr = kwargs.pop('idbr_instance', indra_db_rest)
         self._block_default = kwargs.pop('block_default', True)
         self.mesh_terms = None
         self.query = self._regularize_input(*args, **kwargs)
@@ -244,7 +234,7 @@ class StatementFinder(object):
         if mesh_terms_param:
             kwargs['filter_ev'] = True
 
-        processor = idbr.get_statements(**kwargs)
+        processor = self.idbr.get_statements(**kwargs)
         return processor
 
     def _filter_stmts(self, stmts):
@@ -974,7 +964,7 @@ class _Commons(StatementFinder):
 
             # Make another query.
             kwargs[self._role.lower()] = ag_key
-            new_processor = idbr.get_statements(**kwargs)
+            new_processor = self.idbr.get_statements(**kwargs)
             new_processor.wait_until_done()
 
             # Filter out Complexes because they are very common and usually
@@ -1081,8 +1071,17 @@ class MSA(object):
 
         find_mechanism_from_input(subject, object, agents, verb)
     """
-    def __init__(self):
+    def __init__(self, corpus_config=None):
         self.__option_dict = {}
+        if corpus_config:
+            logging.info('Loading MSA with configuration: %s' % corpus_config)
+            from bioagents.msa.local_query import load_from_config
+            self.idbr = load_from_config(corpus_config)
+        else:
+            logging.info('Using MSA with INDRA DB REST')
+            from indra.sources import indra_db_rest as idbr
+            self.idbr = idbr
+
         for cls in get_all_descendants(StatementFinder):
             if cls.__name__.startswith('_'):
                 continue
@@ -1092,6 +1091,7 @@ class MSA(object):
     def find_mechanisms(self, method, *args, **kwargs):
         if method in self.__option_dict.keys():
             FinderClass = self.__option_dict[method]
+            kwargs['idbr_instance'] = self.idbr
             finder = FinderClass(*args, **kwargs)
             return finder
         else:

@@ -61,8 +61,11 @@ class LocalQueryProcessor:
         self.statements = stmts
         return self
 
-    def _filter_for_type(self, stmts, verb):
-        return list(filter(lambda x: x.__class__.__name__ == verb, stmts))
+    def _filter_for_type(self, stmts, stmt_type=None):
+        if not stmt_type:
+            return stmts
+        return list(filter(lambda x: x.__class__.__name__ == stmt_type,
+                           stmts))
 
     def _get_stmts_by_key_role(self, key, role):
         stmts = self._stmts_lookup.get(key)

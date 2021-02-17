@@ -197,7 +197,7 @@ def _get_mesh_terms(context_agents, include_children=True):
 
 class StatementFinder(object):
     def __init__(self, *args, **kwargs):
-        self.idbr = kwargs.get('idbr_instance', indra_db_rest)
+        self.idbr = kwargs.pop('idbr_instance', indra_db_rest)
         self._block_default = kwargs.pop('block_default', True)
         self.mesh_terms = None
         self.query = self._regularize_input(*args, **kwargs)

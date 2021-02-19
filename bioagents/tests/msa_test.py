@@ -755,7 +755,7 @@ def test_msa_custom_corpus():
 
 def test_msa_custom_corpus_stmt_type():
     # Create a pickle with a test statement
-    test_corpus = 'test_corpus.pkl'
+    test_corpus = 'test_corpus2.pkl'
     kras = Agent('KRAS', db_refs={'HGNC': '6407'})
     st1 = Phosphorylation(Agent('x'), kras)
     st2 = Inhibition(Agent('y'), kras)

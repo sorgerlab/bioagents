@@ -1,3 +1,4 @@
+import os
 import logging
 import pickle
 import requests
@@ -165,4 +166,8 @@ class ResourceManager:
         return resource
 
 
-resource_manager = ResourceManager()
+MSA_CORPUS_PRELOADS = os.environ.get('MSA_CORPUS_PRELOAD_CONFIG')
+preloads = MSA_CORPUS_PRELOADS.split(',') if MSA_CORPUS_PRELOADS else None
+
+resource_manager = ResourceManager(preloads=preloads)
+

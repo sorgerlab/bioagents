@@ -527,6 +527,9 @@ class StatementFinder(object):
         """Get html for these statements."""
         logger.info('Generating HTML')
         import boto3
+        from botocore import UNSIGNED
+        from botocore.client import Config
+        s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
         ev_totals = self.get_ev_totals()
         source_counts = self.get_source_counts()
         html_assembler = HtmlAssembler(self.get_statements(),
@@ -534,7 +537,6 @@ class StatementFinder(object):
                                        source_counts=source_counts,
                                        db_rest_url=DB_REST_URL)
         html = html_assembler.make_model()
-        s3 = boto3.client('s3')
         bucket = 'indrabot-results'
         key = '%s.html' % uuid.uuid4()
         link = 'https://s3.amazonaws.com/%s/%s' % (bucket, key)

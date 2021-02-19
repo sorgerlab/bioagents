@@ -1075,8 +1075,8 @@ class MSA(object):
         self.__option_dict = {}
         if corpus_config:
             logging.info('Loading MSA with configuration: %s' % corpus_config)
-            from bioagents.msa.local_query import load_from_config
-            self.idbr = load_from_config(corpus_config)
+            from bioagents.msa.local_query import resource_manager
+            self.idbr = resource_manager.get_resoure(corpus_config)
         else:
             logging.info('Using MSA with INDRA DB REST')
             from indra.sources import indra_db_rest as idbr

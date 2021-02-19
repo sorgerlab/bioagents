@@ -140,3 +140,23 @@ class LocalQueryProcessor:
     def merge_results(self, np):
         self.statements += np.statements
 
+
+class ResourceManager:
+    """Manages local query resources by key so they are only in memory once."""
+    def __init__(self, preloads=None):
+        self.resources = {}
+        if preloads:
+            for preload_key in preloads:
+                self.get_resoure(preload_key)
+
+    def get_resoure(self, key):
+        """Return a resource from cache or by loading it and caching it."""
+        resource = self.resources.get(key)
+        if resource:
+            return resource
+        resource = load_from_config(key)
+        self.resources[key] = resource
+        return resource
+
+
+resource_manager = ResourceManager()

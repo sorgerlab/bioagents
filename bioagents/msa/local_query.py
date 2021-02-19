@@ -1,9 +1,13 @@
+import logging
 import pickle
 import requests
 from collections import defaultdict
 from indra.statements import *
 from indra.assemblers.html.assembler import get_available_source_counts
 from indra.util.statement_presentation import _get_available_ev_source_counts
+
+
+logger = logging.getLogger(__name__)
 
 
 def load_from_config(config_str):
@@ -140,3 +144,25 @@ class LocalQueryProcessor:
     def merge_results(self, np):
         self.statements += np.statements
 
+
+class ResourceManager:
+    """Manages local query resources by key so they are only in memory once."""
+    def __init__(self, preloads=None):
+        self.resources = {}
+        if preloads:
+            for preload_key in preloads:
+                self.get_resoure(preload_key)
+
+    def get_resoure(self, key):
+        """Return a resource from cache or by loading it and caching it."""
+        resource = self.resources.get(key)
+        if resource:
+            logger.info('Returning resource %s from cache' % key)
+            return resource
+        logger.info('Loading resource %s' % key)
+        resource = load_from_config(key)
+        self.resources[key] = resource
+        return resource
+
+
+resource_manager = ResourceManager()

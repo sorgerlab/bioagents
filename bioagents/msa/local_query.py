@@ -105,9 +105,11 @@ class LocalQueryProcessor:
         if isinstance(stmt, (RegulateAmount, RegulateActivity,
                              Modification, Conversion, Gap, Gef)):
             return 'SUBJ' if idx == 0 else 'OBJ'
-        elif isinstance(stmt, (Complex, ActiveForm, Translocation,
-                               SelfModification)):
+        elif isinstance(stmt, Complex):
             return 'SUBJ'
+        elif isinstance(stmt, (ActiveForm, Translocation,
+                               SelfModification)):
+            return 'AGENT'
         else:
             assert False, stmt
 

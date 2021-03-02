@@ -63,8 +63,14 @@ class LocalQueryProcessor:
                 all_stmts = ag1_stmts
 
         stmts = self._filter_for_type(all_stmts, stmt_type)
+        stmts = self.sort_statements(stmts)
         self.statements = stmts
         return self
+
+    def sort_statements(self, stmts):
+        stmts = sorted(stmts, key=lambda s: len(s.evidence),
+                       reverse=True)
+        return stmts
 
     def _filter_for_type(self, stmts, stmt_type=None):
         if not stmt_type:

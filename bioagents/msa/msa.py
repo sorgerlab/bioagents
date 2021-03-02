@@ -1075,6 +1075,7 @@ class MSA(object):
     """
     def __init__(self, corpus_config=None):
         self.__option_dict = {}
+        self.corpus_config = corpus_config
         if corpus_config:
             logging.info('Loading MSA with configuration: %s' % corpus_config)
             from bioagents.msa.local_query import resource_manager

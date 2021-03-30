@@ -232,9 +232,9 @@ class DTDA(object):
 
         if agent.name not in self.sub_statements:
             logger.info("Looking up: %s" % agent.name)
-            self.sub_statements[agent.name] \
-                = get_statements(agents=[agent.db_refs['HGNC'] + '@HGNC'],
-                                 stmt_type='ActiveForm', simple_response=True)
+            processor = get_statements(agents=[agent.db_refs['HGNC'] + '@HGNC'],
+                                       stmt_type='ActiveForm')
+            self.sub_statements[agent.name] = processor.statements
 
         for stmt in self.sub_statements[agent.name]:
             mutations = stmt.agent.mutations

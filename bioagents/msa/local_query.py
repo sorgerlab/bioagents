@@ -92,7 +92,7 @@ class LocalQueryProcessor:
     def _filter_stmts_by_query(self, query, all_stmts):
         if isinstance(query, HasAgent):
             stmts = \
-                self._get_stmts_by_key_role((query.agent_id, query.namespace),
+                self._get_stmts_by_key_role((query.namespace, query.agent_id),
                                             query.role)
             if all_stmts:
                 return self._get_intersection(all_stmts, stmts)

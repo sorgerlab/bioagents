@@ -86,7 +86,7 @@ class LocalQueryProcessor:
             raise EntityError("Could not form a usable query from given "
                               "constraints.")
 
-        self.statements = all_stmts.stmts
+        self.statements = all_stmts
         return self
 
     def _filter_stmts_by_query(self, query, all_stmts):

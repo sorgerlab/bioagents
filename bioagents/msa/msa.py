@@ -973,7 +973,7 @@ class _Commons(StatementFinder):
         # agents held in common.
         processor = None
         for ag, ag_query in zip(self.query.agents,
-                                self.query.get_role_agent_queries(None)):
+                                self.query.get_role_agent_queries('OTHER')):
             if ag_query is None:
                 continue
 

@@ -105,9 +105,12 @@ class StatementQuery(object):
         If not provided, the following default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', 'GO', 'MESH', !OTHER!', 'TEXT',
         '!NAME!'].
+    give_agents_role_none : bool
+        Toggle whether agents without a specified role are given role "OTHER" or
+        if their query is left with role None.
     """
-    def __init__(self, subj, obj, agents, verb, ent_type, params,
-                 valid_name_spaces=None):
+    def __init__(self, subj, obj, agents,  verb, ent_type, params,
+                 valid_name_spaces=None, give_agents_role_none=False):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', 'GO', 'MESH', '!OTHER!', 'TEXT',
@@ -119,7 +122,10 @@ class StatementQuery(object):
         self.agent_queries.append(self.new_agent(obj, 'OBJECT'))
         self.agents = agents
         for e in agents:
-            self.agent_queries.append(self.new_agent(e, 'OTHER'))
+            if give_agents_role_none:
+                self.agent_queries.append(self.new_agent(e, None))
+            else:
+                self.agent_queries.append(self.new_agent(e, 'OTHER'))
 
         if not self.agent_queries:
             raise EntityError("Did not get any usable entity constraints!")
@@ -747,7 +753,7 @@ class BinaryUndirected(StatementFinder):
             logger.warning("Parameter `filter_agents` is not meaningful for "
                            "Binary queries.")
         return StatementQuery(None, None, [entity1, entity2], None, None,
-                              params)
+                              params, give_agents_role_none=True)
 
     def summarize(self):
         overrides = {'increaseamount': 'increase amount',

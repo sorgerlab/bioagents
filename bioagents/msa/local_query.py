@@ -99,8 +99,7 @@ class LocalQueryProcessor:
             else:
                 return stmts
         elif isinstance(query, HasType):
-            self._filter_for_type(all_stmts, query.stmt_types[0])
-            return all_stmts
+            return self._filter_for_type(all_stmts, query.stmt_types[0])
         else:
             logger.warning("Query {query} not handled.")
             return all_stmts

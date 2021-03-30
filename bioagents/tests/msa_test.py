@@ -771,6 +771,7 @@ def test_msa_custom_corpus_stmt_type():
                                  verb='activate')
     # Make sure we got the original statement back
     res_stmts = finder.get_statements()
+    assert res_stmts[0].__class__.__name__ == 'Activation'
     assert res_stmts[0].subj.name == 'z'
 
     finder = msa.find_mechanisms('to_target',
@@ -778,4 +779,5 @@ def test_msa_custom_corpus_stmt_type():
                                  verb='phosphorylate')
     # Make sure we got the original statement back
     res_stmts = finder.get_statements()
+    assert res_stmts[0].__class__.__name__ == "Phosphorylation"
     assert res_stmts[0].enz.name == 'x'

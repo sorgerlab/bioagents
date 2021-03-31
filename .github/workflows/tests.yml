@@ -24,8 +24,8 @@ jobs:
         sudo apt-get install libstdc++6 python3-dev graphviz libgraphviz-dev pkg-config
         sudo apt-get install graphviz
         # Tests use the web ontology but this is here as backup
-        mkdir -p $HOME/.indra/bio_ontology/1.7
-        aws s3 cp s3://bigmech/travis/bio_ontology/1.7/mock_ontology.pkl $HOME/.indra/bio_ontology/1.7/bio_ontology.pkl --no-sign-request  --source-region us-east-1
+        mkdir -p $HOME/.indra/bio_ontology/1.11
+        wget -nv https://bigmech.s3.amazonaws.com/travis/bio_ontology/1.11/mock_ontology.pkl -O $HOME/.indra/bio_ontology/1.11/bio_ontology.pkl
         # Now do some regular pip installs
         python -m pip install --upgrade pip
         pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas kappy==4.0.0 boto3 nose-timer coverage

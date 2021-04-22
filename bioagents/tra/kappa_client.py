@@ -71,10 +71,9 @@ class KappaRuntime(object):
             'seed': None,
             'store_trace': True
             }
+        complete_params.update(parameters)
         sim_params = kappy.SimulationParameter(**complete_params)
         self.kappa_instance.simulation_start(sim_params)
-        resp = complete_params.update(parameters)
-        return resp.json()
 
     def pause_sim(self):
         """Pause a given simulation."""

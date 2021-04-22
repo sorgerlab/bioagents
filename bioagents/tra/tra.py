@@ -420,11 +420,11 @@ def get_sim_result(kappa_plot):
     values.sort(key=lambda x: x[i_t])
     nt = len(values)
     obs_dict = {
-        j: key.encode('utf8') for j, key in enumerate(kappa_plot['legend'])
+        j: key for j, key in enumerate(kappa_plot['legend'])
         if key != '[T]'
         }
-    yobs = numpy.ndarray(nt, zip(obs_dict.values(), [float]*len(obs_dict)))
-
+    yobs = numpy.ndarray(
+        nt, list(zip(obs_dict.values(), [float]*len(obs_dict))))
     tspan = []
     for i, value in enumerate(values):
         tspan.append(value[i_t])

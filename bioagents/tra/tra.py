@@ -182,6 +182,7 @@ class TRA(object):
         max_val_lim = max(max((numpy.max(results[0][1][obs_name]) + 0.25*numpy.max(results[0][1][obs_name])), 101.0),
                           thresh)
         max_time = max([result[0][-1] for result in results])
+        min_time = min([result[0][0] for result in results])
         lr = matplotlib.patches.Rectangle((0, 0), max_time, thresh, color='red',
                                           alpha=0.1)
         hr = matplotlib.patches.Rectangle((0, thresh), max_time,
@@ -196,7 +197,7 @@ class TRA(object):
         for tspan, yobs in results:
             plt.plot(tspan, yobs[obs_name])
         plt.ylim(-5, max_val_lim)
-        plt.xlim(-100, 10100)
+        plt.xlim(min_time, max_time)
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
         agent_str = english_assembler._assemble_agent_str(agent).agent_str

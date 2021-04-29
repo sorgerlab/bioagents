@@ -284,7 +284,6 @@ class TRA(object):
         return tspan, yobs
 
     def simulate_odes(self, model_sim, max_time, plot_period):
-        print(type(max_time), max_time)
         ts = numpy.linspace(0, max_time, int(1.0*max_time/plot_period) + 1)
         if self.sol is None:
             self.sol = Solver(model_sim, ts)

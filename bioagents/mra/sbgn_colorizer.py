@@ -37,10 +37,9 @@ def is_mutation_activating(gene_name, mutation_status):
         database says the mutation is inhibiting, None if the database doesn't
         say
     """
-    statements = get_statements(agents=[gene_name], stmt_type='ActiveForm',
-                                simple_response=True)
+    ip = get_statements(agents=[gene_name], stmt_type='ActiveForm')
     print('ActiveForm statements involving', gene_name)
-    for statement in statements:
+    for statement in ip.statements:
         print(statement)
 
 

@@ -28,6 +28,8 @@ def load_from_config(config_str):
         with open(config_val, 'rb') as fh:
             stmts = pickle.load(fh)
             return LocalQueryProcessor(stmts)
+    elif config_type == 'service':
+        return QueryProcessorClient(config_val)
     else:
         raise ValueError('Invalid config_str: %s' % config_str)
 
@@ -189,6 +191,34 @@ class LocalQueryProcessor:
 
     def merge_results(self, np):
         self.statements += np.statements
+
+
+class QueryProcessorClient(LocalQueryProcessor):
+    def __init__(self, url):
+        self.url = url
+        self.statements = []
+        self.source_counts = {}
+
+    def _get_stmts_by_key_role(self, key, role):
+        url = self.url + ('?ns=%s&id=%s' % key) + \
+            ('' if not role else '&role=%s' % role)
+        res = requests.get(url)
+        stmtsj, source_counts = res.json()
+        for sj, sc in zip(stmtsj, source_counts):
+            self.source_counts[int(sj['matches_hash'])] = sc
+        return stmts_from_json(stmtsj)
+
+    def get_source_counts(self):
+        return self.source_counts
+
+    def get_source_count(self, stmt):
+        return self.source_counts.get(stmt.get_hash())
+
+    def get_ev_count(self, stmt):
+        return sum(self.get_source_count(stmt).values())
+
+    def get_ev_counts(self):
+        return {s.get_hash(): self.get_ev_count(s) for s in self.statements}
 
 
 class ResourceManager:

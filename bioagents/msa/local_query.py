@@ -7,7 +7,8 @@ from collections import defaultdict
 from indra.statements import *
 from indra.sources.indra_db_rest.query import And, HasType, HasAgent
 from indra.assemblers.html.assembler import get_available_source_counts
-from indra.util.statement_presentation import _get_available_ev_source_counts
+from indra.util.statement_presentation import _get_available_ev_source_counts, \
+    _get_initial_source_counts
 
 from bioagents.msa.exceptions import EntityError
 
@@ -205,7 +206,11 @@ class QueryProcessorClient(LocalQueryProcessor):
         res = requests.get(url)
         stmtsj, source_counts = res.json()
         for sj, sc in zip(stmtsj, source_counts):
-            self.source_counts[int(sj['matches_hash'])] = sc
+            mkh = int(sj['matches_hash'])
+            if mkh not in self.source_counts:
+                self.source_counts[mkh] = _get_initial_source_counts()
+            for source, num in sc.items():
+                self.source_counts[mkh][source] += num
         return stmts_from_json(stmtsj)
 
     def get_source_counts(self):

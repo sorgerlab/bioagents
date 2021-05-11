@@ -20,6 +20,8 @@ class KappaRuntime(object):
             self.kappa_instance.get_info()
         else:
             self.kappa_instance = kappy.KappaStd()
+        self.use_rest = use_rest
+        self.project_name = project_name
         return
 
     def add_code(self, code_str, name=None):
@@ -71,10 +73,9 @@ class KappaRuntime(object):
             'seed': None,
             'store_trace': True
             }
+        complete_params.update(parameters)
         sim_params = kappy.SimulationParameter(**complete_params)
         self.kappa_instance.simulation_start(sim_params)
-        resp = complete_params.update(parameters)
-        return resp.json()
 
     def pause_sim(self):
         """Pause a given simulation."""
@@ -91,3 +92,11 @@ class KappaRuntime(object):
     def sim_plot(self):
         """Get the data from the simulation."""
         return self.kappa_instance.simulation_plot()
+
+    def reset_project(self):
+        if self.use_rest:
+            self.kappa_instance = kappy.KappaRest(KAPPA_URL,
+                                                  project_id=self.project_name)
+            self.kappa_instance.get_info()
+        else:
+            self.kappa_instance = kappy.KappaStd()

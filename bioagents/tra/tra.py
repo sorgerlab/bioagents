@@ -50,11 +50,11 @@ class TRA(object):
                 self.ode_mode = True
         return
 
-    def check_property(self, model, pattern, conditions=None):
+    def check_property(self, model, pattern, conditions=None,
+                       max_time=20000, num_times=100, num_sim=2):
         # TODO: handle multiple entities (observables) in pattern
         # TODO: set max_time based on some model property if not given
-        # TODO: make number of simulations and number of time points adaptive
-
+        # NOTE: pattern.time_limit.ub takes precedence over max_time
         # Make an observable for the simulations
         logger.info('Trying to make an observable for: %s',
                     pattern.entities[0])
@@ -65,13 +65,10 @@ class TRA(object):
         given_pattern = (fstr is not None)
 
         # Set the time limit for the simulations
-        if pattern.time_limit is None:
-            max_time = 20000.0
-        elif pattern.time_limit.ub > 0:
-            max_time = pattern.time_limit.get_ub_seconds()
-        # The numer of time points to get output at
-        num_times = 100
-        # The periof at which the output is sampled
+        if pattern.time_limit is not None and pattern.time_limit.ub > 0:
+            # Convert sympy.Float to regular float
+            max_time = float(pattern.time_limit.get_ub_seconds())
+        # The period at which the output is sampled
         plot_period = int(1.0*max_time / num_times)
         if pattern.time_limit and pattern.time_limit.lb > 0:
             min_time = pattern.time_limit.get_lb_seconds()
@@ -79,8 +76,6 @@ class TRA(object):
         else:
             min_time_idx = 0
 
-        # The number of independent simulations to perform
-        num_sim = 2
         # Run simulations
         results = self.run_simulations(model, conditions, num_sim,
                                        min_time_idx, max_time,
@@ -131,19 +126,18 @@ class TRA(object):
                 else:
                     return sat_rate, num_sim, kpat, pat_obj, fig_path
 
-    def compare_conditions(self, model, condition_agent, target_agent, up_dn):
+    def compare_conditions(self, model, condition_agent, target_agent, up_dn,
+                           max_time=20000, num_times=101):
         obs = get_create_observable(model, target_agent)
         cond_quant = MolecularQuantityReference('total', condition_agent)
         all_results = []
-        time_ul = 20000
-        nt = 101
-        plot_period = time_ul / (nt - 1)
-        ts = numpy.linspace(0, time_ul, nt)
+        plot_period = max_time / (num_times - 1)
+        ts = numpy.linspace(0, max_time, num_times)
         mults = [0.0, 100.0]
         for mult in mults:
             condition = MolecularCondition('multiple', cond_quant, mult)
             results = self.run_simulations(model, [condition], 1, 0,
-                                           time_ul, plot_period)
+                                           max_time, plot_period)
             obs_values = results[0][1][obs.name]
             all_results.append(obs_values)
         # Plotting
@@ -196,7 +190,7 @@ class TRA(object):
         for tspan, yobs in results:
             plt.plot(tspan, yobs[obs_name])
         plt.ylim(-5, max_val_lim)
-        plt.xlim(-100, 10100)
+        plt.xlim(-max_time/100, max_time+max_time/100)
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
         agent_str = english_assembler._assemble_agent_str(agent).agent_str
@@ -420,11 +414,11 @@ def get_sim_result(kappa_plot):
     values.sort(key=lambda x: x[i_t])
     nt = len(values)
     obs_dict = {
-        j: key.encode('utf8') for j, key in enumerate(kappa_plot['legend'])
+        j: key for j, key in enumerate(kappa_plot['legend'])
         if key != '[T]'
         }
-    yobs = numpy.ndarray(nt, zip(obs_dict.values(), [float]*len(obs_dict)))
-
+    yobs = numpy.ndarray(
+        nt, list(zip(obs_dict.values(), [float]*len(obs_dict))))
     tspan = []
     for i, value in enumerate(values):
         tspan.append(value[i_t])

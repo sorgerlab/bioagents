@@ -618,7 +618,6 @@ def _get_matching_stmts(stmt_ref):
                                     'something other than None.')
     kwargs['ev_limit'] = 2
     kwargs['persist'] = False
-    kwargs['simple_response'] = False
     return get_statements(stmt_type=stmt_type, **kwargs)
 
 

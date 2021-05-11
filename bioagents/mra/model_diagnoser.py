@@ -131,8 +131,9 @@ class ModelDiagnoser(object):
         obj = query_agent(obj_agent)
         if not (subj and obj):
             return []
-        stmts = get_statements(subject=subj, object=obj, persist=False,
-                               ev_limit=10, simple_response=True)
+        ip = get_statements(subject=subj, object=obj, persist=False,
+                            ev_limit=10)
+        stmts = ip.statements
         stmts.sort(key=lambda s: len(s.evidence), reverse=True)
         end_ix = len(stmts) if len(stmts) < num_statements else num_statements
         return stmts[0:end_ix], subj_agent, obj_agent

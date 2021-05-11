@@ -1,11 +1,15 @@
 import os
-import logging
 import pickle
+import logging
 import requests
 from collections import defaultdict
+
 from indra.statements import *
+from indra.sources.indra_db_rest.query import And, HasType, HasAgent
 from indra.assemblers.html.assembler import get_available_source_counts
 from indra.util.statement_presentation import _get_available_ev_source_counts
+
+from bioagents.msa.exceptions import EntityError
 
 
 logger = logging.getLogger(__name__)
@@ -35,18 +39,16 @@ class LocalQueryProcessor:
         self.statements = []
 
     def get_statements(self, subject=None, object=None, agents=None,
-                       stmt_type=None,
-                       use_exact_type=False, persist=True,
-                       simple_response=False,
-                       *api_args, **api_kwargs):
+                       stmt_type=None, **ignored_kwargs):
+        all_stmts = None
         if subject:
             subj_stmts = self._get_stmts_by_key_role(
-                self._tuple_from_at_key(subject), 'SUBJ')
+                self._tuple_from_at_key(subject), 'SUBJECT')
             all_stmts = subj_stmts
 
         if object:
             obj_stmts = self._get_stmts_by_key_role(
-                self._tuple_from_at_key(object), 'OBJ')
+                self._tuple_from_at_key(object), 'OBJECT')
             all_stmts = obj_stmts
 
         if subject and object:
@@ -62,10 +64,45 @@ class LocalQueryProcessor:
             else:
                 all_stmts = ag1_stmts
 
+        if all_stmts is None:
+            raise EntityError("Did not get any usable entity constraints!")
+
         stmts = self._filter_for_type(all_stmts, stmt_type)
         stmts = self.sort_statements(stmts)
         self.statements = stmts
         return self
+
+    def get_statements_from_query(self, query, **ignored_kwargs):
+        all_stmts = None
+        if isinstance(query, And):
+            # Sort the queries to ensure that type queries come last.
+            q_list = sorted(query.queries,
+                            key=lambda q: 1 if isinstance(q, HasType) else 0)
+            for sub_query in q_list:
+                all_stmts = self._filter_stmts_by_query(sub_query, all_stmts)
+        elif isinstance(query, HasAgent):
+            all_stmts = self._filter_stmts_by_query(query, all_stmts)
+        else:
+            raise EntityError("Could not form a usable query from given "
+                              "constraints.")
+
+        self.statements = all_stmts
+        return self
+
+    def _filter_stmts_by_query(self, query, all_stmts):
+        if isinstance(query, HasAgent):
+            stmts = \
+                self._get_stmts_by_key_role((query.namespace, query.agent_id),
+                                            query.role)
+            if all_stmts:
+                return self._get_intersection(all_stmts, stmts)
+            else:
+                return stmts
+        elif isinstance(query, HasType):
+            return self._filter_for_type(all_stmts, query.stmt_types[0])
+        else:
+            logger.warning("Query {query} not handled.")
+            return all_stmts
 
     def sort_statements(self, stmts):
         stmts = sorted(stmts, key=lambda s: len(s.evidence),
@@ -110,12 +147,12 @@ class LocalQueryProcessor:
     def _get_agent_role(self, stmt, idx):
         if isinstance(stmt, (RegulateAmount, RegulateActivity,
                              Modification, Conversion, Gap, Gef)):
-            return 'SUBJ' if idx == 0 else 'OBJ'
+            return 'SUBJECT' if idx == 0 else 'OBJECT'
         elif isinstance(stmt, Complex):
-            return 'SUBJ'
+            return 'SUBJECT'
         elif isinstance(stmt, (ActiveForm, Translocation,
                                SelfModification)):
-            return 'AGENT'
+            return 'OTHER'
         else:
             assert False, stmt
 

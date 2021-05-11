@@ -16,8 +16,10 @@ from indra import has_config
 from indra.assemblers.sbgn import SBGNAssembler
 from indra.tools import assemble_corpus as ac
 
-from bioagents.msa.msa import MSA, EntityError
 from bioagents import Bioagent
+
+from bioagents.msa.msa import MSA
+from bioagents.msa.exceptions import EntityError
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
     from indra.sources.indra_db_rest import IndraDBRestAPIError, \
@@ -294,8 +296,8 @@ class MSA_Module(Bioagent):
         else:
             return self.make_failure('BAD_INPUT')
         try:
-            stmts = get_statements_for_paper([('pmid', pmid)],
-                                             simple_response=True)
+            p = get_statements_for_paper([('pmid', pmid)])
+            stmts = p.statements
         except IndraDBRestAPIError as e:
             if e.status_code == 404 and 'Invalid or unavailable' in e.reason:
                 logger.error("Could not find pmid: %s" % e.reason)

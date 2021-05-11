@@ -7,13 +7,17 @@ import logging
 
 from collections import defaultdict
 
+from indra.sources import indra_db_rest
+from indra.sources.indra_db_rest.query import *
+from indra.sources.indra_db_rest.api import get_curations
+from indra.sources.indra_db_rest import IndraDBRestAPIError
 from indra.util.statement_presentation import group_and_sort_statements, \
     stmt_to_english, make_stmt_from_relation_key, make_standard_stats
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
     _read_tfs
 from indra import get_config
 from indra.statements import Statement, stmts_to_json, Agent, \
-    get_all_descendants, Complex
+    get_all_descendants
 
 from indra.statements import Complex
 from indra.assemblers.html import HtmlAssembler
@@ -21,23 +25,21 @@ from indra.assemblers.graph import GraphAssembler
 from indra.assemblers.english.assembler import english_join, \
     statement_base_verb, statement_present_verb, statement_passive_verb
 from indra.tools.assemble_corpus import filter_by_curation
-from indra.sources import indra_db_rest
+
+from bioagents.msa.exceptions import EntityError
 
 logger = logging.getLogger('MSA')
 
 
-# We fetch curations if we have access to the DB, just to make this
-# more flexible, this can be turned off with an env variable
-if os.environ.get('INDRADB_ACCESS'):
-    try:
-        from indra_db import get_db
-        from indra_db.client.principal import curation
-        db = get_db('primary')
-        curs = curation.get_curations(db)
-        logger.info('Loaded %d curations in MSA' % len(curs))
-    except Exception as e:
-        curs = []
-else:
+# We fetch curations if we an API key with sufficient permissions
+try:
+    curs = get_curations()
+    logger.info(f'Loaded {len(curs)} curations in MSA')
+except IndraDBRestAPIError as e:
+    logger.info(f"Loaded 0 curations in MSA (status: {e.status_code}).")
+    curs = []
+except Exception as e:
+    logger.info(f"Unexpected error loading curations: {e}")
     curs = []
 
 
@@ -73,10 +75,6 @@ verb_map = _build_verb_map()
 DB_REST_URL = get_config('INDRA_DB_REST_URL')
 
 
-class EntityError(ValueError):
-    pass
-
-
 class StatementQuery(object):
     """This is an object that encapsulates the information used to make a query.
 
@@ -107,19 +105,30 @@ class StatementQuery(object):
         If not provided, the following default list will be
         used: ['HGNC', 'FPLX', 'CHEBI', 'GO', 'MESH', !OTHER!', 'TEXT',
         '!NAME!'].
+    give_agents_role_none : bool
+        Toggle whether agents without a specified role are given role "OTHER" or
+        if their query is left with role None.
     """
-    def __init__(self, subj, obj, agents, verb, ent_type, params,
-                 valid_name_spaces=None):
+    def __init__(self, subj, obj, agents,  verb, ent_type, params,
+                 valid_name_spaces=None, give_agents_role_none=False):
         self.entities = {}
         self._ns_keys = valid_name_spaces if valid_name_spaces is not None \
             else ['HGNC', 'FPLX', 'CHEBI', 'GO', 'MESH', '!OTHER!', 'TEXT',
                   '!NAME!']
+        self.agent_queries = []
         self.subj = subj
-        self.subj_key = self.get_query_key(subj)
+        self.agent_queries.append(self.new_agent(subj, 'SUBJECT'))
         self.obj = obj
-        self.obj_key = self.get_query_key(obj)
+        self.agent_queries.append(self.new_agent(obj, 'OBJECT'))
         self.agents = agents
-        self.agent_keys = [self.get_query_key(e) for e in agents]
+        for e in agents:
+            if give_agents_role_none:
+                self.agent_queries.append(self.new_agent(e, None))
+            else:
+                self.agent_queries.append(self.new_agent(e, 'OTHER'))
+
+        if not self.agent_queries:
+            raise EntityError("Did not get any usable entity constraints!")
 
         self.verb = verb
         if verb in verb_map:
@@ -127,22 +136,32 @@ class StatementQuery(object):
         else:
             self.stmt_type = verb
 
+        if self.verb is not None:
+            self.type_query = HasType([self.stmt_type])
+        else:
+            self.type_query = None
+
         self.ent_type = ent_type
         self.filter_agents = params.pop('filter_agents', [])
         self.context_agents = params.pop('context_agents', [])
 
         self.settings = params
-        if not self.subj_key and not self.obj_key and not self.agent_keys:
-            raise EntityError("Did not get any usable entity constraints!")
         return
 
-    def get_query_key(self, agent):
+    def new_agent(self, agent, role):
         if agent is None:
             return None
         dbi, dbn = self.get_agent_grounding(agent)
         self.entities[agent.name] = (dbi, dbn)
-        key = '%s@%s' % (dbi, dbn)
-        return key
+        return HasAgent(dbi, dbn, role=role)
+
+    def get_role_agent_queries(self, role):
+        return [ag_q for ag_q in self.agent_queries
+                if ag_q is not None and ag_q.role == role]
+
+    def get_db_query(self):
+        sub_queries = self.agent_queries + [self.type_query]
+        return And([q for q in sub_queries if q is not None])
 
     def get_agent_grounding(self, agent):
         """If the entity is not already an agent, form an agent."""
@@ -173,7 +192,7 @@ class StatementQuery(object):
         if dbn is None:
             raise EntityError(("Could not get valid grounding (%s) for %s "
                                "with db_refs=%s.")
-                               % (', '.join(self._ns_keys), agent,
+                              % (', '.join(self._ns_keys), agent,
                                   agent.db_refs))
         return dbi, dbn
 
@@ -224,17 +243,16 @@ class StatementFinder(object):
 
         self.mesh_terms = mesh_terms
 
-        kwargs = dict(subject=self.query.subj_key,
-                      object=self.query.obj_key,
-                      agents=self.query.agent_keys,
-                      mesh_ids=mesh_terms_param,
-                      **self.query.settings)
-        if self.query.verb:
-            kwargs['stmt_type'] = self.query.stmt_type
+        if mesh_terms:
+            db_query = FromMeshIds(list(mesh_terms)) & self.query.get_db_query()
+        else:
+            db_query = self.query.get_db_query()
+
+        kwargs = self.query.settings.copy()
         if mesh_terms_param:
             kwargs['filter_ev'] = True
 
-        processor = self.idbr.get_statements(**kwargs)
+        processor = self.idbr.get_statements_from_query(db_query, **kwargs)
         return processor
 
     def _filter_stmts(self, stmts):
@@ -735,7 +753,7 @@ class BinaryUndirected(StatementFinder):
             logger.warning("Parameter `filter_agents` is not meaningful for "
                            "Binary queries.")
         return StatementQuery(None, None, [entity1, entity2], None, None,
-                              params)
+                              params, give_agents_role_none=True)
 
     def summarize(self):
         overrides = {'increaseamount': 'increase amount',
@@ -950,8 +968,8 @@ class _Commons(StatementFinder):
         """
         # Prep the settings with some defaults.
         kwargs = self.query.settings.copy()
-        if 'max_stmts' not in kwargs:
-            kwargs['max_stmts'] = 200
+        if 'limit' not in kwargs:
+            kwargs['limit'] = 200
         if 'ev_limit' not in kwargs:
             kwargs['ev_limit'] = 1
         if 'persist' not in kwargs:
@@ -960,13 +978,15 @@ class _Commons(StatementFinder):
         # Run multiple queries, building up a single processor and a dict of
         # agents held in common.
         processor = None
-        for ag, ag_key in zip(self.query.agents, self.query.agent_keys):
-            if ag_key is None:
+        for ag, ag_query in zip(self.query.agents,
+                                self.query.get_role_agent_queries('OTHER')):
+            if ag_query is None:
                 continue
 
             # Make another query.
-            kwargs[self._role.lower()] = ag_key
-            new_processor = self.idbr.get_statements(**kwargs)
+            new_query = ag_query.copy()
+            new_query.role = self._role
+            new_processor = self.idbr.get_statements_from_query(new_query, **kwargs)
             new_processor.wait_until_done()
 
             # Filter out Complexes because they are very common and usually

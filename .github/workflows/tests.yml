@@ -36,7 +36,7 @@ jobs:
         # where these repos are cloned from the latest source
         pip install git+https://github.com/pysb/pysb.git
         pip install git+https://github.com/bgyori/pykqml.git
-        pip install git+https://github.com/pagreene/indra.git@api-update
+        pip install git+https://github.com/sorgerlab/indra.git
         # Here we install ndex2 and then re-upgrate networkx since ndex2 downgrades it
         pip install pygraphviz ndex2==1.2.0.58
         pip install -U networkx==2.3

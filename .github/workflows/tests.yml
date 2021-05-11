@@ -42,7 +42,7 @@ jobs:
         pip install -U networkx==2.3
     - name: Run unit tests
       env:
-        INDRA_DB_REST_URL: ${{ secrets.INDRA_DB_REST_URL }}/dev
+        INDRA_DB_REST_URL: ${{ secrets.INDRA_DB_REST_URL }}
         INDRA_DB_REST_API_KEY: ${{ secrets.INDRA_DB_REST_API_KEY }}
         INDRA_ONTOLOGY_URL: ${{ secrets.INDRA_ONTOLOGY_URL }}
       run: |

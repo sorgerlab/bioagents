@@ -1,4 +1,5 @@
 import os
+import re
 import pickle
 import logging
 import requests
@@ -31,6 +32,8 @@ def load_from_config(config_str):
             return LocalQueryProcessor(stmts)
     elif config_type == 'service':
         return QueryProcessorClient(config_val)
+    elif config_type == 'neo4j':
+        return Neo4jClient(config_val)
     else:
         raise ValueError('Invalid config_str: %s' % config_str)
 
@@ -204,7 +207,10 @@ class QueryProcessorClient(LocalQueryProcessor):
         url = self.url + ('?ns=%s&id=%s' % key) + \
             ('' if not role else '&role=%s' % role)
         res = requests.get(url)
-        stmtsj, source_counts = res.json()
+        return self._process_result(res.json())
+
+    def _process_result(self, res_json):
+        stmtsj, source_counts = res_json
         for sj, sc in zip(stmtsj, source_counts):
             mkh = int(sj['matches_hash'])
             if mkh not in self.source_counts:
@@ -224,6 +230,36 @@ class QueryProcessorClient(LocalQueryProcessor):
 
     def get_ev_counts(self):
         return {s.get_hash(): self.get_ev_count(s) for s in self.statements}
+
+
+class Neo4jClient(QueryProcessorClient):
+    def __init__(self, config):
+        self.statements = []
+        self.source_counts = {}
+        self.n4jc = None
+        self.resolver = None
+        self._get_client(config)
+
+    def _get_client(self, config):
+        from indra_cogex.neo4j_client import Neo4jClient
+        match = re.match('bolt://([^:]+):([^@]+)@([^|]+)\|(.+)', config)
+        if not match:
+            raise ValueError('Invalid URL string')
+        username, password, n4j_sub, resolver = match.groups()
+        self.n4jc = Neo4jClient('bolt://%s' % n4j_sub, auth=(username, password))
+        self.resolver = resolver
+
+    def _get_stmts_by_key_role(self, key, role):
+        key_str = '%s:%s' % key
+        if role == 'SUBJ':
+            rels = self.n4jc.get_target_relations(source=key_str)
+        elif role == 'OBJ':
+            rels = self.n4jc.get_source_relations(source=key_str)
+        else:
+            rels = self.n4jc.get_all_relations(node=key_str)
+        hashes = self.n4jc.get_property_from_relations(rels, 'stmt_hash')
+        res = requests.post(self.resolver, json={'hashes': sorted(hashes)})
+        return self._process_result(res.json())
 
 
 class ResourceManager:

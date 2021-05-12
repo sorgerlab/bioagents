@@ -268,7 +268,7 @@ class TRA(object):
                          pause_condition="[T] > %d" % max_time)
         while True:
             sleep(0.2)
-            status_json = self.kappa.sim_status()
+            status_json = self.kappa.sim_status()['simulation_info_progress']
             is_running = status_json.get('simulation_progress_is_running')
             if not is_running:
                 break

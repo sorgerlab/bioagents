@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 def load_from_config(config_str):
     config_type, config_val = config_str.split(':', maxsplit=1)
+    logger.info('Running MSA in %s mode' % config_type)
     if config_type == 'emmaa':
         model_name = config_val
         url = ('https://emmaa.s3.amazonaws.com/assembled/%s/'
@@ -204,6 +205,7 @@ class QueryProcessorClient(LocalQueryProcessor):
         self.source_counts = {}
 
     def _get_stmts_by_key_role(self, key, role):
+        role = {'SUBJECT': 'SUBJ', 'OBJECT': 'OBJ', 'OTHER': 'AGENT'}.get(role, 'AGENT')
         url = self.url + ('?ns=%s&id=%s' % key) + \
             ('' if not role else '&role=%s' % role)
         res = requests.get(url)
@@ -251,13 +253,15 @@ class Neo4jClient(QueryProcessorClient):
 
     def _get_stmts_by_key_role(self, key, role):
         key_str = '%s:%s' % key
-        if role == 'SUBJ':
+        logger.info('Looking up key: %s' % key_str)
+        if role == 'SUBJECT':
             rels = self.n4jc.get_target_relations(source=key_str)
-        elif role == 'OBJ':
+        elif role == 'OBJECT':
             rels = self.n4jc.get_source_relations(source=key_str)
         else:
             rels = self.n4jc.get_all_relations(node=key_str)
         hashes = self.n4jc.get_property_from_relations(rels, 'stmt_hash')
+        logger.info('Found a total of %d stmts' % len(hashes))
         res = requests.post(self.resolver, json={'hashes': sorted(hashes)})
         return self._process_result(res.json())
 

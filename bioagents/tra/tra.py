@@ -52,7 +52,7 @@ class TRA(object):
         return
 
     def check_property(self, model, pattern, conditions=None,
-                       max_time=20000, num_times=100, num_sim=2):
+                       max_time=None, num_times=None, num_sim=2):
         # TODO: handle multiple entities (observables) in pattern
         # TODO: set max_time based on some model property if not given
         # NOTE: pattern.time_limit.ub takes precedence over max_time
@@ -69,6 +69,10 @@ class TRA(object):
         if pattern.time_limit is not None and pattern.time_limit.ub > 0:
             # Convert sympy.Float to regular float
             max_time = float(pattern.time_limit.get_ub_seconds())
+        elif not max_time:
+            max_time = 20000
+        if not num_times:
+            num_times = 100
         # The period at which the output is sampled
         plot_period = int(1.0*max_time / num_times)
         if pattern.time_limit and pattern.time_limit.lb > 0:
@@ -158,7 +162,11 @@ class TRA(object):
                     return sat_rate, num_sim, kpat, pat_obj, fig_path
 
     def compare_conditions(self, model, condition_agent, target_agent, up_dn,
-                           max_time=20000, num_times=101):
+                           max_time=None, num_times=101):
+        if not max_time:
+            max_time = 20000
+        if not num_times:
+            num_times = 101
         obs = get_create_observable(model, target_agent)
         cond_quant = MolecularQuantityReference('total', condition_agent)
         all_results = []

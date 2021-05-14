@@ -240,6 +240,8 @@ class TRA(object):
 
     def run_simulations(self, model, conditions, num_sim, min_time_idx,
                         max_time, plot_period):
+        logger.info('Running %d simulations with time limit of %d and plot '
+                    'period of %d.' % (num_sim, max_time, plot_period))
         self.sol = None
         results = []
         for i in range(num_sim):

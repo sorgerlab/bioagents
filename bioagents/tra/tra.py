@@ -77,34 +77,58 @@ class TRA(object):
             min_time_idx = 0
 
         # Run simulations
-        results = self.run_simulations(model, conditions, num_sim,
-                                       min_time_idx, max_time,
-                                       plot_period)
-
-        results_copy = deepcopy(results)
-        yobs_list = [yobs for _, yobs in results]
-
-        # Discretize observations
-        # WARNING: yobs is changed by discretize_obs in place
-        thresholds = [self.discretize_obs(model, yobs, obs.name)
-                      for yobs in yobs_list]
-
-        fig_path = self.plot_results(results_copy, pattern.entities[0],
-                                     obs.name, thresholds[0])
-        # We check for the given pattern
-        if given_pattern:
+        if given_pattern and num_sim == 0:
+            from .model_checker import HypothesisTester
+            ht = HypothesisTester(prob=0.8, alpha=0.1, beta=0.1, delta=0.05)
+            yobs_list = []
+            results = []
+            thresholds = []
             truths = []
-            for yobs in yobs_list:
-                # Run model checker on the given pattern
+            while True:
+                result = self.run_simulations(model, conditions, 1,
+                                               min_time_idx, max_time, plot_period)[0]
+                results.append(result)
+                yobs = deepcopy(result[1])
+                threshold = self.discretize_obs(model, yobs, obs.name)
                 MC = mc.ModelChecker(fstr, yobs)
                 logger.info('Main property %s' % MC.truth)
                 truths.append(MC.truth)
-            sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
-            make_suggestion = (sat_rate < 0.3)
-            if make_suggestion:
-                logger.info('MAKING SUGGESTION with sat rate %.2f.' % sat_rate)
+                thresholds.append(threshold)
+                yobs_list.append(yobs)
+                ht_result = ht.test(truths)
+                if ht_result is not None:
+                    break
+            # TODO: change this?
+            make_suggestion = False
         else:
-            make_suggestion = True
+            results = self.run_simulations(model, conditions, num_sim,
+                                           min_time_idx, max_time,
+                                           plot_period)
+
+            results_copy = deepcopy(results)
+            yobs_list = [yobs for _, yobs in results]
+
+            # Discretize observations
+            # WARNING: yobs is changed by discretize_obs in place
+            thresholds = [self.discretize_obs(model, yobs, obs.name)
+                          for yobs in yobs_list]
+            # We check for the given pattern
+            if given_pattern:
+                truths = []
+                for yobs in yobs_list:
+                    # Run model checker on the given pattern
+                    MC = mc.ModelChecker(fstr, yobs)
+                    logger.info('Main property %s' % MC.truth)
+                    truths.append(MC.truth)
+                sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
+                make_suggestion = (sat_rate < 0.3)
+                if make_suggestion:
+                    logger.info('MAKING SUGGESTION with sat rate %.2f.' % sat_rate)
+            else:
+                make_suggestion = True
+
+        fig_path = self.plot_results(results_copy, pattern.entities[0],
+                                     obs.name, thresholds[0])
 
         # If no suggestion is to be made, we return
         if not make_suggestion:

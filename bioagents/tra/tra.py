@@ -196,10 +196,14 @@ class TRA(object):
         return res, fig_path
 
     def plot_compare_conditions(self, ts, results, agent, obs_name):
+        max_val_lim = max((numpy.max(results[0]) + 0.25*numpy.max(results[0])),
+                          (numpy.max(results[1]) + 0.25*numpy.max(results[1])),
+                          101.0)
         plt.figure()
         plt.ion()
         plt.plot(ts, results[0][:len(ts)], label='Without condition')
         plt.plot(ts, results[-1][:len(ts)], label='With condition')
+        plt.ylim(-5, max_val_lim)
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
         agent_str = english_assembler._assemble_agent_str(agent).agent_str

@@ -1,3 +1,4 @@
+import numpy
 from .ltl_nodes import build_tree
 
 

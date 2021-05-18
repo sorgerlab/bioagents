@@ -11,6 +11,7 @@ import os
 import numpy
 import logging
 from time import sleep
+from typing import List
 from copy import deepcopy
 from datetime import datetime
 import sympy.physics.units as units
@@ -98,8 +99,14 @@ class TRA(object):
                 ht_result = ht.test(truths)
                 if ht_result is not None:
                     break
-            # TODO: change this?
-            make_suggestion = False
+            # TODO: this is not that pretty, maybe a separate input argument
+            # would be better
+            num_sim = len(results)
+            results_copy = deepcopy(results)
+            sat_rate = numpy.count_nonzero(truths) / (1.0 * num_sim)
+            make_suggestion = (sat_rate < 0.3)
+            if make_suggestion:
+                logger.info('MAKING SUGGESTION with sat rate %.2f.' % sat_rate)
         else:
             results = self.run_simulations(model, conditions, num_sim,
                                            min_time_idx, max_time,
@@ -517,7 +524,8 @@ def get_all_patterns(obs_name):
 
 
 class TemporalPattern(object):
-    def __init__(self, pattern_type, entities, time_limit, **kwargs):
+    """A temporal pattern"""
+    def __init__(self, pattern_type: str, entities: List[ist.Agent], time_limit, **kwargs):
         self.pattern_type = pattern_type
         self.entities = entities
         self.time_limit = time_limit
@@ -538,7 +546,7 @@ class InvalidTemporalPatternError(BioagentException):
 
 
 class TimeInterval(object):
-    def __init__(self, lb, ub, unit):
+    def __init__(self, lb, ub, unit: str):
         if unit == 'day':
             sym_unit = units.day
         elif unit == 'hour':
@@ -591,38 +599,22 @@ class InvalidTimeIntervalError(BioagentException):
 # Classes for representing molecular quantities and conditions
 # ############################################################
 
-
-class MolecularCondition(object):
-    def __init__(self, condition_type, quantity, value=None):
-        if isinstance(quantity, MolecularQuantityReference):
-            self.quantity = quantity
+class MolecularQuantityReference(object):
+    def __init__(self, quant_type: str, entity: ist.Agent):
+        if quant_type in ['total', 'initial']:
+            self.quant_type = quant_type
         else:
-            msg = 'Invalid molecular quantity reference'
-            raise InvalidMolecularConditionError(msg)
-        if condition_type == 'exact':
-            if isinstance(value, MolecularQuantity):
-                self.value = value
-            else:
-                msg = 'Invalid molecular condition value'
-                raise InvalidMolecularConditionError(msg)
-        elif condition_type == 'multiple':
-            try:
-                value_num = float(value)
-                if value_num < 0:
-                    raise ValueError('Negative molecular quantity not allowed')
-            except ValueError as e:
-                raise InvalidMolecularConditionError(e)
-            self.value = value_num
-        elif condition_type in ['increase', 'decrease']:
-            self.value = None
+            msg = 'Unknown quantity type %s' % quant_type
+            raise InvalidMolecularQuantityRefError(msg)
+        if not isinstance(entity, ist.Agent):
+            msg = 'Invalid molecular Agent'
+            raise InvalidMolecularQuantityRefError(msg)
         else:
-            msg = 'Unknown condition type: %s' % condition_type
-            raise InvalidMolecularConditionError(msg)
-        self.condition_type = condition_type
+            self.entity = entity
 
 
 class MolecularQuantity(object):
-    def __init__(self, quant_type, value, unit=None):
+    def __init__(self, quant_type: str, value: str, unit: str = None):
         if quant_type == 'concentration':
             try:
                 val = float(value)
@@ -662,18 +654,35 @@ class MolecularQuantity(object):
         self.quant_type = quant_type
 
 
-class MolecularQuantityReference(object):
-    def __init__(self, quant_type, entity):
-        if quant_type in ['total', 'initial']:
-            self.quant_type = quant_type
+class MolecularCondition(object):
+    def __init__(self, condition_type: str,
+                 quantity: MolecularQuantityReference,
+                 value: MolecularQuantity = None):
+        if isinstance(quantity, MolecularQuantityReference):
+            self.quantity = quantity
         else:
-            msg = 'Unknown quantity type %s' % quant_type
-            raise InvalidMolecularQuantityRefError(msg)
-        if not isinstance(entity, ist.Agent):
-            msg = 'Invalid molecular Agent'
-            raise InvalidMolecularQuantityRefError(msg)
+            msg = 'Invalid molecular quantity reference'
+            raise InvalidMolecularConditionError(msg)
+        if condition_type == 'exact':
+            if isinstance(value, MolecularQuantity):
+                self.value = value
+            else:
+                msg = 'Invalid molecular condition value'
+                raise InvalidMolecularConditionError(msg)
+        elif condition_type == 'multiple':
+            try:
+                value_num = float(value)
+                if value_num < 0:
+                    raise ValueError('Negative molecular quantity not allowed')
+            except ValueError as e:
+                raise InvalidMolecularConditionError(e)
+            self.value = value_num
+        elif condition_type in ['increase', 'decrease']:
+            self.value = None
         else:
-            self.entity = entity
+            msg = 'Unknown condition type: %s' % condition_type
+            raise InvalidMolecularConditionError(msg)
+        self.condition_type = condition_type
 
 
 class InvalidMolecularQuantityError(BioagentException):

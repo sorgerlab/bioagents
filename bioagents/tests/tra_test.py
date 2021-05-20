@@ -393,8 +393,10 @@ def test_seq_hyp_test():
     pattern = tra.TemporalPattern('sometime_value', [entity], None,
                                   value=quant)
     t = tra.TRA()
+    from bioagents.tra.model_checker import HypothesisTester
+    ht = HypothesisTester(alpha=0.1, beta=0.1, delta=0.05, prob=0.8)
     res = t.check_property(model, pattern, conditions=None,
-                       max_time=20000, num_times=100, num_sim=0)
+                       max_time=20000, num_times=100, hypothesis_tester=ht)
     sat_rate, num_sim, kpat, pat_obj, fig_path = res
     assert sat_rate == 1.0
     assert num_sim == 18

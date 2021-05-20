@@ -52,7 +52,8 @@ class TRA(object):
         return
 
     def check_property(self, model, pattern, conditions=None,
-                       max_time=None, num_times=None, num_sim=2):
+                       max_time=None, num_times=None, num_sim=2,
+                       hypothesis_tester=None):
         # TODO: handle multiple entities (observables) in pattern
         # TODO: set max_time based on some model property if not given
         # NOTE: pattern.time_limit.ub takes precedence over max_time
@@ -82,9 +83,7 @@ class TRA(object):
             min_time_idx = 0
 
         # Run simulations
-        if given_pattern and num_sim == 0:
-            from .model_checker import HypothesisTester
-            ht = HypothesisTester(prob=0.8, alpha=0.1, beta=0.1, delta=0.05)
+        if given_pattern and hypothesis_tester:
             yobs_list = []
             results = []
             thresholds = []
@@ -100,7 +99,7 @@ class TRA(object):
                 truths.append(MC.truth)
                 thresholds.append(threshold)
                 yobs_list.append(yobs)
-                ht_result = ht.test(truths)
+                ht_result = hypothesis_tester.test(truths)
                 if ht_result is not None:
                     break
             # TODO: this is not that pretty, maybe a separate input argument

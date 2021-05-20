@@ -18,7 +18,6 @@ import sympy.physics.units as units
 import indra.statements as ist
 import indra.assemblers.pysb.assembler as pa
 from indra.assemblers.english import assembler as english_assembler
-import pysb
 from pysb import Observable
 from pysb.integrate import Solver
 from pysb.export.kappa import KappaExporter
@@ -53,9 +52,9 @@ class TRA(object):
                 self.ode_mode = True
         return
 
-    def check_property(self, model: pysb.Model,
-                       pattern: TemporalPattern,
-                       conditions: List[MolecularCondition] = None,
+    def check_property(self, model: "pysb.Model",
+                       pattern: "TemporalPattern",
+                       conditions: "List[MolecularCondition]" = None,
                        max_time: float = None,
                        num_times: int = None,
                        num_sim: int = 2,

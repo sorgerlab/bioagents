@@ -5,7 +5,7 @@ from kqml import KQMLList, KQMLPerformative
 from indra.assemblers.pysb import assembler as pysb_assembler
 from indra.assemblers.pysb import PysbAssembler
 from indra.statements import stmts_from_json, Activation, Inhibition, \
-    ActiveForm, ModCondition
+    ActiveForm, ModCondition, Agent
 from indra.sources.trips import processor as trips_processor
 from bioagents.tra import tra
 from bioagents import Bioagent, BioagentException
@@ -259,7 +259,7 @@ def get_chemical_agents(stmts):
     return list(chemicals)
 
 
-def get_molecular_entity(lst):
+def get_molecular_entity(lst: KQMLList) -> Agent:
     description_clj = lst.get('description')
     agent = TRA_Module.get_agent(description_clj)
     return agent
@@ -293,7 +293,7 @@ def get_single_molecular_entity(description_str):
 """
 
 
-def get_molecular_quantity(lst):
+def get_molecular_quantity(lst: KQMLList) -> tra.MolecularQuantity:
     try:
         quant_type = lst.gets('type')
         value = lst.gets('value')
@@ -306,7 +306,7 @@ def get_molecular_quantity(lst):
         raise tra.InvalidMolecularQuantityError(e)
 
 
-def get_molecular_quantity_ref(lst):
+def get_molecular_quantity_ref(lst: KQMLList) -> tra.MolecularQuantityReference:
     try:
         quant_type = lst.gets('type')
         entity_lst = lst.get('entity')
@@ -316,7 +316,7 @@ def get_molecular_quantity_ref(lst):
         raise tra.InvalidMolecularQuantityRefError(e)
 
 
-def get_time_interval(lst):
+def get_time_interval(lst: KQMLList) -> tra.TimeInterval:
     try:
         lb = lst.gets('lower-bound')
         ub = lst.gets('upper-bound')
@@ -326,7 +326,7 @@ def get_time_interval(lst):
         raise tra.InvalidTimeIntervalError(e)
 
 
-def get_temporal_pattern(lst):
+def get_temporal_pattern(lst: KQMLList) -> tra.TemporalPattern:
     pattern_type = lst.gets('type')
     entities_lst = lst.get('entities')
     entities = []
@@ -350,7 +350,7 @@ def get_temporal_pattern(lst):
     return tp
 
 
-def get_molecular_condition(lst):
+def get_molecular_condition(lst: KQMLList) -> tra.MolecularCondition:
     try:
         condition_type = lst.gets('type')
         quantity_ref_lst = lst.get('quantity')

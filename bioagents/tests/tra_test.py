@@ -384,6 +384,23 @@ def test_missing_monomer_condition():
     tra.apply_condition(model, condition)
 
 
+def test_seq_hyp_test():
+    stmts = [Activation(Agent('BRAF'), Agent('KRAS'))]
+    model = tra_module.assemble_model(stmts)
+    entity = Agent('KRAS', activity=ActivityCondition('activity', True))
+    quantity = tra.MolecularQuantityReference('total', entity)
+    quant = tra.MolecularQuantity('qualitative', 'high')
+    pattern = tra.TemporalPattern('sometime_value', [entity], None,
+                                  value=quant)
+    t = tra.TRA()
+    from bioagents.tra.model_checker import HypothesisTester
+    ht = HypothesisTester(alpha=0.1, beta=0.1, delta=0.05, prob=0.8)
+    res = t.check_property(model, pattern, conditions=None,
+                       max_time=20000, num_times=100, hypothesis_tester=ht)
+    sat_rate, num_sim, kpat, pat_obj, fig_path = res
+    assert sat_rate == 1.0
+    assert num_sim == 18
+
 # Module level TRA tests
 
 def test_module():

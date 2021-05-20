@@ -11,6 +11,7 @@ import os
 import numpy
 import logging
 from time import sleep
+from typing import List
 from copy import deepcopy
 from datetime import datetime
 import sympy.physics.units as units
@@ -24,6 +25,7 @@ from pysb.core import ComponentDuplicateNameError
 import bioagents.tra.model_checker as mc
 import matplotlib
 from bioagents import BioagentException, get_img_path
+from .model_checker import HypothesisTester
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -50,8 +52,13 @@ class TRA(object):
                 self.ode_mode = True
         return
 
-    def check_property(self, model, pattern, conditions=None,
-                       max_time=20000, num_times=100, num_sim=2):
+    def check_property(self, model: "pysb.Model",
+                       pattern: "TemporalPattern",
+                       conditions: "List[MolecularCondition]" = None,
+                       max_time: float = None,
+                       num_times: int = None,
+                       num_sim: int = 2,
+                       hypothesis_tester: HypothesisTester = None):
         # TODO: handle multiple entities (observables) in pattern
         # TODO: set max_time based on some model property if not given
         # NOTE: pattern.time_limit.ub takes precedence over max_time
@@ -68,6 +75,10 @@ class TRA(object):
         if pattern.time_limit is not None and pattern.time_limit.ub > 0:
             # Convert sympy.Float to regular float
             max_time = float(pattern.time_limit.get_ub_seconds())
+        elif not max_time:
+            max_time = 20000
+        if not num_times:
+            num_times = 100
         # The period at which the output is sampled
         plot_period = int(1.0*max_time / num_times)
         if pattern.time_limit and pattern.time_limit.lb > 0:
@@ -76,35 +87,73 @@ class TRA(object):
         else:
             min_time_idx = 0
 
-        # Run simulations
-        results = self.run_simulations(model, conditions, num_sim,
-                                       min_time_idx, max_time,
-                                       plot_period)
-
-        results_copy = deepcopy(results)
-        yobs_list = [yobs for _, yobs in results]
-
-        # Discretize observations
-        # WARNING: yobs is changed by discretize_obs in place
-        thresholds = [self.discretize_obs(model, yobs, obs.name)
-                      for yobs in yobs_list]
-
-        fig_path = self.plot_results(results_copy, pattern.entities[0],
-                                     obs.name, thresholds[0])
-        # We check for the given pattern
-        if given_pattern:
+        # If we have a specific pattern to test, and also a hypothesis tester
+        # passed in, then we do adaptive sample size model checking to
+        # determine if the given property is satisfied.
+        if given_pattern and hypothesis_tester:
+            # We have to create these lists since they are required
+            # downstream for plotting and reporting.
+            yobs_list = []
+            results = []
+            thresholds = []
             truths = []
-            for yobs in yobs_list:
-                # Run model checker on the given pattern
+            # We simulate and run model checking until the hypothesis
+            # tester tells us to stop.
+            while True:
+                # This runs a single simulation
+                result = self.run_simulations(model, conditions, 1,
+                                               min_time_idx, max_time, plot_period)[0]
+                results.append(result)
+                yobs = deepcopy(result[1])
+                threshold = self.discretize_obs(model, yobs, obs.name)
                 MC = mc.ModelChecker(fstr, yobs)
                 logger.info('Main property %s' % MC.truth)
                 truths.append(MC.truth)
-            sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
+                thresholds.append(threshold)
+                yobs_list.append(yobs)
+                # We run the hypothesis tester here on the list of true/false
+                # values collected so far and if we get 1 or -1, we can stop.
+                ht_result = hypothesis_tester.test(truths)
+                if ht_result is not None:
+                    break
+            # We now calculate some statistics needed below
+            num_sim = len(results)
+            results_copy = deepcopy(results)
+            sat_rate = numpy.count_nonzero(truths) / (1.0 * num_sim)
             make_suggestion = (sat_rate < 0.3)
             if make_suggestion:
                 logger.info('MAKING SUGGESTION with sat rate %.2f.' % sat_rate)
+        # In this case, we run simulation with a fixed num_sim and don't
+        # use hypothesis testing.
         else:
-            make_suggestion = True
+            results = self.run_simulations(model, conditions, num_sim,
+                                           min_time_idx, max_time,
+                                           plot_period)
+
+            results_copy = deepcopy(results)
+            yobs_list = [yobs for _, yobs in results]
+
+            # Discretize observations
+            # WARNING: yobs is changed by discretize_obs in place
+            thresholds = [self.discretize_obs(model, yobs, obs.name)
+                          for yobs in yobs_list]
+            # We check for the given pattern
+            if given_pattern:
+                truths = []
+                for yobs in yobs_list:
+                    # Run model checker on the given pattern
+                    MC = mc.ModelChecker(fstr, yobs)
+                    logger.info('Main property %s' % MC.truth)
+                    truths.append(MC.truth)
+                sat_rate = numpy.count_nonzero(truths) / (1.0*num_sim)
+                make_suggestion = (sat_rate < 0.3)
+                if make_suggestion:
+                    logger.info('MAKING SUGGESTION with sat rate %.2f.' % sat_rate)
+            else:
+                make_suggestion = True
+
+        fig_path = self.plot_results(results_copy, pattern.entities[0],
+                                     obs.name, thresholds[0])
 
         # If no suggestion is to be made, we return
         if not make_suggestion:
@@ -127,7 +176,11 @@ class TRA(object):
                     return sat_rate, num_sim, kpat, pat_obj, fig_path
 
     def compare_conditions(self, model, condition_agent, target_agent, up_dn,
-                           max_time=20000, num_times=101):
+                           max_time=None, num_times=101):
+        if not max_time:
+            max_time = 20000
+        if not num_times:
+            num_times = 101
         obs = get_create_observable(model, target_agent)
         cond_quant = MolecularQuantityReference('total', condition_agent)
         all_results = []
@@ -157,10 +210,14 @@ class TRA(object):
         return res, fig_path
 
     def plot_compare_conditions(self, ts, results, agent, obs_name):
+        max_val_lim = max((numpy.max(results[0]) + 0.25*numpy.max(results[0])),
+                          (numpy.max(results[1]) + 0.25*numpy.max(results[1])),
+                          101.0)
         plt.figure()
         plt.ion()
         plt.plot(ts, results[0][:len(ts)], label='Without condition')
         plt.plot(ts, results[-1][:len(ts)], label='With condition')
+        plt.ylim(-5, max_val_lim)
         plt.xlabel('Time (s)')
         plt.ylabel('Amount (molecules)')
         agent_str = english_assembler._assemble_agent_str(agent).agent_str
@@ -201,6 +258,8 @@ class TRA(object):
 
     def run_simulations(self, model, conditions, num_sim, min_time_idx,
                         max_time, plot_period):
+        logger.info('Running %d simulations with time limit of %d and plot '
+                    'period of %d.' % (num_sim, max_time, plot_period))
         self.sol = None
         results = []
         for i in range(num_sim):
@@ -268,7 +327,7 @@ class TRA(object):
                          pause_condition="[T] > %d" % max_time)
         while True:
             sleep(0.2)
-            status_json = self.kappa.sim_status()
+            status_json = self.kappa.sim_status()['simulation_info_progress']
             is_running = status_json.get('simulation_progress_is_running')
             if not is_running:
                 break
@@ -493,7 +552,8 @@ def get_all_patterns(obs_name):
 
 
 class TemporalPattern(object):
-    def __init__(self, pattern_type, entities, time_limit, **kwargs):
+    """A temporal pattern"""
+    def __init__(self, pattern_type: str, entities: List[ist.Agent], time_limit, **kwargs):
         self.pattern_type = pattern_type
         self.entities = entities
         self.time_limit = time_limit
@@ -514,7 +574,7 @@ class InvalidTemporalPatternError(BioagentException):
 
 
 class TimeInterval(object):
-    def __init__(self, lb, ub, unit):
+    def __init__(self, lb, ub, unit: str):
         if unit == 'day':
             sym_unit = units.day
         elif unit == 'hour':
@@ -567,38 +627,22 @@ class InvalidTimeIntervalError(BioagentException):
 # Classes for representing molecular quantities and conditions
 # ############################################################
 
-
-class MolecularCondition(object):
-    def __init__(self, condition_type, quantity, value=None):
-        if isinstance(quantity, MolecularQuantityReference):
-            self.quantity = quantity
+class MolecularQuantityReference(object):
+    def __init__(self, quant_type: str, entity: ist.Agent):
+        if quant_type in ['total', 'initial']:
+            self.quant_type = quant_type
         else:
-            msg = 'Invalid molecular quantity reference'
-            raise InvalidMolecularConditionError(msg)
-        if condition_type == 'exact':
-            if isinstance(value, MolecularQuantity):
-                self.value = value
-            else:
-                msg = 'Invalid molecular condition value'
-                raise InvalidMolecularConditionError(msg)
-        elif condition_type == 'multiple':
-            try:
-                value_num = float(value)
-                if value_num < 0:
-                    raise ValueError('Negative molecular quantity not allowed')
-            except ValueError as e:
-                raise InvalidMolecularConditionError(e)
-            self.value = value_num
-        elif condition_type in ['increase', 'decrease']:
-            self.value = None
+            msg = 'Unknown quantity type %s' % quant_type
+            raise InvalidMolecularQuantityRefError(msg)
+        if not isinstance(entity, ist.Agent):
+            msg = 'Invalid molecular Agent'
+            raise InvalidMolecularQuantityRefError(msg)
         else:
-            msg = 'Unknown condition type: %s' % condition_type
-            raise InvalidMolecularConditionError(msg)
-        self.condition_type = condition_type
+            self.entity = entity
 
 
 class MolecularQuantity(object):
-    def __init__(self, quant_type, value, unit=None):
+    def __init__(self, quant_type: str, value: str, unit: str = None):
         if quant_type == 'concentration':
             try:
                 val = float(value)
@@ -638,18 +682,35 @@ class MolecularQuantity(object):
         self.quant_type = quant_type
 
 
-class MolecularQuantityReference(object):
-    def __init__(self, quant_type, entity):
-        if quant_type in ['total', 'initial']:
-            self.quant_type = quant_type
+class MolecularCondition(object):
+    def __init__(self, condition_type: str,
+                 quantity: MolecularQuantityReference,
+                 value: MolecularQuantity = None):
+        if isinstance(quantity, MolecularQuantityReference):
+            self.quantity = quantity
         else:
-            msg = 'Unknown quantity type %s' % quant_type
-            raise InvalidMolecularQuantityRefError(msg)
-        if not isinstance(entity, ist.Agent):
-            msg = 'Invalid molecular Agent'
-            raise InvalidMolecularQuantityRefError(msg)
+            msg = 'Invalid molecular quantity reference'
+            raise InvalidMolecularConditionError(msg)
+        if condition_type == 'exact':
+            if isinstance(value, MolecularQuantity):
+                self.value = value
+            else:
+                msg = 'Invalid molecular condition value'
+                raise InvalidMolecularConditionError(msg)
+        elif condition_type == 'multiple':
+            try:
+                value_num = float(value)
+                if value_num < 0:
+                    raise ValueError('Negative molecular quantity not allowed')
+            except ValueError as e:
+                raise InvalidMolecularConditionError(e)
+            self.value = value_num
+        elif condition_type in ['increase', 'decrease']:
+            self.value = None
         else:
-            self.entity = entity
+            msg = 'Unknown condition type: %s' % condition_type
+            raise InvalidMolecularConditionError(msg)
+        self.condition_type = condition_type
 
 
 class InvalidMolecularQuantityError(BioagentException):

@@ -18,6 +18,7 @@ import sympy.physics.units as units
 import indra.statements as ist
 import indra.assemblers.pysb.assembler as pa
 from indra.assemblers.english import assembler as english_assembler
+import pysb
 from pysb import Observable
 from pysb.integrate import Solver
 from pysb.export.kappa import KappaExporter
@@ -25,6 +26,7 @@ from pysb.core import ComponentDuplicateNameError
 import bioagents.tra.model_checker as mc
 import matplotlib
 from bioagents import BioagentException, get_img_path
+from .model_checker import HypothesisTester
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -51,9 +53,13 @@ class TRA(object):
                 self.ode_mode = True
         return
 
-    def check_property(self, model, pattern, conditions=None,
-                       max_time=None, num_times=None, num_sim=2,
-                       hypothesis_tester=None):
+    def check_property(self, model: pysb.Model,
+                       pattern: TemporalPattern,
+                       conditions: List[MolecularCondition] = None,
+                       max_time: float = None,
+                       num_times: int = None,
+                       num_sim: int = 2,
+                       hypothesis_tester: HypothesisTester = None):
         # TODO: handle multiple entities (observables) in pattern
         # TODO: set max_time based on some model property if not given
         # NOTE: pattern.time_limit.ub takes precedence over max_time
@@ -82,13 +88,20 @@ class TRA(object):
         else:
             min_time_idx = 0
 
-        # Run simulations
+        # If we have a specific pattern to test, and also a hypothesis tester
+        # passed in, then we do adaptive sample size model checking to
+        # determine if the given property is satisfied.
         if given_pattern and hypothesis_tester:
+            # We have to create these lists since they are required
+            # downstream for plotting and reporting.
             yobs_list = []
             results = []
             thresholds = []
             truths = []
+            # We simulate and run model checking until the hypothesis
+            # tester tells us to stop.
             while True:
+                # This runs a single simulation
                 result = self.run_simulations(model, conditions, 1,
                                                min_time_idx, max_time, plot_period)[0]
                 results.append(result)
@@ -99,17 +112,20 @@ class TRA(object):
                 truths.append(MC.truth)
                 thresholds.append(threshold)
                 yobs_list.append(yobs)
+                # We run the hypothesis tester here on the list of true/false
+                # values collected so far and if we get 1 or -1, we can stop.
                 ht_result = hypothesis_tester.test(truths)
                 if ht_result is not None:
                     break
-            # TODO: this is not that pretty, maybe a separate input argument
-            # would be better
+            # We now calculate some statistics needed below
             num_sim = len(results)
             results_copy = deepcopy(results)
             sat_rate = numpy.count_nonzero(truths) / (1.0 * num_sim)
             make_suggestion = (sat_rate < 0.3)
             if make_suggestion:
                 logger.info('MAKING SUGGESTION with sat rate %.2f.' % sat_rate)
+        # In this case, we run simulation with a fixed num_sim and don't
+        # use hypothesis testing.
         else:
             results = self.run_simulations(model, conditions, num_sim,
                                            min_time_idx, max_time,

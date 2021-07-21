@@ -9,8 +9,6 @@ from collections import defaultdict
 
 from indra.sources import indra_db_rest
 from indra.sources.indra_db_rest.query import *
-from indra.sources.indra_db_rest.api import get_curations
-from indra.sources.indra_db_rest import IndraDBRestAPIError
 from indra.util.statement_presentation import group_and_sort_statements, \
     stmt_to_english, make_stmt_from_relation_key, make_standard_stats
 from bioagents.biosense.biosense import _read_kinases, _read_phosphatases, \
@@ -30,16 +28,20 @@ from bioagents.msa.exceptions import EntityError
 
 logger = logging.getLogger('MSA')
 
-
-# We fetch curations if we an API key with sufficient permissions
-try:
-    curs = get_curations()
-    logger.info(f'Loaded {len(curs)} curations in MSA')
-except IndraDBRestAPIError as e:
-    logger.info(f"Loaded 0 curations in MSA (status: {e.status_code}).")
-    curs = []
-except Exception as e:
-    logger.info(f"Unexpected error loading curations: {e}")
+# We fetch curations if we have access to the DB, just to make this
+# more flexible, this can be turned off with an env variable.
+# This approach is better than using the API since the API key for external
+# dialogue system instances is not permissive enough to fetch curations.
+if os.environ.get('INDRADB_ACCESS'):
+    try:
+        from indra_db import get_db
+        from indra_db.client.principal import curation
+        db = get_db('primary')
+        curs = curation.get_curations(db)
+        logger.info('Loaded %d curations in MSA' % len(curs))
+    except Exception as e:
+        curs = []
+else:
     curs = []
 
 

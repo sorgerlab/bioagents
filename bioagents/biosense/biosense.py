@@ -147,7 +147,7 @@ class BioSense(object):
 
 def get_names_gilda(db, id):
     if gilda_web:
-        res = requests.post('http://grounding.indra.bio/get_names',
+        res = requests.post('http://grounding.indra.bio/names',
                             json={'db': db, 'id': id})
         res.raise_for_status()
         return res.json()

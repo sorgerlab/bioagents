@@ -9,15 +9,18 @@ isa_rel = Namespace('http://trips.ihmc.us/relations/').term('isa')
 
 
 def save_hierarchy(g, path):
-    with open(path, 'wb') as out_file:
-        g_bytes = g.serialize(format='nt')
-        # Replace extra new lines in string and get rid of empty line at end
-        g_bytes = g_bytes.replace(b'\n\n', b'\n').strip()
-        # Split into rows and sort
-        rows = g_bytes.split(b'\n')
-        rows.sort()
-        g_bytes = b'\n'.join(rows)
-        out_file.write(g_bytes)
+    gs = g.serialize(format='nt')
+    # For rdflib compatibility, handle both bytes and str
+    if isinstance(gs, bytes):
+        gs = gs.decode('utf-8')
+    # Replace extra new lines in string and get rid of empty line at end
+    g = gs.replace('\n\n', '\n').strip()
+    # Split into rows and sort
+    rows = gs.split('\n')
+    rows.sort()
+    gs = '\n'.join(rows)
+    with open(path, 'w') as out_file:
+        out_file.write(gs)
 
 
 def make_hierarchy(tree):

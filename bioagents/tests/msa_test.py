@@ -781,3 +781,17 @@ def test_msa_custom_corpus_stmt_type():
     res_stmts = finder.get_statements()
     assert res_stmts[0].__class__.__name__ == "Phosphorylation"
     assert res_stmts[0].enz.name == 'x'
+
+
+@attr('nonpublic', 'notravis')
+def test_statements_from_cogex():
+    msa = MSA(corpus_config='cogex:bolt://localhost:7687')
+    kras = Agent('KRAS', db_refs={'HGNC': '6407'})
+    finder = msa.find_mechanisms('to_target', target=kras, verb='activate')
+    res_stmts = finder.get_statements()
+    assert len(res_stmts) > 1000
+    assert isinstance(res_stmts[0], Activation)
+    finder = msa.find_mechanisms('from_source', source=kras, verb='activate')
+    res_stmts = finder.get_statements()
+    assert len(res_stmts) > 1000
+    assert isinstance(res_stmts[0], Activation)

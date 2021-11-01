@@ -252,17 +252,16 @@ class Neo4jClient(QueryProcessorClient):
         self.n4jc = Neo4jClient('bolt://%s' % n4j_sub, auth=(username, password))
 
     def _get_stmts_by_key_role(self, key, role):
-        key_str = '%s:%s' % key
-        logger.info('Looking up key: %s' % key_str)
+        logger.info('Looking up key: %s' % str(key))
         if role == 'SUBJECT':
-            rels = self.n4jc.get_target_relations(source=key_str)
+            rels = self.n4jc.get_target_relations(source=key)
         elif role == 'OBJECT':
-            rels = self.n4jc.get_source_relations(target=key_str)
+            rels = self.n4jc.get_source_relations(target=key)
         else:
-            rels = self.n4jc.get_all_relations(node=key_str)
+            rels = self.n4jc.get_all_relations(node=key)
         stmts = self._process_relations(rels)
         logger.info('Found a total of %d stmts' % len(stmts))
-        return
+        return stmts
 
     def _process_relations(self, relations):
         stmt_jsons = []

@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import pickle
@@ -257,14 +258,25 @@ class Neo4jClient(QueryProcessorClient):
         if role == 'SUBJECT':
             rels = self.n4jc.get_target_relations(source=key_str)
         elif role == 'OBJECT':
-            rels = self.n4jc.get_source_relations(source=key_str)
+            rels = self.n4jc.get_source_relations(target=key_str)
         else:
             rels = self.n4jc.get_all_relations(node=key_str)
-        hashes = self.n4jc.get_property_from_relations(rels, 'stmt_hash')
-        logger.info('Found a total of %d stmts' % len(hashes))
-        res = requests.post(self.resolver, json={'hashes': sorted(hashes)})
-        return self._process_result(res.json())
+        stmts = self._process_relations(rels)
+        logger.info('Found a total of %d stmts' % len(stmts))
+        return
 
+    def _process_relations(self, relations):
+        stmt_jsons = []
+        for rel in relations:
+            mkh = rel.data.get('stmt_hash')
+            stmt_json = json.loads(rel.data.get('stmt_json'))
+            source_counts = json.loads(rel.data.get('source_counts'))
+            stmt_jsons.append(stmt_json)
+            if mkh not in self.source_counts:
+                self.source_counts[mkh] = _get_initial_source_counts()
+            for source, num in source_counts.items():
+                self.source_counts[mkh][source] += num
+        return stmts_from_json(stmt_jsons)
 
 class ResourceManager:
     """Manages local query resources by key so they are only in memory once."""

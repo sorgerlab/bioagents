@@ -254,11 +254,14 @@ class Neo4jClient(QueryProcessorClient):
     def _get_stmts_by_key_role(self, key, role):
         logger.info('Looking up key: %s' % str(key))
         if role == 'SUBJECT':
-            rels = self.n4jc.get_target_relations(source=key)
+            rels = self.n4jc.get_target_relations(source=key,
+                relation='indra_rel')
         elif role == 'OBJECT':
-            rels = self.n4jc.get_source_relations(target=key)
+            rels = self.n4jc.get_source_relations(target=key,
+                relation='indra_rel')
         else:
-            rels = self.n4jc.get_all_relations(node=key)
+            rels = self.n4jc.get_all_relations(node=key,
+                relation='indra_rel')
         stmts = self._process_relations(rels)
         logger.info('Found a total of %d stmts' % len(stmts))
         return stmts

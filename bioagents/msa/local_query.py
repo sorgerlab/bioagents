@@ -82,6 +82,7 @@ class LocalQueryProcessor:
 
     def get_statements_from_query(self, query, **ignored_kwargs):
         all_stmts = None
+        logger.info('Running query: %s' % query)
         if isinstance(query, And):
             # Sort the queries to ensure that type queries come last.
             q_list = sorted(query.queries,
@@ -93,11 +94,12 @@ class LocalQueryProcessor:
         else:
             raise EntityError("Could not form a usable query from given "
                               "constraints.")
-
+        logger.info('Found %d statements from query' % len(all_stmts))
         self.statements = all_stmts
         return self
 
     def _filter_stmts_by_query(self, query, all_stmts):
+        logger.info('Running subquery: %s' % query)
         if isinstance(query, HasAgent):
             stmts = \
                 self._get_stmts_by_key_role((query.namespace, query.agent_id),
@@ -263,7 +265,8 @@ class Neo4jClient(QueryProcessorClient):
             rels = self.n4jc.get_all_relations(node=key,
                 relation='indra_rel')
         stmts = self._process_relations(rels)
-        logger.info('Found a total of %d stmts' % len(stmts))
+        logger.info('Found a total of %d stmts with %s: %s'
+                    % (len(stmts), role, str(key)))
         return stmts
 
     def _process_relations(self, relations):

@@ -786,9 +786,9 @@ def test_msa_custom_corpus_stmt_type():
 
 @attr('nonpublic', 'notravis')
 def test_statements_from_neo4j():
-    user = os.environ.get('NEO4J_USER')
-    pw = os.environ.get('NEO4J_PASSWORD')
-    url = os.environ.get('NEO4J_URL')
+    user = os.environ.get('INDRA_NEO4J_USER')
+    pw = os.environ.get('INDRA_NEO4J_PASSWORD')
+    url = os.environ.get('INDRA_NEO4J_URL')
     config = 'neo4j:bolt://%s:%s@%s' % (user, pw, url)
     msa = MSA(corpus_config=config)
     kras = Agent('KRAS', db_refs={'HGNC': '6407'})

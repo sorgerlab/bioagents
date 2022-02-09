@@ -246,12 +246,12 @@ class Neo4jClient(QueryProcessorClient):
         self._get_client(config)
 
     def _get_client(self, config):
-        from indra_cogex.neo4j_client import Neo4jClient
+        from indra_cogex.client.neo4j_client import Neo4jClient
         match = re.match('bolt://([^:]+):([^@]+)@([^|]+)', config)
         if not match:
             raise ValueError('Invalid URL string')
-        username, password, n4j_sub = match.groups()
-        self.n4jc = Neo4jClient('bolt://%s' % n4j_sub, auth=(username, password))
+        username, password, url = match.groups()
+        self.n4jc = Neo4jClient(url, auth=(username, password))
 
     def _get_stmts_by_key_role(self, key, role):
         logger.info('Looking up key: %s' % str(key))

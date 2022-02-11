@@ -1,5 +1,6 @@
 import re
 import pickle
+import os
 from time import sleep
 from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
@@ -781,3 +782,21 @@ def test_msa_custom_corpus_stmt_type():
     res_stmts = finder.get_statements()
     assert res_stmts[0].__class__.__name__ == "Phosphorylation"
     assert res_stmts[0].enz.name == 'x'
+
+
+@attr('nonpublic', 'notravis')
+def test_statements_from_neo4j():
+    user = os.environ.get('INDRA_NEO4J_USER')
+    pw = os.environ.get('INDRA_NEO4J_PASSWORD')
+    url = os.environ.get('INDRA_NEO4J_URL')
+    config = 'neo4j:bolt://%s:%s@%s' % (user, pw, url)
+    msa = MSA(corpus_config=config)
+    kras = Agent('KRAS', db_refs={'HGNC': '6407'})
+    finder = msa.find_mechanisms('to_target', target=kras, verb='activate')
+    res_stmts = finder.get_statements()
+    assert len(res_stmts) > 1000
+    assert isinstance(res_stmts[0], Activation)
+    finder = msa.find_mechanisms('from_source', source=kras, verb='activate')
+    res_stmts = finder.get_statements()
+    assert len(res_stmts) > 1000
+    assert isinstance(res_stmts[0], Activation)

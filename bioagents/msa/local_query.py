@@ -1,4 +1,6 @@
+import json
 import os
+import re
 import pickle
 import logging
 import requests
@@ -7,7 +9,8 @@ from collections import defaultdict
 from indra.statements import *
 from indra.sources.indra_db_rest.query import And, HasType, HasAgent
 from indra.assemblers.html.assembler import get_available_source_counts
-from indra.util.statement_presentation import _get_available_ev_source_counts
+from indra.util.statement_presentation import _get_available_ev_source_counts, \
+    _get_initial_source_counts
 
 from bioagents.msa.exceptions import EntityError
 
@@ -17,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 def load_from_config(config_str):
     config_type, config_val = config_str.split(':', maxsplit=1)
+    logger.info('Running MSA in %s mode' % config_type)
     if config_type == 'emmaa':
         model_name = config_val
         url = ('https://emmaa.s3.amazonaws.com/assembled/%s/'
@@ -28,6 +32,10 @@ def load_from_config(config_str):
         with open(config_val, 'rb') as fh:
             stmts = pickle.load(fh)
             return LocalQueryProcessor(stmts)
+    elif config_type == 'service':
+        return QueryProcessorClient(config_val)
+    elif config_type == 'neo4j':
+        return Neo4jClient(config_val)
     else:
         raise ValueError('Invalid config_str: %s' % config_str)
 
@@ -74,6 +82,7 @@ class LocalQueryProcessor:
 
     def get_statements_from_query(self, query, **ignored_kwargs):
         all_stmts = None
+        logger.info('Running query: %s' % query)
         if isinstance(query, And):
             # Sort the queries to ensure that type queries come last.
             q_list = sorted(query.queries,
@@ -85,11 +94,12 @@ class LocalQueryProcessor:
         else:
             raise EntityError("Could not form a usable query from given "
                               "constraints.")
-
+        logger.info('Found %d statements from query' % len(all_stmts))
         self.statements = all_stmts
         return self
 
     def _filter_stmts_by_query(self, query, all_stmts):
+        logger.info('Running subquery: %s' % query)
         if isinstance(query, HasAgent):
             stmts = \
                 self._get_stmts_by_key_role((query.namespace, query.agent_id),
@@ -190,6 +200,87 @@ class LocalQueryProcessor:
     def merge_results(self, np):
         self.statements += np.statements
 
+
+class QueryProcessorClient(LocalQueryProcessor):
+    def __init__(self, url):
+        self.url = url
+        self.statements = []
+        self.source_counts = {}
+
+    def _get_stmts_by_key_role(self, key, role):
+        role = {'SUBJECT': 'SUBJ', 'OBJECT': 'OBJ', 'OTHER': 'AGENT'}.get(role, 'AGENT')
+        url = self.url + ('?ns=%s&id=%s' % key) + \
+            ('' if not role else '&role=%s' % role)
+        res = requests.get(url)
+        return self._process_result(res.json())
+
+    def _process_result(self, res_json):
+        stmtsj, source_counts = res_json
+        for sj, sc in zip(stmtsj, source_counts):
+            mkh = int(sj['matches_hash'])
+            if mkh not in self.source_counts:
+                self.source_counts[mkh] = _get_initial_source_counts()
+            for source, num in sc.items():
+                self.source_counts[mkh][source] += num
+        return stmts_from_json(stmtsj)
+
+    def get_source_counts(self):
+        return self.source_counts
+
+    def get_source_count(self, stmt):
+        return self.source_counts.get(stmt.get_hash())
+
+    def get_ev_count(self, stmt):
+        return sum(self.get_source_count(stmt).values())
+
+    def get_ev_counts(self):
+        return {s.get_hash(): self.get_ev_count(s) for s in self.statements}
+
+
+class Neo4jClient(QueryProcessorClient):
+    def __init__(self, config):
+        self.statements = []
+        self.source_counts = {}
+        self.n4jc = None
+        self.resolver = None
+        self._get_client(config)
+
+    def _get_client(self, config):
+        from indra_cogex.client.neo4j_client import Neo4jClient
+        match = re.match('bolt://([^:]+):([^@]+)@([^|]+)', config)
+        if not match:
+            raise ValueError('Invalid URL string')
+        username, password, url = match.groups()
+        self.n4jc = Neo4jClient(url, auth=(username, password))
+
+    def _get_stmts_by_key_role(self, key, role):
+        logger.info('Looking up key: %s' % str(key))
+        if role == 'SUBJECT':
+            rels = self.n4jc.get_target_relations(source=key,
+                relation='indra_rel')
+        elif role == 'OBJECT':
+            rels = self.n4jc.get_source_relations(target=key,
+                relation='indra_rel')
+        else:
+            rels = self.n4jc.get_all_relations(node=key,
+                relation='indra_rel')
+        stmts = self._process_relations(rels)
+        logger.info('Found a total of %d stmts with %s: %s'
+                    % (len(stmts), role, str(key)))
+        return stmts
+
+    def _process_relations(self, relations):
+        stmt_jsons = []
+        for rel in relations:
+            mkh = rel.data.get('stmt_hash')
+            stmt_json = json.loads(rel.data.get('stmt_json'))
+            source_counts = json.loads(rel.data.get('source_counts'))
+            stmt_jsons.append(stmt_json)
+            if mkh not in self.source_counts:
+                self.source_counts[mkh] = _get_initial_source_counts()
+            for source, num in source_counts.items():
+                self.source_counts[mkh][source] += num
+        return stmts_from_json(stmt_jsons)
 
 class ResourceManager:
     """Manages local query resources by key so they are only in memory once."""

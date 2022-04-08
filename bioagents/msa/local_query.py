@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import pickle
 import logging
 import requests
@@ -24,7 +23,7 @@ def load_from_config(config_str):
     if config_type == 'emmaa':
         model_name = config_val
         url = ('https://emmaa.s3.amazonaws.com/assembled/%s/'
-            'latest_statements_%s.json' % (model_name, model_name))
+               'latest_statements_%s.json' % (model_name, model_name))
         res = requests.get(url)
         stmts = stmts_from_json(res.json())
         return LocalQueryProcessor(stmts)
@@ -243,15 +242,11 @@ class Neo4jClient(QueryProcessorClient):
         self.source_counts = {}
         self.n4jc = None
         self.resolver = None
-        self._get_client(config)
+        self._get_client()
 
-    def _get_client(self, config):
-        from indra_cogex.client.neo4j_client import Neo4jClient
-        match = re.match('bolt://([^:]+):([^@]+)@([^|]+)', config)
-        if not match:
-            raise ValueError('Invalid URL string')
-        username, password, url = match.groups()
-        self.n4jc = Neo4jClient(url, auth=(username, password))
+    def _get_client(self):
+        from indra_cogex.client.neo4j_client import Neo4jClient as NC
+        self.n4jc = NC()
 
     def _get_stmts_by_key_role(self, key, role):
         logger.info('Looking up key: %s' % str(key))
@@ -281,6 +276,7 @@ class Neo4jClient(QueryProcessorClient):
             for source, num in source_counts.items():
                 self.source_counts[mkh][source] += num
         return stmts_from_json(stmt_jsons)
+
 
 class ResourceManager:
     """Manages local query resources by key so they are only in memory once."""

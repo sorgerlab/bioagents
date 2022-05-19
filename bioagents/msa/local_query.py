@@ -268,7 +268,8 @@ class Neo4jClient(QueryProcessorClient):
         stmt_jsons = []
         for rel in relations:
             mkh = rel.data.get('stmt_hash')
-            stmt_json = json.loads(rel.data.get('stmt_json'))
+            stmt_json = json.loads(
+                rel.data.get('stmt_json').replace('\\\\', '\\').replace('\\\\', '\\'))
             source_counts = json.loads(rel.data.get('source_counts'))
             stmt_jsons.append(stmt_json)
             if mkh not in self.source_counts:

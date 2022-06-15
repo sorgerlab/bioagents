@@ -252,13 +252,16 @@ class Neo4jClient(QueryProcessorClient):
         logger.info('Looking up key: %s' % str(key))
         if role == 'SUBJECT':
             rels = self.n4jc.get_target_relations(source=key,
-                relation='indra_rel')
+                relation='indra_rel', source_type='BioEntity',
+                target_type='BioEntity')
         elif role == 'OBJECT':
             rels = self.n4jc.get_source_relations(target=key,
-                relation='indra_rel')
+                relation='indra_rel', source_type='BioEntity',
+                target_type='BioEntity')
         else:
             rels = self.n4jc.get_all_relations(node=key,
-                relation='indra_rel')
+                relation='indra_rel', node_type='BioEntity',
+                other_type='BioEntity')
         stmts = self._process_relations(rels)
         logger.info('Found a total of %d stmts with %s: %s'
                     % (len(stmts), role, str(key)))

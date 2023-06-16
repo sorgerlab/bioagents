@@ -271,8 +271,7 @@ class Neo4jClient(QueryProcessorClient):
         stmt_jsons = []
         for rel in relations:
             mkh = rel.data.get('stmt_hash')
-            stmt_json = json.loads(
-                rel.data.get('stmt_json').replace('\\\\', '\\').replace('\\\\', '\\'))
+            stmt_json = json.loads(_str_escaping(rel.data.get('stmt_json')))
             source_counts = json.loads(rel.data.get('source_counts'))
             stmt_jsons.append(stmt_json)
             if mkh not in self.source_counts:
@@ -307,3 +306,9 @@ preloads = MSA_CORPUS_PRELOADS.split(',') if MSA_CORPUS_PRELOADS else None
 
 resource_manager = ResourceManager(preloads=preloads)
 
+
+def _str_escaping(s: str) -> str:
+    """Remove double escaped characters and other escaping artifacts."""
+    return s.replace(
+        '\\\\', '\\').replace('\\\\', '\\').replace('\\{', '{').replace(
+        '\\}', '}')

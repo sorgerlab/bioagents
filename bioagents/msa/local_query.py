@@ -9,7 +9,7 @@ from indra.statements import *
 from indra.sources.indra_db_rest.query import And, HasType, HasAgent
 from indra.assemblers.html.assembler import get_available_source_counts
 from indra.util.statement_presentation import _get_available_ev_source_counts, \
-    _get_initial_source_counts
+    _get_initial_source_counts, internal_source_mappings
 
 from bioagents.msa.exceptions import EntityError
 
@@ -277,7 +277,12 @@ class Neo4jClient(QueryProcessorClient):
             if mkh not in self.source_counts:
                 self.source_counts[mkh] = _get_initial_source_counts()
             for source, num in source_counts.items():
-                self.source_counts[mkh][source] += num
+                # The dict from _get_initial_source_counts() contains the
+                # source names as they appear in indra_db while the
+                # source names in CoGEx are as they appear in INDRA,
+                # e.g. 'bel' (in CoGEx) instead of 'bel_lc' (indra_db).
+                mapped_source = internal_source_mappings.get(source, source)
+                self.source_counts[mkh][mapped_source] += num
         return stmts_from_json(stmt_jsons)
 
 

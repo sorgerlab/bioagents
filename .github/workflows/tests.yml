@@ -13,10 +13,10 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.py') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-    - name: Set up Python 3.6
+    - name: Set up Python 3.8
       uses: actions/setup-python@v1
       with:
-        python-version: 3.6
+        python-version: 3.8
     - name: Install dependencies
       run: |
         # Install Graphviz
@@ -24,11 +24,12 @@ jobs:
         sudo apt-get install libstdc++6 python3-dev graphviz libgraphviz-dev pkg-config
         sudo apt-get install graphviz
         # Tests use the web ontology but this is here as backup
-        mkdir -p $HOME/.indra/bio_ontology/1.11
-        wget -nv https://bigmech.s3.amazonaws.com/travis/bio_ontology/1.11/mock_ontology.pkl -O $HOME/.indra/bio_ontology/1.11/bio_ontology.pkl
+        bio_ontology_version=1.30
+        mkdir -p $HOME/.indra/bio_ontology/$bio_ontology_version
+        wget -nv https://bigmech.s3.amazonaws.com/travis/bio_ontology/$bio_ontology_version/mock_ontology.pkl -O $HOME/.indra/bio_ontology/$bio_ontology_version/bio_ontology.pkl
         # Now do some regular pip installs
         python -m pip install --upgrade pip
-        pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas kappy==4.0.0 boto3 nose-timer coverage
+        pip install numpy scipy sympy cython==0.23.5 nose lxml matplotlib pandas<2.0.0 kappy==4.0.0 boto3 nose-timer coverage
         # Install Bionetgen
         wget --no-check-certificate "http://www.csb.pitt.edu/Faculty/Faeder/wp-content/uploads/2017/04/BioNetGen-2.2.6-stable_Linux.tar.gz" -O bionetgen.tar.gz -nv
         tar xzf bionetgen.tar.gz

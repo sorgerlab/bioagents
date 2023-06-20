@@ -24,7 +24,7 @@ jobs:
         sudo apt-get install libstdc++6 python3-dev graphviz libgraphviz-dev pkg-config
         sudo apt-get install graphviz
         # Tests use the web ontology but this is here as backup
-        bio_ontology_version=1.27
+        bio_ontology_version=1.30
         mkdir -p $HOME/.indra/bio_ontology/$bio_ontology_version
         wget -nv https://bigmech.s3.amazonaws.com/travis/bio_ontology/$bio_ontology_version/mock_ontology.pkl -O $HOME/.indra/bio_ontology/$bio_ontology_version/bio_ontology.pkl
         # Now do some regular pip installs

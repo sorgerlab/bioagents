@@ -93,7 +93,8 @@ class LocalQueryProcessor:
         else:
             raise EntityError("Could not form a usable query from given "
                               "constraints.")
-        logger.info('Found %d statements from query' % len(all_stmts))
+        logger.info('Found %d statements from query'
+                    % 0 if all_stmts is None else len(all_stmts))
         self.statements = all_stmts
         return self
 

@@ -110,7 +110,7 @@ class LocalQueryProcessor:
         elif isinstance(query, HasType):
             return self._filter_for_type(all_stmts, query.stmt_types[0])
         else:
-            logger.warning("Query {query} not handled.")
+            logger.warning(f"Query {query} not handled.")
             return all_stmts
 
     def sort_statements(self, stmts):
